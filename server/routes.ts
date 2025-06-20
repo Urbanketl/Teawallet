@@ -38,7 +38,11 @@ import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize Razorpay
-  initializeRazorpay();
+  try {
+    initializeRazorpay();
+  } catch (error) {
+    console.warn("Razorpay initialization failed:", error.message);
+  }
   
   // Auth middleware
   await setupAuth(app);

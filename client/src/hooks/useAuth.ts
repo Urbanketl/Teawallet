@@ -24,3 +24,14 @@ export function useAuth() {
     isAuthenticated: !!user,
   };
 }
+
+export function logout() {
+  // Clear demo mode if active
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('demo_user');
+    localStorage.removeItem('demo_authenticated');
+  }
+  
+  // Redirect to logout endpoint
+  window.location.href = '/api/logout';
+}

@@ -1,4 +1,4 @@
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, logout } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { 
   DropdownMenu,
@@ -107,7 +107,7 @@ export default function Navigation() {
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem
-                  onClick={() => window.location.href = '/api/logout'}
+                  onClick={logout}
                   className="text-red-600"
                 >
                   <LogOut className="w-4 h-4 mr-2" />

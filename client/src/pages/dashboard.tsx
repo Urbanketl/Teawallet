@@ -28,7 +28,7 @@ export default function Dashboard() {
       }, 500);
       return;
     }
-  }, [isAuthenticated, isLoading, toast]);
+  }, [isAuthenticated, isLoading]);
 
   const { data: dispensingHistory } = useQuery({
     queryKey: ["/api/dispensing/history"],

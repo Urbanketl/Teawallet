@@ -84,7 +84,7 @@ export default function Dashboard() {
                   <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-2">
                     <CreditCard className="text-white text-lg" />
                   </div>
-                  <div className="text-white/80 text-sm">RFID Active</div>
+                  <div className="text-sm text-[#A67C52]">RFID Active</div>
                 </div>
               </div>
             </div>

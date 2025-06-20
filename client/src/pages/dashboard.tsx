@@ -73,7 +73,7 @@ export default function Dashboard() {
                 <h2 className="text-2xl md:text-3xl font-inter font-bold mb-2 drop-shadow-sm text-[#A67C52]">
                   Welcome back, {user.firstName || "Tea Lover"}!
                 </h2>
-                <p className="text-white/95 text-lg drop-shadow-sm">Ready for your next cup of premium tea?</p>
+                <p className="text-lg drop-shadow-sm text-[#A67C52]">Ready for your next cup of premium tea?</p>
               </div>
               <div className="flex items-center space-x-6">
                 <div className="text-center">

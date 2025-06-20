@@ -1,20 +1,18 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useRazorpay } from "@/hooks/useRazorpay";
 import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 import { Wallet, Plus, IndianRupee } from "lucide-react";
-import { isUnauthorizedError } from "@/lib/authUtils";
 
 export default function WalletPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const { initiatePayment, loading } = useRazorpay();
   const [customAmount, setCustomAmount] = useState("");
 
   // Redirect to login if not authenticated
@@ -32,47 +30,6 @@ export default function WalletPage() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const rechargeMutation = useMutation({
-    mutationFn: async (amount: number) => {
-      // In a real app, you would integrate with Razorpay here
-      // For now, we'll simulate a successful payment
-      const paymentId = `pay_${Date.now()}`;
-      
-      return await apiRequest("POST", "/api/wallet/recharge", {
-        amount,
-        razorpayPaymentId: paymentId,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/wallet/balance"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
-      toast({
-        title: "Success!",
-        description: "Wallet recharged successfully",
-      });
-      setCustomAmount("");
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Error",
-        description: "Failed to recharge wallet. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
   if (isLoading) {
     return <div className="min-h-screen bg-neutral-warm flex items-center justify-center">Loading...</div>;
   }
@@ -84,7 +41,10 @@ export default function WalletPage() {
   const quickAmounts = [100, 250, 500, 1000];
 
   const handleQuickRecharge = (amount: number) => {
-    rechargeMutation.mutate(amount);
+    initiatePayment(amount, {
+      name: `${user?.firstName} ${user?.lastName}`.trim(),
+      email: user?.email || "",
+    });
   };
 
   const handleCustomRecharge = () => {
@@ -97,7 +57,13 @@ export default function WalletPage() {
       });
       return;
     }
-    rechargeMutation.mutate(amount);
+    
+    initiatePayment(amount, {
+      name: `${user?.firstName} ${user?.lastName}`.trim(),
+      email: user?.email || "",
+    });
+    
+    setCustomAmount("");
   };
 
   return (
@@ -149,7 +115,7 @@ export default function WalletPage() {
                     variant="outline"
                     className="h-12 text-lg hover:bg-tea-green hover:text-white hover:border-tea-green"
                     onClick={() => handleQuickRecharge(amount)}
-                    disabled={rechargeMutation.isPending}
+                    disabled={loading}
                   >
                     ₹{amount}
                   </Button>
@@ -173,9 +139,9 @@ export default function WalletPage() {
                 <Button
                   className="w-full bg-tea-green hover:bg-tea-dark"
                   onClick={handleCustomRecharge}
-                  disabled={rechargeMutation.isPending || !customAmount}
+                  disabled={loading || !customAmount}
                 >
-                  {rechargeMutation.isPending ? "Processing..." : "Recharge Wallet"}
+                  {loading ? "Processing..." : "Recharge Wallet"}
                 </Button>
               </div>
             </CardContent>

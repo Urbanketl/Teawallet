@@ -5,78 +5,37 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { useRazorpay } from "@/hooks/useRazorpay";
 import { Wallet, Plus, IndianRupee } from "lucide-react";
-import { isUnauthorizedError } from "@/lib/authUtils";
 
 export default function WalletCard() {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const { initiatePayment, loading } = useRazorpay();
   const [customAmount, setCustomAmount] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-
-  const rechargeMutation = useMutation({
-    mutationFn: async (amount: number) => {
-      // In a real app, you would integrate with Razorpay here
-      // For now, we'll simulate a successful payment
-      const paymentId = `pay_${Date.now()}`;
-      
-      return await apiRequest("POST", "/api/wallet/recharge", {
-        amount,
-        razorpayPaymentId: paymentId,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/wallet/balance"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
-      toast({
-        title: "Success!",
-        description: "Wallet recharged successfully",
-      });
-      setCustomAmount("");
-      setDialogOpen(false);
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Error",
-        description: "Failed to recharge wallet. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
 
   const quickAmounts = [100, 250, 500, 1000];
 
   const handleQuickRecharge = (amount: number) => {
-    rechargeMutation.mutate(amount);
+    initiatePayment(amount, {
+      name: `${user?.firstName} ${user?.lastName}`.trim(),
+      email: user?.email || "",
+    });
   };
 
   const handleCustomRecharge = () => {
     const amount = parseFloat(customAmount);
     if (isNaN(amount) || amount <= 0) {
-      toast({
-        title: "Invalid Amount",
-        description: "Please enter a valid amount",
-        variant: "destructive",
-      });
       return;
     }
-    rechargeMutation.mutate(amount);
+    
+    initiatePayment(amount, {
+      name: `${user?.firstName} ${user?.lastName}`.trim(),
+      email: user?.email || "",
+    });
+    
+    setCustomAmount("");
+    setDialogOpen(false);
   };
 
   return (
@@ -111,7 +70,7 @@ export default function WalletCard() {
                   variant="outline"
                   className="hover:bg-tea-green hover:text-white hover:border-tea-green transition-all duration-200"
                   onClick={() => handleQuickRecharge(amount)}
-                  disabled={rechargeMutation.isPending}
+                  disabled={loading}
                 >
                   ₹{amount}
                 </Button>
@@ -145,9 +104,9 @@ export default function WalletCard() {
                   <Button
                     className="w-full bg-tea-green hover:bg-tea-dark"
                     onClick={handleCustomRecharge}
-                    disabled={rechargeMutation.isPending || !customAmount}
+                    disabled={loading || !customAmount}
                   >
-                    {rechargeMutation.isPending ? "Processing..." : "Recharge Now"}
+                    {loading ? "Processing..." : "Recharge Now"}
                   </Button>
                 </div>
               </DialogContent>

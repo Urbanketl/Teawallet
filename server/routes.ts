@@ -3,9 +3,13 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertTransactionSchema, insertDispensingLogSchema } from "@shared/schema";
+import { createOrder, verifyPayment, initializeRazorpay } from "./razorpay";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize Razorpay
+  initializeRazorpay();
+  
   // Auth middleware
   await setupAuth(app);
 
@@ -25,6 +29,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Wallet routes
+  app.post('/api/wallet/create-order', isAuthenticated, async (req: any, res) => {
+    try {
+      const { amount } = req.body;
+      const userId = req.user.claims.sub;
+
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ message: "Valid amount is required" });
+      }
+
+      const order = await createOrder(amount);
+      
+      res.json({
+        success: true,
+        order,
+        keyId: process.env.RAZORPAY_KEY_ID,
+      });
+    } catch (error) {
+      console.error("Error creating Razorpay order:", error);
+      res.status(500).json({ message: "Failed to create payment order" });
+    }
+  });
+
+  app.post('/api/wallet/verify-payment', isAuthenticated, async (req: any, res) => {
+    try {
+      const { razorpay_order_id, razorpay_payment_id, razorpay_signature, amount } = req.body;
+      const userId = req.user.claims.sub;
+
+      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !amount) {
+        return res.status(400).json({ message: "Missing payment verification data" });
+      }
+
+      const isValidSignature = await verifyPayment(
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature
+      );
+
+      if (!isValidSignature) {
+        return res.status(400).json({ message: "Invalid payment signature" });
+      }
+
+      // Create transaction record
+      await storage.createTransaction({
+        userId,
+        type: 'recharge',
+        amount: amount.toString(),
+        description: 'Wallet Recharge',
+        method: 'razorpay',
+        razorpayPaymentId: razorpay_payment_id,
+        status: 'completed',
+      });
+
+      // Update wallet balance
+      const updatedUser = await storage.updateWalletBalance(userId, amount.toString());
+
+      res.json({ 
+        success: true, 
+        balance: updatedUser.walletBalance,
+        message: 'Payment verified and wallet recharged successfully'
+      });
+    } catch (error) {
+      console.error("Error verifying payment:", error);
+      res.status(500).json({ message: "Failed to verify payment" });
+    }
+  });
+
   app.post('/api/wallet/recharge', isAuthenticated, async (req: any, res) => {
     try {
       const { amount, razorpayPaymentId } = req.body;

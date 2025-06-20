@@ -6,10 +6,27 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useRazorpay } from "@/hooks/useRazorpay";
-import { Wallet, Plus, IndianRupee } from "lucide-react";
+import { Wallet, Plus, IndianRupee, AlertTriangle, CreditCard } from "lucide-react";
 
 export default function WalletCard() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  
+  const balance = parseFloat(user?.walletBalance || '0');
+  const LOW_BALANCE_THRESHOLD = 50.00;
+  const isLowBalance = balance <= LOW_BALANCE_THRESHOLD;
+  
+  // Show low balance alert
+  useEffect(() => {
+    if (isLowBalance && balance > 0) {
+      toast({
+        title: "Low Wallet Balance",
+        description: `Your balance is ₹${balance.toFixed(2)}. Recharge now to avoid interruption!`,
+        variant: "destructive",
+        duration: 8000,
+      });
+    }
+  }, [balance, isLowBalance, toast]);
   const { initiatePayment, loading } = useRazorpay();
   const [customAmount, setCustomAmount] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -49,15 +66,31 @@ export default function WalletCard() {
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Current Balance */}
-          <div className="bg-gradient-to-br from-tea-green/10 to-tea-light/10 rounded-xl p-6">
+          <div className={`rounded-xl p-6 ${
+            isLowBalance 
+              ? 'bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-200' 
+              : 'bg-gradient-to-br from-tea-green/10 to-tea-light/10'
+          }`}>
+            {isLowBalance && (
+              <div className="bg-red-100 border border-red-300 rounded-lg p-2 mb-3 flex items-center space-x-2">
+                <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                <div className="text-xs text-red-700 font-medium">
+                  Low Balance Alert!
+                </div>
+              </div>
+            )}
             <div className="flex items-center justify-between mb-3">
               <span className="text-gray-600 font-medium">Current Balance</span>
-              <IndianRupee className="w-5 h-5 text-tea-green" />
+              <IndianRupee className={`w-5 h-5 ${isLowBalance ? 'text-red-500' : 'text-tea-green'}`} />
             </div>
-            <div className="text-3xl font-bold text-tea-dark mb-2">
-              ₹{parseFloat(user?.walletBalance || "0").toFixed(2)}
+            <div className={`text-3xl font-bold mb-2 ${
+              isLowBalance ? 'text-red-600' : 'text-tea-dark'
+            }`}>
+              ₹{balance.toFixed(2)}
             </div>
-            <div className="text-sm text-gray-500">Available for use</div>
+            <div className={`text-sm ${isLowBalance ? 'text-red-500 font-medium' : 'text-gray-500'}`}>
+              {isLowBalance ? 'Recharge needed' : 'Available for use'}
+            </div>
           </div>
           
           {/* Quick Recharge */}

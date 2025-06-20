@@ -1,10 +1,14 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useQuery } from "@tanstack/react-query";
 import { 
   Users, 
@@ -21,6 +25,15 @@ import { format } from "date-fns";
 export default function AdminPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settings, setSettings] = useState({
+    teaPrice: "5.00",
+    maintenanceMode: false,
+    autoRecharge: true,
+    maxWalletBalance: "1000.00",
+    lowBalanceThreshold: "50.00",
+    systemName: "UrbanKetl Tea System"
+  });
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -92,10 +105,118 @@ export default function AdminPage() {
               <Download className="w-4 h-4 mr-2" />
               Export Data
             </Button>
-            <Button variant="outline">
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
-            </Button>
+            <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Settings
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[525px]">
+                <DialogHeader>
+                  <DialogTitle>System Settings</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-6 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="systemName" className="text-right">
+                      System Name
+                    </Label>
+                    <Input
+                      id="systemName"
+                      value={settings.systemName}
+                      onChange={(e) => setSettings({...settings, systemName: e.target.value})}
+                      className="col-span-3"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="teaPrice" className="text-right">
+                      Tea Price (₹)
+                    </Label>
+                    <Input
+                      id="teaPrice"
+                      type="number"
+                      step="0.01"
+                      value={settings.teaPrice}
+                      onChange={(e) => setSettings({...settings, teaPrice: e.target.value})}
+                      className="col-span-3"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="maxBalance" className="text-right">
+                      Max Wallet (₹)
+                    </Label>
+                    <Input
+                      id="maxBalance"
+                      type="number"
+                      step="0.01"
+                      value={settings.maxWalletBalance}
+                      onChange={(e) => setSettings({...settings, maxWalletBalance: e.target.value})}
+                      className="col-span-3"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="lowBalance" className="text-right">
+                      Low Balance Alert (₹)
+                    </Label>
+                    <Input
+                      id="lowBalance"
+                      type="number"
+                      step="0.01"
+                      value={settings.lowBalanceThreshold}
+                      onChange={(e) => setSettings({...settings, lowBalanceThreshold: e.target.value})}
+                      className="col-span-3"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="maintenance" className="text-right">
+                      Maintenance Mode
+                    </Label>
+                    <div className="col-span-3">
+                      <Switch
+                        id="maintenance"
+                        checked={settings.maintenanceMode}
+                        onCheckedChange={(checked) => setSettings({...settings, maintenanceMode: checked})}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="autoRecharge" className="text-right">
+                      Auto Recharge
+                    </Label>
+                    <div className="col-span-3">
+                      <Switch
+                        id="autoRecharge" 
+                        checked={settings.autoRecharge}
+                        onCheckedChange={(checked) => setSettings({...settings, autoRecharge: checked})}
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => setSettingsOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      toast({
+                        title: "Settings Updated",
+                        description: "System settings have been saved successfully.",
+                      });
+                      setSettingsOpen(false);
+                    }}
+                    className="bg-tea-green hover:bg-tea-dark"
+                  >
+                    Save Changes
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 

@@ -13,24 +13,24 @@
   --card-foreground: hsl(20, 14.3%, 4.1%);
   --border: hsl(20, 5.9%, 90%);
   --input: hsl(20, 5.9%, 90%);
-  --primary: hsl(142, 76%, 36%);
+  --primary: hsl(30, 90%, 62%);
   --primary-foreground: hsl(0, 0%, 100%);
-  --secondary: hsl(60, 4.8%, 95.9%);
+  --secondary: hsl(30, 35%, 62%);
   --secondary-foreground: hsl(24, 9.8%, 10%);
-  --accent: hsl(60, 4.8%, 95.9%);
+  --accent: hsl(30, 90%, 62%);
   --accent-foreground: hsl(24, 9.8%, 10%);
   --destructive: hsl(0, 84.2%, 60.2%);
   --destructive-foreground: hsl(60, 9.1%, 97.8%);
-  --ring: hsl(20, 14.3%, 4.1%);
+  --ring: hsl(30, 90%, 62%);
   --radius: 0.5rem;
   
-  /* Tea-themed colors */
-  --tea-green: hsl(123, 38%, 35%);
-  --tea-light: hsl(122, 39%, 49%);
-  --tea-dark: hsl(123, 61%, 20%);
+  /* UrbanKetl brand colors */
+  --tea-green: hsl(30, 90%, 62%);
+  --tea-light: hsl(30, 100%, 76%);
+  --tea-dark: hsl(30, 35%, 62%);
   --premium-purple: hsl(267, 29%, 43%);
   --accent-amber: hsl(38, 100%, 50%);
-  --neutral-warm: hsl(0, 0%, 96%);
+  --neutral-warm: hsl(30, 67%, 97%);
 }
 
 .dark {
@@ -44,7 +44,7 @@
   --card-foreground: hsl(0, 0%, 98%);
   --border: hsl(240, 3.7%, 15.9%);
   --input: hsl(240, 3.7%, 15.9%);
-  --primary: hsl(142, 76%, 36%);
+  --primary: hsl(30, 90%, 62%);
   --primary-foreground: hsl(0, 0%, 100%);
   --secondary: hsl(240, 3.7%, 15.9%);
   --secondary-foreground: hsl(0, 0%, 98%);

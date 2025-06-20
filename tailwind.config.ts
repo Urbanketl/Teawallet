@@ -84,6 +84,13 @@ export default {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
       },
+      extend: {
+        colors: {
+          'tea-green': '#F2A74A',
+          'tea-light': '#FFD287',
+          'tea-dark': '#A67C52',
+        }
+      }
     },
   },
   plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],

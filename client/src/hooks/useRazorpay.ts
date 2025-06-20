@@ -148,7 +148,7 @@ export function useRazorpay() {
           email: userDetails?.email || "",
         },
         theme: {
-          color: "#22c55e", // tea-green color
+          color: "#F2A74A", // primary orange color
         },
       };
 

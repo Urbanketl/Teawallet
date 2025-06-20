@@ -2,6 +2,36 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+
+// Low balance alert threshold (should be configurable via admin settings)
+const LOW_BALANCE_THRESHOLD = 50.00;
+
+async function checkAndSendLowBalanceAlert(user: any) {
+  const balance = parseFloat(user.walletBalance || '0');
+  
+  if (balance <= LOW_BALANCE_THRESHOLD) {
+    console.log(`Low balance alert for user ${user.id}: ₹${balance}`);
+    
+    // In a real implementation, this would:
+    // 1. Send push notification via Firebase/Expo
+    // 2. Send email notification
+    // 3. Create in-app notification
+    // 4. Log the alert event
+    
+    // For now, we'll create a notification record
+    try {
+      await storage.createTransaction({
+        userId: user.id,
+        type: 'system_alert',
+        amount: '0.00',
+        description: `Low balance alert: ₹${balance}`,
+        status: 'completed',
+      });
+    } catch (error) {
+      console.error('Failed to log low balance alert:', error);
+    }
+  }
+}
 import { insertTransactionSchema, insertDispensingLogSchema } from "@shared/schema";
 import { createOrder, verifyPayment, initializeRazorpay } from "./razorpay";
 import { z } from "zod";
@@ -136,6 +166,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Update wallet balance
       const updatedUser = await storage.updateWalletBalance(userId, amount.toString());
+
+      // Check for low balance after recharge (in case it's still low)
+      await checkAndSendLowBalanceAlert(updatedUser);
 
       res.json({ 
         success: true, 

@@ -78,7 +78,7 @@ export default function Dashboard() {
               <div className="flex items-center space-x-6">
                 <div className="text-center">
                   <div className="text-3xl font-bold">{cupsToday}</div>
-                  <div className="text-white/80 text-sm">Cups Today</div>
+                  <div className="text-sm text-[#A67C52]">Cups Today</div>
                 </div>
                 <div className="text-center">
                   <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-2">

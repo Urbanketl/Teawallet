@@ -68,13 +68,13 @@ export default function Dashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Banner */}
         <div className="mb-8">
-          <div className="bg-gradient-to-r from-tea-green to-tea-light rounded-2xl p-8 text-white shadow-material-lg">
+          <div className="bg-gradient-to-r from-tea-dark to-tea-green rounded-2xl p-8 text-white shadow-material-lg">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
               <div className="mb-4 md:mb-0">
-                <h2 className="text-2xl md:text-3xl font-inter font-bold mb-2">
+                <h2 className="text-2xl md:text-3xl font-inter font-bold mb-2 text-white drop-shadow-sm">
                   Welcome back, {user.firstName || "Tea Lover"}!
                 </h2>
-                <p className="text-white/90 text-lg">Ready for your next cup of premium tea?</p>
+                <p className="text-white/95 text-lg drop-shadow-sm">Ready for your next cup of premium tea?</p>
               </div>
               <div className="flex items-center space-x-6">
                 <div className="text-center">

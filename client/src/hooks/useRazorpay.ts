@@ -34,14 +34,37 @@ export function useRazorpay() {
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
       if (window.Razorpay) {
+        console.log("Razorpay already available");
         resolve(true);
         return;
       }
 
+      // Check if script is already in DOM
+      const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+      if (existingScript) {
+        console.log("Razorpay script exists, waiting for load...");
+        const checkRazorpay = () => {
+          if (window.Razorpay) {
+            resolve(true);
+          } else {
+            setTimeout(checkRazorpay, 100);
+          }
+        };
+        checkRazorpay();
+        return;
+      }
+
+      console.log("Loading Razorpay script dynamically...");
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
+      script.onload = () => {
+        console.log("Razorpay script loaded successfully");
+        resolve(true);
+      };
+      script.onerror = (error) => {
+        console.error("Failed to load Razorpay script:", error);
+        resolve(false);
+      };
       document.body.appendChild(script);
     });
   };
@@ -50,13 +73,7 @@ export function useRazorpay() {
     try {
       setLoading(true);
 
-      // Load Razorpay script
-      const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) {
-        throw new Error("Failed to load Razorpay script");
-      }
-
-      // Create order
+      // Create order first
       const orderResponse = await apiRequest("POST", "/api/wallet/create-order", { amount });
       
       if (!orderResponse.success) {
@@ -64,6 +81,12 @@ export function useRazorpay() {
       }
 
       const { order, keyId } = orderResponse;
+
+      // Load Razorpay script
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        throw new Error("Failed to load Razorpay script. Please check your internet connection.");
+      }
 
       const options: RazorpayOptions = {
         key: keyId,
@@ -74,6 +97,7 @@ export function useRazorpay() {
         order_id: order.id,
         handler: async (response: any) => {
           try {
+            console.log("Payment successful, verifying...", response);
             // Verify payment
             const verifyResponse = await apiRequest("POST", "/api/wallet/verify-payment", {
               razorpay_order_id: response.razorpay_order_id,
@@ -102,6 +126,8 @@ export function useRazorpay() {
               description: "Please contact support if amount was deducted",
               variant: "destructive",
             });
+          } finally {
+            setLoading(false);
           }
         },
         prefill: {
@@ -113,14 +139,23 @@ export function useRazorpay() {
         },
       };
 
+      console.log("Opening Razorpay with options:", { ...options, key: "***" });
+
       const razorpay = new window.Razorpay(options);
       
       razorpay.on("payment.failed", (response: any) => {
+        console.error("Razorpay payment failed:", response);
         toast({
           title: "Payment Failed",
-          description: response.error.description || "Payment was not successful",
+          description: response.error?.description || "Payment was not successful",
           variant: "destructive",
         });
+        setLoading(false);
+      });
+
+      razorpay.on("payment.cancelled", () => {
+        console.log("Payment cancelled by user");
+        setLoading(false);
       });
 
       razorpay.open();
@@ -131,7 +166,6 @@ export function useRazorpay() {
         description: error.message || "Failed to initiate payment",
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
   };

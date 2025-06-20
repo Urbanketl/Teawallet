@@ -7,7 +7,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Leaf, ChevronDown, LogOut, User, Shield } from "lucide-react";
+import { ChevronDown, LogOut, User, Shield } from "lucide-react";
+import logoImage from "@assets/URBAN KETL Logo small_1750439431697.jpg";
 import { Link, useLocation } from "wouter";
 
 export default function Navigation() {
@@ -35,13 +36,11 @@ export default function Navigation() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-tea-green rounded-lg flex items-center justify-center">
-              <Leaf className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="font-inter font-bold text-xl text-gray-900">UrbanKetl</h1>
-              <p className="text-xs text-gray-500">Tea Subscription</p>
-            </div>
+            <img 
+              src={logoImage} 
+              alt="UrbanKetl Logo" 
+              className="h-12 w-auto object-contain"
+            />
           </Link>
 
           {/* Navigation Menu */}

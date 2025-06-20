@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChevronDown, LogOut, User, Shield } from "lucide-react";
-import logoImage from "@assets/URBAN KETL Logo small_1750439431697.jpg";
+// Logo will be served from public directory
 import { Link, useLocation } from "wouter";
 
 export default function Navigation() {
@@ -37,7 +37,7 @@ export default function Navigation() {
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-3">
             <img 
-              src={logoImage} 
+              src="/logo.jpg" 
               alt="UrbanKetl Logo" 
               className="h-12 w-auto object-contain"
             />

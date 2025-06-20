@@ -185,6 +185,7 @@ export default function Dashboard() {
                   <Button 
                     variant="ghost"
                     className="w-full justify-between"
+                    onClick={() => window.location.href = '/profile'}
                   >
                     <div className="flex items-center space-x-3">
                       <User className="w-4 h-4" />

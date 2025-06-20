@@ -1,0 +1,57 @@
+{
+  "expo": {
+    "name": "UrbanKetl",
+    "slug": "urbanketl-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#22c55e"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.urbanketl.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#22c55e"
+      },
+      "package": "com.urbanketl.mobile",
+      "permissions": [
+        "NOTIFICATIONS",
+        "CAMERA",
+        "VIBRATE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#22c55e"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow UrbanKetl to access your camera for QR code scanning."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "urbanketl-mobile"
+      }
+    }
+  }
+}

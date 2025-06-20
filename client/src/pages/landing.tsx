@@ -9,13 +9,11 @@ export default function Landing() {
       <header className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-tea-green rounded-lg flex items-center justify-center">
-              <Leaf className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="font-inter font-bold text-xl text-gray-900">UrbanKetl</h1>
-              <p className="text-xs text-gray-500">Tea Subscription</p>
-            </div>
+            <img 
+              src="/logo-updated.jpg" 
+              alt="UrbanKetl Logo" 
+              className="h-12 w-auto object-contain"
+            />
           </div>
           <Button 
             onClick={() => window.location.href = '/api/login'}

@@ -24,6 +24,7 @@ function Router() {
           <Route path="/" component={Dashboard} />
           <Route path="/wallet" component={Wallet} />
           <Route path="/history" component={History} />
+          <Route path="/profile" component={Profile} />
           <Route path="/admin" component={Admin} />
         </>
       )}

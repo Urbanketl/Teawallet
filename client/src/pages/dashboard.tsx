@@ -64,14 +64,13 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-neutral-warm">
       <Navigation />
-      
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Banner */}
         <div className="mb-8">
           <div className="bg-gradient-to-r from-tea-dark to-tea-green rounded-2xl p-8 text-white shadow-material-lg">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
               <div className="mb-4 md:mb-0">
-                <h2 className="text-2xl md:text-3xl font-inter font-bold mb-2 text-white drop-shadow-sm">
+                <h2 className="text-2xl md:text-3xl font-inter font-bold mb-2 drop-shadow-sm text-[#A67C52]">
                   Welcome back, {user.firstName || "Tea Lover"}!
                 </h2>
                 <p className="text-white/95 text-lg drop-shadow-sm">Ready for your next cup of premium tea?</p>
@@ -208,7 +207,6 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
-
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2">
         <div className="flex justify-around">

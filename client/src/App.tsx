@@ -10,6 +10,7 @@ import Dashboard from "@/pages/dashboard";
 import Wallet from "@/pages/wallet";
 import History from "@/pages/history";
 import Admin from "@/pages/admin";
+import Profile from "@/pages/profile";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();

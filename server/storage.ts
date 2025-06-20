@@ -22,6 +22,7 @@ export interface IStorage {
   // User operations (mandatory for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  updateUserProfile(id: string, profileData: any): Promise<User>;
   
   // Wallet operations
   updateWalletBalance(userId: string, amount: string): Promise<User>;
@@ -69,6 +70,26 @@ export class DatabaseStorage implements IStorage {
           updatedAt: new Date(),
         },
       })
+      .returning();
+    return user;
+  }
+
+  async updateUserProfile(id: string, profileData: any): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        companyName: profileData.companyName,
+        mobileNumber: profileData.mobileNumber,
+        address: profileData.address,
+        buildingDetails: profileData.buildingDetails,
+        city: profileData.city,
+        state: profileData.state,
+        pincode: profileData.pincode,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
       .returning();
     return user;
   }

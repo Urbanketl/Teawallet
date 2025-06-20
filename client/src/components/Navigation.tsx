@@ -92,9 +92,11 @@ export default function Navigation() {
                 <div className="px-2 py-1.5 text-xs text-gray-500">
                   {user?.email}
                 </div>
-                <DropdownMenuItem>
-                  <User className="w-4 h-4 mr-2" />
-                  Profile Settings
+                <DropdownMenuItem asChild>
+                  <Link href="/profile">
+                    <User className="w-4 h-4 mr-2" />
+                    Profile Settings
+                  </Link>
                 </DropdownMenuItem>
                 {user?.isAdmin && (
                   <DropdownMenuItem asChild>

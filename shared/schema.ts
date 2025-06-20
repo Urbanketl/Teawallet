@@ -34,6 +34,13 @@ export const users = pgTable("users", {
   profileImageUrl: varchar("profile_image_url"),
   walletBalance: decimal("wallet_balance", { precision: 10, scale: 2 }).default("0.00"),
   isAdmin: boolean("is_admin").default(false),
+  companyName: varchar("company_name"),
+  mobileNumber: varchar("mobile_number"),
+  address: text("address"),
+  buildingDetails: varchar("building_details"),
+  city: varchar("city"),
+  state: varchar("state"),
+  pincode: varchar("pincode"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

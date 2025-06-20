@@ -6,6 +6,18 @@ export function useAuth() {
     retry: false,
   });
 
+  // Check for demo mode
+  const demoUser = typeof window !== 'undefined' ? localStorage.getItem('demo_user') : null;
+  const demoAuthenticated = typeof window !== 'undefined' ? localStorage.getItem('demo_authenticated') : null;
+
+  if (demoAuthenticated === 'true' && demoUser) {
+    return {
+      user: JSON.parse(demoUser),
+      isLoading: false,
+      isAuthenticated: true,
+    };
+  }
+
   return {
     user,
     isLoading,

@@ -77,7 +77,7 @@ export default function Dashboard() {
               </div>
               <div className="flex items-center space-x-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold">{cupsToday}</div>
+                  <div className="text-3xl font-bold text-[#A67C52]">{cupsToday}</div>
                   <div className="text-sm text-[#A67C52]">Cups Today</div>
                 </div>
                 <div className="text-center">

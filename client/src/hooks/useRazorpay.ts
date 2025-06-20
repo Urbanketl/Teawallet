@@ -72,20 +72,32 @@ export function useRazorpay() {
   const initiatePayment = async (amount: number, userDetails?: { name?: string; email?: string }) => {
     try {
       setLoading(true);
+      console.log("Starting payment initiation for amount:", amount);
 
       // Create order first
-      const orderResponse = await apiRequest("POST", "/api/wallet/create-order", { amount });
+      console.log("Creating order...");
+      const orderRes = await apiRequest("POST", "/api/wallet/create-order", { amount });
+      const orderResponse = await orderRes.json();
+      console.log("Order response:", orderResponse);
       
       if (!orderResponse.success) {
         throw new Error("Failed to create payment order");
       }
 
       const { order, keyId } = orderResponse;
+      console.log("Order created successfully:", order);
 
       // Load Razorpay script
+      console.log("Loading Razorpay script...");
       const scriptLoaded = await loadRazorpayScript();
+      console.log("Script loaded result:", scriptLoaded);
+      
       if (!scriptLoaded) {
         throw new Error("Failed to load Razorpay script. Please check your internet connection.");
+      }
+
+      if (!window.Razorpay) {
+        throw new Error("Razorpay SDK not available");
       }
 
       const options: RazorpayOptions = {
@@ -99,12 +111,13 @@ export function useRazorpay() {
           try {
             console.log("Payment successful, verifying...", response);
             // Verify payment
-            const verifyResponse = await apiRequest("POST", "/api/wallet/verify-payment", {
+            const verifyRes = await apiRequest("POST", "/api/wallet/verify-payment", {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
               amount: amount,
             });
+            const verifyResponse = await verifyRes.json();
 
             if (verifyResponse.success) {
               // Invalidate queries to refresh data
@@ -141,7 +154,9 @@ export function useRazorpay() {
 
       console.log("Opening Razorpay with options:", { ...options, key: "***" });
 
+      console.log("Creating Razorpay instance...");
       const razorpay = new window.Razorpay(options);
+      console.log("Razorpay instance created successfully");
       
       razorpay.on("payment.failed", (response: any) => {
         console.error("Razorpay payment failed:", response);
@@ -158,9 +173,13 @@ export function useRazorpay() {
         setLoading(false);
       });
 
+      console.log("Opening Razorpay checkout...");
       razorpay.open();
     } catch (error: any) {
       console.error("Payment initiation error:", error);
+      console.error("Error stack:", error.stack);
+      console.error("Error details:", JSON.stringify(error, null, 2));
+      
       toast({
         title: "Payment Error",
         description: error.message || "Failed to initiate payment",

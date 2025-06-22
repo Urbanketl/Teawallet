@@ -1,7 +1,7 @@
 import { db } from "./db";
 import { 
   users, rfidCards, transactions, dispensingLogs, teaMachines,
-  subscriptionPlans, userSubscriptions, loyaltyPoints, badges, userBadges,
+  subscriptionPlans, userSubscriptions,
   referrals, teaMoments, teaMomentLikes, supportTickets, supportMessages, faqArticles,
   type User, type UpsertUser, type RfidCard, type InsertRfidCard,
   type Transaction, type InsertTransaction, type DispensingLog, type InsertDispensingLog,
@@ -53,16 +53,7 @@ export interface IStorage {
   getUserSubscription(userId: string): Promise<UserSubscription | undefined>;
   createUserSubscription(subscription: InsertUserSubscription): Promise<UserSubscription>;
   
-  // Loyalty operations
-  getUserLoyaltyPoints(userId: string): Promise<number>;
-  addLoyaltyPoints(point: InsertLoyaltyPoint): Promise<LoyaltyPoint>;
-  getLoyaltyHistory(userId: string, limit?: number): Promise<LoyaltyPoint[]>;
-  
-  // Badge operations
-  getAllBadges(): Promise<Badge[]>;
-  getUserBadges(userId: string): Promise<(UserBadge & { badge: Badge })[]>;
-  awardBadge(userBadge: InsertUserBadge): Promise<UserBadge>;
-  checkAndAwardBadges(userId: string): Promise<void>;
+
   
   // Referral operations
   createReferral(referral: InsertReferral): Promise<Referral>;

@@ -25,7 +25,7 @@ export default function Navigation() {
     { href: "/", icon: LayoutDashboard, label: "Dashboard" },
     { href: "/wallet", icon: Wallet, label: "Wallet" },
     { href: "/subscriptions", icon: Coffee, label: "Subscriptions" },
-    { href: "/loyalty", icon: Award, label: "Loyalty" },
+
     { href: "/social", icon: Users, label: "Social" },
     { href: "/history", icon: History, label: "History" },
     { href: "/support", icon: MessageCircle, label: "Support" },

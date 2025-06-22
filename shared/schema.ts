@@ -295,20 +295,7 @@ export const insertUserSubscriptionSchema = createInsertSchema(userSubscriptions
   createdAt: true,
 });
 
-export const insertLoyaltyPointSchema = createInsertSchema(loyaltyPoints).omit({
-  id: true,
-  createdAt: true,
-});
 
-export const insertBadgeSchema = createInsertSchema(badges).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertUserBadgeSchema = createInsertSchema(userBadges).omit({
-  id: true,
-  earnedAt: true,
-});
 
 export const insertReferralSchema = createInsertSchema(referrals).omit({
   id: true,
@@ -361,12 +348,7 @@ export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
 export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
 export type UserSubscription = typeof userSubscriptions.$inferSelect;
 export type InsertUserSubscription = z.infer<typeof insertUserSubscriptionSchema>;
-export type LoyaltyPoint = typeof loyaltyPoints.$inferSelect;
-export type InsertLoyaltyPoint = z.infer<typeof insertLoyaltyPointSchema>;
-export type Badge = typeof badges.$inferSelect;
-export type InsertBadge = z.infer<typeof insertBadgeSchema>;
-export type UserBadge = typeof userBadges.$inferSelect;
-export type InsertUserBadge = z.infer<typeof insertUserBadgeSchema>;
+
 export type Referral = typeof referrals.$inferSelect;
 export type InsertReferral = z.infer<typeof insertReferralSchema>;
 export type TeaMoment = typeof teaMoments.$inferSelect;

@@ -62,14 +62,16 @@ export default function SupportPage() {
     priority: 'medium',
   });
 
-  const { data: tickets = [] } = useQuery({
+  const { data: tickets = [], refetch: refetchTickets } = useQuery({
     queryKey: ['/api/support/tickets'],
+    refetchInterval: 5000, // Auto-refresh every 5 seconds
   });
 
-  const { data: messages = [] } = useQuery({
+  const { data: messages = [], refetch: refetchMessages } = useQuery({
     queryKey: ['/api/support/tickets', selectedTicket, 'messages'],
     enabled: !!selectedTicket,
     retry: false,
+    refetchInterval: selectedTicket ? 3000 : false, // Auto-refresh messages every 3 seconds when ticket is selected
   });
 
   const { data: faqArticles = [], isLoading: faqLoading } = useQuery({
@@ -92,7 +94,7 @@ export default function SupportPage() {
     onSuccess: (response) => {
       console.log('Ticket created successfully:', response);
       toast({ title: "Success", description: "Support ticket created successfully!" });
-      queryClient.invalidateQueries({ queryKey: ['/api/support/tickets'] });
+      refetchTickets(); // Use refetch for immediate update
       setDialogOpen(false);
       setNewTicket({
         subject: '',
@@ -122,11 +124,15 @@ export default function SupportPage() {
       if (!selectedTicket) {
         throw new Error('No ticket selected');
       }
+      console.log('Sending message:', messageData, 'to ticket:', selectedTicket);
       return apiRequest('POST', `/api/support/tickets/${selectedTicket}/messages`, messageData);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Message sent successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['/api/support/tickets', selectedTicket, 'messages'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/support/tickets'] });
       setNewMessage('');
+      toast({ title: "Success", description: "Message sent successfully!" });
     },
     onError: (error: any) => {
       console.error('Send message error:', error);
@@ -452,27 +458,35 @@ export default function SupportPage() {
                   <h3 className="font-semibold">Conversation</h3>
                   <Card className="h-96 flex flex-col">
                     <div className="flex-1 p-4 overflow-y-auto space-y-4">
-                      {messages.map((message: SupportMessage) => (
-                        <div 
-                          key={message.id}
-                          className={`flex ${message.isFromSupport ? 'justify-start' : 'justify-end'}`}
-                        >
-                          <div 
-                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                              message.isFromSupport 
-                                ? 'bg-gray-100 text-gray-900' 
-                                : 'bg-tea-green text-white'
-                            }`}
-                          >
-                            <p className="text-sm">{message.message}</p>
-                            <p className={`text-xs mt-1 ${
-                              message.isFromSupport ? 'text-gray-500' : 'text-tea-green-100'
-                            }`}>
-                              {format(new Date(message.createdAt), 'MMM dd, h:mm a')}
-                            </p>
-                          </div>
+                      {messages.length === 0 ? (
+                        <div className="text-center text-gray-500 py-8">
+                          <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                          <p>No messages yet. Start the conversation!</p>
                         </div>
-                      ))}
+                      ) : (
+                        messages.map((message: SupportMessage) => (
+                          <div 
+                            key={message.id}
+                            className={`flex ${message.isFromSupport ? 'justify-start' : 'justify-end'}`}
+                          >
+                            <div 
+                              className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                                message.isFromSupport 
+                                  ? 'bg-gray-100 text-gray-900' 
+                                  : 'bg-tea-green text-white'
+                              }`}
+                            >
+                              <p className="text-sm">{message.message}</p>
+                              <p className={`text-xs mt-1 ${
+                                message.isFromSupport ? 'text-gray-500' : 'text-tea-green-100'
+                              }`}>
+                                {message.sender ? `${message.sender.firstName} ${message.sender.lastName} - ` : ''}
+                                {format(new Date(message.createdAt), 'MMM dd, h:mm a')}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                     <div className="p-4 border-t">
                       <div className="flex space-x-2">

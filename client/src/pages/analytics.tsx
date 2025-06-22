@@ -2,11 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
+import Navigation from "@/components/Navigation";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { TrendingUp, Clock, Coffee, Activity, Users, DollarSign } from "lucide-react";
 
 export default function AnalyticsPage() {
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   const { data: popularTeas = [] } = useQuery({
     queryKey: ['/api/analytics/popular-teas'],
@@ -28,10 +29,26 @@ export default function AnalyticsPage() {
     enabled: user?.isAdmin,
   });
 
-  if (!user?.isAdmin) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-4xl mx-auto">
+      <div className="min-h-screen bg-neutral-warm">
+        <Navigation />
+        <div className="max-w-4xl mx-auto p-6">
+          <Card className="text-center py-12">
+            <CardContent>
+              <h3 className="text-lg font-semibold text-gray-600 mb-2">Loading Analytics...</h3>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user?.isAdmin) {
+    return (
+      <div className="min-h-screen bg-neutral-warm">
+        <Navigation />
+        <div className="max-w-4xl mx-auto p-6">
           <Card className="text-center py-12">
             <CardContent>
               <h3 className="text-lg font-semibold text-gray-600 mb-2">Access Denied</h3>
@@ -46,8 +63,9 @@ export default function AnalyticsPage() {
   const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-neutral-warm">
+      <Navigation />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Analytics Dashboard</h1>
           <p className="text-gray-600">Business insights and performance metrics</p>
@@ -61,7 +79,7 @@ export default function AnalyticsPage() {
               <Coffee className="h-4 w-4 text-tea-green" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{userBehavior?.avgTeaPerDay?.toFixed(1) || 0}</div>
+              <div className="text-2xl font-bold">{userBehavior?.avgTeaPerDay ? Number(userBehavior.avgTeaPerDay).toFixed(1) : '0.0'}</div>
               <p className="text-xs text-muted-foreground">teas per day</p>
             </CardContent>
           </Card>
@@ -73,7 +91,7 @@ export default function AnalyticsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {userBehavior?.preferredTimes?.slice(0, 2)?.join(', ') || 'N/A'}
+                {userBehavior?.preferredTimes?.length > 0 ? userBehavior.preferredTimes.slice(0, 2).join('h, ') + 'h' : 'N/A'}
               </div>
               <p className="text-xs text-muted-foreground">most active hours</p>
             </CardContent>
@@ -172,7 +190,7 @@ export default function AnalyticsPage() {
         </Card>
 
         {/* Top Tea Types Distribution */}
-        {userBehavior?.topTeaTypes && userBehavior.topTeaTypes.length > 0 && (
+        {popularTeas && popularTeas.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle>Tea Type Distribution</CardTitle>
@@ -182,9 +200,9 @@ export default function AnalyticsPage() {
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
-                      data={userBehavior.topTeaTypes.map((tea: string, index: number) => ({
-                        name: tea,
-                        value: Math.random() * 100, // Mock data for visualization
+                      data={popularTeas.map((tea: any) => ({
+                        name: tea.teaType,
+                        value: Number(tea.count),
                       }))}
                       cx="50%"
                       cy="50%"
@@ -194,7 +212,7 @@ export default function AnalyticsPage() {
                       fill="#8884d8"
                       dataKey="value"
                     >
-                      {userBehavior.topTeaTypes.map((entry: string, index: number) => (
+                      {popularTeas.map((entry: any, index: number) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>

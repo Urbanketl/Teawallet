@@ -612,7 +612,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(supportMessages.ticketId, ticketId))
         .orderBy(asc(supportMessages.createdAt));
 
-      console.log('Raw messages from DB:', messages);
+      console.log('Raw messages from DB:', messages.map(m => ({ id: m.id, isFromSupport: m.isFromSupport, message: m.message })));
 
       const messagesWithSenders = [];
       for (const message of messages) {

@@ -718,14 +718,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.session?.user?.id || req.user.claims.sub;
       const ticketId = parseInt(req.params.id);
-      const { message, attachments } = req.body;
+      const { message, attachments, isFromSupport } = req.body;
       
       const newMessage = await storage.createSupportMessage({
         ticketId,
         senderId: userId,
         message,
         attachments: attachments || [],
-        isFromSupport: false,
+        isFromSupport: isFromSupport || false,
       });
 
       res.json(newMessage);

@@ -69,10 +69,12 @@ export default function SupportPage() {
   const { data: messages = [] } = useQuery({
     queryKey: ['/api/support/tickets', selectedTicket, 'messages'],
     enabled: !!selectedTicket,
+    retry: false,
   });
 
-  const { data: faqArticles = [] } = useQuery({
+  const { data: faqArticles = [], isLoading: faqLoading } = useQuery({
     queryKey: ['/api/faq', faqCategory || undefined],
+    retry: false,
   });
 
   const createTicketMutation = useMutation({
@@ -124,9 +126,15 @@ export default function SupportPage() {
 
   const incrementViewMutation = useMutation({
     mutationFn: async (articleId: number) => {
-      return apiRequest(`/api/faq/${articleId}/view`, {
-        method: 'POST',
-      });
+      try {
+        return await apiRequest(`/api/faq/${articleId}/view`, {
+          method: 'POST',
+        });
+      } catch (error) {
+        console.error('Failed to increment view:', error);
+        // Don't show error to user for view tracking
+        return null;
+      }
     },
   });
 
@@ -242,7 +250,13 @@ export default function SupportPage() {
                     <AccordionItem key={article.id} value={article.id.toString()}>
                       <AccordionTrigger 
                         className="text-left"
-                        onClick={() => incrementViewMutation.mutate(article.id)}
+                        onClick={() => {
+                          try {
+                            incrementViewMutation.mutate(article.id);
+                          } catch (error) {
+                            console.error('View increment failed:', error);
+                          }
+                        }}
                       >
                         <div className="flex items-start justify-between w-full pr-4">
                           <span>{article.question}</span>

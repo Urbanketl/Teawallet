@@ -50,6 +50,51 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   getTotalRevenue(): Promise<string>;
   getDailyStats(): Promise<{ totalUsers: number; totalRevenue: string; activeMachines: number; dailyDispensing: number }>;
+  
+  // Subscription operations
+  getSubscriptionPlans(): Promise<SubscriptionPlan[]>;
+  createSubscriptionPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan>;
+  getUserSubscription(userId: string): Promise<UserSubscription | undefined>;
+  createUserSubscription(subscription: InsertUserSubscription): Promise<UserSubscription>;
+  
+  // Loyalty operations
+  getUserLoyaltyPoints(userId: string): Promise<number>;
+  addLoyaltyPoints(point: InsertLoyaltyPoint): Promise<LoyaltyPoint>;
+  getLoyaltyHistory(userId: string, limit?: number): Promise<LoyaltyPoint[]>;
+  
+  // Badge operations
+  getAllBadges(): Promise<Badge[]>;
+  getUserBadges(userId: string): Promise<(UserBadge & { badge: Badge })[]>;
+  awardBadge(userBadge: InsertUserBadge): Promise<UserBadge>;
+  checkAndAwardBadges(userId: string): Promise<void>;
+  
+  // Referral operations
+  createReferral(referral: InsertReferral): Promise<Referral>;
+  getUserReferrals(userId: string): Promise<Referral[]>;
+  
+  // Social operations
+  createTeaMoment(moment: InsertTeaMoment): Promise<TeaMoment>;
+  getTeaMoments(limit?: number): Promise<(TeaMoment & { user: User; likes: number })[]>;
+  getUserTeaMoments(userId: string): Promise<TeaMoment[]>;
+  likeTeaMoment(like: InsertTeaMomentLike): Promise<TeaMomentLike>;
+  
+  // Support operations
+  createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket>;
+  getUserSupportTickets(userId: string): Promise<SupportTicket[]>;
+  getSupportTicket(ticketId: number): Promise<SupportTicket | undefined>;
+  createSupportMessage(message: InsertSupportMessage): Promise<SupportMessage>;
+  getSupportMessages(ticketId: number): Promise<(SupportMessage & { sender: User })[]>;
+  
+  // FAQ operations
+  getFaqArticles(category?: string): Promise<FaqArticle[]>;
+  createFaqArticle(article: InsertFaqArticle): Promise<FaqArticle>;
+  incrementFaqViews(articleId: number): Promise<void>;
+  
+  // Analytics operations
+  getPopularTeaTypes(): Promise<{ teaType: string; count: number }[]>;
+  getPeakHours(): Promise<{ hour: number; count: number }[]>;
+  getMachinePerformance(): Promise<{ machineId: string; uptime: number; totalDispensed: number }[]>;
+  getUserBehaviorInsights(): Promise<{ avgTeaPerDay: number; preferredTimes: number[]; topTeaTypes: string[] }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -249,6 +294,323 @@ export class DatabaseStorage implements IStorage {
       totalRevenue: revenueResult.total || "0",
       activeMachines: machineCount.count || 0,
       dailyDispensing: dispensingCount.count || 0,
+    };
+  }
+
+  // Subscription operations
+  async getSubscriptionPlans(): Promise<SubscriptionPlan[]> {
+    return await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.isActive, true));
+  }
+
+  async createSubscriptionPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan> {
+    const [newPlan] = await db.insert(subscriptionPlans).values(plan).returning();
+    return newPlan;
+  }
+
+  async getUserSubscription(userId: string): Promise<UserSubscription | undefined> {
+    const [subscription] = await db
+      .select()
+      .from(userSubscriptions)
+      .where(and(eq(userSubscriptions.userId, userId), eq(userSubscriptions.status, 'active')));
+    return subscription;
+  }
+
+  async createUserSubscription(subscription: InsertUserSubscription): Promise<UserSubscription> {
+    const [newSubscription] = await db.insert(userSubscriptions).values(subscription).returning();
+    return newSubscription;
+  }
+
+  // Loyalty operations
+  async getUserLoyaltyPoints(userId: string): Promise<number> {
+    const [user] = await db.select({ points: users.loyaltyPoints }).from(users).where(eq(users.id, userId));
+    return user?.points || 0;
+  }
+
+  async addLoyaltyPoints(point: InsertLoyaltyPoint): Promise<LoyaltyPoint> {
+    const [newPoint] = await db.insert(loyaltyPoints).values(point).returning();
+    
+    // Update user's total loyalty points
+    await db
+      .update(users)
+      .set({ loyaltyPoints: sql`${users.loyaltyPoints} + ${point.points}` })
+      .where(eq(users.id, point.userId));
+    
+    return newPoint;
+  }
+
+  async getLoyaltyHistory(userId: string, limit = 50): Promise<LoyaltyPoint[]> {
+    return await db
+      .select()
+      .from(loyaltyPoints)
+      .where(eq(loyaltyPoints.userId, userId))
+      .orderBy(desc(loyaltyPoints.createdAt))
+      .limit(limit);
+  }
+
+  // Badge operations
+  async getAllBadges(): Promise<Badge[]> {
+    return await db.select().from(badges).where(eq(badges.isActive, true));
+  }
+
+  async getUserBadges(userId: string): Promise<(UserBadge & { badge: Badge })[]> {
+    return await db
+      .select()
+      .from(userBadges)
+      .innerJoin(badges, eq(userBadges.badgeId, badges.id))
+      .where(eq(userBadges.userId, userId))
+      .orderBy(desc(userBadges.earnedAt));
+  }
+
+  async awardBadge(userBadge: InsertUserBadge): Promise<UserBadge> {
+    const [newBadge] = await db.insert(userBadges).values(userBadge).returning();
+    
+    // Award points for the badge
+    const [badge] = await db.select().from(badges).where(eq(badges.id, userBadge.badgeId));
+    if (badge?.points && badge.points > 0) {
+      await this.addLoyaltyPoints({
+        userId: userBadge.userId,
+        points: badge.points,
+        type: 'earned',
+        source: 'badge',
+        description: `Badge earned: ${badge.name}`,
+      });
+    }
+    
+    return newBadge;
+  }
+
+  async checkAndAwardBadges(userId: string): Promise<void> {
+    const user = await this.getUser(userId);
+    if (!user) return;
+
+    const allBadges = await this.getAllBadges();
+    const userBadges = await this.getUserBadges(userId);
+    const earnedBadgeIds = userBadges.map(ub => ub.badgeId);
+
+    for (const badge of allBadges) {
+      if (earnedBadgeIds.includes(badge.id)) continue;
+
+      const requirement = badge.requirement as any;
+      let shouldAward = false;
+
+      switch (requirement.type) {
+        case 'tea_count':
+          shouldAward = user.teaCount >= requirement.value;
+          break;
+        case 'total_spent':
+          shouldAward = parseFloat(user.totalSpent) >= requirement.value;
+          break;
+        case 'early_bird':
+          // Check if user made a purchase before 9 AM in last 7 days
+          const earlyBirdCount = await db
+            .select({ count: sql<number>`count(*)` })
+            .from(dispensingLogs)
+            .where(
+              and(
+                eq(dispensingLogs.userId, userId),
+                sql`EXTRACT(HOUR FROM ${dispensingLogs.createdAt}) < 9`,
+                sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '7 days'`
+              )
+            );
+          shouldAward = earlyBirdCount[0]?.count >= requirement.value;
+          break;
+      }
+
+      if (shouldAward) {
+        await this.awardBadge({ userId, badgeId: badge.id });
+      }
+    }
+  }
+
+  // Referral operations
+  async createReferral(referral: InsertReferral): Promise<Referral> {
+    const [newReferral] = await db.insert(referrals).values(referral).returning();
+    return newReferral;
+  }
+
+  async getUserReferrals(userId: string): Promise<Referral[]> {
+    return await db
+      .select()
+      .from(referrals)
+      .where(eq(referrals.referrerId, userId))
+      .orderBy(desc(referrals.createdAt));
+  }
+
+  // Social operations
+  async createTeaMoment(moment: InsertTeaMoment): Promise<TeaMoment> {
+    const [newMoment] = await db.insert(teaMoments).values(moment).returning();
+    return newMoment;
+  }
+
+  async getTeaMoments(limit = 20): Promise<(TeaMoment & { user: User; likes: number })[]> {
+    return await db
+      .select()
+      .from(teaMoments)
+      .innerJoin(users, eq(teaMoments.userId, users.id))
+      .where(eq(teaMoments.isPublic, true))
+      .orderBy(desc(teaMoments.createdAt))
+      .limit(limit);
+  }
+
+  async getUserTeaMoments(userId: string): Promise<TeaMoment[]> {
+    return await db
+      .select()
+      .from(teaMoments)
+      .where(eq(teaMoments.userId, userId))
+      .orderBy(desc(teaMoments.createdAt));
+  }
+
+  async likeTeaMoment(like: InsertTeaMomentLike): Promise<TeaMomentLike> {
+    const [newLike] = await db.insert(teaMomentLikes).values(like).returning();
+    
+    // Update moment likes count
+    await db
+      .update(teaMoments)
+      .set({ likes: sql`${teaMoments.likes} + 1` })
+      .where(eq(teaMoments.id, like.momentId));
+    
+    return newLike;
+  }
+
+  // Support operations
+  async createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket> {
+    const [newTicket] = await db.insert(supportTickets).values(ticket).returning();
+    return newTicket;
+  }
+
+  async getUserSupportTickets(userId: string): Promise<SupportTicket[]> {
+    return await db
+      .select()
+      .from(supportTickets)
+      .where(eq(supportTickets.userId, userId))
+      .orderBy(desc(supportTickets.createdAt));
+  }
+
+  async getSupportTicket(ticketId: number): Promise<SupportTicket | undefined> {
+    const [ticket] = await db.select().from(supportTickets).where(eq(supportTickets.id, ticketId));
+    return ticket;
+  }
+
+  async createSupportMessage(message: InsertSupportMessage): Promise<SupportMessage> {
+    const [newMessage] = await db.insert(supportMessages).values(message).returning();
+    
+    // Update ticket's updatedAt
+    await db
+      .update(supportTickets)
+      .set({ updatedAt: new Date() })
+      .where(eq(supportTickets.id, message.ticketId));
+    
+    return newMessage;
+  }
+
+  async getSupportMessages(ticketId: number): Promise<(SupportMessage & { sender: User })[]> {
+    return await db
+      .select()
+      .from(supportMessages)
+      .innerJoin(users, eq(supportMessages.senderId, users.id))
+      .where(eq(supportMessages.ticketId, ticketId))
+      .orderBy(asc(supportMessages.createdAt));
+  }
+
+  // FAQ operations
+  async getFaqArticles(category?: string): Promise<FaqArticle[]> {
+    const query = db.select().from(faqArticles).where(eq(faqArticles.isPublished, true));
+    
+    if (category) {
+      query.where(and(eq(faqArticles.isPublished, true), eq(faqArticles.category, category)));
+    }
+    
+    return await query.orderBy(asc(faqArticles.order), asc(faqArticles.createdAt));
+  }
+
+  async createFaqArticle(article: InsertFaqArticle): Promise<FaqArticle> {
+    const [newArticle] = await db.insert(faqArticles).values(article).returning();
+    return newArticle;
+  }
+
+  async incrementFaqViews(articleId: number): Promise<void> {
+    await db
+      .update(faqArticles)
+      .set({ views: sql`${faqArticles.views} + 1` })
+      .where(eq(faqArticles.id, articleId));
+  }
+
+  // Analytics operations
+  async getPopularTeaTypes(): Promise<{ teaType: string; count: number }[]> {
+    return await db
+      .select({
+        teaType: dispensingLogs.teaType,
+        count: sql<number>`count(*)`,
+      })
+      .from(dispensingLogs)
+      .where(sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`)
+      .groupBy(dispensingLogs.teaType)
+      .orderBy(desc(sql`count(*)`))
+      .limit(10);
+  }
+
+  async getPeakHours(): Promise<{ hour: number; count: number }[]> {
+    return await db
+      .select({
+        hour: sql<number>`EXTRACT(HOUR FROM ${dispensingLogs.createdAt})`,
+        count: sql<number>`count(*)`,
+      })
+      .from(dispensingLogs)
+      .where(sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`)
+      .groupBy(sql`EXTRACT(HOUR FROM ${dispensingLogs.createdAt})`)
+      .orderBy(sql`EXTRACT(HOUR FROM ${dispensingLogs.createdAt})`);
+  }
+
+  async getMachinePerformance(): Promise<{ machineId: string; uptime: number; totalDispensed: number }[]> {
+    const machineStats = await db
+      .select({
+        machineId: dispensingLogs.machineId,
+        totalDispensed: sql<number>`count(*)`,
+      })
+      .from(dispensingLogs)
+      .where(sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`)
+      .groupBy(dispensingLogs.machineId);
+
+    return machineStats.map(stat => ({
+      machineId: stat.machineId,
+      uptime: 95, // Mock uptime calculation
+      totalDispensed: stat.totalDispensed,
+    }));
+  }
+
+  async getUserBehaviorInsights(): Promise<{ avgTeaPerDay: number; preferredTimes: number[]; topTeaTypes: string[] }> {
+    const [avgResult] = await db
+      .select({
+        avgTeaPerDay: sql<number>`count(*) / 30.0`,
+      })
+      .from(dispensingLogs)
+      .where(sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`);
+
+    const preferredTimes = await db
+      .select({
+        hour: sql<number>`EXTRACT(HOUR FROM ${dispensingLogs.createdAt})`,
+        count: sql<number>`count(*)`,
+      })
+      .from(dispensingLogs)
+      .where(sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`)
+      .groupBy(sql`EXTRACT(HOUR FROM ${dispensingLogs.createdAt})`)
+      .orderBy(desc(sql`count(*)`))
+      .limit(3);
+
+    const topTeaTypes = await db
+      .select({
+        teaType: dispensingLogs.teaType,
+      })
+      .from(dispensingLogs)
+      .where(sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`)
+      .groupBy(dispensingLogs.teaType)
+      .orderBy(desc(sql`count(*)`))
+      .limit(5);
+
+    return {
+      avgTeaPerDay: avgResult?.avgTeaPerDay || 0,
+      preferredTimes: preferredTimes.map(pt => pt.hour),
+      topTeaTypes: topTeaTypes.map(tt => tt.teaType),
     };
   }
 }

@@ -11,6 +11,11 @@ import Wallet from "@/pages/wallet";
 import History from "@/pages/history";
 import Admin from "@/pages/admin";
 import Profile from "@/pages/profile";
+import Subscriptions from "@/pages/subscriptions";
+import Loyalty from "@/pages/loyalty";
+import Social from "@/pages/social";
+import Support from "@/pages/support";
+import Analytics from "@/pages/analytics";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -26,6 +31,11 @@ function Router() {
           <Route path="/history" component={History} />
           <Route path="/profile" component={Profile} />
           <Route path="/admin" component={Admin} />
+          <Route path="/subscriptions" component={Subscriptions} />
+          <Route path="/loyalty" component={Loyalty} />
+          <Route path="/social" component={Social} />
+          <Route path="/support" component={Support} />
+          <Route path="/analytics" component={Analytics} />
         </>
       )}
       <Route component={NotFound} />

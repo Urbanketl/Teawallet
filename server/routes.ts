@@ -418,6 +418,311 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Subscription routes
+  app.get('/api/subscriptions/plans', async (req, res) => {
+    try {
+      const plans = await storage.getSubscriptionPlans();
+      res.json(plans);
+    } catch (error) {
+      console.error("Error fetching subscription plans:", error);
+      res.status(500).json({ message: "Failed to fetch subscription plans" });
+    }
+  });
+
+  app.get('/api/subscriptions/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const subscription = await storage.getUserSubscription(userId);
+      res.json(subscription || null);
+    } catch (error) {
+      console.error("Error fetching user subscription:", error);
+      res.status(500).json({ message: "Failed to fetch subscription" });
+    }
+  });
+
+  app.post('/api/subscriptions/subscribe', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const { planId } = req.body;
+      
+      const plans = await storage.getSubscriptionPlans();
+      const plan = plans.find(p => p.id === planId);
+      if (!plan) {
+        return res.status(400).json({ message: "Invalid subscription plan" });
+      }
+
+      const endDate = new Date();
+      if (plan.type === 'weekly') {
+        endDate.setDate(endDate.getDate() + 7);
+      } else {
+        endDate.setMonth(endDate.getMonth() + 1);
+      }
+
+      const subscription = await storage.createUserSubscription({
+        userId,
+        planId,
+        remainingTeas: plan.teaCount,
+        endDate,
+        autoRenew: false,
+        status: 'active',
+      });
+
+      res.json(subscription);
+    } catch (error) {
+      console.error("Error creating subscription:", error);
+      res.status(500).json({ message: "Failed to create subscription" });
+    }
+  });
+
+  // Loyalty routes
+  app.get('/api/loyalty/points', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const points = await storage.getUserLoyaltyPoints(userId);
+      res.json({ points });
+    } catch (error) {
+      console.error("Error fetching loyalty points:", error);
+      res.status(500).json({ message: "Failed to fetch loyalty points" });
+    }
+  });
+
+  app.get('/api/loyalty/history', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const history = await storage.getLoyaltyHistory(userId, limit);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching loyalty history:", error);
+      res.status(500).json({ message: "Failed to fetch loyalty history" });
+    }
+  });
+
+  // Badge routes
+  app.get('/api/badges', async (req, res) => {
+    try {
+      const badges = await storage.getAllBadges();
+      res.json(badges);
+    } catch (error) {
+      console.error("Error fetching badges:", error);
+      res.status(500).json({ message: "Failed to fetch badges" });
+    }
+  });
+
+  app.get('/api/badges/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const userBadges = await storage.getUserBadges(userId);
+      res.json(userBadges);
+    } catch (error) {
+      console.error("Error fetching user badges:", error);
+      res.status(500).json({ message: "Failed to fetch user badges" });
+    }
+  });
+
+  // Social routes
+  app.get('/api/social/moments', async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 20;
+      const moments = await storage.getTeaMoments(limit);
+      res.json(moments);
+    } catch (error) {
+      console.error("Error fetching tea moments:", error);
+      res.status(500).json({ message: "Failed to fetch tea moments" });
+    }
+  });
+
+  app.post('/api/social/moments', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const { title, description, teaType, machineId, imageUrl, isPublic } = req.body;
+      
+      const moment = await storage.createTeaMoment({
+        userId,
+        title,
+        description,
+        teaType,
+        machineId,
+        imageUrl,
+        isPublic: isPublic !== false,
+      });
+
+      res.json(moment);
+    } catch (error) {
+      console.error("Error creating tea moment:", error);
+      res.status(500).json({ message: "Failed to create tea moment" });
+    }
+  });
+
+  app.post('/api/social/moments/:id/like', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const momentId = parseInt(req.params.id);
+      
+      const like = await storage.likeTeaMoment({ userId, momentId });
+      res.json(like);
+    } catch (error) {
+      console.error("Error liking tea moment:", error);
+      res.status(500).json({ message: "Failed to like tea moment" });
+    }
+  });
+
+  // Support routes
+  app.get('/api/support/tickets', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const tickets = await storage.getUserSupportTickets(userId);
+      res.json(tickets);
+    } catch (error) {
+      console.error("Error fetching support tickets:", error);
+      res.status(500).json({ message: "Failed to fetch support tickets" });
+    }
+  });
+
+  app.post('/api/support/tickets', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const { subject, description, category, priority } = req.body;
+      
+      const ticket = await storage.createSupportTicket({
+        userId,
+        subject,
+        description,
+        category,
+        priority: priority || 'medium',
+      });
+
+      res.json(ticket);
+    } catch (error) {
+      console.error("Error creating support ticket:", error);
+      res.status(500).json({ message: "Failed to create support ticket" });
+    }
+  });
+
+  app.get('/api/support/tickets/:id/messages', isAuthenticated, async (req: any, res) => {
+    try {
+      const ticketId = parseInt(req.params.id);
+      const messages = await storage.getSupportMessages(ticketId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching support messages:", error);
+      res.status(500).json({ message: "Failed to fetch support messages" });
+    }
+  });
+
+  app.post('/api/support/tickets/:id/messages', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const ticketId = parseInt(req.params.id);
+      const { message, attachments } = req.body;
+      
+      const newMessage = await storage.createSupportMessage({
+        ticketId,
+        senderId: userId,
+        message,
+        attachments: attachments || [],
+        isFromSupport: false,
+      });
+
+      res.json(newMessage);
+    } catch (error) {
+      console.error("Error creating support message:", error);
+      res.status(500).json({ message: "Failed to create support message" });
+    }
+  });
+
+  // FAQ routes
+  app.get('/api/faq', async (req, res) => {
+    try {
+      const category = req.query.category as string;
+      const articles = await storage.getFaqArticles(category);
+      res.json(articles);
+    } catch (error) {
+      console.error("Error fetching FAQ articles:", error);
+      res.status(500).json({ message: "Failed to fetch FAQ articles" });
+    }
+  });
+
+  app.post('/api/faq/:id/view', async (req, res) => {
+    try {
+      const articleId = parseInt(req.params.id);
+      await storage.incrementFaqViews(articleId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error incrementing FAQ views:", error);
+      res.status(500).json({ message: "Failed to increment FAQ views" });
+    }
+  });
+
+  // Analytics routes for admin
+  app.get('/api/analytics/popular-teas', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const popularTeas = await storage.getPopularTeaTypes();
+      res.json(popularTeas);
+    } catch (error) {
+      console.error("Error fetching popular tea types:", error);
+      res.status(500).json({ message: "Failed to fetch popular tea types" });
+    }
+  });
+
+  app.get('/api/analytics/peak-hours', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const peakHours = await storage.getPeakHours();
+      res.json(peakHours);
+    } catch (error) {
+      console.error("Error fetching peak hours:", error);
+      res.status(500).json({ message: "Failed to fetch peak hours" });
+    }
+  });
+
+  app.get('/api/analytics/machine-performance', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const performance = await storage.getMachinePerformance();
+      res.json(performance);
+    } catch (error) {
+      console.error("Error fetching machine performance:", error);
+      res.status(500).json({ message: "Failed to fetch machine performance" });
+    }
+  });
+
+  app.get('/api/analytics/user-behavior', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const insights = await storage.getUserBehaviorInsights();
+      res.json(insights);
+    } catch (error) {
+      console.error("Error fetching user behavior insights:", error);
+      res.status(500).json({ message: "Failed to fetch user behavior insights" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -574,7 +574,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.session?.user?.id || req.user.claims.sub;
       const tickets = await storage.getUserSupportTickets(userId);
-      res.json(tickets);
+      
+      // Add status update notifications for tickets that were recently updated by admin
+      const enhancedTickets = tickets.map(ticket => ({
+        ...ticket,
+        hasAdminUpdate: ticket.lastUpdatedBy && 
+          new Date(ticket.updatedAt).getTime() > new Date(ticket.createdAt).getTime()
+      }));
+      
+      res.json(enhancedTickets);
     } catch (error) {
       console.error("Error fetching support tickets:", error);
       res.status(500).json({ message: "Failed to fetch support tickets" });

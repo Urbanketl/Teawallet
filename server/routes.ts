@@ -520,15 +520,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Social routes
+  // Social routes (public endpoint for viewing moments)
   app.get('/api/social/moments', async (req, res) => {
     try {
+      console.log("Fetching tea moments...");
       const limit = parseInt(req.query.limit as string) || 20;
       const moments = await storage.getTeaMoments(limit);
+      console.log("Found moments:", moments.length);
       res.json(moments);
     } catch (error) {
       console.error("Error fetching tea moments:", error);
-      res.status(500).json({ message: "Failed to fetch tea moments" });
+      res.status(500).json({ message: "Failed to fetch tea moments", error: error.message });
     }
   });
 

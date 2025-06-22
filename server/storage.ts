@@ -1,22 +1,18 @@
-import {
-  users,
-  rfidCards,
-  transactions,
-  dispensingLogs,
-  teaMachines,
-  type User,
-  type UpsertUser,
-  type RfidCard,
-  type InsertRfidCard,
-  type Transaction,
-  type InsertTransaction,
-  type DispensingLog,
-  type InsertDispensingLog,
-  type TeaMachine,
-  type InsertTeaMachine,
-} from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, sql, gte } from "drizzle-orm";
+import { 
+  users, rfidCards, transactions, dispensingLogs, teaMachines,
+  subscriptionPlans, userSubscriptions, loyaltyPoints, badges, userBadges,
+  referrals, teaMoments, teaMomentLikes, supportTickets, supportMessages, faqArticles,
+  type User, type UpsertUser, type RfidCard, type InsertRfidCard,
+  type Transaction, type InsertTransaction, type DispensingLog, type InsertDispensingLog,
+  type TeaMachine, type InsertTeaMachine, type SubscriptionPlan, type InsertSubscriptionPlan,
+  type UserSubscription, type InsertUserSubscription, type LoyaltyPoint, type InsertLoyaltyPoint,
+  type Badge, type InsertBadge, type UserBadge, type InsertUserBadge,
+  type Referral, type InsertReferral, type TeaMoment, type InsertTeaMoment,
+  type TeaMomentLike, type InsertTeaMomentLike, type SupportTicket, type InsertSupportTicket,
+  type SupportMessage, type InsertSupportMessage, type FaqArticle, type InsertFaqArticle
+} from "@shared/schema";
+import { eq, and, desc, asc, sql, gte } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (mandatory for Replit Auth)
@@ -353,12 +349,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserBadges(userId: string): Promise<(UserBadge & { badge: Badge })[]> {
-    return await db
-      .select()
-      .from(userBadges)
-      .innerJoin(badges, eq(userBadges.badgeId, badges.id))
-      .where(eq(userBadges.userId, userId))
-      .orderBy(desc(userBadges.earnedAt));
+    try {
+      const userBadgeRecords = await db
+        .select()
+        .from(userBadges)
+        .where(eq(userBadges.userId, userId))
+        .orderBy(desc(userBadges.earnedAt));
+
+      const badgesWithDetails = [];
+      for (const userBadge of userBadgeRecords) {
+        const [badge] = await db.select().from(badges).where(eq(badges.id, userBadge.badgeId));
+        if (badge) {
+          badgesWithDetails.push({ ...userBadge, badge });
+        }
+      }
+      
+      return badgesWithDetails as any;
+    } catch (error) {
+      console.error('Error fetching user badges:', error);
+      return [];
+    }
   }
 
   async awardBadge(userBadge: InsertUserBadge): Promise<UserBadge> {
@@ -443,13 +453,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTeaMoments(limit = 20): Promise<(TeaMoment & { user: User; likes: number })[]> {
-    return await db
-      .select()
-      .from(teaMoments)
-      .innerJoin(users, eq(teaMoments.userId, users.id))
-      .where(eq(teaMoments.isPublic, true))
-      .orderBy(desc(teaMoments.createdAt))
-      .limit(limit);
+    try {
+      console.log('Storage: Fetching tea moments...');
+      const moments = await db
+        .select()
+        .from(teaMoments)
+        .where(eq(teaMoments.isPublic, true))
+        .orderBy(desc(teaMoments.createdAt))
+        .limit(limit);
+
+      console.log('Storage: Found moments:', moments.length);
+      const momentsWithUsers = [];
+      for (const moment of moments) {
+        const [user] = await db.select().from(users).where(eq(users.id, moment.userId));
+        momentsWithUsers.push({
+          ...moment,
+          user: user || { id: moment.userId, firstName: 'Unknown', lastName: 'User', profileImageUrl: null }
+        });
+      }
+      
+      console.log('Storage: Returning moments with users:', momentsWithUsers.length);
+      return momentsWithUsers as any;
+    } catch (error) {
+      console.error('Storage error fetching tea moments:', error);
+      throw error;
+    }
   }
 
   async getUserTeaMoments(userId: string): Promise<TeaMoment[]> {
@@ -504,12 +532,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getSupportMessages(ticketId: number): Promise<(SupportMessage & { sender: User })[]> {
-    return await db
-      .select()
-      .from(supportMessages)
-      .innerJoin(users, eq(supportMessages.senderId, users.id))
-      .where(eq(supportMessages.ticketId, ticketId))
-      .orderBy(asc(supportMessages.createdAt));
+    try {
+      const messages = await db
+        .select()
+        .from(supportMessages)
+        .where(eq(supportMessages.ticketId, ticketId))
+        .orderBy(asc(supportMessages.createdAt));
+
+      const messagesWithSenders = [];
+      for (const message of messages) {
+        const [sender] = await db.select().from(users).where(eq(users.id, message.senderId));
+        messagesWithSenders.push({
+          ...message,
+          sender: sender || { id: message.senderId, firstName: 'Unknown', lastName: 'User', email: '' }
+        });
+      }
+      
+      return messagesWithSenders as any;
+    } catch (error) {
+      console.error('Error fetching support messages:', error);
+      return [];
+    }
   }
 
   // FAQ operations

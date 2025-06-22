@@ -51,9 +51,13 @@ export default function SocialPage() {
 
   const createMomentMutation = useMutation({
     mutationFn: async (momentData: any) => {
+      console.log('Sending moment data:', momentData);
       return apiRequest('/api/social/moments', {
         method: 'POST',
         body: JSON.stringify(momentData),
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
     },
     onSuccess: () => {
@@ -70,9 +74,10 @@ export default function SocialPage() {
       });
     },
     onError: (error: any) => {
+      console.error('Create moment error:', error);
       toast({ 
         title: "Error", 
-        description: error.message || "Failed to share tea moment",
+        description: error.message || "Failed to share tea moment. Please try again.",
         variant: "destructive" 
       });
     },
@@ -102,15 +107,23 @@ export default function SocialPage() {
   ];
 
   const handleCreateMoment = () => {
-    if (!newMoment.title || !newMoment.teaType) {
+    if (!newMoment.title.trim() || !newMoment.teaType) {
       toast({
         title: "Error",
-        description: "Please fill in required fields",
+        description: "Please fill in title and tea type",
         variant: "destructive"
       });
       return;
     }
-    createMomentMutation.mutate(newMoment);
+    
+    console.log('Creating moment:', newMoment);
+    createMomentMutation.mutate({
+      ...newMoment,
+      title: newMoment.title.trim(),
+      description: newMoment.description.trim() || null,
+      machineId: newMoment.machineId.trim() || null,
+      imageUrl: newMoment.imageUrl.trim() || null,
+    });
   };
 
   return (

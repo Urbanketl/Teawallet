@@ -479,15 +479,22 @@ export default function SupportPage() {
                             className={`flex ${message.isFromSupport ? 'justify-start' : 'justify-end'}`}
                           >
                             <div 
-                              className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                              className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg shadow-sm ${
                                 message.isFromSupport 
-                                  ? 'bg-gray-100 text-gray-900' 
+                                  ? 'bg-blue-50 border border-blue-200 text-blue-900' 
                                   : 'bg-tea-green text-white'
                               }`}
                             >
+                              <div className="flex items-center space-x-2 mb-1">
+                                <span className={`text-xs font-medium ${
+                                  message.isFromSupport ? 'text-blue-600' : 'text-tea-green-100'
+                                }`}>
+                                  {message.isFromSupport ? '🎧 Support' : '👤 You'}
+                                </span>
+                              </div>
                               <p className="text-sm">{message.message}</p>
                               <p className={`text-xs mt-1 ${
-                                message.isFromSupport ? 'text-gray-500' : 'text-tea-green-100'
+                                message.isFromSupport ? 'text-blue-500' : 'text-tea-green-100'
                               }`}>
                                 {message.sender ? `${message.sender.firstName} ${message.sender.lastName} - ` : ''}
                                 {format(new Date(message.createdAt), 'MMM dd, h:mm a')}

@@ -100,6 +100,8 @@ export default function AdminPage() {
 
   const [statusUpdateDialogs, setStatusUpdateDialogs] = useState<{ [key: number]: boolean }>({});
   const [statusUpdateData, setStatusUpdateData] = useState<{ [key: number]: { status: string; comment: string } }>({});
+  const [historyDialogs, setHistoryDialogs] = useState<{ [key: number]: boolean }>({});
+  const [ticketHistories, setTicketHistories] = useState<{ [key: number]: any[] }>({});
 
   const updateTicketMutation = useMutation({
     mutationFn: async ({ ticketId, status, assignedTo, comment }: { ticketId: number; status?: string; assignedTo?: string; comment?: string }) => {
@@ -147,6 +149,31 @@ export default function AdminPage() {
       status: data.status,
       comment: data.comment
     });
+  };
+
+  const fetchTicketHistory = async (ticketId: number) => {
+    try {
+      const response = await fetch(`/api/admin/support/tickets/${ticketId}/history`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const history = await response.json();
+        setTicketHistories(prev => ({ ...prev, [ticketId]: history }));
+        setHistoryDialogs(prev => ({ ...prev, [ticketId]: true }));
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to fetch ticket history",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error", 
+        description: "Failed to fetch ticket history",
+        variant: "destructive"
+      });
+    }
   };
 
   const getStatusIcon = (status: string) => {
@@ -617,16 +644,53 @@ export default function AdminPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            // Show ticket history - you can implement this as a modal
-                            toast({
-                              title: "Info",
-                              description: "Status history feature can be added here"
-                            });
-                          }}
+                          onClick={() => fetchTicketHistory(ticket.id)}
                         >
                           View History
                         </Button>
+
+                        {/* Ticket History Dialog */}
+                        <Dialog 
+                          open={historyDialogs[ticket.id] || false} 
+                          onOpenChange={(open) => setHistoryDialogs(prev => ({ ...prev, [ticket.id]: open }))}
+                        >
+                          <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>Ticket Status History - #{ticket.id}</DialogTitle>
+                              <DialogDescription>
+                                View all status changes and admin comments for this ticket.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="max-h-96 overflow-y-auto space-y-4">
+                              {ticketHistories[ticket.id]?.length > 0 ? (
+                                ticketHistories[ticket.id].map((history: any, index: number) => (
+                                  <div key={index} className="border-l-4 border-tea-green pl-4 py-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div className="flex items-center space-x-2">
+                                        <Badge variant="outline" className="text-xs">
+                                          {history.oldStatus} → {history.newStatus}
+                                        </Badge>
+                                        <span className="text-sm font-medium">
+                                          {history.updater?.firstName} {history.updater?.lastName}
+                                        </span>
+                                      </div>
+                                      <span className="text-xs text-gray-500">
+                                        {format(new Date(history.createdAt), 'MMM dd, yyyy h:mm a')}
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded">
+                                      {history.comment}
+                                    </p>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="text-center py-8 text-gray-500">
+                                  No status change history found for this ticket.
+                                </div>
+                              )}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                       </div>
                     </div>
                   </CardContent>

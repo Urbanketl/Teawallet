@@ -6,11 +6,11 @@ import {
   type User, type UpsertUser, type RfidCard, type InsertRfidCard,
   type Transaction, type InsertTransaction, type DispensingLog, type InsertDispensingLog,
   type TeaMachine, type InsertTeaMachine, type SubscriptionPlan, type InsertSubscriptionPlan,
-  type UserSubscription, type InsertUserSubscription, type LoyaltyPoint, type InsertLoyaltyPoint,
-  type Badge, type InsertBadge, type UserBadge, type InsertUserBadge,
+  type UserSubscription, type InsertUserSubscription,
   type Referral, type InsertReferral, type TeaMoment, type InsertTeaMoment,
   type TeaMomentLike, type InsertTeaMomentLike, type SupportTicket, type InsertSupportTicket,
-  type SupportMessage, type InsertSupportMessage, type FaqArticle, type InsertFaqArticle
+  type SupportMessage, type InsertSupportMessage, type FaqArticle, type InsertFaqArticle,
+  type TicketStatusHistory, type InsertTicketStatusHistory
 } from "@shared/schema";
 import { eq, and, desc, asc, sql, gte } from "drizzle-orm";
 

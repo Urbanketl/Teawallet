@@ -90,10 +90,17 @@ export default function AdminPage() {
     retry: false,
   });
 
-  const { data: supportTickets = [], isLoading: ticketsLoading } = useQuery({
+  const { data: supportTickets = [], isLoading: ticketsLoading, refetch: refetchTickets } = useQuery({
     queryKey: ["/api/admin/support/tickets"],
     enabled: isAuthenticated && user?.isAdmin,
     retry: false,
+    refetchInterval: 5000,
+  });
+
+  const { data: ticketMessages = [], refetch: refetchTicketMessages } = useQuery({
+    queryKey: [`/api/support/tickets/${selectedTicketId}/messages`],
+    enabled: !!selectedTicketId,
+    refetchInterval: selectedTicketId ? 3000 : false,
   });
 
   const queryClient = useQueryClient();
@@ -102,6 +109,8 @@ export default function AdminPage() {
   const [statusUpdateData, setStatusUpdateData] = useState<{ [key: number]: { status: string; comment: string } }>({});
   const [historyDialogs, setHistoryDialogs] = useState<{ [key: number]: boolean }>({});
   const [ticketHistories, setTicketHistories] = useState<{ [key: number]: any[] }>({});
+  const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
+  const [newMessage, setNewMessage] = useState('');
 
   const updateTicketMutation = useMutation({
     mutationFn: async ({ ticketId, status, assignedTo, comment }: { ticketId: number; status?: string; assignedTo?: string; comment?: string }) => {
@@ -117,6 +126,31 @@ export default function AdminPage() {
       toast({ 
         title: "Error", 
         description: error.message || "Failed to update ticket",
+        variant: "destructive" 
+      });
+    },
+  });
+
+  const sendMessageMutation = useMutation({
+    mutationFn: async (messageData: any) => {
+      if (!selectedTicketId) {
+        throw new Error('No ticket selected');
+      }
+      return apiRequest('POST', `/api/support/tickets/${selectedTicketId}/messages`, {
+        ...messageData,
+        isFromSupport: true
+      });
+    },
+    onSuccess: () => {
+      refetchTicketMessages();
+      refetchTickets();
+      setNewMessage('');
+      toast({ title: "Success", description: "Message sent successfully!" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || 'Failed to send message',
         variant: "destructive" 
       });
     },
@@ -693,6 +727,70 @@ export default function AdminPage() {
                         </Dialog>
                       </div>
                     </div>
+
+                    {/* Conversation Panel */}
+                    {selectedTicketId === ticket.id && (
+                      <div className="mt-6 border-t pt-6">
+                        <h4 className="font-semibold mb-4">Conversation</h4>
+                        <Card className="h-96 flex flex-col">
+                          <div className="flex-1 p-4 overflow-y-auto space-y-4">
+                            {ticketMessages.length === 0 ? (
+                              <div className="text-center text-gray-500 py-8">
+                                <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                                <p>No messages yet. Start the conversation!</p>
+                              </div>
+                            ) : (
+                              ticketMessages.map((message: any) => (
+                                <div 
+                                  key={message.id}
+                                  className={`flex ${message.isFromSupport ? 'justify-start' : 'justify-end'}`}
+                                >
+                                  <div 
+                                    className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                                      message.isFromSupport 
+                                        ? 'bg-blue-100 text-blue-900' 
+                                        : 'bg-gray-100 text-gray-900'
+                                    }`}
+                                  >
+                                    <p className="text-sm">{message.message}</p>
+                                    <p className={`text-xs mt-1 ${
+                                      message.isFromSupport ? 'text-blue-600' : 'text-gray-500'
+                                    }`}>
+                                      {message.sender ? `${message.sender.firstName} ${message.sender.lastName} - ` : ''}
+                                      {format(new Date(message.createdAt), 'MMM dd, h:mm a')}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                          <div className="p-4 border-t">
+                            <div className="flex space-x-2">
+                              <Input
+                                placeholder="Type your response..."
+                                value={newMessage}
+                                onChange={(e) => setNewMessage(e.target.value)}
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter' && newMessage.trim()) {
+                                    sendMessageMutation.mutate({ message: newMessage });
+                                  }
+                                }}
+                              />
+                              <Button
+                                onClick={() => {
+                                  if (newMessage.trim()) {
+                                    sendMessageMutation.mutate({ message: newMessage });
+                                  }
+                                }}
+                                disabled={!newMessage.trim() || sendMessageMutation.isPending}
+                              >
+                                Send
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))

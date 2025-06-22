@@ -605,11 +605,14 @@ export class DatabaseStorage implements IStorage {
 
   async getSupportMessages(ticketId: number): Promise<(SupportMessage & { sender: User })[]> {
     try {
+      console.log('Fetching messages for ticket:', ticketId);
       const messages = await db
         .select()
         .from(supportMessages)
         .where(eq(supportMessages.ticketId, ticketId))
         .orderBy(asc(supportMessages.createdAt));
+
+      console.log('Raw messages from DB:', messages);
 
       const messagesWithSenders = [];
       for (const message of messages) {
@@ -620,6 +623,7 @@ export class DatabaseStorage implements IStorage {
         });
       }
       
+      console.log('Messages with senders:', messagesWithSenders);
       return messagesWithSenders as any;
     } catch (error) {
       console.error('Error fetching support messages:', error);

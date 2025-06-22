@@ -77,7 +77,9 @@ export interface IStorage {
   // Support operations
   createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket>;
   getUserSupportTickets(userId: string): Promise<SupportTicket[]>;
+  getAllSupportTickets(): Promise<(SupportTicket & { user: User })[]>;
   getSupportTicket(ticketId: number): Promise<SupportTicket | undefined>;
+  updateSupportTicket(ticketId: number, updates: { status?: string; assignedTo?: string }): Promise<SupportTicket>;
   createSupportMessage(message: InsertSupportMessage): Promise<SupportMessage>;
   getSupportMessages(ticketId: number): Promise<(SupportMessage & { sender: User })[]>;
   
@@ -519,6 +521,37 @@ export class DatabaseStorage implements IStorage {
       .from(supportTickets)
       .where(eq(supportTickets.userId, userId))
       .orderBy(desc(supportTickets.createdAt));
+  }
+
+  async getAllSupportTickets(): Promise<(SupportTicket & { user: User })[]> {
+    try {
+      const ticketsWithUsers = await db
+        .select()
+        .from(supportTickets)
+        .leftJoin(users, eq(supportTickets.userId, users.id))
+        .orderBy(desc(supportTickets.createdAt));
+
+      return ticketsWithUsers.map(({ support_tickets, users: user }) => ({
+        ...support_tickets,
+        user: user || { id: '', firstName: 'Unknown', lastName: 'User', email: '' }
+      })) as any;
+    } catch (error) {
+      console.error('Error fetching all support tickets:', error);
+      return [];
+    }
+  }
+
+  async updateSupportTicket(ticketId: number, updates: { status?: string; assignedTo?: string }): Promise<SupportTicket> {
+    const [updatedTicket] = await db
+      .update(supportTickets)
+      .set({
+        ...updates,
+        updatedAt: new Date()
+      })
+      .where(eq(supportTickets.id, ticketId))
+      .returning();
+    
+    return updatedTicket;
   }
 
   async getSupportTicket(ticketId: number): Promise<SupportTicket | undefined> {

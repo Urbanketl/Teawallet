@@ -581,6 +581,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin support routes
+  app.get('/api/admin/support/tickets', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const tickets = await storage.getAllSupportTickets();
+      res.json(tickets);
+    } catch (error) {
+      console.error("Error fetching all support tickets:", error);
+      res.status(500).json({ message: "Failed to fetch support tickets" });
+    }
+  });
+
+  app.patch('/api/admin/support/tickets/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const ticketId = parseInt(req.params.id);
+      const { status, assignedTo } = req.body;
+      
+      const updatedTicket = await storage.updateSupportTicket(ticketId, { status, assignedTo });
+      res.json(updatedTicket);
+    } catch (error) {
+      console.error("Error updating support ticket:", error);
+      res.status(500).json({ message: "Failed to update support ticket" });
+    }
+  });
+
   app.post('/api/support/tickets', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.session?.user?.id || req.user.claims.sub;

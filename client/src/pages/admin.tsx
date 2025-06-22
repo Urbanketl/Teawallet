@@ -9,7 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { useQuery } from "@tanstack/react-query";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   Users, 
   IndianRupee, 
@@ -18,7 +21,11 @@ import {
   Download, 
   Settings,
   UserCheck,
-  Activity
+  Activity,
+  MessageCircle,
+  Clock,
+  AlertCircle,
+  CheckCircle
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -81,6 +88,74 @@ export default function AdminPage() {
     enabled: isAuthenticated && user?.isAdmin,
     retry: false,
   });
+
+  const { data: supportTickets = [], isLoading: ticketsLoading } = useQuery({
+    queryKey: ["/api/admin/support/tickets"],
+    enabled: isAuthenticated && user?.isAdmin,
+    retry: false,
+  });
+
+  const queryClient = useQueryClient();
+
+  const updateTicketMutation = useMutation({
+    mutationFn: async ({ ticketId, status, assignedTo }: { ticketId: number; status?: string; assignedTo?: string }) => {
+      return apiRequest('PATCH', `/api/admin/support/tickets/${ticketId}`, { status, assignedTo });
+    },
+    onSuccess: () => {
+      toast({ title: "Success", description: "Ticket updated successfully!" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/support/tickets"] });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to update ticket",
+        variant: "destructive" 
+      });
+    },
+  });
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'open':
+        return <Clock className="w-4 h-4 text-orange-500" />;
+      case 'in_progress':
+        return <AlertCircle className="w-4 h-4 text-blue-500" />;
+      case 'resolved':
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'closed':
+        return <CheckCircle className="w-4 h-4 text-gray-500" />;
+      default:
+        return <Clock className="w-4 h-4 text-gray-500" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'open':
+        return 'bg-orange-100 text-orange-800';
+      case 'in_progress':
+        return 'bg-blue-100 text-blue-800';
+      case 'resolved':
+        return 'bg-green-100 text-green-800';
+      case 'closed':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high':
+        return 'bg-red-100 text-red-800';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'low':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   if (isLoading) {
     return <div className="min-h-screen bg-neutral-warm flex items-center justify-center">Loading...</div>;
@@ -370,6 +445,95 @@ export default function AdminPage() {
               )}
             </CardContent>
           </Card>
+        </div>
+
+        {/* Support Tickets Section */}
+        <div className="mt-12">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-semibold text-gray-900">Support Tickets</h2>
+            <Badge variant="secondary" className="bg-tea-green/10 text-tea-green">
+              {supportTickets.length} Total Tickets
+            </Badge>
+          </div>
+
+          <div className="grid gap-4">
+            {ticketsLoading ? (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  Loading support tickets...
+                </CardContent>
+              </Card>
+            ) : supportTickets.length === 0 ? (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No support tickets found</p>
+                </CardContent>
+              </Card>
+            ) : (
+              supportTickets.map((ticket: any) => (
+                <Card key={ticket.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <h3 className="font-semibold text-lg">{ticket.subject}</h3>
+                          <Badge className={`${getStatusColor(ticket.status)} border-0`}>
+                            <div className="flex items-center space-x-1">
+                              {getStatusIcon(ticket.status)}
+                              <span className="capitalize">{ticket.status}</span>
+                            </div>
+                          </Badge>
+                          <Badge className={`${getPriorityColor(ticket.priority)} border-0`}>
+                            {ticket.priority} Priority
+                          </Badge>
+                        </div>
+                        <p className="text-gray-600 mb-3 line-clamp-2">{ticket.description}</p>
+                        <div className="flex items-center space-x-4 text-sm text-gray-500">
+                          <span>From: {ticket.user?.firstName} {ticket.user?.lastName}</span>
+                          <span>•</span>
+                          <span>{format(new Date(ticket.createdAt), 'MMM dd, yyyy h:mm a')}</span>
+                          <span>•</span>
+                          <span>#{ticket.id}</span>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Select
+                          value={ticket.status}
+                          onValueChange={(status) => 
+                            updateTicketMutation.mutate({ ticketId: ticket.id, status })
+                          }
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="open">Open</SelectItem>
+                            <SelectItem value="in_progress">In Progress</SelectItem>
+                            <SelectItem value="resolved">Resolved</SelectItem>
+                            <SelectItem value="closed">Closed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => 
+                            updateTicketMutation.mutate({ 
+                              ticketId: ticket.id, 
+                              status: 'closed' 
+                            })
+                          }
+                          disabled={ticket.status === 'closed' || updateTicketMutation.isPending}
+                        >
+                          Close Ticket
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
         </div>
       </main>
     </div>

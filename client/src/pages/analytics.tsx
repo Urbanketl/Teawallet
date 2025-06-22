@@ -129,7 +129,7 @@ export default function AnalyticsPage() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={popularTeas}>
+                <BarChart data={popularTeas.map((item: any) => ({ teaType: item.teaType, count: Number(item.count) }))}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="teaType" angle={-45} textAnchor="end" height={80} />
                   <YAxis />
@@ -147,7 +147,7 @@ export default function AnalyticsPage() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={peakHours}>
+                <LineChart data={peakHours.map((item: any) => ({ hour: `${item.hour}:00`, count: Number(item.count) }))}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="hour" />
                   <YAxis />
@@ -221,13 +221,13 @@ export default function AnalyticsPage() {
                 </ResponsiveContainer>
                 <div className="space-y-3">
                   <h4 className="font-semibold">Top Preferences</h4>
-                  {userBehavior.topTeaTypes.slice(0, 5).map((tea: string, index: number) => (
-                    <div key={tea} className="flex items-center space-x-3">
+                  {popularTeas.slice(0, 5).map((tea: any, index: number) => (
+                    <div key={tea.teaType} className="flex items-center space-x-3">
                       <div 
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: COLORS[index % COLORS.length] }}
                       />
-                      <span className="text-sm">{tea}</span>
+                      <span className="text-sm">{tea.teaType}</span>
                     </div>
                   ))}
                 </div>

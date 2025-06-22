@@ -99,6 +99,8 @@ export default function AdminPage() {
   const [ticketHistories, setTicketHistories] = useState<{ [key: number]: any[] }>({});
   const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
   const [newMessage, setNewMessage] = useState('');
+  const [dateFilter, setDateFilter] = useState('all');
+  const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
 
   const { data: supportTickets = [], isLoading: ticketsLoading, refetch: refetchTickets } = useQuery({
     queryKey: ["/api/admin/support/tickets"],
@@ -241,6 +243,40 @@ export default function AdminPage() {
       default:
         return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const filterTicketsByDate = (tickets: any[]) => {
+    if (dateFilter === 'all') return tickets;
+    
+    const now = new Date();
+    let startDate: Date;
+    
+    switch (dateFilter) {
+      case 'today':
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        break;
+      case 'week':
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case 'month':
+        startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+        break;
+      case 'year':
+        startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+        break;
+      case 'custom':
+        if (!customDateRange.start) return tickets;
+        startDate = new Date(customDateRange.start);
+        const endDate = customDateRange.end ? new Date(customDateRange.end) : now;
+        return tickets.filter(ticket => {
+          const ticketDate = new Date(ticket.createdAt);
+          return ticketDate >= startDate && ticketDate <= endDate;
+        });
+      default:
+        return tickets;
+    }
+    
+    return tickets.filter(ticket => new Date(ticket.createdAt) >= startDate);
   };
 
   const getPriorityColor = (priority: string) => {
@@ -546,31 +582,100 @@ export default function AdminPage() {
           </Card>
         </div>
 
-        {/* Support Tickets Section */}
-        <div className="mt-12">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-semibold text-gray-900">Support Tickets</h2>
-            <Badge variant="secondary" className="bg-tea-green/10 text-tea-green">
-              {supportTickets.length} Total Tickets
-            </Badge>
-          </div>
+        {/* Tabs Interface */}
+        <Tabs defaultValue="overview" className="space-y-6 mt-12">
+          <TabsList className="bg-white shadow-sm">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="machines">Machines</TabsTrigger>
+            <TabsTrigger value="support">Support Tickets</TabsTrigger>
+          </TabsList>
 
-          <div className="grid gap-4">
-            {ticketsLoading ? (
-              <Card>
-                <CardContent className="p-6 text-center">
-                  Loading support tickets...
-                </CardContent>
+          <TabsContent value="overview">
+            <div className="text-center py-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Overview Dashboard</h3>
+              <p className="text-gray-600">System statistics and insights displayed above</p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="users">
+            <div className="text-center py-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">User Management</h3>
+              <p className="text-gray-600">User data displayed in the cards above</p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="machines">
+            <div className="text-center py-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Machine Management</h3>
+              <p className="text-gray-600">Machine status displayed in the cards above</p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="support" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">Support Tickets</h2>
+              <div className="flex items-center space-x-4">
+                <Select value={dateFilter} onValueChange={setDateFilter}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Filter by date" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="week">Last Week</SelectItem>
+                    <SelectItem value="month">Last Month</SelectItem>
+                    <SelectItem value="year">Last Year</SelectItem>
+                    <SelectItem value="custom">Custom Range</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Badge variant="secondary" className="bg-tea-green/10 text-tea-green">
+                  {filterTicketsByDate(supportTickets).length} / {supportTickets.length} Tickets
+                </Badge>
+              </div>
+            </div>
+
+            {dateFilter === 'custom' && (
+              <Card className="p-4">
+                <div className="flex items-center space-x-4">
+                  <div className="flex-1">
+                    <Label htmlFor="start-date">Start Date</Label>
+                    <Input
+                      id="start-date"
+                      type="date"
+                      value={customDateRange.start}
+                      onChange={(e) => setCustomDateRange(prev => ({ ...prev, start: e.target.value }))}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Label htmlFor="end-date">End Date</Label>
+                    <Input
+                      id="end-date"
+                      type="date"
+                      value={customDateRange.end}
+                      onChange={(e) => setCustomDateRange(prev => ({ ...prev, end: e.target.value }))}
+                    />
+                  </div>
+                </div>
               </Card>
-            ) : supportTickets.length === 0 ? (
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">No support tickets found</p>
-                </CardContent>
-              </Card>
-            ) : (
-              supportTickets.map((ticket: any) => (
+            )}
+
+            <div className="grid gap-4">
+              {ticketsLoading ? (
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    Loading support tickets...
+                  </CardContent>
+                </Card>
+              ) : filterTicketsByDate(supportTickets).length === 0 ? (
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500">No support tickets found for the selected date range</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                filterTicketsByDate(supportTickets).map((ticket: any) => (
                 <Card key={ticket.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between mb-4">
@@ -810,11 +915,12 @@ export default function AdminPage() {
                     )}
                   </CardContent>
                 </Card>
-              ))
-            )}
-          </div>
-        </div>
-      </main>
-    </div>
-  );
-}
+                  ))
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </main>
+      </div>
+    );
+  }

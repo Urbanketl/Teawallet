@@ -5,7 +5,8 @@ import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -97,13 +98,18 @@ export default function AdminPage() {
 
   const queryClient = useQueryClient();
 
+  const [statusUpdateDialogs, setStatusUpdateDialogs] = useState<{ [key: number]: boolean }>({});
+  const [statusUpdateData, setStatusUpdateData] = useState<{ [key: number]: { status: string; comment: string } }>({});
+
   const updateTicketMutation = useMutation({
-    mutationFn: async ({ ticketId, status, assignedTo }: { ticketId: number; status?: string; assignedTo?: string }) => {
-      return apiRequest('PATCH', `/api/admin/support/tickets/${ticketId}`, { status, assignedTo });
+    mutationFn: async ({ ticketId, status, assignedTo, comment }: { ticketId: number; status?: string; assignedTo?: string; comment?: string }) => {
+      return apiRequest('PATCH', `/api/admin/support/tickets/${ticketId}`, { status, assignedTo, comment });
     },
     onSuccess: () => {
       toast({ title: "Success", description: "Ticket updated successfully!" });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/support/tickets"] });
+      setStatusUpdateDialogs({});
+      setStatusUpdateData({});
     },
     onError: (error: any) => {
       toast({ 
@@ -113,6 +119,35 @@ export default function AdminPage() {
       });
     },
   });
+
+  const handleStatusChange = (ticketId: number, newStatus: string) => {
+    setStatusUpdateData({
+      ...statusUpdateData,
+      [ticketId]: { status: newStatus, comment: '' }
+    });
+    setStatusUpdateDialogs({
+      ...statusUpdateDialogs,
+      [ticketId]: true
+    });
+  };
+
+  const confirmStatusUpdate = (ticketId: number) => {
+    const data = statusUpdateData[ticketId];
+    if (!data?.comment.trim()) {
+      toast({
+        title: "Error",
+        description: "Comment is required when changing ticket status",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    updateTicketMutation.mutate({
+      ticketId,
+      status: data.status,
+      comment: data.comment
+    });
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -500,9 +535,7 @@ export default function AdminPage() {
                       <div className="flex space-x-2">
                         <Select
                           value={ticket.status}
-                          onValueChange={(status) => 
-                            updateTicketMutation.mutate({ ticketId: ticket.id, status })
-                          }
+                          onValueChange={(status) => handleStatusChange(ticket.id, status)}
                         >
                           <SelectTrigger className="w-32">
                             <SelectValue />
@@ -514,15 +547,69 @@ export default function AdminPage() {
                             <SelectItem value="closed">Closed</SelectItem>
                           </SelectContent>
                         </Select>
+
+                        {/* Status Update Dialog */}
+                        <Dialog 
+                          open={statusUpdateDialogs[ticket.id] || false} 
+                          onOpenChange={(open) => setStatusUpdateDialogs({
+                            ...statusUpdateDialogs,
+                            [ticket.id]: open
+                          })}
+                        >
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Update Ticket Status</DialogTitle>
+                              <DialogDescription>
+                                Please provide a comment explaining the status change.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div>
+                                <Label>Status Change</Label>
+                                <p className="text-sm text-gray-600">
+                                  {ticket.status} → {statusUpdateData[ticket.id]?.status}
+                                </p>
+                              </div>
+                              <div>
+                                <Label htmlFor={`comment-${ticket.id}`}>Comment *</Label>
+                                <Textarea
+                                  id={`comment-${ticket.id}`}
+                                  placeholder="Enter reason for status change..."
+                                  value={statusUpdateData[ticket.id]?.comment || ''}
+                                  onChange={(e) => setStatusUpdateData({
+                                    ...statusUpdateData,
+                                    [ticket.id]: {
+                                      ...statusUpdateData[ticket.id],
+                                      comment: e.target.value
+                                    }
+                                  })}
+                                  rows={3}
+                                />
+                              </div>
+                              <div className="flex justify-end space-x-2">
+                                <Button
+                                  variant="outline"
+                                  onClick={() => setStatusUpdateDialogs({
+                                    ...statusUpdateDialogs,
+                                    [ticket.id]: false
+                                  })}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  onClick={() => confirmStatusUpdate(ticket.id)}
+                                  disabled={updateTicketMutation.isPending}
+                                >
+                                  {updateTicketMutation.isPending ? "Updating..." : "Update Status"}
+                                </Button>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => 
-                            updateTicketMutation.mutate({ 
-                              ticketId: ticket.id, 
-                              status: 'closed' 
-                            })
-                          }
+                          onClick={() => handleStatusChange(ticket.id, 'closed')}
                           disabled={ticket.status === 'closed' || updateTicketMutation.isPending}
                         >
                           Close Ticket

@@ -609,13 +609,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const ticketId = parseInt(req.params.id);
-      const { status, assignedTo } = req.body;
+      const { status, assignedTo, comment } = req.body;
       
-      const updatedTicket = await storage.updateSupportTicket(ticketId, { status, assignedTo });
+      // If status is being changed, comment is required
+      if (status && !comment) {
+        return res.status(400).json({ message: "Comment is required when changing ticket status" });
+      }
+      
+      const updatedTicket = await storage.updateSupportTicket(ticketId, { 
+        status, 
+        assignedTo, 
+        comment,
+        updatedBy: userId 
+      });
       res.json(updatedTicket);
     } catch (error) {
       console.error("Error updating support ticket:", error);
       res.status(500).json({ message: "Failed to update support ticket" });
+    }
+  });
+
+  app.get('/api/admin/support/tickets/:id/history', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const ticketId = parseInt(req.params.id);
+      const history = await storage.getTicketStatusHistory(ticketId);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching ticket history:", error);
+      res.status(500).json({ message: "Failed to fetch ticket history" });
     }
   });
 

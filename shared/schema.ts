@@ -198,8 +198,19 @@ export const supportTickets = pgTable("support_tickets", {
   priority: varchar("priority").default("medium"), // 'low', 'medium', 'high'
   status: varchar("status").default("open"), // 'open', 'in_progress', 'resolved', 'closed'
   assignedTo: varchar("assigned_to"),
+  lastUpdatedBy: varchar("last_updated_by"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const ticketStatusHistory = pgTable("ticket_status_history", {
+  id: serial("id").primaryKey(),
+  ticketId: integer("ticket_id").notNull().references(() => supportTickets.id),
+  oldStatus: varchar("old_status"),
+  newStatus: varchar("new_status").notNull(),
+  comment: text("comment").notNull(),
+  updatedBy: varchar("updated_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Support Messages
@@ -319,6 +330,11 @@ export const insertSupportTicketSchema = createInsertSchema(supportTickets).omit
   updatedAt: true,
 });
 
+export const insertTicketStatusHistorySchema = createInsertSchema(ticketStatusHistory).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertSupportMessageSchema = createInsertSchema(supportMessages).omit({
   id: true,
   createdAt: true,
@@ -359,5 +375,7 @@ export type SupportTicket = typeof supportTickets.$inferSelect;
 export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
 export type SupportMessage = typeof supportMessages.$inferSelect;
 export type InsertSupportMessage = z.infer<typeof insertSupportMessageSchema>;
+export type TicketStatusHistory = typeof ticketStatusHistory.$inferSelect;
+export type InsertTicketStatusHistory = z.infer<typeof insertTicketStatusHistorySchema>;
 export type FaqArticle = typeof faqArticles.$inferSelect;
 export type InsertFaqArticle = z.infer<typeof insertFaqArticleSchema>;

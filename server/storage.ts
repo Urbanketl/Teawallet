@@ -70,7 +70,8 @@ export interface IStorage {
   getUserSupportTickets(userId: string): Promise<SupportTicket[]>;
   getAllSupportTickets(): Promise<(SupportTicket & { user: User })[]>;
   getSupportTicket(ticketId: number): Promise<SupportTicket | undefined>;
-  updateSupportTicket(ticketId: number, updates: { status?: string; assignedTo?: string }): Promise<SupportTicket>;
+  updateSupportTicket(ticketId: number, updates: { status?: string; assignedTo?: string; comment?: string; updatedBy?: string }): Promise<SupportTicket>;
+  getTicketStatusHistory(ticketId: number): Promise<(TicketStatusHistory & { updater: User })[]>;
   createSupportMessage(message: InsertSupportMessage): Promise<SupportMessage>;
   getSupportMessages(ticketId: number): Promise<(SupportMessage & { sender: User })[]>;
   
@@ -532,17 +533,57 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateSupportTicket(ticketId: number, updates: { status?: string; assignedTo?: string }): Promise<SupportTicket> {
+  async updateSupportTicket(ticketId: number, updates: { status?: string; assignedTo?: string; comment?: string; updatedBy?: string }): Promise<SupportTicket> {
+    // Get current ticket to record old status
+    const [currentTicket] = await db.select().from(supportTickets).where(eq(supportTickets.id, ticketId));
+    
+    if (!currentTicket) {
+      throw new Error('Ticket not found');
+    }
+
+    // Update the ticket
     const [updatedTicket] = await db
       .update(supportTickets)
       .set({
-        ...updates,
+        status: updates.status,
+        assignedTo: updates.assignedTo,
+        lastUpdatedBy: updates.updatedBy,
         updatedAt: new Date()
       })
       .where(eq(supportTickets.id, ticketId))
       .returning();
+
+    // Record status change history if status changed and comment provided
+    if (updates.status && updates.status !== currentTicket.status && updates.comment && updates.updatedBy) {
+      await db.insert(ticketStatusHistory).values({
+        ticketId,
+        oldStatus: currentTicket.status,
+        newStatus: updates.status,
+        comment: updates.comment,
+        updatedBy: updates.updatedBy,
+      });
+    }
     
     return updatedTicket;
+  }
+
+  async getTicketStatusHistory(ticketId: number): Promise<(TicketStatusHistory & { updater: User })[]> {
+    try {
+      const historyWithUsers = await db
+        .select()
+        .from(ticketStatusHistory)
+        .leftJoin(users, eq(ticketStatusHistory.updatedBy, users.id))
+        .where(eq(ticketStatusHistory.ticketId, ticketId))
+        .orderBy(desc(ticketStatusHistory.createdAt));
+
+      return historyWithUsers.map(({ ticket_status_history, users: user }) => ({
+        ...ticket_status_history,
+        updater: user || { id: '', firstName: 'Unknown', lastName: 'Admin', email: '' }
+      })) as any;
+    } catch (error) {
+      console.error('Error fetching ticket status history:', error);
+      return [];
+    }
   }
 
   async getSupportTicket(ticketId: number): Promise<SupportTicket | undefined> {

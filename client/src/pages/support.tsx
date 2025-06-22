@@ -73,7 +73,7 @@ export default function SupportPage() {
   });
 
   const { data: faqArticles = [], isLoading: faqLoading } = useQuery({
-    queryKey: ['/api/faq', faqCategory || undefined],
+    queryKey: ['/api/faq', faqCategory && faqCategory !== 'all' ? faqCategory : undefined],
     retry: false,
   });
 
@@ -234,7 +234,7 @@ export default function SupportPage() {
                       <SelectValue placeholder="All categories" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All categories</SelectItem>
+                      <SelectItem value="all">All categories</SelectItem>
                       {faqCategories.map((category) => (
                         <SelectItem key={category} value={category}>
                           {category.charAt(0).toUpperCase() + category.slice(1)}
@@ -312,7 +312,7 @@ export default function SupportPage() {
                       <Label htmlFor="category">Category</Label>
                       <Select value={newTicket.category} onValueChange={(value) => setNewTicket({ ...newTicket, category: value })}>
                         <SelectTrigger>
-                          <SelectValue />
+                          <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="technical">Technical Issue</SelectItem>
@@ -326,7 +326,7 @@ export default function SupportPage() {
                       <Label htmlFor="priority">Priority</Label>
                       <Select value={newTicket.priority} onValueChange={(value) => setNewTicket({ ...newTicket, priority: value })}>
                         <SelectTrigger>
-                          <SelectValue />
+                          <SelectValue placeholder="Select priority" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="low">Low</SelectItem>

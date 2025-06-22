@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -104,6 +104,9 @@ export default function RFIDCard() {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Assign RFID Card</DialogTitle>
+                  <DialogDescription>
+                    Enter your RFID card number to link it with your account.
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useRazorpay } from "@/hooks/useRazorpay";
 import { useToast } from "@/hooks/use-toast";
@@ -121,6 +121,9 @@ export default function WalletCard() {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Recharge Wallet</DialogTitle>
+                  <DialogDescription>
+                    Enter a custom amount to add to your wallet balance.
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>

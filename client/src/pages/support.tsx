@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -106,6 +106,9 @@ export default function SupportPage() {
 
   const sendMessageMutation = useMutation({
     mutationFn: async (messageData: any) => {
+      if (!selectedTicket) {
+        throw new Error('No ticket selected');
+      }
       return apiRequest(`/api/support/tickets/${selectedTicket}/messages`, {
         method: 'POST',
         body: JSON.stringify(messageData),
@@ -116,6 +119,7 @@ export default function SupportPage() {
       setNewMessage('');
     },
     onError: (error: any) => {
+      console.error('Send message error:', error);
       toast({ 
         title: "Error", 
         description: error.message || "Failed to send message",
@@ -135,6 +139,10 @@ export default function SupportPage() {
         // Don't show error to user for view tracking
         return null;
       }
+    },
+    onError: (error) => {
+      // Silently handle view tracking errors
+      console.error('View tracking failed:', error);
     },
   });
 
@@ -296,6 +304,9 @@ export default function SupportPage() {
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Create Support Ticket</DialogTitle>
+                    <DialogDescription>
+                      Fill out the form below to create a new support ticket. We'll get back to you as soon as possible.
+                    </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
@@ -441,14 +452,18 @@ export default function SupportPage() {
                           value={newMessage}
                           onChange={(e) => setNewMessage(e.target.value)}
                           onKeyPress={(e) => {
-                            if (e.key === 'Enter' && newMessage.trim()) {
+                            if (e.key === 'Enter' && newMessage.trim() && selectedTicket) {
                               sendMessageMutation.mutate({ message: newMessage });
                             }
                           }}
                         />
                         <Button
-                          onClick={() => sendMessageMutation.mutate({ message: newMessage })}
-                          disabled={!newMessage.trim() || sendMessageMutation.isPending}
+                          onClick={() => {
+                            if (selectedTicket && newMessage.trim()) {
+                              sendMessageMutation.mutate({ message: newMessage });
+                            }
+                          }}
+                          disabled={!newMessage.trim() || sendMessageMutation.isPending || !selectedTicket}
                         >
                           Send
                         </Button>

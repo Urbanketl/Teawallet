@@ -79,12 +79,14 @@ export default function SupportPage() {
 
   const createTicketMutation = useMutation({
     mutationFn: async (ticketData: any) => {
+      console.log('Sending ticket data:', ticketData);
       return apiRequest('/api/support/tickets', {
         method: 'POST',
         body: JSON.stringify(ticketData),
       });
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
+      console.log('Ticket created successfully:', response);
       toast({ title: "Success", description: "Support ticket created successfully!" });
       queryClient.invalidateQueries({ queryKey: ['/api/support/tickets'] });
       setDialogOpen(false);
@@ -96,6 +98,7 @@ export default function SupportPage() {
       });
     },
     onError: (error: any) => {
+      console.error('Ticket creation error:', error);
       toast({ 
         title: "Error", 
         description: error.message || "Failed to create ticket",
@@ -360,7 +363,26 @@ export default function SupportPage() {
                     
                     <Button 
                       className="w-full"
-                      onClick={() => createTicketMutation.mutate(newTicket)}
+                      onClick={() => {
+                        if (!newTicket.subject.trim()) {
+                          toast({ 
+                            title: "Error", 
+                            description: "Subject is required",
+                            variant: "destructive" 
+                          });
+                          return;
+                        }
+                        if (!newTicket.description.trim()) {
+                          toast({ 
+                            title: "Error", 
+                            description: "Description is required",
+                            variant: "destructive" 
+                          });
+                          return;
+                        }
+                        console.log('Creating ticket with data:', newTicket);
+                        createTicketMutation.mutate(newTicket);
+                      }}
                       disabled={createTicketMutation.isPending}
                     >
                       {createTicketMutation.isPending ? "Creating..." : "Create Ticket"}

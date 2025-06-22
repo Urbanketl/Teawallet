@@ -68,7 +68,7 @@ export default function SupportPage() {
   });
 
   const { data: messages = [], refetch: refetchMessages, error: messagesError } = useQuery({
-    queryKey: ['/api/support/tickets', selectedTicket, 'messages'],
+    queryKey: [`/api/support/tickets/${selectedTicket}/messages`],
     enabled: !!selectedTicket,
     retry: 2,
     refetchInterval: selectedTicket ? 3000 : false, // Auto-refresh messages every 3 seconds when ticket is selected
@@ -137,8 +137,9 @@ export default function SupportPage() {
     },
     onSuccess: (data) => {
       console.log('Message sent successfully:', data);
-      queryClient.invalidateQueries({ queryKey: ['/api/support/tickets', selectedTicket, 'messages'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/support/tickets'] });
+      // Force immediate refetch of messages
+      refetchMessages();
+      refetchTickets();
       setNewMessage('');
       toast({ title: "Success", description: "Message sent successfully!" });
     },

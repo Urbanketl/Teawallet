@@ -706,6 +706,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const messages = await storage.getSupportMessages(ticketId);
+      console.log('Returning messages for ticket', ticketId, ':', messages);
       res.json(messages);
     } catch (error) {
       console.error("Error fetching support messages:", error);

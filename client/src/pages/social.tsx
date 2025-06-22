@@ -327,15 +327,31 @@ export default function SocialPage() {
                       variant="ghost"
                       size="sm"
                       className="text-gray-500 hover:text-tea-green"
-                      onClick={() => {
-                        navigator.share?.({
-                          title: moment.title,
-                          text: moment.description,
-                          url: window.location.href,
-                        }) || toast({
-                          title: "Link copied!",
-                          description: "Tea moment link copied to clipboard"
-                        });
+                      onClick={async () => {
+                        try {
+                          if (navigator.share) {
+                            await navigator.share({
+                              title: moment.title,
+                              text: moment.description || `Check out this tea moment: ${moment.title}`,
+                              url: window.location.href,
+                            });
+                          } else {
+                            // Fallback: Copy to clipboard
+                            const shareText = `${moment.title}\n${moment.description || ''}\n${window.location.href}`;
+                            await navigator.clipboard.writeText(shareText);
+                            toast({
+                              title: "Copied to clipboard!",
+                              description: "Tea moment details copied successfully"
+                            });
+                          }
+                        } catch (error) {
+                          console.error('Share failed:', error);
+                          toast({
+                            title: "Share failed",
+                            description: "Unable to share tea moment",
+                            variant: "destructive"
+                          });
+                        }
                       }}
                     >
                       <Share2 className="w-4 h-4 mr-2" />

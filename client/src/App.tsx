@@ -33,7 +33,7 @@ function Router() {
       {!isAuthenticated ? (
         <>
           <Route path="/" component={Landing} />
-          <Route component={Landing} />
+          <Route path="*" component={Landing} />
         </>
       ) : (
         <>
@@ -46,7 +46,7 @@ function Router() {
           <Route path="/social" component={Social} />
           <Route path="/support" component={Support} />
           <Route path="/analytics" component={Analytics} />
-          <Route component={NotFound} />
+          <Route path="*" component={NotFound} />
         </>
       )}
     </Switch>

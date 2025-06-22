@@ -90,6 +90,16 @@ export default function AdminPage() {
     retry: false,
   });
 
+  const queryClient = useQueryClient();
+
+  // State declarations first
+  const [statusUpdateDialogs, setStatusUpdateDialogs] = useState<{ [key: number]: boolean }>({});
+  const [statusUpdateData, setStatusUpdateData] = useState<{ [key: number]: { status: string; comment: string } }>({});
+  const [historyDialogs, setHistoryDialogs] = useState<{ [key: number]: boolean }>({});
+  const [ticketHistories, setTicketHistories] = useState<{ [key: number]: any[] }>({});
+  const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
+  const [newMessage, setNewMessage] = useState('');
+
   const { data: supportTickets = [], isLoading: ticketsLoading, refetch: refetchTickets } = useQuery({
     queryKey: ["/api/admin/support/tickets"],
     enabled: isAuthenticated && user?.isAdmin,
@@ -102,15 +112,6 @@ export default function AdminPage() {
     enabled: !!selectedTicketId,
     refetchInterval: selectedTicketId ? 3000 : false,
   });
-
-  const queryClient = useQueryClient();
-
-  const [statusUpdateDialogs, setStatusUpdateDialogs] = useState<{ [key: number]: boolean }>({});
-  const [statusUpdateData, setStatusUpdateData] = useState<{ [key: number]: { status: string; comment: string } }>({});
-  const [historyDialogs, setHistoryDialogs] = useState<{ [key: number]: boolean }>({});
-  const [ticketHistories, setTicketHistories] = useState<{ [key: number]: any[] }>({});
-  const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
-  const [newMessage, setNewMessage] = useState('');
 
   const updateTicketMutation = useMutation({
     mutationFn: async ({ ticketId, status, assignedTo, comment }: { ticketId: number; status?: string; assignedTo?: string; comment?: string }) => {
@@ -155,6 +156,8 @@ export default function AdminPage() {
       });
     },
   });
+
+
 
   const handleStatusChange = (ticketId: number, newStatus: string) => {
     setStatusUpdateData({
@@ -681,6 +684,13 @@ export default function AdminPage() {
                           onClick={() => fetchTicketHistory(ticket.id)}
                         >
                           View History
+                        </Button>
+                        <Button
+                          onClick={() => setSelectedTicketId(selectedTicketId === ticket.id ? null : ticket.id)}
+                          variant={selectedTicketId === ticket.id ? "default" : "outline"}
+                          size="sm"
+                        >
+                          {selectedTicketId === ticket.id ? 'Hide Chat' : 'View Chat'}
                         </Button>
 
                         {/* Ticket History Dialog */}

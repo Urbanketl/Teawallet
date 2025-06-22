@@ -2,7 +2,7 @@ import { db } from "./db";
 import { 
   users, rfidCards, transactions, dispensingLogs, teaMachines,
   subscriptionPlans, userSubscriptions,
-  referrals, teaMoments, teaMomentLikes, supportTickets, supportMessages, faqArticles,
+  referrals, teaMoments, teaMomentLikes, supportTickets, supportMessages, faqArticles, ticketStatusHistory,
   type User, type UpsertUser, type RfidCard, type InsertRfidCard,
   type Transaction, type InsertTransaction, type DispensingLog, type InsertDispensingLog,
   type TeaMachine, type InsertTeaMachine, type SubscriptionPlan, type InsertSubscriptionPlan,

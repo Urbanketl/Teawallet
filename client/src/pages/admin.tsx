@@ -614,6 +614,19 @@ export default function AdminPage() {
                         >
                           Close Ticket
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            // Show ticket history - you can implement this as a modal
+                            toast({
+                              title: "Info",
+                              description: "Status history feature can be added here"
+                            });
+                          }}
+                        >
+                          View History
+                        </Button>
                       </div>
                     </div>
                   </CardContent>

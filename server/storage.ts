@@ -502,8 +502,15 @@ export class DatabaseStorage implements IStorage {
 
   // Support operations
   async createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket> {
-    const [newTicket] = await db.insert(supportTickets).values(ticket).returning();
-    return newTicket;
+    try {
+      console.log('Storage: Creating ticket with data:', ticket);
+      const [newTicket] = await db.insert(supportTickets).values(ticket).returning();
+      console.log('Storage: Ticket created:', newTicket);
+      return newTicket;
+    } catch (error) {
+      console.error('Storage: Error creating ticket:', error);
+      throw error;
+    }
   }
 
   async getUserSupportTickets(userId: string): Promise<SupportTicket[]> {

@@ -586,6 +586,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.session?.user?.id || req.user.claims.sub;
       const { subject, description, category, priority } = req.body;
       
+      console.log('Creating ticket with data:', {
+        userId,
+        subject,
+        description,
+        category,
+        priority: priority || 'medium'
+      });
+
+      if (!subject || !description || !category) {
+        return res.status(400).json({ message: "Subject, description, and category are required" });
+      }
+      
       const ticket = await storage.createSupportTicket({
         userId,
         subject,
@@ -594,10 +606,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         priority: priority || 'medium',
       });
 
+      console.log('Ticket created successfully:', ticket);
       res.json(ticket);
     } catch (error) {
       console.error("Error creating support ticket:", error);
-      res.status(500).json({ message: "Failed to create support ticket" });
+      console.error("Stack trace:", error.stack);
+      res.status(500).json({ message: "Failed to create support ticket", error: error.message });
     }
   });
 

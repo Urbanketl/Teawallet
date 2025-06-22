@@ -80,10 +80,14 @@ export default function SupportPage() {
   const createTicketMutation = useMutation({
     mutationFn: async (ticketData: any) => {
       console.log('Sending ticket data:', ticketData);
-      return apiRequest('/api/support/tickets', {
-        method: 'POST',
-        body: JSON.stringify(ticketData),
-      });
+      try {
+        const response = await apiRequest('POST', '/api/support/tickets', ticketData);
+        console.log('API response:', response);
+        return response;
+      } catch (error) {
+        console.error('API request failed:', error);
+        throw error;
+      }
     },
     onSuccess: (response) => {
       console.log('Ticket created successfully:', response);
@@ -98,10 +102,16 @@ export default function SupportPage() {
       });
     },
     onError: (error: any) => {
-      console.error('Ticket creation error:', error);
+      console.error('Full ticket creation error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.status,
+        statusText: error.statusText,
+        stack: error.stack
+      });
       toast({ 
         title: "Error", 
-        description: error.message || "Failed to create ticket",
+        description: `Failed to create ticket: ${error.message || 'Unknown error'}`,
         variant: "destructive" 
       });
     },
@@ -112,10 +122,7 @@ export default function SupportPage() {
       if (!selectedTicket) {
         throw new Error('No ticket selected');
       }
-      return apiRequest(`/api/support/tickets/${selectedTicket}/messages`, {
-        method: 'POST',
-        body: JSON.stringify(messageData),
-      });
+      return apiRequest('POST', `/api/support/tickets/${selectedTicket}/messages`, messageData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/support/tickets', selectedTicket, 'messages'] });

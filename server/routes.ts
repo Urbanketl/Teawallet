@@ -1,40 +1,16 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { initializeRazorpay } from "./razorpay";
+import { storage } from "./storage";
+import { insertDispensingLogSchema } from "@shared/schema";
 
-// Low balance alert threshold (should be configurable via admin settings)
-const LOW_BALANCE_THRESHOLD = 50.00;
-
-async function checkAndSendLowBalanceAlert(user: any) {
-  const balance = parseFloat(user.walletBalance || '0');
-  
-  if (balance <= LOW_BALANCE_THRESHOLD) {
-    console.log(`Low balance alert for user ${user.id}: ₹${balance}`);
-    
-    // In a real implementation, this would:
-    // 1. Send push notification via Firebase/Expo
-    // 2. Send email notification
-    // 3. Create in-app notification
-    // 4. Log the alert event
-    
-    // For now, we'll create a notification record
-    try {
-      await storage.createTransaction({
-        userId: user.id,
-        type: 'system_alert',
-        amount: '0.00',
-        description: `Low balance alert: ₹${balance}`,
-        status: 'completed',
-      });
-    } catch (error) {
-      console.error('Failed to log low balance alert:', error);
-    }
-  }
-}
-import { insertTransactionSchema, insertDispensingLogSchema } from "@shared/schema";
-import { createOrder, verifyPayment, initializeRazorpay } from "./razorpay";
-import { z } from "zod";
+// Import route modules
+import authRoutes from "./routes/authRoutes";
+import transactionRoutes from "./routes/transactionRoutes";
+import supportRoutes from "./routes/supportRoutes";
+import adminRoutes from "./routes/adminRoutes";
+import analyticsRoutes from "./routes/analyticsRoutes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize Razorpay
@@ -47,7 +23,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
-  // Auth routes
+  // Register route modules
+  app.use('/api/auth', authRoutes);
+  app.use('/api/transactions', transactionRoutes);
+  app.use('/api/support', supportRoutes);
+  app.use('/api/admin', adminRoutes);
+  app.use('/api/analytics', analyticsRoutes);
+
+  // Legacy routes (keeping for backward compatibility)
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
       // Handle demo session

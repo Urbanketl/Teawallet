@@ -691,7 +691,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/support/tickets/:id/messages', isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
       const ticketId = parseInt(req.params.id);
+      
+      // Verify user owns this ticket or is admin
+      const ticket = await storage.getSupportTicket(ticketId);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (ticket.userId !== userId && !user?.isAdmin) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
       const messages = await storage.getSupportMessages(ticketId);
       res.json(messages);
     } catch (error) {

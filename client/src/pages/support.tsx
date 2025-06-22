@@ -67,12 +67,20 @@ export default function SupportPage() {
     refetchInterval: 5000, // Auto-refresh every 5 seconds
   });
 
-  const { data: messages = [], refetch: refetchMessages } = useQuery({
+  const { data: messages = [], refetch: refetchMessages, error: messagesError } = useQuery({
     queryKey: ['/api/support/tickets', selectedTicket, 'messages'],
     enabled: !!selectedTicket,
-    retry: false,
+    retry: 2,
     refetchInterval: selectedTicket ? 3000 : false, // Auto-refresh messages every 3 seconds when ticket is selected
   });
+
+  // Debug logging
+  if (selectedTicket && messagesError) {
+    console.error('Messages fetch error:', messagesError);
+  }
+  if (selectedTicket) {
+    console.log('Selected ticket:', selectedTicket, 'Messages:', messages);
+  }
 
   const { data: faqArticles = [], isLoading: faqLoading } = useQuery({
     queryKey: ['/api/faq', faqCategory && faqCategory !== 'all' ? faqCategory : undefined],

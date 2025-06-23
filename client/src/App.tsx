@@ -17,8 +17,6 @@ const Wallet = lazy(() => import("@/pages/wallet"));
 const History = lazy(() => import("@/pages/history"));
 const Admin = lazy(() => import("@/pages/admin"));
 const Profile = lazy(() => import("@/pages/profile"));
-const Subscriptions = lazy(() => import("@/pages/subscriptions"));
-const Social = lazy(() => import("@/pages/social"));
 const Support = lazy(() => import("@/pages/support"));
 const Analytics = lazy(() => import("@/pages/analytics"));
 
@@ -44,8 +42,6 @@ function Router() {
             <Route path="/history" component={History} />
             <Route path="/profile" component={Profile} />
             <Route path="/admin" component={Admin} />
-            <Route path="/subscriptions" component={Subscriptions} />
-            <Route path="/social" component={Social} />
             <Route path="/support" component={Support} />
             <Route path="/analytics" component={Analytics} />
             <Route path="*" component={NotFound} />

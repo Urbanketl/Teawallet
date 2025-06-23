@@ -28,8 +28,6 @@ export const API_ENDPOINTS = {
   // Legacy endpoints
   RFID_CARD: '/api/rfid/card',
   DISPENSING_HISTORY: '/api/dispensing/history',
-  SUBSCRIPTIONS_PLANS: '/api/subscriptions/plans',
-  SUBSCRIPTIONS_USER: '/api/subscriptions/user',
 } as const;
 
 // App configuration

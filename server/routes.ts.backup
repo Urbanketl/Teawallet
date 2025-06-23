@@ -448,14 +448,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Support routes
-  app.post('/api/support/tickets', isAuthenticated, async (req: any, res) => {
+  // Social routes (public endpoint for viewing moments)
+  app.get('/api/social/moments', async (req, res) => {
+    try {
+      console.log("Fetching tea moments...");
+      const limit = parseInt(req.query.limit as string) || 20;
+      const moments = await storage.getTeaMoments(limit);
+      console.log("Found moments:", moments.length);
+      res.json(moments);
+    } catch (error) {
+      console.error("Error fetching tea moments:", error);
+      res.status(500).json({ message: "Failed to fetch tea moments", error: error.message });
+    }
+  });
+
+  app.post('/api/social/moments', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.session?.user?.id || req.user.claims.sub;
-      const { subject, description, category, priority } = req.body;
+      const { title, description, teaType, machineId, imageUrl, isPublic } = req.body;
       
-      if (!subject || !description) {
-        return res.status(400).json({ message: "Subject and description are required" });
+      const moment = await storage.createTeaMoment({
+        userId,
+        title,
+        description,
+        teaType,
+        machineId,
+        imageUrl,
+        isPublic: isPublic !== false,
+      });
+
+      res.json(moment);
+    } catch (error) {
+      console.error("Error creating tea moment:", error);
+      res.status(500).json({ message: "Failed to create tea moment" });
+    }
+  });
+
+  app.post('/api/social/moments/:id/like', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const momentId = parseInt(req.params.id);
+      
+      const like = await storage.likeTeaMoment({ userId, momentId });
+      res.json(like);
+    } catch (error) {
+      console.error("Error liking tea moment:", error);
+      res.status(500).json({ message: "Failed to like tea moment" });
+    }
+  });
+
       }
       
       const ticket = await storage.createSupportTicket({

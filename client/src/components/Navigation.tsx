@@ -24,9 +24,6 @@ export default function Navigation() {
   const navItems = [
     { href: "/", icon: LayoutDashboard, label: "Dashboard" },
     { href: "/wallet", icon: Wallet, label: "Wallet" },
-    { href: "/subscriptions", icon: Coffee, label: "Subscriptions" },
-
-    { href: "/social", icon: Users, label: "Social" },
     { href: "/history", icon: History, label: "History" },
     { href: "/support", icon: MessageCircle, label: "Support" },
     { href: "/profile", icon: User, label: "Profile" },

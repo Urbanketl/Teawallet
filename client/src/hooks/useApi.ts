@@ -7,8 +7,7 @@ export const queryKeys = {
   transactions: () => ['/api/transactions'] as const,
   rfidCard: () => ['/api/rfid/card'] as const,
   dispensingHistory: () => ['/api/dispensing/history'] as const,
-  subscriptionPlans: () => ['/api/subscriptions/plans'] as const,
-  userSubscription: () => ['/api/subscriptions/user'] as const,
+
   supportTickets: () => ['/api/support/tickets'] as const,
   faqArticles: (category?: string) => ['/api/support/faq', category] as const,
   adminUsers: () => ['/api/admin/users'] as const,

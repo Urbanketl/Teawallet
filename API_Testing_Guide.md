@@ -26,6 +26,33 @@ curl -X POST "http://localhost:5000/api/rfid/validate" \
 ## 2. Tea Dispensing API
 
 ### RFID Card Validation & Dispensing
+
+**For External Access (from your local machine):**
+```bash
+# Try these URLs in order until one works:
+
+# Option 1: Direct Replit dev domain
+curl -X POST "https://workspace-prasadthirtha.replit.dev/api/rfid/validate" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cardNumber": "RFID_44064328_001",
+    "machineId": "MACHINE_001",
+    "teaType": "Green Tea",
+    "amount": "5.00"
+  }'
+
+# Option 2: Alternative Replit URL format
+curl -X POST "https://workspace.prasadthirtha.repl.co/api/rfid/validate" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cardNumber": "RFID_44064328_001",
+    "machineId": "MACHINE_001",
+    "teaType": "Green Tea",
+    "amount": "5.00"
+  }'
+```
+
+**For Internal/Local Testing:**
 ```bash
 curl -X POST "http://localhost:5000/api/rfid/validate" \
   -H "Content-Type: application/json" \

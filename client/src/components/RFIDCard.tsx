@@ -174,14 +174,77 @@ export default function RFIDCard() {
               )}
             </div>
             
-            <Button 
-              variant="outline" 
-              className="w-full mt-4"
-              disabled
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Manage Card
-            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="w-full mt-4"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Manage Card
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Manage RFID Card</DialogTitle>
+                  <DialogDescription>
+                    Manage your RFID card settings and view details.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="p-4 bg-gray-50 rounded-lg space-y-2">
+                    <div className="flex justify-between">
+                      <span className="font-medium">Card Number:</span>
+                      <span className="font-mono">{rfidCard.cardNumber}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Status:</span>
+                      <Badge variant={rfidCard.isActive ? "default" : "destructive"}>
+                        {rfidCard.isActive ? "Active" : "Inactive"}
+                      </Badge>
+                    </div>
+                    {rfidCard.lastUsed && (
+                      <div className="flex justify-between">
+                        <span className="font-medium">Last Used:</span>
+                        <span>{format(new Date(rfidCard.lastUsed), 'MMM dd, yyyy h:mm a')}</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <h4 className="font-medium">Card Actions</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(rfidCard.cardNumber);
+                          toast({
+                            title: "Copied!",
+                            description: "Card number copied to clipboard",
+                          });
+                        }}
+                      >
+                        Copy Number
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        disabled
+                      >
+                        Deactivate Card
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="text-sm text-gray-500">
+                    <p>• Keep your card secure and report if lost</p>
+                    <p>• Card can be used at any UrbanKetl machine</p>
+                    <p>• Charges are deducted from your wallet balance</p>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </>
         )}
       </CardContent>

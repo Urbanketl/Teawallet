@@ -177,7 +177,16 @@ export class DatabaseStorage implements IStorage {
 
   async getUserTransactions(userId: string, limit = 50): Promise<Transaction[]> {
     return await db
-      .select()
+      .select({
+        id: transactions.id,
+        userId: transactions.userId,
+        type: transactions.type,
+        amount: transactions.amount,
+        description: transactions.description,
+        status: transactions.status,
+        razorpayPaymentId: transactions.razorpayPaymentId,
+        createdAt: transactions.createdAt,
+      })
       .from(transactions)
       .where(eq(transactions.userId, userId))
       .orderBy(desc(transactions.createdAt))

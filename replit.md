@@ -110,6 +110,12 @@ UrbanKetl is a comprehensive digital tea dispensing system that combines RFID ca
 - **Error Handling**: Centralized error handling with proper status codes
 - **Performance**: Query optimization and connection pooling
 
+## Recent Changes
+- June 25, 2025: Added 4 additional RFID cards to Thirtha Prasad (total: 6 cards)
+- June 25, 2025: Standardized all RFID card formats to RFID_USERID_XXX pattern
+- June 25, 2025: Implemented working card deactivation and tabbed management interface
+- June 25, 2025: Fixed payment processing and multi-card display functionality
+
 ## Changelog
 - June 25, 2025. Initial setup
 

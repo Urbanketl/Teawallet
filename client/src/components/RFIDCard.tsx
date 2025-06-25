@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { CreditCard, Settings } from "lucide-react";
+import { CreditCard, Settings, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { isUnauthorizedError } from "@/lib/authUtils";
 
@@ -56,6 +57,26 @@ export default function RFIDCard() {
       toast({
         title: "Error",
         description: "Failed to assign RFID card. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deactivateCardMutation = useMutation({
+    mutationFn: async (cardId: number) => {
+      return await apiRequest("PUT", `/api/rfid/card/${cardId}/deactivate`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/rfid/cards"] });
+      toast({
+        title: "Card Deactivated",
+        description: "RFID card has been deactivated successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to deactivate card. Please try again.",
         variant: "destructive",
       });
     },
@@ -193,71 +214,119 @@ export default function RFIDCard() {
                     Manage your RFID card settings and view details.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
-                  <div className="p-4 bg-gray-50 rounded-lg space-y-2">
-                    <div className="flex justify-between">
-                      <span className="font-medium">Card Number:</span>
-                      <span className="font-mono">{rfidCard.cardNumber}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium">Status:</span>
-                      <Badge variant={rfidCard.isActive ? "default" : "destructive"}>
-                        {rfidCard.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                    </div>
-                    {rfidCard.lastUsed && (
+                <Tabs defaultValue="primary" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="primary">Primary Card</TabsTrigger>
+                    <TabsTrigger value="all">All Cards ({rfidCards?.length || 0})</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="primary" className="space-y-4">
+                    <div className="p-4 bg-gray-50 rounded-lg space-y-2">
                       <div className="flex justify-between">
-                        <span className="font-medium">Last Used:</span>
-                        <span>{format(new Date(rfidCard.lastUsed), 'MMM dd, yyyy h:mm a')}</span>
+                        <span className="font-medium">Card Number:</span>
+                        <span className="font-mono">{rfidCard.cardNumber}</span>
                       </div>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Card Actions</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          navigator.clipboard.writeText(rfidCard.cardNumber);
-                          toast({
-                            title: "Copied!",
-                            description: "Card number copied to clipboard",
-                          });
-                        }}
-                      >
-                        Copy Number
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        disabled
-                      >
-                        Deactivate Card
-                      </Button>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Status:</span>
+                        <Badge variant={rfidCard.isActive ? "default" : "destructive"}>
+                          {rfidCard.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </div>
+                      {rfidCard.lastUsed && (
+                        <div className="flex justify-between">
+                          <span className="font-medium">Last Used:</span>
+                          <span>{format(new Date(rfidCard.lastUsed), 'MMM dd, yyyy h:mm a')}</span>
+                        </div>
+                      )}
                     </div>
-                  </div>
+                    
+                    <div className="space-y-2">
+                      <h4 className="font-medium">Card Actions</h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(rfidCard.cardNumber);
+                            toast({
+                              title: "Copied!",
+                              description: "Card number copied to clipboard",
+                            });
+                          }}
+                        >
+                          Copy Number
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => deactivateCardMutation.mutate(rfidCard.id)}
+                          disabled={deactivateCardMutation.isPending}
+                        >
+                          <AlertTriangle className="w-3 h-3 mr-1" />
+                          {deactivateCardMutation.isPending ? "Deactivating..." : "Deactivate"}
+                        </Button>
+                      </div>
+                    </div>
+                  </TabsContent>
                   
-                  {rfidCards && rfidCards.length > 1 && (
-                    <div className="p-3 bg-blue-50 rounded-lg">
-                      <h5 className="font-medium text-sm mb-2">All Your Cards ({rfidCards.length})</h5>
-                      <div className="space-y-1 text-xs">
-                        {rfidCards.map((card, index) => (
-                          <div key={card.id} className="flex justify-between">
-                            <span>Card {index + 1}:</span>
-                            <span className="font-mono">{card.cardNumber.slice(-8)}</span>
+                  <TabsContent value="all" className="space-y-4">
+                    <div className="space-y-3">
+                      {rfidCards?.map((card, index) => (
+                        <div key={card.id} className="p-3 border rounded-lg">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <span className="font-medium">Card {index + 1}</span>
+                              {index === 0 && <Badge variant="secondary" className="ml-2">Primary</Badge>}
+                            </div>
+                            <Badge variant={card.isActive ? "default" : "destructive"}>
+                              {card.isActive ? "Active" : "Inactive"}
+                            </Badge>
                           </div>
-                        ))}
-                      </div>
+                          <div className="text-sm space-y-1">
+                            <div className="flex justify-between">
+                              <span>Number:</span>
+                              <span className="font-mono">{card.cardNumber}</span>
+                            </div>
+                            {card.lastUsed && (
+                              <div className="flex justify-between">
+                                <span>Last Used:</span>
+                                <span>{format(new Date(card.lastUsed), 'MMM dd, h:mm a')}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 mt-3">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                navigator.clipboard.writeText(card.cardNumber);
+                                toast({
+                                  title: "Copied!",
+                                  description: `Card ${index + 1} number copied`,
+                                });
+                              }}
+                            >
+                              Copy
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => deactivateCardMutation.mutate(card.id)}
+                              disabled={!card.isActive || deactivateCardMutation.isPending}
+                            >
+                              {deactivateCardMutation.isPending ? "..." : "Deactivate"}
+                            </Button>
+                          </div>
+                        </div>
+                      )) || <div className="text-center text-gray-500">No cards found</div>}
                     </div>
-                  )}
-                  
-                  <div className="text-sm text-gray-500">
-                    <p>• Keep your card secure and report if lost</p>
-                    <p>• Card can be used at any UrbanKetl machine</p>
-                    <p>• Charges are deducted from your wallet balance</p>
-                  </div>
+                  </TabsContent>
+                </Tabs>
+                
+                <div className="text-sm text-gray-500 border-t pt-3">
+                  <p>• Keep your cards secure and report if lost</p>
+                  <p>• Cards can be used at any UrbanKetl machine</p>
+                  <p>• Charges are deducted from your wallet balance</p>
                 </div>
               </DialogContent>
             </Dialog>

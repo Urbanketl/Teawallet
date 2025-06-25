@@ -26,6 +26,7 @@ export interface IStorage {
   getRfidCardByNumber(cardNumber: string): Promise<RfidCard | undefined>;
   createRfidCard(rfidCard: InsertRfidCard): Promise<RfidCard>;
   updateRfidCardLastUsed(cardId: number, machineId: string): Promise<void>;
+  deactivateRfidCard(cardId: number): Promise<void>;
   
   // Transaction operations
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
@@ -173,6 +174,13 @@ export class DatabaseStorage implements IStorage {
         lastUsed: new Date(),
         lastMachine: machineId,
       })
+      .where(eq(rfidCards.id, cardId));
+  }
+
+  async deactivateRfidCard(cardId: number): Promise<void> {
+    await db
+      .update(rfidCards)
+      .set({ isActive: false })
       .where(eq(rfidCards.id, cardId));
   }
 

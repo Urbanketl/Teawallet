@@ -231,6 +231,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put('/api/rfid/card/:cardId/deactivate', isAuthenticated, async (req: any, res) => {
+    try {
+      const { cardId } = req.params;
+      const userId = req.user.claims.sub;
+      
+      // Get all user cards and verify this card belongs to them
+      const userCards = await storage.getAllRfidCardsByUserId(userId);
+      const cardToDeactivate = userCards.find(card => card.id === parseInt(cardId));
+      
+      if (!cardToDeactivate) {
+        return res.status(403).json({ message: "Unauthorized to modify this card" });
+      }
+
+      await storage.deactivateRfidCard(parseInt(cardId));
+      res.json({ success: true, message: "Card deactivated successfully" });
+    } catch (error) {
+      console.error("Error deactivating RFID card:", error);
+      res.status(500).json({ message: "Failed to deactivate RFID card" });
+    }
+  });
+
   app.post('/api/rfid/assign', isAuthenticated, async (req: any, res) => {
     try {
       const { cardNumber } = req.body;

@@ -22,6 +22,7 @@ export interface IStorage {
   
   // RFID operations
   getRfidCardByUserId(userId: string): Promise<RfidCard | undefined>;
+  getAllRfidCardsByUserId(userId: string): Promise<RfidCard[]>;
   getRfidCardByNumber(cardNumber: string): Promise<RfidCard | undefined>;
   createRfidCard(rfidCard: InsertRfidCard): Promise<RfidCard>;
   updateRfidCardLastUsed(cardId: number, machineId: string): Promise<void>;
@@ -136,8 +137,17 @@ export class DatabaseStorage implements IStorage {
     const [card] = await db
       .select()
       .from(rfidCards)
-      .where(and(eq(rfidCards.userId, userId), eq(rfidCards.isActive, true)));
+      .where(and(eq(rfidCards.userId, userId), eq(rfidCards.isActive, true)))
+      .orderBy(desc(rfidCards.createdAt));
     return card;
+  }
+
+  async getAllRfidCardsByUserId(userId: string): Promise<RfidCard[]> {
+    return await db
+      .select()
+      .from(rfidCards)
+      .where(and(eq(rfidCards.userId, userId), eq(rfidCards.isActive, true)))
+      .orderBy(desc(rfidCards.createdAt));
   }
 
   async getRfidCardByNumber(cardNumber: string): Promise<RfidCard | undefined> {

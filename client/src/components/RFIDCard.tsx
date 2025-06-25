@@ -20,18 +20,20 @@ export default function RFIDCard() {
   const [newCardNumber, setNewCardNumber] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const { data: rfidCard, isLoading } = useQuery({
-    queryKey: ["/api/rfid/card"],
+  const { data: rfidCards, isLoading } = useQuery({
+    queryKey: ["/api/rfid/cards"],
     enabled: isAuthenticated,
     retry: false,
   });
+
+  const rfidCard = rfidCards?.[0]; // Show primary card
 
   const assignCardMutation = useMutation({
     mutationFn: async (cardNumber: string) => {
       return await apiRequest("POST", "/api/rfid/assign", { cardNumber });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/rfid/card"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/rfid/cards"] });
       toast({
         title: "Success!",
         description: "RFID card assigned successfully",
@@ -236,6 +238,20 @@ export default function RFIDCard() {
                       </Button>
                     </div>
                   </div>
+                  
+                  {rfidCards && rfidCards.length > 1 && (
+                    <div className="p-3 bg-blue-50 rounded-lg">
+                      <h5 className="font-medium text-sm mb-2">All Your Cards ({rfidCards.length})</h5>
+                      <div className="space-y-1 text-xs">
+                        {rfidCards.map((card, index) => (
+                          <div key={card.id} className="flex justify-between">
+                            <span>Card {index + 1}:</span>
+                            <span className="font-mono">{card.cardNumber.slice(-8)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="text-sm text-gray-500">
                     <p>• Keep your card secure and report if lost</p>

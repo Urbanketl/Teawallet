@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { initializeRazorpay } from "./razorpay";
+import { initializeRazorpay, createOrder, verifyPayment } from "./razorpay";
 import { storage } from "./storage";
 import { insertDispensingLogSchema } from "@shared/schema";
 
@@ -217,6 +217,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching RFID card:", error);
       res.status(500).json({ message: "Failed to fetch RFID card" });
+    }
+  });
+
+  app.get('/api/rfid/cards', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const cards = await storage.getAllRfidCardsByUserId(userId);
+      res.json(cards);
+    } catch (error) {
+      console.error("Error fetching RFID cards:", error);
+      res.status(500).json({ message: "Failed to fetch RFID cards" });
     }
   });
 

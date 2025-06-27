@@ -3,8 +3,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Coffee, Leaf, CreditCard, Smartphone } from "lucide-react";
 
 export default function Landing() {
+  console.log("Landing component rendering...");
+  
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-warm to-white overflow-x-hidden">
+    <div className="h-screen bg-gradient-to-br from-neutral-warm to-white overflow-x-hidden overflow-y-auto">
       {/* Header */}
       <header className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">

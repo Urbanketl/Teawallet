@@ -29,6 +29,23 @@ body > *:not(#root) {
   display: none !important;
 }
 
+/* Force single page layout */
+body {
+  max-height: 100vh;
+}
+
+/* Ensure no content wrapping or duplication */
+.min-h-screen {
+  max-height: 100vh !important;
+  overflow-y: auto;
+}
+
+/* Fix any potential React component duplication */
+#root > * {
+  width: 100%;
+  max-width: 100vw;
+}
+
 :root {
   --background: hsl(0, 0%, 100%);
   --foreground: hsl(20, 14.3%, 4.1%);

@@ -23,6 +23,8 @@ const Analytics = lazy(() => import("@/pages/analytics"));
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
+  console.log("Router state:", { isAuthenticated, isLoading });
+
   if (isLoading) {
     return <FullPageLoader message="Loading application..." />;
   }

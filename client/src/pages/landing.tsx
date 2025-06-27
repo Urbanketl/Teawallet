@@ -4,7 +4,7 @@ import { Coffee, Leaf, CreditCard, Smartphone } from "lucide-react";
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-warm to-white">
+    <div className="min-h-screen bg-gradient-to-br from-neutral-warm to-white overflow-x-hidden">
       {/* Header */}
       <header className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">

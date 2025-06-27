@@ -3,27 +3,30 @@
 @tailwind utilities;
 
 /* Fix potential duplication issues */
-body {
+html, body {
   overflow-x: hidden;
   margin: 0;
   padding: 0;
   position: relative;
+  height: 100%;
 }
 
 #root {
   min-height: 100vh;
   position: relative;
   z-index: 1;
-}
-
-/* Prevent any duplicate content from appearing */
-html {
-  overflow-x: hidden;
+  width: 100%;
+  height: 100%;
 }
 
 /* Ensure no floating or positioned elements cause duplication */
 * {
   box-sizing: border-box;
+}
+
+/* Prevent any script-injected content from duplicating layout */
+body > *:not(#root) {
+  display: none !important;
 }
 
 :root {

@@ -589,6 +589,7 @@ export default function AdminPage() {
           <TabsList className="bg-white shadow-sm">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="rfid">RFID Cards</TabsTrigger>
             <TabsTrigger value="machines">Machines</TabsTrigger>
             <TabsTrigger value="support">Support Tickets</TabsTrigger>
           </TabsList>
@@ -605,6 +606,10 @@ export default function AdminPage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">User Management</h3>
               <p className="text-gray-600">User data displayed in the cards above</p>
             </div>
+          </TabsContent>
+
+          <TabsContent value="rfid">
+            <RfidManagement />
           </TabsContent>
 
           <TabsContent value="machines">

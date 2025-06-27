@@ -111,6 +111,7 @@ UrbanKetl is a comprehensive digital tea dispensing system that combines RFID ca
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- June 27, 2025: Added admin RFID card deletion functionality with confirmation dialog
 - June 27, 2025: Fixed RFID card number auto-generation in admin interface - now properly suggests card numbers
 - June 27, 2025: Added admin RFID card creation with company/user naming convention (e.g., UKTP0001)
 - June 27, 2025: Simplified tea flavors to only "Regular tea" - removed all multiple tea types from system

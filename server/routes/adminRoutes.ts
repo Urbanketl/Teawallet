@@ -116,6 +116,24 @@ export async function getSuggestedCardNumber(req: Request, res: Response) {
   }
 }
 
+export async function deleteRfidCard(req: Request, res: Response) {
+  try {
+    const { cardId } = req.params;
+    
+    if (!cardId) {
+      return res.status(400).json({ message: "Card ID is required" });
+    }
+
+    await storage.deactivateRfidCard(parseInt(cardId));
+    res.json({ message: "RFID card deleted successfully" });
+  } catch (error) {
+    console.error('Error deleting RFID card:', error);
+    res.status(500).json({ message: "Failed to delete RFID card" });
+  }
+}
+
+export { getAllUsers, getAllRfidCards, createRfidCard, generateCardNumber, getSuggestedCardNumber, getDashboardStats, deleteRfidCard };
+
 // Get admin dashboard stats
 export async function getDashboardStats(req: Request, res: Response) {
   try {

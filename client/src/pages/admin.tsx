@@ -28,7 +28,8 @@ import {
   AlertCircle,
   CheckCircle,
   CreditCard,
-  Plus
+  Plus,
+  Trash2
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -1010,6 +1011,33 @@ function RfidManagement() {
     });
   };
 
+  const deleteCardMutation = useMutation({
+    mutationFn: async (cardId: number) => {
+      const response = await fetch(`/api/admin/rfid/cards/${cardId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete card');
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Success", description: "RFID card deleted successfully" });
+      refetchCards();
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to delete RFID card",
+        variant: "destructive" 
+      });
+    },
+  });
+
+  const handleDeleteCard = (cardId: number) => {
+    if (confirm("Are you sure you want to delete this RFID card? This action cannot be undone.")) {
+      deleteCardMutation.mutate(cardId);
+    }
+  };
+
   const selectedUserData = users?.find((u: any) => u.id === selectedUser);
 
   return (
@@ -1141,6 +1169,15 @@ function RfidManagement() {
                   <Badge variant={card.isActive ? "default" : "secondary"}>
                     {card.isActive ? "Active" : "Inactive"}
                   </Badge>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleDeleteCard(card.id)}
+                    disabled={deleteCardMutation.isPending}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete
+                  </Button>
                 </div>
               </div>
             ))}

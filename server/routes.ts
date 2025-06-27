@@ -35,6 +35,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/admin/stats', requireAuth, requireAdmin, adminController.getDashboardStats);
   app.get('/api/admin/rfid/cards', requireAuth, requireAdmin, adminController.getAllRfidCards);
   app.post('/api/admin/rfid/cards', requireAuth, requireAdmin, adminController.createRfidCard);
+  app.delete('/api/admin/rfid/cards/:cardId', requireAuth, requireAdmin, adminController.deleteRfidCard);
   app.get('/api/admin/rfid/suggest-card-number', requireAuth, requireAdmin, adminController.getSuggestedCardNumber);
 
   // Legacy routes (keeping for backward compatibility)

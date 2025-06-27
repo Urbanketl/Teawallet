@@ -40,14 +40,7 @@ export const APP_CONFIG = {
 
 // Tea types
 export const TEA_TYPES = [
-  'Earl Grey',
-  'Green Tea',
-  'Masala Chai',
-  'Black Tea',
-  'Herbal Tea',
-  'Iced Tea',
-  'Oolong Tea',
-  'White Tea',
+  'Regular tea',
 ] as const;
 
 // Support categories

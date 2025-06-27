@@ -37,7 +37,7 @@ curl -X POST "https://workspace-prasadthirtha.replit.dev/api/rfid/validate" \
   -d '{
     "cardNumber": "RFID_44064328_001",
     "machineId": "MACHINE_001",
-    "teaType": "Green Tea",
+    "teaType": "Regular tea",
     "amount": "5.00"
   }'
 
@@ -47,7 +47,7 @@ curl -X POST "https://workspace.prasadthirtha.repl.co/api/rfid/validate" \
   -d '{
     "cardNumber": "RFID_44064328_001",
     "machineId": "MACHINE_001",
-    "teaType": "Green Tea",
+    "teaType": "Regular tea",
     "amount": "5.00"
   }'
 ```
@@ -59,7 +59,7 @@ curl -X POST "http://localhost:5000/api/rfid/validate" \
   -d '{
     "cardNumber": "RFID_44064328_001",
     "machineId": "MACHINE_001",
-    "teaType": "Green Tea",
+    "teaType": "Regular tea",
     "amount": "5.00"
   }'
 ```

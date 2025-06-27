@@ -117,7 +117,7 @@ curl -X POST "http://localhost:5000/api/rfid/validate" \
 # Test dispensing
 curl -X POST "http://localhost:5000/api/rfid/validate" \
   -H "Content-Type: application/json" \
-  -d '{"cardNumber": "RFID_44064328_001", "machineId": "MACHINE_001", "teaType": "Green Tea", "amount": "5.00"}'
+  -d '{"cardNumber": "RFID_44064328_001", "machineId": "MACHINE_001", "teaType": "Regular tea", "amount": "5.00"}'
 ```
 
 ## Important Notes

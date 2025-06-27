@@ -5,10 +5,25 @@
 /* Fix potential duplication issues */
 body {
   overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+  position: relative;
 }
 
 #root {
   min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* Prevent any duplicate content from appearing */
+html {
+  overflow-x: hidden;
+}
+
+/* Ensure no floating or positioned elements cause duplication */
+* {
+  box-sizing: border-box;
 }
 
 :root {

@@ -940,6 +940,9 @@ export default function AdminPage() {
                 )}
               </div>
             </TabsContent>
+          <TabsContent value="faq">
+            <FaqManagement />
+          </TabsContent>
           </Tabs>
         </main>
       </div>

@@ -399,6 +399,8 @@ export class DatabaseStorage implements IStorage {
 
   async getTicketStatusHistory(ticketId: number): Promise<(TicketStatusHistory & { updater: User })[]> {
     try {
+      console.log('Getting ticket status history for ticket ID:', ticketId);
+      
       const historyWithUsers = await db
         .select()
         .from(ticketStatusHistory)
@@ -406,10 +408,15 @@ export class DatabaseStorage implements IStorage {
         .where(eq(ticketStatusHistory.ticketId, ticketId))
         .orderBy(desc(ticketStatusHistory.createdAt));
 
-      return historyWithUsers.map(({ ticket_status_history, users: user }) => ({
+      console.log('Raw history data:', historyWithUsers);
+
+      const result = historyWithUsers.map(({ ticket_status_history, users: user }) => ({
         ...ticket_status_history,
         updater: user || { id: '', firstName: 'Unknown', lastName: 'Admin', email: '' }
       })) as any;
+
+      console.log('Processed history result:', result);
+      return result;
     } catch (error) {
       console.error('Error fetching ticket status history:', error);
       return [];

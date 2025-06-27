@@ -201,14 +201,19 @@ export default function AdminPage() {
 
   const fetchTicketHistory = async (ticketId: number) => {
     try {
+      console.log('Fetching history for ticket ID:', ticketId);
       const response = await fetch(`/api/admin/support/tickets/${ticketId}/history`, {
         credentials: 'include'
       });
+      console.log('Response status:', response.status);
       if (response.ok) {
         const history = await response.json();
+        console.log('Received history data:', history);
         setTicketHistories(prev => ({ ...prev, [ticketId]: history }));
         setHistoryDialogs(prev => ({ ...prev, [ticketId]: true }));
       } else {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
         toast({
           title: "Error",
           description: "Failed to fetch ticket history",
@@ -216,6 +221,7 @@ export default function AdminPage() {
         });
       }
     } catch (error) {
+      console.error('Fetch error:', error);
       toast({
         title: "Error", 
         description: "Failed to fetch ticket history",

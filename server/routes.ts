@@ -51,6 +51,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin support ticket history
+  app.get('/api/admin/support/tickets/:ticketId/history', requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const ticketId = parseInt(req.params.ticketId);
+      console.log('Fetching history for ticket:', ticketId);
+      const history = await storage.getTicketStatusHistory(ticketId);
+      console.log('History result:', history);
+      res.json(history);
+    } catch (error) {
+      console.error('Error fetching ticket history:', error);
+      res.status(500).json({ message: 'Failed to fetch ticket history' });
+    }
+  });
+
+  // Admin update support ticket
+  app.patch('/api/admin/support/tickets/:ticketId', requireAuth, requireAdmin, async (req: any, res) => {
+    try {
+      const ticketId = parseInt(req.params.ticketId);
+      const { status, assignedTo, comment } = req.body;
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      
+      const updatedTicket = await storage.updateSupportTicket(ticketId, {
+        status,
+        assignedTo,
+        comment,
+        updatedBy: userId
+      });
+      
+      res.json(updatedTicket);
+    } catch (error) {
+      console.error('Error updating support ticket:', error);
+      res.status(500).json({ message: 'Failed to update support ticket' });
+    }
+  });
+
   // Legacy routes (keeping for backward compatibility)
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {

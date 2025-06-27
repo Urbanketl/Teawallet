@@ -71,6 +71,8 @@ export interface IStorage {
   // FAQ operations
   getFaqArticles(category?: string): Promise<FaqArticle[]>;
   createFaqArticle(article: InsertFaqArticle): Promise<FaqArticle>;
+  updateFaqArticle(articleId: number, updates: Partial<InsertFaqArticle>): Promise<FaqArticle>;
+  deleteFaqArticle(articleId: number): Promise<void>;
   incrementFaqViews(articleId: number): Promise<void>;
   
   // Analytics operations
@@ -503,6 +505,19 @@ export class DatabaseStorage implements IStorage {
   async createFaqArticle(article: InsertFaqArticle): Promise<FaqArticle> {
     const [newArticle] = await db.insert(faqArticles).values(article).returning();
     return newArticle;
+  }
+
+  async updateFaqArticle(articleId: number, updates: Partial<InsertFaqArticle>): Promise<FaqArticle> {
+    const [updatedArticle] = await db
+      .update(faqArticles)
+      .set(updates)
+      .where(eq(faqArticles.id, articleId))
+      .returning();
+    return updatedArticle;
+  }
+
+  async deleteFaqArticle(articleId: number): Promise<void> {
+    await db.delete(faqArticles).where(eq(faqArticles.id, articleId));
   }
 
   async incrementFaqViews(articleId: number): Promise<void> {

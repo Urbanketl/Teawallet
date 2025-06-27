@@ -86,6 +86,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin FAQ management routes
+  app.post('/api/admin/faq', requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { question, answer, category } = req.body;
+      const newFaq = await storage.createFaqArticle({
+        question,
+        answer,
+        category: category || 'general'
+      });
+      res.json(newFaq);
+    } catch (error) {
+      console.error('Error creating FAQ:', error);
+      res.status(500).json({ message: 'Failed to create FAQ article' });
+    }
+  });
+
+  app.patch('/api/admin/faq/:articleId', requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const articleId = parseInt(req.params.articleId);
+      const { question, answer, category } = req.body;
+      const updatedFaq = await storage.updateFaqArticle(articleId, {
+        question,
+        answer,
+        category
+      });
+      res.json(updatedFaq);
+    } catch (error) {
+      console.error('Error updating FAQ:', error);
+      res.status(500).json({ message: 'Failed to update FAQ article' });
+    }
+  });
+
+  app.delete('/api/admin/faq/:articleId', requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const articleId = parseInt(req.params.articleId);
+      await storage.deleteFaqArticle(articleId);
+      res.json({ message: 'FAQ article deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting FAQ:', error);
+      res.status(500).json({ message: 'Failed to delete FAQ article' });
+    }
+  });
+
   // Legacy routes (keeping for backward compatibility)
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {

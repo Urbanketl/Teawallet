@@ -605,6 +605,7 @@ export default function AdminPage() {
             <TabsTrigger value="rfid">RFID Cards</TabsTrigger>
             <TabsTrigger value="machines">Machines</TabsTrigger>
             <TabsTrigger value="support">Support Tickets</TabsTrigger>
+            <TabsTrigger value="faq">FAQ Management</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -944,6 +945,246 @@ export default function AdminPage() {
       </div>
     );
   }
+
+function FaqManagement() {
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingFaq, setEditingFaq] = useState<any>(null);
+  const [faqData, setFaqData] = useState({ question: '', answer: '', category: 'general' });
+  const { toast } = useToast();
+
+  const { data: faqList = [], refetch: refetchFaq } = useQuery({
+    queryKey: ['/api/faq'],
+    refetchInterval: 5000,
+  });
+
+  const createFaqMutation = useMutation({
+    mutationFn: async (data: { question: string; answer: string; category: string }) => {
+      return apiRequest('POST', '/api/admin/faq', data);
+    },
+    onSuccess: () => {
+      toast({ title: "Success", description: "FAQ created successfully!" });
+      refetchFaq();
+      setShowCreateForm(false);
+      setFaqData({ question: '', answer: '', category: 'general' });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to create FAQ",
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const updateFaqMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: { question: string; answer: string; category: string } }) => {
+      return apiRequest('PATCH', `/api/admin/faq/${id}`, data);
+    },
+    onSuccess: () => {
+      toast({ title: "Success", description: "FAQ updated successfully!" });
+      refetchFaq();
+      setEditingFaq(null);
+      setFaqData({ question: '', answer: '', category: 'general' });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to update FAQ",
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const deleteFaqMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest('DELETE', `/api/admin/faq/${id}`);
+    },
+    onSuccess: () => {
+      toast({ title: "Success", description: "FAQ deleted successfully!" });
+      refetchFaq();
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to delete FAQ",
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const handleCreate = () => {
+    if (!faqData.question.trim() || !faqData.answer.trim()) {
+      toast({
+        title: "Error",
+        description: "Question and answer are required",
+        variant: "destructive"
+      });
+      return;
+    }
+    createFaqMutation.mutate(faqData);
+  };
+
+  const handleUpdate = () => {
+    if (!faqData.question.trim() || !faqData.answer.trim()) {
+      toast({
+        title: "Error",
+        description: "Question and answer are required",
+        variant: "destructive"
+      });
+      return;
+    }
+    updateFaqMutation.mutate({ id: editingFaq.id, data: faqData });
+  };
+
+  const startEdit = (faq: any) => {
+    setEditingFaq(faq);
+    setFaqData({
+      question: faq.question,
+      answer: faq.answer,
+      category: faq.category || 'general'
+    });
+    setShowCreateForm(true);
+  };
+
+  const handleDelete = (id: number) => {
+    if (confirm("Are you sure you want to delete this FAQ? This action cannot be undone.")) {
+      deleteFaqMutation.mutate(id);
+    }
+  };
+
+  const resetForm = () => {
+    setShowCreateForm(false);
+    setEditingFaq(null);
+    setFaqData({ question: '', answer: '', category: 'general' });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-semibold">FAQ Management</h3>
+          <p className="text-sm text-muted-foreground">
+            Create, edit, and manage frequently asked questions
+          </p>
+        </div>
+        <Button 
+          onClick={() => setShowCreateForm(!showCreateForm)}
+          className="flex items-center gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Add New FAQ
+        </Button>
+      </div>
+
+      {showCreateForm && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{editingFaq ? 'Edit FAQ' : 'Create New FAQ'}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Category</label>
+              <select 
+                value={faqData.category} 
+                onChange={(e) => setFaqData({...faqData, category: e.target.value})}
+                className="w-full p-2 border rounded-md"
+              >
+                <option value="general">General</option>
+                <option value="payment">Payment</option>
+                <option value="rfid">RFID Cards</option>
+                <option value="technical">Technical</option>
+                <option value="account">Account</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium">Question *</label>
+              <input
+                type="text"
+                value={faqData.question}
+                onChange={(e) => setFaqData({...faqData, question: e.target.value})}
+                placeholder="Enter the FAQ question..."
+                className="w-full p-2 border rounded-md"
+              />
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium">Answer *</label>
+              <textarea
+                value={faqData.answer}
+                onChange={(e) => setFaqData({...faqData, answer: e.target.value})}
+                placeholder="Enter the answer..."
+                className="w-full p-2 border rounded-md"
+                rows={4}
+              />
+            </div>
+            
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={resetForm}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={editingFaq ? handleUpdate : handleCreate}
+                disabled={createFaqMutation.isPending || updateFaqMutation.isPending}
+              >
+                {editingFaq ? (updateFaqMutation.isPending ? "Updating..." : "Update FAQ") : (createFaqMutation.isPending ? "Creating..." : "Create FAQ")}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Existing FAQs ({Array.isArray(faqList) ? faqList.length : 0})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {Array.isArray(faqList) && faqList.length > 0 ? (
+              faqList.map((faq: any) => (
+                <div key={faq.id} className="border rounded-lg p-4 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="outline">{faq.category}</Badge>
+                        <span className="text-xs text-muted-foreground">
+                          Views: {faq.views || 0}
+                        </span>
+                      </div>
+                      <h4 className="font-medium text-lg">{faq.question}</h4>
+                      <p className="text-sm text-muted-foreground mt-2">{faq.answer}</p>
+                    </div>
+                    <div className="flex gap-2 ml-4">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => startEdit(faq)}
+                      >
+                        Edit
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={() => handleDelete(faq.id)}
+                        disabled={deleteFaqMutation.isPending}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No FAQ articles found. Create your first FAQ to get started.
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 function RfidManagement() {
   const [showCreateForm, setShowCreateForm] = useState(false);

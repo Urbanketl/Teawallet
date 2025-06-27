@@ -42,6 +42,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/admin/support/tickets', requireAuth, requireAdmin, async (req, res) => {
     try {
       const tickets = await storage.getAllSupportTickets();
+      console.log('Admin support tickets response:', tickets.length, 'tickets found');
+      console.log('First ticket sample:', tickets[0]);
       res.json(tickets);
     } catch (error) {
       console.error('Error fetching admin support tickets:', error);

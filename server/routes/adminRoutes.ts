@@ -1,92 +1,67 @@
-import { Request, Response } from 'express';
-import { storage } from '../storage';
-import { requireAuth, requireAdmin } from '../controllers/authController';
-import { z } from 'zod';
+import { Request, Response } from "express";
+import { storage } from "../storage";
 
-// Validation schemas
-const createRfidCardSchema = z.object({
-  userId: z.string().min(1, 'User ID is required'),
-  cardNumber: z.string().min(1, 'Card number is required').max(20, 'Card number too long'),
-});
-
-// Get all users for admin management
+// Get all users
 export async function getAllUsers(req: Request, res: Response) {
   try {
     const users = await storage.getAllUsers();
     res.json(users);
   } catch (error) {
     console.error('Error fetching users:', error);
-    res.status(500).json({ message: 'Failed to fetch users' });
+    res.status(500).json({ message: "Failed to fetch users" });
   }
 }
 
-// Get all RFID cards for admin management
+// Get all RFID cards
 export async function getAllRfidCards(req: Request, res: Response) {
   try {
     const cards = await storage.getAllRfidCards();
     res.json(cards);
   } catch (error) {
     console.error('Error fetching RFID cards:', error);
-    res.status(500).json({ message: 'Failed to fetch RFID cards' });
+    res.status(500).json({ message: "Failed to fetch RFID cards" });
   }
 }
 
-// Create new RFID card for a user
+// Create RFID card
 export async function createRfidCard(req: Request, res: Response) {
   try {
-    const validation = createRfidCardSchema.safeParse(req.body);
-    if (!validation.success) {
-      return res.status(400).json({ 
-        message: 'Invalid input', 
-        errors: validation.error.errors 
-      });
+    const { userId, cardNumber } = req.body;
+    
+    if (!userId || !cardNumber) {
+      return res.status(400).json({ message: "User ID and card number are required" });
     }
-
-    const { userId, cardNumber } = validation.data;
 
     // Check if card number already exists
     const existingCard = await storage.getRfidCardByNumber(cardNumber);
     if (existingCard) {
-      return res.status(400).json({ message: 'Card number already exists' });
+      return res.status(400).json({ message: "Card number already exists" });
     }
 
-    // Check if user exists
-    const user = await storage.getUser(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Create the card
     const newCard = await storage.createRfidCardForUser(userId, cardNumber);
-    
-    res.status(201).json({
-      message: 'RFID card created successfully',
-      card: newCard
-    });
+    res.json(newCard);
   } catch (error) {
     console.error('Error creating RFID card:', error);
-    res.status(500).json({ message: 'Failed to create RFID card' });
+    res.status(500).json({ message: "Failed to create RFID card" });
   }
 }
 
-// Generate card number helper function
+// Generate card number
 export function generateCardNumber(companyInitials: string, userInitials: string, sequence: number): string {
   const paddedSequence = sequence.toString().padStart(4, '0');
-  return `${companyInitials.toUpperCase()}${userInitials.toUpperCase()}${paddedSequence}`;
+  return `${companyInitials}${userInitials}${paddedSequence}`;
 }
 
 // Get suggested card number
 export async function getSuggestedCardNumber(req: Request, res: Response) {
   try {
     const { userId, companyInitials, userInitials } = req.query;
-
+    
     if (!userId || !companyInitials || !userInitials) {
-      return res.status(400).json({ 
-        message: 'userId, companyInitials, and userInitials are required' 
-      });
+      return res.status(400).json({ message: "User ID, company initials, and user initials are required" });
     }
 
-    // Get existing cards for this user to find next sequence number
+    // Get existing cards for this user to determine sequence
     const existingCards = await storage.getAllRfidCardsByUserId(userId as string);
     const sequenceNumber = existingCards.length + 1;
 
@@ -116,6 +91,7 @@ export async function getSuggestedCardNumber(req: Request, res: Response) {
   }
 }
 
+// Delete RFID card
 export async function deleteRfidCard(req: Request, res: Response) {
   try {
     const { cardId } = req.params;
@@ -131,8 +107,6 @@ export async function deleteRfidCard(req: Request, res: Response) {
     res.status(500).json({ message: "Failed to delete RFID card" });
   }
 }
-
-export { getAllUsers, getAllRfidCards, createRfidCard, generateCardNumber, getSuggestedCardNumber, getDashboardStats, deleteRfidCard };
 
 // Get admin dashboard stats
 export async function getDashboardStats(req: Request, res: Response) {

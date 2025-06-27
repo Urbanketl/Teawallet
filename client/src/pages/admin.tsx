@@ -112,6 +112,12 @@ export default function AdminPage() {
     refetchInterval: 5000,
   });
 
+  // Debug logging
+  console.log('Support tickets data:', supportTickets);
+  console.log('Support tickets loading:', ticketsLoading);
+  console.log('Support tickets type:', typeof supportTickets);
+  console.log('Support tickets is array:', Array.isArray(supportTickets));
+
   const { data: ticketMessages = [], refetch: refetchTicketMessages } = useQuery({
     queryKey: [`/api/support/tickets/${selectedTicketId}/messages`],
     enabled: !!selectedTicketId,

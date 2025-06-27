@@ -638,7 +638,7 @@ export default function AdminPage() {
                   </SelectContent>
                 </Select>
                 <Badge variant="secondary" className="bg-tea-green/10 text-tea-green">
-                  {filterTicketsByDate(supportTickets).length} / {supportTickets.length} Tickets
+                  {filterTicketsByDate(supportTickets || []).length} / {(supportTickets || []).length} Tickets
                 </Badge>
               </div>
             </div>
@@ -675,7 +675,7 @@ export default function AdminPage() {
                     Loading support tickets...
                   </CardContent>
                 </Card>
-              ) : filterTicketsByDate(supportTickets).length === 0 ? (
+              ) : filterTicketsByDate(supportTickets || []).length === 0 ? (
                 <Card>
                   <CardContent className="p-6 text-center">
                     <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -683,7 +683,7 @@ export default function AdminPage() {
                   </CardContent>
                 </Card>
               ) : (
-                filterTicketsByDate(supportTickets).map((ticket: any) => (
+                filterTicketsByDate(supportTickets || []).map((ticket: any) => (
                 <Card key={ticket.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between mb-4">

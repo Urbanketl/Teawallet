@@ -37,6 +37,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/admin/rfid/cards', requireAuth, requireAdmin, adminController.createRfidCard);
   app.delete('/api/admin/rfid/cards/:cardId', requireAuth, requireAdmin, adminController.deleteRfidCard);
   app.get('/api/admin/rfid/suggest-card-number', requireAuth, requireAdmin, adminController.getSuggestedCardNumber);
+  
+  // Admin support routes
+  app.get('/api/admin/support/tickets', requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const tickets = await storage.getAllSupportTickets();
+      res.json(tickets);
+    } catch (error) {
+      console.error('Error fetching admin support tickets:', error);
+      res.status(500).json({ message: 'Failed to fetch support tickets' });
+    }
+  });
 
   // Legacy routes (keeping for backward compatibility)
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {

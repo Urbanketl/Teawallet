@@ -54,8 +54,6 @@ export interface IStorage {
   createReferral(referral: InsertReferral): Promise<Referral>;
   getUserReferrals(userId: string): Promise<Referral[]>;
   
-  // Social operations
-  
   // Support operations
   createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket>;
   getUserSupportTickets(userId: string): Promise<SupportTicket[]>;
@@ -106,13 +104,7 @@ export class DatabaseStorage implements IStorage {
       .set({
         firstName: profileData.firstName,
         lastName: profileData.lastName,
-        companyName: profileData.companyName,
-        mobileNumber: profileData.mobileNumber,
-        address: profileData.address,
-        buildingDetails: profileData.buildingDetails,
-        city: profileData.city,
-        state: profileData.state,
-        pincode: profileData.pincode,
+        email: profileData.email,
         updatedAt: new Date(),
       })
       .where(eq(users.id, id))
@@ -172,7 +164,6 @@ export class DatabaseStorage implements IStorage {
       .update(rfidCards)
       .set({
         lastUsed: new Date(),
-        lastMachine: machineId,
       })
       .where(eq(rfidCards.id, cardId));
   }
@@ -303,7 +294,33 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  // Subscription operations
+  // Support operations
+  async createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket> {
+    const [newTicket] = await db.insert(supportTickets).values(ticket).returning();
+    return newTicket;
+  }
+
+  async getUserSupportTickets(userId: string): Promise<SupportTicket[]> {
+    return await db
+      .select()
+      .from(supportTickets)
+      .where(eq(supportTickets.userId, userId))
+      .orderBy(desc(supportTickets.createdAt));
+  }
+
+  async getAllSupportTickets(): Promise<(SupportTicket & { user: User })[]> {
+    const ticketsWithUsers = await db
+      .select()
+      .from(supportTickets)
+      .leftJoin(users, eq(supportTickets.userId, users.id))
+      .orderBy(desc(supportTickets.createdAt));
+
+    return ticketsWithUsers.map(({ support_tickets, users: user }) => ({
+      ...support_tickets,
+      user: user || { id: '', firstName: 'Unknown', lastName: 'User', email: '' }
+    })) as any;
+  }
+
   async updateSupportTicket(ticketId: number, updates: { status?: string; assignedTo?: string; comment?: string; updatedBy?: string }): Promise<SupportTicket> {
     // Get current ticket to record old status
     const [currentTicket] = await db.select().from(supportTickets).where(eq(supportTickets.id, ticketId));
@@ -318,7 +335,6 @@ export class DatabaseStorage implements IStorage {
       .set({
         status: updates.status,
         assignedTo: updates.assignedTo,
-        lastUpdatedBy: updates.updatedBy,
         updatedAt: new Date()
       })
       .where(eq(supportTickets.id, ticketId))
@@ -404,13 +420,34 @@ export class DatabaseStorage implements IStorage {
 
   // FAQ operations
   async getFaqArticles(category?: string): Promise<FaqArticle[]> {
-    const query = db.select().from(faqArticles).where(eq(faqArticles.isPublished, true));
-    
-    if (category) {
-      query.where(and(eq(faqArticles.isPublished, true), eq(faqArticles.category, category)));
+    try {
+      let query = db.select().from(faqArticles).where(eq(faqArticles.isPublished, true));
+      
+      if (category) {
+        query = db.select().from(faqArticles).where(
+          and(eq(faqArticles.isPublished, true), eq(faqArticles.category, category))
+        );
+      }
+      
+      return await query.orderBy(asc(faqArticles.order), asc(faqArticles.createdAt));
+    } catch (error) {
+      console.error('Error fetching FAQ articles:', error);
+      return [];
     }
-    
-    return await query.orderBy(asc(faqArticles.order), asc(faqArticles.createdAt));
+  }
+
+  // Referral operations
+  async createReferral(referral: InsertReferral): Promise<Referral> {
+    const [newReferral] = await db.insert(referrals).values(referral).returning();
+    return newReferral;
+  }
+
+  async getUserReferrals(userId: string): Promise<Referral[]> {
+    return await db
+      .select()
+      .from(referrals)
+      .where(eq(referrals.referrerId, userId))
+      .orderBy(desc(referrals.createdAt));
   }
 
   async createFaqArticle(article: InsertFaqArticle): Promise<FaqArticle> {

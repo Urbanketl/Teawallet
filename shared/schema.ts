@@ -119,12 +119,13 @@ export const ticketStatusHistory = pgTable("ticket_status_history", {
 // FAQ Articles
 export const faqArticles = pgTable("faq_articles", {
   id: serial("id").primaryKey(),
-  title: varchar("title").notNull(),
-  content: text("content").notNull(),
+  question: text("question").notNull(),
+  answer: text("answer").notNull(),
   category: varchar("category").notNull(),
-  tags: jsonb("tags"),
-  views: integer("views").default(0),
+  order: integer("order").default(0),
   isPublished: boolean("is_published").default(true),
+  views: integer("views").default(0),
+  helpful: integer("helpful").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

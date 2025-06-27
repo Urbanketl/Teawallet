@@ -9,8 +9,9 @@ import { insertDispensingLogSchema } from "@shared/schema";
 import authRoutes from "./routes/authRoutes";
 import transactionRoutes from "./routes/transactionRoutes";
 import supportRoutes from "./routes/supportRoutes";
-import adminRoutes from "./routes/adminRoutes";
 import analyticsRoutes from "./routes/analyticsRoutes";
+import * as adminController from "./routes/adminRoutes";
+import { requireAuth, requireAdmin } from "./controllers/authController";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize Razorpay
@@ -27,8 +28,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/auth', authRoutes);
   app.use('/api/transactions', transactionRoutes);
   app.use('/api/support', supportRoutes);
-  app.use('/api/admin', adminRoutes);
   app.use('/api/analytics', analyticsRoutes);
+
+  // Admin routes - require authentication and admin privileges
+  app.get('/api/admin/users', requireAuth, requireAdmin, adminController.getAllUsers);
+  app.get('/api/admin/stats', requireAuth, requireAdmin, adminController.getDashboardStats);
+  app.get('/api/admin/rfid/cards', requireAuth, requireAdmin, adminController.getAllRfidCards);
+  app.post('/api/admin/rfid/cards', requireAuth, requireAdmin, adminController.createRfidCard);
+  app.get('/api/admin/rfid/suggest-card-number', requireAuth, requireAdmin, adminController.getSuggestedCardNumber);
 
   // Legacy routes (keeping for backward compatibility)
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {

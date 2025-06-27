@@ -26,7 +26,9 @@ import {
   MessageCircle,
   Clock,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  CreditCard,
+  Plus
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -924,3 +926,216 @@ export default function AdminPage() {
       </div>
     );
   }
+
+function RfidManagement() {
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<string>("");
+  const [companyInitials, setCompanyInitials] = useState("");
+  const [userInitials, setUserInitials] = useState("");
+  const [suggestedCardNumber, setSuggestedCardNumber] = useState("");
+  const { toast } = useToast();
+
+  const { data: users } = useQuery({
+    queryKey: ["/api/admin/users"],
+  });
+
+  const { data: rfidCards, refetch: refetchCards } = useQuery({
+    queryKey: ["/api/admin/rfid/cards"],
+  });
+
+  const { data: suggestion } = useQuery({
+    queryKey: ["/api/admin/rfid/suggest-card-number", selectedUser, companyInitials, userInitials],
+    enabled: !!(selectedUser && companyInitials && userInitials),
+  });
+
+  const createCardMutation = useMutation({
+    mutationFn: async (data: { userId: string; cardNumber: string }) => {
+      const response = await fetch('/api/admin/rfid/cards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Failed to create card');
+      return response.json();
+    },
+    onSuccess: () => {
+      refetchCards();
+      setShowCreateForm(false);
+      setSelectedUser("");
+      setCompanyInitials("");
+      setUserInitials("");
+      setSuggestedCardNumber("");
+      toast({
+        title: "Success",
+        description: "RFID card created successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create RFID card",
+        variant: "destructive",
+      });
+    },
+  });
+
+  useEffect(() => {
+    if (suggestion?.suggestedCardNumber) {
+      setSuggestedCardNumber(suggestion.suggestedCardNumber);
+    }
+  }, [suggestion]);
+
+  const handleCreateCard = () => {
+    if (!selectedUser || !suggestedCardNumber) return;
+    
+    createCardMutation.mutate({
+      userId: selectedUser,
+      cardNumber: suggestedCardNumber,
+    });
+  };
+
+  const selectedUserData = users?.find((u: any) => u.id === selectedUser);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-semibold">RFID Card Management</h3>
+          <p className="text-sm text-muted-foreground">
+            Create and manage RFID cards for users
+          </p>
+        </div>
+        <Button 
+          onClick={() => setShowCreateForm(!showCreateForm)}
+          className="flex items-center gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Create New Card
+        </Button>
+      </div>
+
+      {showCreateForm && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Create New RFID Card</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Select User</label>
+                <select 
+                  value={selectedUser} 
+                  onChange={(e) => setSelectedUser(e.target.value)}
+                  className="w-full p-2 border rounded-md"
+                >
+                  <option value="">Choose a user...</option>
+                  {users?.map((user: any) => (
+                    <option key={user.id} value={user.id}>
+                      {user.firstName} {user.lastName} ({user.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Company Initials (2 letters)</label>
+                <input
+                  type="text"
+                  value={companyInitials}
+                  onChange={(e) => setCompanyInitials(e.target.value.slice(0, 2).toUpperCase())}
+                  placeholder="e.g., UK"
+                  className="w-full p-2 border rounded-md"
+                  maxLength={2}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">User Initials (2 letters)</label>
+                <input
+                  type="text"
+                  value={userInitials}
+                  onChange={(e) => setUserInitials(e.target.value.slice(0, 2).toUpperCase())}
+                  placeholder="e.g., TP"
+                  className="w-full p-2 border rounded-md"
+                  maxLength={2}
+                />
+                {selectedUserData && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Suggestion: {selectedUserData.firstName?.[0]}{selectedUserData.lastName?.[0]}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Generated Card Number</label>
+                <input
+                  type="text"
+                  value={suggestedCardNumber}
+                  onChange={(e) => setSuggestedCardNumber(e.target.value)}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="Will be generated automatically"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleCreateCard}
+                disabled={!selectedUser || !suggestedCardNumber || createCardMutation.isPending}
+              >
+                {createCardMutation.isPending ? "Creating..." : "Create Card"}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowCreateForm(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            All RFID Cards
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {rfidCards?.map((card: any) => (
+              <div key={card.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center space-x-4">
+                  <div className="flex-1">
+                    <div className="font-medium">{card.cardNumber}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {card.user?.firstName} {card.user?.lastName} ({card.user?.email})
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Created: {new Date(card.createdAt).toLocaleDateString()}
+                      {card.lastUsed && (
+                        <span> • Last used: {new Date(card.lastUsed).toLocaleDateString()}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Badge variant={card.isActive ? "default" : "secondary"}>
+                    {card.isActive ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
+              </div>
+            ))}
+            {(!rfidCards || rfidCards.length === 0) && (
+              <div className="text-center py-8 text-muted-foreground">
+                No RFID cards found
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

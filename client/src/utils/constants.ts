@@ -18,6 +18,8 @@ export const API_ENDPOINTS = {
   ADMIN_STATS: '/api/admin/stats',
   ADMIN_MACHINES: '/api/admin/machines',
   ADMIN_SUPPORT_TICKETS: '/api/admin/support/tickets',
+  ADMIN_RFID_CARDS: '/api/admin/rfid/cards',
+  ADMIN_RFID_SUGGEST: '/api/admin/rfid/suggest-card-number',
   
   // Analytics
   ANALYTICS_POPULAR_TEAS: '/api/analytics/popular-teas',

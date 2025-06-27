@@ -28,6 +28,10 @@ export interface IStorage {
   updateRfidCardLastUsed(cardId: number, machineId: string): Promise<void>;
   deactivateRfidCard(cardId: number): Promise<void>;
   
+  // Admin RFID operations
+  createRfidCardForUser(userId: string, cardNumber: string): Promise<RfidCard>;
+  getAllRfidCards(): Promise<(RfidCard & { user: User })[]>;
+  
   // Transaction operations
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   getUserTransactions(userId: string, limit?: number): Promise<Transaction[]>;
@@ -173,6 +177,45 @@ export class DatabaseStorage implements IStorage {
       .update(rfidCards)
       .set({ isActive: false })
       .where(eq(rfidCards.id, cardId));
+  }
+
+  // Admin RFID operations
+  async createRfidCardForUser(userId: string, cardNumber: string): Promise<RfidCard> {
+    const [newCard] = await db
+      .insert(rfidCards)
+      .values({
+        userId: userId,
+        cardNumber: cardNumber,
+        isActive: true,
+      })
+      .returning();
+    return newCard;
+  }
+
+  async getAllRfidCards(): Promise<(RfidCard & { user: User })[]> {
+    return await db
+      .select({
+        id: rfidCards.id,
+        userId: rfidCards.userId,
+        cardNumber: rfidCards.cardNumber,
+        isActive: rfidCards.isActive,
+        lastUsed: rfidCards.lastUsed,
+        createdAt: rfidCards.createdAt,
+        user: {
+          id: users.id,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          profileImageUrl: users.profileImageUrl,
+          walletBalance: users.walletBalance,
+          isAdmin: users.isAdmin,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+        }
+      })
+      .from(rfidCards)
+      .leftJoin(users, eq(rfidCards.userId, users.id))
+      .orderBy(desc(rfidCards.createdAt));
   }
 
   // Transaction operations

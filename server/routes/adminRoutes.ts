@@ -1,80 +1,128 @@
-import { Router } from "express";
-import { requireAuth, requireAdmin } from "../controllers/authController";
-import { storage } from "../storage";
+import { Request, Response } from 'express';
+import { storage } from '../storage';
+import { requireAuth, requireAdmin } from '../controllers/authController';
+import { z } from 'zod';
 
-const router = Router();
+// Validation schemas
+const createRfidCardSchema = z.object({
+  userId: z.string().min(1, 'User ID is required'),
+  cardNumber: z.string().min(1, 'Card number is required').max(20, 'Card number too long'),
+});
 
-// All admin routes require admin access
-router.use(requireAuth);
-router.use(requireAdmin);
-
-// Admin user management
-router.get('/users', async (req, res) => {
+// Get all users for admin management
+export async function getAllUsers(req: Request, res: Response) {
   try {
     const users = await storage.getAllUsers();
     res.json(users);
   } catch (error) {
-    console.error("Error fetching users:", error);
-    res.status(500).json({ message: "Failed to fetch users" });
+    console.error('Error fetching users:', error);
+    res.status(500).json({ message: 'Failed to fetch users' });
   }
-});
+}
 
-// Admin stats
-router.get('/stats', async (req, res) => {
+// Get all RFID cards for admin management
+export async function getAllRfidCards(req: Request, res: Response) {
+  try {
+    const cards = await storage.getAllRfidCards();
+    res.json(cards);
+  } catch (error) {
+    console.error('Error fetching RFID cards:', error);
+    res.status(500).json({ message: 'Failed to fetch RFID cards' });
+  }
+}
+
+// Create new RFID card for a user
+export async function createRfidCard(req: Request, res: Response) {
+  try {
+    const validation = createRfidCardSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({ 
+        message: 'Invalid input', 
+        errors: validation.error.errors 
+      });
+    }
+
+    const { userId, cardNumber } = validation.data;
+
+    // Check if card number already exists
+    const existingCard = await storage.getRfidCardByNumber(cardNumber);
+    if (existingCard) {
+      return res.status(400).json({ message: 'Card number already exists' });
+    }
+
+    // Check if user exists
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Create the card
+    const newCard = await storage.createRfidCardForUser(userId, cardNumber);
+    
+    res.status(201).json({
+      message: 'RFID card created successfully',
+      card: newCard
+    });
+  } catch (error) {
+    console.error('Error creating RFID card:', error);
+    res.status(500).json({ message: 'Failed to create RFID card' });
+  }
+}
+
+// Generate card number helper function
+export function generateCardNumber(companyInitials: string, userInitials: string, sequence: number): string {
+  const paddedSequence = sequence.toString().padStart(4, '0');
+  return `${companyInitials.toUpperCase()}${userInitials.toUpperCase()}${paddedSequence}`;
+}
+
+// Get suggested card number
+export async function getSuggestedCardNumber(req: Request, res: Response) {
+  try {
+    const { userId, companyInitials, userInitials } = req.query;
+
+    if (!userId || !companyInitials || !userInitials) {
+      return res.status(400).json({ 
+        message: 'userId, companyInitials, and userInitials are required' 
+      });
+    }
+
+    // Get existing cards for this user to find next sequence number
+    const existingCards = await storage.getAllRfidCardsByUserId(userId as string);
+    const sequenceNumber = existingCards.length + 1;
+
+    const suggestedCardNumber = generateCardNumber(
+      companyInitials as string, 
+      userInitials as string, 
+      sequenceNumber
+    );
+
+    // Check if this number already exists and increment if needed
+    let finalCardNumber = suggestedCardNumber;
+    let counter = sequenceNumber;
+    
+    while (await storage.getRfidCardByNumber(finalCardNumber)) {
+      counter++;
+      finalCardNumber = generateCardNumber(
+        companyInitials as string, 
+        userInitials as string, 
+        counter
+      );
+    }
+
+    res.json({ suggestedCardNumber: finalCardNumber });
+  } catch (error) {
+    console.error('Error generating card number:', error);
+    res.status(500).json({ message: 'Failed to generate card number' });
+  }
+}
+
+// Get admin dashboard stats
+export async function getDashboardStats(req: Request, res: Response) {
   try {
     const stats = await storage.getDailyStats();
     res.json(stats);
   } catch (error) {
-    console.error("Error fetching admin stats:", error);
-    res.status(500).json({ message: "Failed to fetch admin stats" });
+    console.error('Error fetching dashboard stats:', error);
+    res.status(500).json({ message: 'Failed to fetch dashboard stats' });
   }
-});
-
-// Admin machine management
-router.get('/machines', async (req, res) => {
-  try {
-    const machines = await storage.getAllTeaMachines();
-    res.json(machines);
-  } catch (error) {
-    console.error("Error fetching machines:", error);
-    res.status(500).json({ message: "Failed to fetch machines" });
-  }
-});
-
-// Admin support ticket management
-router.get('/support/tickets', async (req, res) => {
-  try {
-    const { dateFrom, dateTo } = req.query;
-    const tickets = await storage.getAllSupportTickets();
-    
-    let filteredTickets = tickets;
-    if (dateFrom || dateTo) {
-      filteredTickets = tickets.filter(ticket => {
-        const ticketDate = new Date(ticket.createdAt);
-        if (dateFrom && ticketDate < new Date(dateFrom as string)) return false;
-        if (dateTo && ticketDate > new Date(dateTo as string)) return false;
-        return true;
-      });
-    }
-    
-    res.json(filteredTickets);
-  } catch (error) {
-    console.error("Error fetching admin support tickets:", error);
-    res.status(500).json({ message: "Failed to fetch support tickets" });
-  }
-});
-
-router.put('/support/tickets/:ticketId', async (req, res) => {
-  try {
-    const { ticketId } = req.params;
-    const updates = req.body;
-    
-    const updatedTicket = await storage.updateSupportTicket(Number(ticketId), updates);
-    res.json(updatedTicket);
-  } catch (error) {
-    console.error("Error updating support ticket:", error);
-    res.status(500).json({ message: "Failed to update support ticket" });
-  }
-});
-
-export default router;
+}

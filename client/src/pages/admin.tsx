@@ -950,6 +950,17 @@ function RfidManagement() {
 
   const { data: suggestion } = useQuery({
     queryKey: ["/api/admin/rfid/suggest-card-number", selectedUser, companyInitials, userInitials],
+    queryFn: async () => {
+      if (!selectedUser || !companyInitials || !userInitials) return null;
+      const params = new URLSearchParams({
+        userId: selectedUser,
+        companyInitials: companyInitials,
+        userInitials: userInitials
+      });
+      const response = await fetch(`/api/admin/rfid/suggest-card-number?${params}`);
+      if (!response.ok) throw new Error('Failed to get suggestion');
+      return response.json();
+    },
     enabled: !!(selectedUser && companyInitials && userInitials),
   });
 

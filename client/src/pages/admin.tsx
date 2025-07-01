@@ -125,7 +125,7 @@ export default function AdminPage() {
     retry: false,
   });
 
-  const { data: allUsers, isLoading: usersLoading } = useQuery({
+  const { data: allUsers, isLoading: allUsersLoading } = useQuery({
     queryKey: ["/api/admin/users"],
     enabled: isAuthenticated && user?.isAdmin,
     retry: false,
@@ -149,7 +149,7 @@ export default function AdminPage() {
   const [dateFilter, setDateFilter] = useState('all');
   const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
 
-  const { data: supportTickets = [], isLoading: ticketsLoading, refetch: refetchTickets } = useQuery({
+  const { data: supportTickets = [], isLoading: allTicketsLoading, refetch: refetchTickets } = useQuery({
     queryKey: ["/api/admin/support/tickets"],
     enabled: isAuthenticated && user?.isAdmin,
     retry: false,
@@ -158,7 +158,7 @@ export default function AdminPage() {
 
   // Debug logging
   console.log('Support tickets data:', supportTickets);
-  console.log('Support tickets loading:', ticketsLoading);
+  console.log('Support tickets loading:', allTicketsLoading);
   console.log('Support tickets type:', typeof supportTickets);
   console.log('Support tickets is array:', Array.isArray(supportTickets));
 

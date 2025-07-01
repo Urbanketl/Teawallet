@@ -46,6 +46,26 @@ export default function AdminPage() {
     systemName: "UrbanKetl Tea System"
   });
 
+  // Load system settings from database
+  const { data: systemSettings } = useQuery({
+    queryKey: ["/api/admin/settings"],
+    enabled: isAuthenticated && user?.isAdmin,
+    retry: false,
+  });
+
+  // Update settings state when database values are loaded
+  useEffect(() => {
+    if (systemSettings && Array.isArray(systemSettings)) {
+      const maxWalletSetting = systemSettings.find(s => s.key === 'max_wallet_balance');
+      if (maxWalletSetting) {
+        setSettings(prev => ({
+          ...prev,
+          maxWalletBalance: maxWalletSetting.value
+        }));
+      }
+    }
+  }, [systemSettings]);
+
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -425,12 +445,37 @@ export default function AdminPage() {
                       Cancel
                     </Button>
                     <Button 
-                      onClick={() => {
-                        toast({
-                          title: "Settings Updated",
-                          description: "System settings have been saved successfully.",
-                        });
-                        setSettingsOpen(false);
+                      onClick={async () => {
+                        try {
+                          // Update max wallet balance in database
+                          const response = await fetch('/api/admin/settings', {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                              key: 'max_wallet_balance', 
+                              value: parseFloat(settings.maxWalletBalance).toFixed(2) 
+                            }),
+                            credentials: 'include'
+                          });
+
+                          if (!response.ok) throw new Error('Failed to update setting');
+
+                          // Invalidate settings cache to refresh all components
+                          const queryClient = useQueryClient();
+                          await queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
+
+                          toast({
+                            title: "✅ Settings Updated",
+                            description: `Maximum wallet balance updated to ₹${settings.maxWalletBalance}. Changes are now active.`,
+                          });
+                          setSettingsOpen(false);
+                        } catch (error) {
+                          toast({
+                            title: "❌ Update Failed",
+                            description: "Failed to save system settings. Please try again.",
+                            variant: "destructive",
+                          });
+                        }
                       }}
                       className="bg-tea-green hover:bg-tea-dark"
                     >

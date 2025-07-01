@@ -323,31 +323,40 @@ export default function RFIDCard() {
                     <div className="space-y-4">
                       {/* Filter Dropdown */}
                       <div className="flex justify-between items-center">
-                        <h4 className="font-medium">All Cards ({rfidCards?.length || 0})</h4>
-                        <select 
-                          value={cardFilter}
-                          onChange={(e) => setCardFilter(e.target.value)}
-                          className="px-3 py-1 border rounded-md text-sm"
-                        >
-                          <option value="all">All Cards</option>
-                          <option value="active">Active Only</option>
-                          <option value="inactive">Inactive Only</option>
-                        </select>
+                        <h4 className="font-medium">
+                          All Cards ({rfidCards?.length || 0}) 
+                          {cardFilter === "inactive" && (
+                            <span className="text-sm text-gray-500">
+                              - Inactive: {rfidCards?.filter(c => c.isActive === false).length || 0}
+                            </span>
+                          )}
+                        </h4>
+                        <div className="flex gap-2">
+                          <select 
+                            value={cardFilter}
+                            onChange={(e) => setCardFilter(e.target.value)}
+                            className="px-3 py-1 border rounded-md text-sm"
+                          >
+                            <option value="all">All Cards</option>
+                            <option value="active">Active Only</option>
+                            <option value="inactive">Inactive Only</option>
+                          </select>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/rfid/cards"] })}
+                          >
+                            🔄 Refresh
+                          </Button>
+                        </div>
                       </div>
 
                       <div className="space-y-3">
-                        {(() => {
-                          console.log("All RFID cards:", rfidCards);
-                          console.log("Current filter:", cardFilter);
-                          const filteredCards = rfidCards?.filter((card: any) => {
-                            console.log(`Card ${card.id}: isActive = ${card.isActive}`);
-                            if (cardFilter === "active") return card.isActive;
-                            if (cardFilter === "inactive") return !card.isActive;
-                            return true; // "all"
-                          });
-                          console.log("Filtered cards:", filteredCards);
-                          return filteredCards;
-                        })()?.map((card: any, index: number) => (
+                        {rfidCards?.filter((card: any) => {
+                          if (cardFilter === "active") return card.isActive === true;
+                          if (cardFilter === "inactive") return card.isActive === false;
+                          return true; // "all"
+                        }).map((card: any, index: number) => (
                           <div key={card.id} className="p-3 border rounded-lg">
                             <div className="flex justify-between items-start mb-2">
                               <div>

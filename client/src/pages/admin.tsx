@@ -1555,12 +1555,13 @@ function SystemSettingsManagement() {
                 <Button 
                   onClick={handleMaxWalletUpdate}
                   disabled={isLoading}
+                  className="bg-blue-600 hover:bg-blue-700"
                 >
-                  {isLoading ? "Updating..." : "Update"}
+                  {isLoading ? "Updating..." : "Update Limit"}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Users cannot recharge beyond this amount
+                ⚠️ Users cannot recharge beyond this amount. Changes take effect immediately.
               </p>
             </div>
           </div>

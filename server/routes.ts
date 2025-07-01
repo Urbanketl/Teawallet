@@ -212,9 +212,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const maxWalletBalanceStr = await storage.getSystemSetting('max_wallet_balance') || '5000.00';
+      console.log('Retrieved max wallet balance from DB:', maxWalletBalanceStr);
       const maxWalletBalance = parseFloat(maxWalletBalanceStr);
       const currentBalance = parseFloat(user.walletBalance || '0');
       const newBalance = currentBalance + amount;
+      console.log(`Wallet validation: current=${currentBalance}, amount=${amount}, new=${newBalance}, max=${maxWalletBalance}`);
 
       if (newBalance > maxWalletBalance) {
         return res.status(400).json({ 

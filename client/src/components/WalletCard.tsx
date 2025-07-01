@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useRazorpay } from "@/hooks/useRazorpay";
 import { useToast } from "@/hooks/use-toast";
-import { Wallet, Plus, IndianRupee, AlertTriangle, CreditCard } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Wallet, Plus, IndianRupee, AlertTriangle, CreditCard, Minus } from "lucide-react";
 
 export default function WalletCard() {
   const { user } = useAuth();
@@ -16,6 +17,15 @@ export default function WalletCard() {
   const balance = parseFloat(user?.walletBalance || '0');
   const LOW_BALANCE_THRESHOLD = 50.00;
   const isLowBalance = balance <= LOW_BALANCE_THRESHOLD;
+
+  // Get system settings for max wallet balance
+  const { data: systemSettings } = useQuery({
+    queryKey: ["/api/admin/settings"],
+    retry: false,
+  });
+
+  const maxWalletBalance = systemSettings?.find(s => s.key === 'max_wallet_balance')?.value || '9000.00';
+  const maxAllowedRecharge = parseFloat(maxWalletBalance) - balance;
   
   // Show low balance alert
   useEffect(() => {
@@ -142,18 +152,69 @@ export default function WalletCard() {
                         Enter a custom amount to add to your wallet balance.
                       </p>
                     </div>
+
+                    {/* Information about maximum recharge */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="flex items-start space-x-2">
+                        <div className="w-4 h-4 rounded-full bg-blue-400 flex-shrink-0 mt-0.5"></div>
+                        <div className="flex-1">
+                          <p className="text-sm text-blue-800 font-medium">
+                            Recharge Information
+                          </p>
+                          <p className="text-xs text-blue-700 mt-1">
+                            Current Balance: ₹{balance.toFixed(2)}<br />
+                            Maximum Wallet Limit: ₹{parseFloat(maxWalletBalance).toFixed(2)}<br />
+                            Maximum you can add: ₹{maxAllowedRecharge > 0 ? maxAllowedRecharge.toFixed(2) : '0.00'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
                     <div>
                       <Label htmlFor="custom-amount">Enter Amount (₹)</Label>
-                      <Input
-                        id="custom-amount"
-                        type="number"
-                        placeholder="Enter amount"
-                        value={customAmount}
-                        onChange={(e) => setCustomAmount(e.target.value)}
-                        min="1"
-                        step="0.01"
-                        className="mt-1"
-                      />
+                      <div className="flex items-center space-x-2 mt-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const current = parseFloat(customAmount) || 0;
+                            const newAmount = Math.max(0, current - 100);
+                            setCustomAmount(newAmount.toString());
+                          }}
+                          disabled={loading}
+                          className="h-10 w-10 p-0"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </Button>
+                        <Input
+                          id="custom-amount"
+                          type="number"
+                          placeholder="Enter amount"
+                          value={customAmount}
+                          onChange={(e) => setCustomAmount(e.target.value)}
+                          min="1"
+                          step="100"
+                          className="flex-1"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const current = parseFloat(customAmount) || 0;
+                            const newAmount = current + 100;
+                            // Don't exceed maximum allowed recharge
+                            const maxAmount = Math.min(newAmount, maxAllowedRecharge);
+                            setCustomAmount(maxAmount > 0 ? maxAmount.toString() : "100");
+                          }}
+                          disabled={loading}
+                          className="h-10 w-10 p-0"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Use +/- buttons to adjust by ₹100 increments
+                      </p>
                     </div>
                     <div className="flex space-x-3">
                       <Button

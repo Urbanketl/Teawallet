@@ -185,8 +185,15 @@ export function useRazorpay() {
       const orderRes = await apiRequest("POST", "/api/wallet/create-order", { amount });
       
       if (!orderRes.ok) {
+        const errorData = await orderRes.json();
+        console.log("Order creation error:", errorData);
+        
         if (orderRes.status === 429) {
           throw new Error("Too many payment requests. Please wait a moment and try again.");
+        }
+        if (orderRes.status === 400 && errorData.message) {
+          // This will catch max wallet limit errors
+          throw new Error(errorData.message);
         }
         throw new Error(`Failed to create order: ${orderRes.status}`);
       }
@@ -195,7 +202,7 @@ export function useRazorpay() {
       console.log("Order response:", orderResponse);
       
       if (!orderResponse.success) {
-        throw new Error("Failed to create payment order");
+        throw new Error(orderResponse.message || "Failed to create payment order");
       }
 
       // Store order details for manual fallback

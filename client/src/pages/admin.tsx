@@ -953,6 +953,11 @@ export default function AdminPage() {
           <TabsContent value="faq">
             <FaqManagement />
           </TabsContent>
+
+          <TabsContent value="settings">
+            <SystemSettingsManagement />
+          </TabsContent>
+          
           </Tabs>
         </main>
       </div>
@@ -1452,6 +1457,128 @@ function RfidManagement() {
                 No RFID cards found
               </div>
             )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// System Settings Management Component  
+function SystemSettingsManagement() {
+  const { toast } = useToast();
+  const [maxWalletBalance, setMaxWalletBalance] = useState('5000.00');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const { data: systemSettings } = useQuery({
+    queryKey: ["/api/admin/settings"],
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (systemSettings) {
+      const maxBalance = systemSettings.find((s: any) => s.key === 'max_wallet_balance');
+      if (maxBalance) {
+        setMaxWalletBalance(maxBalance.value);
+      }
+    }
+  }, [systemSettings]);
+
+  const updateSetting = async (key: string, value: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/admin/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, value }),
+        credentials: 'include'
+      });
+
+      if (!response.ok) throw new Error('Failed to update setting');
+
+      toast({
+        title: "Success",
+        description: "Setting updated successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error", 
+        description: "Failed to update setting",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleMaxWalletUpdate = () => {
+    const value = parseFloat(maxWalletBalance);
+    if (isNaN(value) || value <= 0) {
+      toast({
+        title: "Invalid Value",
+        description: "Please enter a valid positive number",
+        variant: "destructive",
+      });
+      return;
+    }
+    updateSetting('max_wallet_balance', value.toFixed(2));
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Wallet Settings</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Configure wallet limits and restrictions
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="maxWallet">Maximum Wallet Balance (₹)</Label>
+              <div className="flex space-x-2 mt-1">
+                <Input
+                  id="maxWallet"
+                  type="number"
+                  value={maxWalletBalance}
+                  onChange={(e) => setMaxWalletBalance(e.target.value)}
+                  placeholder="5000.00"
+                  step="0.01"
+                  min="0"
+                />
+                <Button 
+                  onClick={handleMaxWalletUpdate}
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Updating..." : "Update"}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Users cannot recharge beyond this amount
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Current Settings</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {systemSettings?.map((setting: any) => (
+              <div key={setting.key} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <div className="font-medium">{setting.key.replace(/_/g, ' ').toUpperCase()}</div>
+                  <div className="text-sm text-muted-foreground">{setting.description}</div>
+                </div>
+                <div className="font-mono text-sm bg-white px-2 py-1 rounded border">
+                  {setting.value}
+                </div>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>

@@ -40,13 +40,34 @@ export async function createTransaction(req: any, res: Response) {
 export async function createPaymentOrder(req: any, res: Response) {
   try {
     const { amount } = req.body;
+    const userId = req.session?.user?.id || req.user?.claims?.sub;
     
     if (!amount || amount <= 0) {
       return res.status(400).json({ message: "Invalid amount" });
     }
 
+    // Check max wallet limit before creating order
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const maxWalletBalanceStr = await storage.getSystemSetting('max_wallet_balance') || '5000.00';
+    const maxWalletBalance = parseFloat(maxWalletBalanceStr);
+    const currentBalance = parseFloat(user.walletBalance || '0');
+    const newBalance = currentBalance + amount;
+
+    if (newBalance > maxWalletBalance) {
+      return res.status(400).json({ 
+        message: `Cannot recharge. Maximum wallet balance is ₹${maxWalletBalance}. Current balance: ₹${currentBalance}. You can add up to ₹${(maxWalletBalance - currentBalance).toFixed(2)} more.`,
+        maxBalance: maxWalletBalance,
+        currentBalance: currentBalance,
+        maxAllowedRecharge: maxWalletBalance - currentBalance
+      });
+    }
+
     const order = await createOrder(amount * 100); // Convert to paise
-    res.json(order);
+    res.json({ success: true, order });
   } catch (error) {
     console.error("Error creating payment order:", error);
     res.status(500).json({ message: "Failed to create payment order" });

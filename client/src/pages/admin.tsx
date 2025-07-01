@@ -332,7 +332,13 @@ export default function AdminPage() {
             </Button>
             <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline">
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    console.log("Settings button clicked", settingsOpen);
+                    setSettingsOpen(true);
+                  }}
+                >
                   <Settings className="w-4 h-4 mr-2" />
                   Settings
                 </Button>

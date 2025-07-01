@@ -57,7 +57,17 @@ export async function createPaymentOrder(req: any, res: Response) {
     const currentBalance = parseFloat(user.walletBalance || '0');
     const newBalance = currentBalance + amount;
 
+    console.log('Wallet validation:', {
+      amount,
+      maxWalletBalanceStr,
+      maxWalletBalance,
+      currentBalance,
+      newBalance,
+      exceeds: newBalance > maxWalletBalance
+    });
+
     if (newBalance > maxWalletBalance) {
+      console.log('Wallet limit exceeded, returning error');
       return res.status(400).json({ 
         message: `Cannot recharge. Maximum wallet balance is ₹${maxWalletBalance}. Current balance: ₹${currentBalance}. You can add up to ₹${(maxWalletBalance - currentBalance).toFixed(2)} more.`,
         maxBalance: maxWalletBalance,

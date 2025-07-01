@@ -16,21 +16,21 @@ export default function TransactionHistory() {
   });
 
   const getTransactionIcon = (type: string) => {
-    if (type === 'recharge') {
+    if (type === 'recharge' || type === 'credit') {
       return <Plus className="w-4 h-4 text-green-600" />;
     }
     return <Coffee className="w-4 h-4 text-orange-600" />;
   };
 
   const getTransactionColor = (type: string) => {
-    if (type === 'recharge') {
+    if (type === 'recharge' || type === 'credit') {
       return 'text-green-600';
     }
     return 'text-red-600';
   };
 
   const getAmountPrefix = (type: string) => {
-    if (type === 'recharge') {
+    if (type === 'recharge' || type === 'credit') {
       return '+';
     }
     return '-';
@@ -66,7 +66,7 @@ export default function TransactionHistory() {
               >
                 <div className="flex items-center space-x-4">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    transaction.type === 'recharge' ? 'bg-green-100' : 'bg-orange-100'
+                    transaction.type === 'recharge' || transaction.type === 'credit' ? 'bg-green-100' : 'bg-orange-100'
                   }`}>
                     {getTransactionIcon(transaction.type)}
                   </div>

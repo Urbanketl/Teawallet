@@ -44,22 +44,22 @@ export default function Dashboard() {
     return null;
   }
 
-  const cupsToday = dispensingHistory?.filter((log: any) => {
+  const cupsToday = Array.isArray(dispensingHistory) ? dispensingHistory.filter((log: any) => {
     const today = new Date().toDateString();
     return new Date(log.createdAt).toDateString() === today;
-  }).length || 0;
+  }).length : 0;
 
-  const cupsThisWeek = dispensingHistory?.filter((log: any) => {
+  const cupsThisWeek = Array.isArray(dispensingHistory) ? dispensingHistory.filter((log: any) => {
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
     return new Date(log.createdAt) > weekAgo;
-  }).length || 0;
+  }).length : 0;
 
-  const cupsThisMonth = dispensingHistory?.filter((log: any) => {
+  const cupsThisMonth = Array.isArray(dispensingHistory) ? dispensingHistory.filter((log: any) => {
     const monthAgo = new Date();
     monthAgo.setMonth(monthAgo.getMonth() - 1);
     return new Date(log.createdAt) > monthAgo;
-  }).length || 0;
+  }).length : 0;
 
   return (
     <div className="min-h-screen bg-neutral-warm">
@@ -195,6 +195,7 @@ export default function Dashboard() {
                   <Button 
                     variant="ghost"
                     className="w-full justify-between"
+                    onClick={() => window.location.href = '/support'}
                   >
                     <div className="flex items-center space-x-3">
                       <Headphones className="w-4 h-4" />
@@ -228,9 +229,19 @@ export default function Dashboard() {
             <History className="w-5 h-5" />
             <span className="text-xs font-medium">History</span>
           </button>
-          <button className="flex flex-col items-center space-y-1 p-2 text-gray-400">
+          <button 
+            className="flex flex-col items-center space-y-1 p-2 text-gray-400"
+            onClick={() => window.location.href = '/profile'}
+          >
             <User className="w-5 h-5" />
             <span className="text-xs font-medium">Profile</span>
+          </button>
+          <button 
+            className="flex flex-col items-center space-y-1 p-2 text-gray-400"
+            onClick={() => window.location.href = '/support'}
+          >
+            <Headphones className="w-5 h-5" />
+            <span className="text-xs font-medium">Support</span>
           </button>
         </div>
       </nav>

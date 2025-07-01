@@ -20,6 +20,7 @@ export default function RFIDCard() {
   const queryClient = useQueryClient();
   const [newCardNumber, setNewCardNumber] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [manageDialogOpen, setManageDialogOpen] = useState(false);
 
   const { data: rfidCards, isLoading } = useQuery({
     queryKey: ["/api/rfid/cards"],
@@ -197,7 +198,7 @@ export default function RFIDCard() {
               )}
             </div>
             
-            <Dialog>
+            <Dialog open={manageDialogOpen} onOpenChange={setManageDialogOpen}>
               <DialogTrigger asChild>
                 <Button 
                   variant="outline" 

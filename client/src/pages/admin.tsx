@@ -330,99 +330,84 @@ export default function AdminPage() {
               <Download className="w-4 h-4 mr-2" />
               Export Data
             </Button>
-            <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-              <DialogTrigger asChild>
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    console.log("Settings button clicked", settingsOpen);
-                    setSettingsOpen(true);
-                  }}
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Settings
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[525px]">
-                <DialogHeader>
-                  <DialogTitle>System Settings</DialogTitle>
-                  <DialogDescription>
-                    Configure system-wide settings for the UrbanKetl tea dispensing system.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-6 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="systemName" className="text-right">
-                      System Name
-                    </Label>
-                    <Input
-                      id="systemName"
-                      value={settings.systemName}
-                      onChange={(e) => setSettings({...settings, systemName: e.target.value})}
-                      className="col-span-3"
-                    />
+            <Button 
+              variant="outline"
+              onClick={() => {
+                console.log("Settings button clicked", settingsOpen);
+                setSettingsOpen(true);
+              }}
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
+            </Button>
+
+            {/* Settings Modal */}
+            {settingsOpen && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+                  <div className="mb-4">
+                    <h2 className="text-xl font-semibold">System Settings</h2>
+                    <p className="text-gray-600 text-sm">Configure system-wide settings for the UrbanKetl tea dispensing system.</p>
                   </div>
                   
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="teaPrice" className="text-right">
-                      Tea Price (₹)
-                    </Label>
-                    <Input
-                      id="teaPrice"
-                      type="number"
-                      step="0.01"
-                      value={settings.teaPrice}
-                      onChange={(e) => setSettings({...settings, teaPrice: e.target.value})}
-                      className="col-span-3"
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="maxBalance" className="text-right">
-                      Max Wallet (₹)
-                    </Label>
-                    <Input
-                      id="maxBalance"
-                      type="number"
-                      step="0.01"
-                      value={settings.maxWalletBalance}
-                      onChange={(e) => setSettings({...settings, maxWalletBalance: e.target.value})}
-                      className="col-span-3"
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="lowBalance" className="text-right">
-                      Low Balance Alert (₹)
-                    </Label>
-                    <Input
-                      id="lowBalance"
-                      type="number"
-                      step="0.01"
-                      value={settings.lowBalanceThreshold}
-                      onChange={(e) => setSettings({...settings, lowBalanceThreshold: e.target.value})}
-                      className="col-span-3"
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="maintenance" className="text-right">
-                      Maintenance Mode
-                    </Label>
-                    <div className="col-span-3">
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="systemName">System Name</Label>
+                      <Input
+                        id="systemName"
+                        value={settings.systemName}
+                        onChange={(e) => setSettings({...settings, systemName: e.target.value})}
+                        className="w-full"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="teaPrice">Tea Price (₹)</Label>
+                      <Input
+                        id="teaPrice"
+                        type="number"
+                        step="0.01"
+                        value={settings.teaPrice}
+                        onChange={(e) => setSettings({...settings, teaPrice: e.target.value})}
+                        className="w-full"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="maxBalance">Max Wallet (₹)</Label>
+                      <Input
+                        id="maxBalance"
+                        type="number"
+                        step="0.01"
+                        value={settings.maxWalletBalance}
+                        onChange={(e) => setSettings({...settings, maxWalletBalance: e.target.value})}
+                        className="w-full"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="lowBalance">Low Balance Alert (₹)</Label>
+                      <Input
+                        id="lowBalance"
+                        type="number"
+                        step="0.01"
+                        value={settings.lowBalanceThreshold}
+                        onChange={(e) => setSettings({...settings, lowBalanceThreshold: e.target.value})}
+                        className="w-full"
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="maintenance">Maintenance Mode</Label>
                       <Switch
                         id="maintenance"
                         checked={settings.maintenanceMode}
                         onCheckedChange={(checked) => setSettings({...settings, maintenanceMode: checked})}
                       />
                     </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="autoRecharge" className="text-right">
-                      Auto Recharge
-                    </Label>
-                    <div className="col-span-3">
+                    
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="autoRecharge">Auto Recharge</Label>
                       <Switch
                         id="autoRecharge" 
                         checked={settings.autoRecharge}
@@ -430,27 +415,27 @@ export default function AdminPage() {
                       />
                     </div>
                   </div>
+                  
+                  <div className="flex justify-end space-x-2 mt-6">
+                    <Button variant="outline" onClick={() => setSettingsOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        toast({
+                          title: "Settings Updated",
+                          description: "System settings have been saved successfully.",
+                        });
+                        setSettingsOpen(false);
+                      }}
+                      className="bg-tea-green hover:bg-tea-dark"
+                    >
+                      Save Changes
+                    </Button>
+                  </div>
                 </div>
-                
-                <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setSettingsOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={() => {
-                      toast({
-                        title: "Settings Updated",
-                        description: "System settings have been saved successfully.",
-                      });
-                      setSettingsOpen(false);
-                    }}
-                    className="bg-tea-green hover:bg-tea-dark"
-                  >
-                    Save Changes
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+              </div>
+            )}
           </div>
         </div>
 

@@ -201,8 +201,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { amount } = req.body;
       const userId = req.user.claims.sub;
 
+      console.log('=== CREATE PAYMENT ORDER ===');
+      console.log('Amount:', amount);
+      console.log('User ID:', userId);
+      console.log('Request body:', req.body);
+
       if (!amount || amount <= 0) {
+        console.log('Invalid amount, returning error');
         return res.status(400).json({ message: "Valid amount is required" });
+      }
+
+      // Check max wallet limit before creating order
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const maxWalletBalanceStr = await storage.getSystemSetting('max_wallet_balance') || '5000.00';
+      const maxWalletBalance = parseFloat(maxWalletBalanceStr);
+      const currentBalance = parseFloat(user.walletBalance || '0');
+      const newBalance = currentBalance + amount;
+
+      console.log('Wallet validation:', {
+        amount,
+        maxWalletBalanceStr,
+        maxWalletBalance,
+        currentBalance,
+        newBalance,
+        exceeds: newBalance > maxWalletBalance
+      });
+
+      if (newBalance > maxWalletBalance) {
+        console.log('Wallet limit exceeded, returning error');
+        return res.status(400).json({ 
+          message: `Cannot recharge. Maximum wallet balance is ₹${maxWalletBalance}. Current balance: ₹${currentBalance}. You can add up to ₹${(maxWalletBalance - currentBalance).toFixed(2)} more.`,
+          maxBalance: maxWalletBalance,
+          currentBalance: currentBalance,
+          maxAllowedRecharge: maxWalletBalance - currentBalance
+        });
       }
 
       const order = await createOrder(amount);

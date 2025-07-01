@@ -447,6 +447,8 @@ export default function AdminPage() {
                     <Button 
                       onClick={async () => {
                         try {
+                          console.log('Saving settings:', settings.maxWalletBalance);
+                          
                           // Update max wallet balance in database
                           const response = await fetch('/api/admin/settings', {
                             method: 'PATCH',
@@ -458,21 +460,34 @@ export default function AdminPage() {
                             credentials: 'include'
                           });
 
-                          if (!response.ok) throw new Error('Failed to update setting');
+                          console.log('Save response status:', response.status);
+                          
+                          if (!response.ok) {
+                            const errorData = await response.text();
+                            console.error('Save failed:', errorData);
+                            throw new Error(`Failed to update setting: ${response.status}`);
+                          }
 
-                          // Invalidate settings cache to refresh all components
-                          const queryClient = useQueryClient();
+                          console.log('Settings saved successfully, refreshing cache...');
+
+                          // Force refresh all settings-related queries
                           await queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
+                          await queryClient.refetchQueries({ queryKey: ["/api/admin/settings"] });
+
+                          console.log('Cache refreshed, showing success message...');
 
                           toast({
-                            title: "✅ Settings Updated",
-                            description: `Maximum wallet balance updated to ₹${settings.maxWalletBalance}. Changes are now active.`,
+                            title: "Settings Updated Successfully",
+                            description: `Maximum wallet balance is now ₹${settings.maxWalletBalance}. Payment validation will use this new limit immediately.`,
                           });
+                          
                           setSettingsOpen(false);
+                          
                         } catch (error) {
+                          console.error('Settings save error:', error);
                           toast({
-                            title: "❌ Update Failed",
-                            description: "Failed to save system settings. Please try again.",
+                            title: "Update Failed",
+                            description: `Failed to save system settings: ${error.message}`,
                             variant: "destructive",
                           });
                         }

@@ -323,14 +323,7 @@ export default function RFIDCard() {
                     <div className="space-y-4">
                       {/* Filter Dropdown */}
                       <div className="flex justify-between items-center">
-                        <h4 className="font-medium">
-                          All Cards ({rfidCards?.length || 0}) 
-                          {cardFilter === "inactive" && (
-                            <span className="text-sm text-gray-500">
-                              - Inactive: {rfidCards?.filter(c => c.isActive === false).length || 0}
-                            </span>
-                          )}
-                        </h4>
+                        <h4 className="font-medium">All Cards ({rfidCards?.length || 0})</h4>
                         <div className="flex gap-2">
                           <select 
                             value={cardFilter}

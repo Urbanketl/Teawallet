@@ -145,7 +145,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(rfidCards)
-      .where(and(eq(rfidCards.userId, userId), eq(rfidCards.isActive, true)))
+      .where(eq(rfidCards.userId, userId))
       .orderBy(desc(rfidCards.createdAt));
   }
 

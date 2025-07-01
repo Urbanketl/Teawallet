@@ -294,6 +294,10 @@ export default function AdminPage() {
     return tickets.filter(ticket => new Date(ticket.createdAt) >= startDate);
   };
 
+  // Additional debug logging after function definition
+  console.log('Filtered tickets count:', supportTickets ? filterTicketsByDate(supportTickets).length : 0);
+  console.log('Date filter:', dateFilter);
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high':
@@ -719,23 +723,21 @@ export default function AdminPage() {
                         </div>
                       </div>
                       <div className="flex space-x-2">
-                        <Select
-                          value={ticket.status}
-                          onValueChange={(status) => {
-                            console.log("Status change triggered:", ticket.id, "->", status);
-                            handleStatusChange(ticket.id, status);
-                          }}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="open">Open</SelectItem>
-                            <SelectItem value="in_progress">In Progress</SelectItem>
-                            <SelectItem value="resolved">Resolved</SelectItem>
-                            <SelectItem value="closed">Closed</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="relative">
+                          <select
+                            value={ticket.status}
+                            onChange={(e) => {
+                              console.log("Status change triggered:", ticket.id, "->", e.target.value);
+                              handleStatusChange(ticket.id, e.target.value);
+                            }}
+                            className="w-32 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          >
+                            <option value="open">Open</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="resolved">Resolved</option>
+                            <option value="closed">Closed</option>
+                          </select>
+                        </div>
 
                         {/* Status Update Modal */}
                         {statusUpdateDialogs[ticket.id] && (

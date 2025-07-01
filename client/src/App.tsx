@@ -29,26 +29,26 @@ function Router() {
     return <FullPageLoader message="Loading application..." />;
   }
 
+  // Prevent double rendering by using single component instead of Switch
+  if (!isAuthenticated) {
+    return (
+      <Suspense fallback={<FullPageLoader message="Loading page..." />}>
+        <Landing />
+      </Suspense>
+    );
+  }
+
   return (
     <Suspense fallback={<FullPageLoader message="Loading page..." />}>
       <Switch>
-        {!isAuthenticated ? (
-          <>
-            <Route path="/" component={Landing} />
-            <Route path="*" component={Landing} />
-          </>
-        ) : (
-          <>
-            <Route path="/" component={Dashboard} />
-            <Route path="/wallet" component={Wallet} />
-            <Route path="/history" component={History} />
-            <Route path="/profile" component={Profile} />
-            <Route path="/admin" component={Admin} />
-            <Route path="/support" component={Support} />
-            <Route path="/analytics" component={Analytics} />
-            <Route path="*" component={NotFound} />
-          </>
-        )}
+        <Route path="/" component={Dashboard} />
+        <Route path="/wallet" component={Wallet} />
+        <Route path="/history" component={History} />
+        <Route path="/profile" component={Profile} />
+        <Route path="/admin" component={Admin} />
+        <Route path="/support" component={Support} />
+        <Route path="/analytics" component={Analytics} />
+        <Route path="*" component={NotFound} />
       </Switch>
     </Suspense>
   );

@@ -9,6 +9,9 @@ console.log("Root container:", container);
 
 if (container) {
   try {
+    // Ensure container is empty before rendering
+    container.innerHTML = '';
+    
     const root = createRoot(container);
     root.render(<App />);
     console.log("App rendered successfully");

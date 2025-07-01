@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+// Removed Dialog import - using custom modal instead
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
@@ -30,7 +30,7 @@ export default function RFIDCard() {
     retry: false,
   });
 
-  const rfidCard = rfidCards?.[0]; // Show primary card
+  const rfidCard = Array.isArray(rfidCards) ? rfidCards[0] : null; // Show primary card
 
   const assignCardMutation = useMutation({
     mutationFn: async (cardNumber: string) => {
@@ -121,39 +121,57 @@ export default function RFIDCard() {
         ) : !rfidCard ? (
           <div className="text-center py-8">
             <div className="text-gray-500 mb-4">No RFID card assigned</div>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-tea-green hover:bg-tea-dark">
-                  Assign RFID Card
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Assign RFID Card</DialogTitle>
-                  <DialogDescription>
-                    Enter your RFID card number to link it with your account.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="card-number">Card Number</Label>
-                    <Input
-                      id="card-number"
-                      placeholder="Enter RFID card number"
-                      value={newCardNumber}
-                      onChange={(e) => setNewCardNumber(e.target.value)}
-                    />
+            <Button 
+              className="bg-tea-green hover:bg-tea-dark"
+              onClick={() => setDialogOpen(true)}
+            >
+              Assign RFID Card
+            </Button>
+
+            {/* Custom Modal for RFID Assignment */}
+            {dialogOpen && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">Assign RFID Card</h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Enter your RFID card number to link it with your account.
+                      </p>
+                    </div>
+                    <div>
+                      <Label htmlFor="card-number">Card Number</Label>
+                      <Input
+                        id="card-number"
+                        placeholder="Enter RFID card number"
+                        value={newCardNumber}
+                        onChange={(e) => setNewCardNumber(e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="flex space-x-3">
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => {
+                          setDialogOpen(false);
+                          setNewCardNumber("");
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        className="flex-1 bg-tea-green hover:bg-tea-dark"
+                        onClick={handleAssignCard}
+                        disabled={assignCardMutation.isPending}
+                      >
+                        {assignCardMutation.isPending ? "Assigning..." : "Assign Card"}
+                      </Button>
+                    </div>
                   </div>
-                  <Button
-                    className="w-full bg-tea-green hover:bg-tea-dark"
-                    onClick={handleAssignCard}
-                    disabled={assignCardMutation.isPending}
-                  >
-                    {assignCardMutation.isPending ? "Assigning..." : "Assign Card"}
-                  </Button>
                 </div>
-              </DialogContent>
-            </Dialog>
+              </div>
+            )}
           </div>
         ) : (
           <>
@@ -256,7 +274,7 @@ export default function RFIDCard() {
                         }`}
                         onClick={() => setActiveTab("all")}
                       >
-                        All Cards ({rfidCards?.length || 0})
+                        All Cards ({Array.isArray(rfidCards) ? rfidCards.length : 0})
                       </button>
                     </div>
                   </div>
@@ -323,7 +341,7 @@ export default function RFIDCard() {
                     <div className="space-y-4">
                       {/* Filter Dropdown */}
                       <div className="flex justify-between items-center">
-                        <h4 className="font-medium">All Cards ({rfidCards?.length || 0})</h4>
+                        <h4 className="font-medium">All Cards ({Array.isArray(rfidCards) ? rfidCards.length : 0})</h4>
                         <div className="flex gap-2">
                           <select 
                             value={cardFilter}
@@ -345,7 +363,7 @@ export default function RFIDCard() {
                       </div>
 
                       <div className="space-y-3">
-                        {rfidCards?.filter((card: any) => {
+                        {(Array.isArray(rfidCards) ? rfidCards : []).filter((card: any) => {
                           if (cardFilter === "active") return card.isActive === true;
                           if (cardFilter === "inactive") return card.isActive === false;
                           return true; // "all"

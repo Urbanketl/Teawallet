@@ -744,6 +744,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Payment redirect fallback for popup blockers
+  app.post('/payment-redirect', (req, res) => {
+    const { order_id, key, amount, currency, name, description } = req.body;
+    
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Payment - ${name}</title>
+        <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+        <style>
+          body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+            padding: 40px; 
+            text-align: center; 
+            background: #f8fafc;
+          }
+          .container { 
+            max-width: 400px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 40px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+          }
+          .pay-btn { 
+            background: #3b82f6; 
+            color: white; 
+            padding: 16px 32px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            font-weight: 600;
+            width: 100%;
+            margin-top: 20px;
+          }
+          .pay-btn:hover { background: #2563eb; }
+          .amount { 
+            font-size: 32px; 
+            font-weight: 700; 
+            color: #1f2937; 
+            margin: 20px 0;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>UrbanKetl Payment</h1>
+          <div class="amount">₹${parseInt(amount) / 100}</div>
+          <p style="color: #6b7280; margin-bottom: 30px;">Complete your wallet recharge</p>
+          <button class="pay-btn" onclick="initiatePayment()">Pay Now</button>
+        </div>
+        
+        <script>
+          function initiatePayment() {
+            var options = {
+              key: '${key}',
+              amount: ${amount},
+              currency: '${currency}',
+              order_id: '${order_id}',
+              name: '${name}',
+              description: '${description}',
+              handler: function(response) {
+                // Send success back to parent window
+                if (window.opener) {
+                  window.opener.postMessage({
+                    type: 'PAYMENT_SUCCESS',
+                    data: response
+                  }, '*');
+                  window.close();
+                } else {
+                  // If no parent window, show success message
+                  document.body.innerHTML = '<div class="container"><h1>Payment Successful!</h1><p>You may close this window.</p></div>';
+                }
+              },
+              modal: {
+                ondismiss: function() {
+                  window.close();
+                }
+              }
+            };
+            
+            var rzp = new Razorpay(options);
+            rzp.open();
+          }
+          
+          // Auto-initiate payment after 1 second
+          setTimeout(initiatePayment, 1000);
+        </script>
+      </body>
+      </html>
+    `);
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

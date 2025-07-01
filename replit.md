@@ -111,6 +111,11 @@ UrbanKetl is a comprehensive digital tea dispensing system that combines RFID ca
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- July 1, 2025: Fixed critical payment system issues - resolved "Processing..." stuck state and Razorpay 429 rate limiting errors
+- July 1, 2025: Implemented comprehensive popup blocker detection with automatic fallback to new tab payment method
+- July 1, 2025: Added 2-second debouncing and request limiting to prevent rapid-fire payment attempts
+- July 1, 2025: Enhanced error handling for payment flows with specific user guidance for common browser issues
+- July 1, 2025: Replaced problematic Radix Dialog components with custom modals across wallet and admin interfaces
 - June 27, 2025: Added comprehensive FAQ management system - admins can now create, edit, and delete FAQ questions and answers
 - June 27, 2025: Enhanced admin interface with FAQ Management tab including category support and view tracking
 - June 27, 2025: Fixed admin support tickets display - added missing API route and proper data handling

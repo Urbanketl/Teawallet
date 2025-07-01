@@ -73,19 +73,19 @@ export default function Navigation() {
 
             {/* Mobile Navigation */}
             <div className="lg:hidden flex items-center space-x-1 overflow-x-auto">
-              {navItems.slice(0, 4).map(({ href, icon: Icon, label }) => (
+              {navItems.map(({ href, icon: Icon, label }) => (
                 <Link key={href} href={href}>
                   <Button
                     variant={location === href ? "default" : "ghost"}
                     size="sm"
-                    className={`flex items-center space-x-1 text-xs whitespace-nowrap ${
+                    className={`flex flex-col items-center justify-center min-w-[60px] h-12 text-xs whitespace-nowrap ${
                       location === href 
                         ? "bg-tea-green hover:bg-tea-dark text-white" 
                         : "text-gray-600 hover:text-gray-900"
                     }`}
                   >
-                    <Icon className="w-3 h-3" />
-                    <span className="hidden sm:inline">{label}</span>
+                    <Icon className="w-4 h-4 mb-1" />
+                    <span className="text-xs">{label}</span>
                   </Button>
                 </Link>
               ))}

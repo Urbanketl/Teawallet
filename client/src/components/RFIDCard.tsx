@@ -201,10 +201,14 @@ export default function RFIDCard() {
             <Button 
               variant="outline" 
               className="w-full mt-4"
-              onClick={() => {
-                console.log("Manage Card button clicked, opening dialog");
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log("BUTTON CLICKED - Manage Card button clicked, opening dialog");
+                alert("Button clicked!"); // Test alert
                 setManageDialogOpen(true);
               }}
+              style={{ pointerEvents: 'auto', cursor: 'pointer' }}
             >
               <Settings className="w-4 h-4 mr-2" />
               Manage Card

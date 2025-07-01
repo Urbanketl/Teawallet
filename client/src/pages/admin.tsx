@@ -690,8 +690,10 @@ export default function AdminPage() {
                   </CardContent>
                 </Card>
               ) : (
-                filterTicketsByDate(supportTickets || []).map((ticket: any) => (
-                <Card key={ticket.id} className="hover:shadow-md transition-shadow">
+                filterTicketsByDate(supportTickets || []).map((ticket: any) => {
+                  console.log('Rendering ticket:', ticket.id, 'with status:', ticket.status);
+                  return (
+                    <Card key={ticket.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
@@ -938,9 +940,10 @@ export default function AdminPage() {
                         </Card>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
-                  ))
+                    </CardContent>
+                    </Card>
+                  );
+                })
                 )}
               </div>
             </TabsContent>

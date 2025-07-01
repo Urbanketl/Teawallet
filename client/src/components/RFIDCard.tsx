@@ -204,12 +204,16 @@ export default function RFIDCard() {
                 className="w-full mt-4"
                 onClick={(e) => {
                   console.log("BUTTON CLICKED - Opening dialog");
-                  console.log("Event:", e);
-                  console.log("Current manageDialogOpen state:", manageDialogOpen);
-                  setManageDialogOpen(true);
+                  console.log("Before setState - manageDialogOpen:", manageDialogOpen);
+                  setManageDialogOpen(prev => {
+                    console.log("setState callback - prev:", prev, "setting to true");
+                    return true;
+                  });
+                  // Also try direct state update
+                  setTimeout(() => {
+                    console.log("After timeout - manageDialogOpen:", manageDialogOpen);
+                  }, 100);
                 }}
-                onMouseDown={() => console.log("Button mouse down")}
-                onMouseUp={() => console.log("Button mouse up")}
                 style={{ backgroundColor: 'red', padding: '10px', cursor: 'pointer' }}
               >
                 <Settings className="w-4 h-4 mr-2" />
@@ -218,6 +222,15 @@ export default function RFIDCard() {
               <div style={{ color: 'red', fontSize: '12px', marginTop: '5px' }}>
                 Dialog state: {manageDialogOpen ? 'OPEN' : 'CLOSED'}
               </div>
+              <button 
+                style={{ backgroundColor: 'blue', color: 'white', padding: '5px', marginTop: '5px' }}
+                onClick={() => {
+                  console.log("Direct button click - setting state");
+                  setManageDialogOpen(!manageDialogOpen);
+                }}
+              >
+                Toggle Dialog State (current: {manageDialogOpen.toString()})
+              </button>
             </div>
 
             <Dialog open={manageDialogOpen} onOpenChange={setManageDialogOpen}>

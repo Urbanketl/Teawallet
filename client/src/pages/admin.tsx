@@ -801,7 +801,10 @@ export default function AdminPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => fetchTicketHistory(ticket.id)}
+                          onClick={() => {
+                            console.log("View History button clicked for ticket:", ticket.id);
+                            fetchTicketHistory(ticket.id);
+                          }}
                         >
                           View History
                         </Button>
@@ -813,48 +816,55 @@ export default function AdminPage() {
                           {selectedTicketId === ticket.id ? 'Hide Chat' : 'View Chat'}
                         </Button>
 
-                        {/* Ticket History Dialog */}
-                        <Dialog 
-                          open={historyDialogs[ticket.id] || false} 
-                          onOpenChange={(open) => setHistoryDialogs(prev => ({ ...prev, [ticket.id]: open }))}
-                        >
-                          <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                              <DialogTitle>Ticket Status History - #{ticket.id}</DialogTitle>
-                              <DialogDescription>
-                                View all status changes and admin comments for this ticket.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="max-h-96 overflow-y-auto space-y-4">
-                              {ticketHistories[ticket.id]?.length > 0 ? (
-                                ticketHistories[ticket.id].map((history: any, index: number) => (
-                                  <div key={index} className="border-l-4 border-tea-green pl-4 py-3">
-                                    <div className="flex items-center justify-between mb-2">
-                                      <div className="flex items-center space-x-2">
-                                        <Badge variant="outline" className="text-xs">
-                                          {history.oldStatus} → {history.newStatus}
-                                        </Badge>
-                                        <span className="text-sm font-medium">
-                                          {history.updater?.firstName} {history.updater?.lastName}
+                        {/* Ticket History Modal */}
+                        {historyDialogs[ticket.id] && (
+                          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                            <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
+                              <div className="mb-4">
+                                <h2 className="text-xl font-semibold">Ticket Status History - #{ticket.id}</h2>
+                                <p className="text-gray-600 text-sm">View all status changes and admin comments for this ticket.</p>
+                              </div>
+                              
+                              <div className="max-h-96 overflow-y-auto space-y-4 mb-6">
+                                {ticketHistories[ticket.id]?.length > 0 ? (
+                                  ticketHistories[ticket.id].map((history: any, index: number) => (
+                                    <div key={index} className="border-l-4 border-tea-green pl-4 py-3">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center space-x-2">
+                                          <Badge variant="outline" className="text-xs">
+                                            {history.oldStatus} → {history.newStatus}
+                                          </Badge>
+                                          <span className="text-sm font-medium">
+                                            {history.updater?.firstName} {history.updater?.lastName}
+                                          </span>
+                                        </div>
+                                        <span className="text-xs text-gray-500">
+                                          {format(new Date(history.createdAt), 'MMM dd, yyyy h:mm a')}
                                         </span>
                                       </div>
-                                      <span className="text-xs text-gray-500">
-                                        {format(new Date(history.createdAt), 'MMM dd, yyyy h:mm a')}
-                                      </span>
+                                      <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded">
+                                        {history.comment}
+                                      </p>
                                     </div>
-                                    <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded">
-                                      {history.comment}
-                                    </p>
+                                  ))
+                                ) : (
+                                  <div className="text-center py-8 text-gray-500">
+                                    No status change history found for this ticket.
                                   </div>
-                                ))
-                              ) : (
-                                <div className="text-center py-8 text-gray-500">
-                                  No status change history found for this ticket.
-                                </div>
-                              )}
+                                )}
+                              </div>
+                              
+                              <div className="flex justify-end">
+                                <Button 
+                                  variant="outline" 
+                                  onClick={() => setHistoryDialogs(prev => ({ ...prev, [ticket.id]: false }))}
+                                >
+                                  Close
+                                </Button>
+                              </div>
                             </div>
-                          </DialogContent>
-                        </Dialog>
+                          </div>
+                        )}
                       </div>
                     </div>
 

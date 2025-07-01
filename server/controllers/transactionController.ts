@@ -42,7 +42,13 @@ export async function createPaymentOrder(req: any, res: Response) {
     const { amount } = req.body;
     const userId = req.session?.user?.id || req.user?.claims?.sub;
     
+    console.log('=== CREATE PAYMENT ORDER ===');
+    console.log('Amount:', amount);
+    console.log('User ID:', userId);
+    console.log('Request body:', req.body);
+    
     if (!amount || amount <= 0) {
+      console.log('Invalid amount, returning error');
       return res.status(400).json({ message: "Invalid amount" });
     }
 

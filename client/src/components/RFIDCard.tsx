@@ -198,56 +198,59 @@ export default function RFIDCard() {
               )}
             </div>
             
-            <div>
-              <Button 
-                variant="outline" 
-                className="w-full mt-4"
-                onClick={(e) => {
-                  console.log("BUTTON CLICKED - Opening dialog");
-                  console.log("Before setState - manageDialogOpen:", manageDialogOpen);
-                  setManageDialogOpen(prev => {
-                    console.log("setState callback - prev:", prev, "setting to true");
-                    return true;
-                  });
-                  // Also try direct state update
-                  setTimeout(() => {
-                    console.log("After timeout - manageDialogOpen:", manageDialogOpen);
-                  }, 100);
-                }}
-                style={{ backgroundColor: 'red', padding: '10px', cursor: 'pointer' }}
-              >
-                <Settings className="w-4 h-4 mr-2" />
-                Manage Card [TEST]
-              </Button>
-              <div style={{ color: 'red', fontSize: '12px', marginTop: '5px' }}>
-                Dialog state: {manageDialogOpen ? 'OPEN' : 'CLOSED'}
-              </div>
-              <button 
-                style={{ backgroundColor: 'blue', color: 'white', padding: '5px', marginTop: '5px' }}
-                onClick={() => {
-                  console.log("Direct button click - setting state");
-                  setManageDialogOpen(!manageDialogOpen);
-                }}
-              >
-                Toggle Dialog State (current: {manageDialogOpen.toString()})
-              </button>
-            </div>
+            <Button 
+              variant="outline" 
+              className="w-full mt-4"
+              onClick={() => {
+                console.log("Opening manage cards modal");
+                setManageDialogOpen(true);
+              }}
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Manage Card
+            </Button>
 
-            <Dialog open={manageDialogOpen} onOpenChange={setManageDialogOpen}>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Manage RFID Card</DialogTitle>
-                  <DialogDescription>
-                    Manage your RFID card settings and view details.
-                  </DialogDescription>
-                </DialogHeader>
-                <Tabs defaultValue="primary" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="primary">Primary Card</TabsTrigger>
-                    <TabsTrigger value="all">All Cards ({rfidCards?.length || 0})</TabsTrigger>
-                  </TabsList>
+            {manageDialogOpen && (
+              <div 
+                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                onClick={() => setManageDialogOpen(false)}
+              >
+                <div 
+                  className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold">Manage RFID Card</h2>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setManageDialogOpen(false)}
+                    >
+                      ✕
+                    </Button>
+                  </div>
                   
-                  <TabsContent value="primary" className="space-y-4">
+                  <p className="text-gray-600 mb-6">
+                    Manage your RFID card settings and view details.
+                  </p>
+
+                  <div className="border-b mb-4">
+                    <div className="flex space-x-4">
+                      <button 
+                        className="pb-2 px-1 border-b-2 border-blue-500 text-blue-600 font-medium"
+                      >
+                        Primary Card
+                      </button>
+                      <button 
+                        className="pb-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700"
+                      >
+                        All Cards ({rfidCards?.length || 0})
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Primary Card Section */}
+                  <div className="space-y-4">
                     <div className="p-4 bg-gray-50 rounded-lg space-y-2">
                       <div className="flex justify-between">
                         <span className="font-medium">Card Number:</span>
@@ -294,69 +297,16 @@ export default function RFIDCard() {
                         </Button>
                       </div>
                     </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="all" className="space-y-4">
-                    <div className="space-y-3">
-                      {rfidCards?.map((card, index) => (
-                        <div key={card.id} className="p-3 border rounded-lg">
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <span className="font-medium">Card {index + 1}</span>
-                              {index === 0 && <Badge variant="secondary" className="ml-2">Primary</Badge>}
-                            </div>
-                            <Badge variant={card.isActive ? "default" : "destructive"}>
-                              {card.isActive ? "Active" : "Inactive"}
-                            </Badge>
-                          </div>
-                          <div className="text-sm space-y-1">
-                            <div className="flex justify-between">
-                              <span>Number:</span>
-                              <span className="font-mono">{card.cardNumber}</span>
-                            </div>
-                            {card.lastUsed && (
-                              <div className="flex justify-between">
-                                <span>Last Used:</span>
-                                <span>{format(new Date(card.lastUsed), 'MMM dd, h:mm a')}</span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="grid grid-cols-2 gap-2 mt-3">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => {
-                                navigator.clipboard.writeText(card.cardNumber);
-                                toast({
-                                  title: "Copied!",
-                                  description: `Card ${index + 1} number copied`,
-                                });
-                              }}
-                            >
-                              Copy
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => deactivateCardMutation.mutate(card.id)}
-                              disabled={!card.isActive || deactivateCardMutation.isPending}
-                            >
-                              {deactivateCardMutation.isPending ? "..." : "Deactivate"}
-                            </Button>
-                          </div>
-                        </div>
-                      )) || <div className="text-center text-gray-500">No cards found</div>}
+
+                    <div className="text-sm text-gray-500 border-t pt-3">
+                      <p>• Keep your cards secure and report if lost</p>
+                      <p>• Cards can be used at any UrbanKetl machine</p>
+                      <p>• Charges are deducted from your wallet balance</p>
                     </div>
-                  </TabsContent>
-                </Tabs>
-                
-                <div className="text-sm text-gray-500 border-t pt-3">
-                  <p>• Keep your cards secure and report if lost</p>
-                  <p>• Cards can be used at any UrbanKetl machine</p>
-                  <p>• Charges are deducted from your wallet balance</p>
+                  </div>
                 </div>
-              </DialogContent>
-            </Dialog>
+              </div>
+            )}
           </>
         )}
       </CardContent>

@@ -719,7 +719,10 @@ export default function AdminPage() {
                       <div className="flex space-x-2">
                         <Select
                           value={ticket.status}
-                          onValueChange={(status) => handleStatusChange(ticket.id, status)}
+                          onValueChange={(status) => {
+                            console.log("Status change triggered:", ticket.id, "->", status);
+                            handleStatusChange(ticket.id, status);
+                          }}
                         >
                           <SelectTrigger className="w-32">
                             <SelectValue />
@@ -732,45 +735,41 @@ export default function AdminPage() {
                           </SelectContent>
                         </Select>
 
-                        {/* Status Update Dialog */}
-                        <Dialog 
-                          open={statusUpdateDialogs[ticket.id] || false} 
-                          onOpenChange={(open) => setStatusUpdateDialogs({
-                            ...statusUpdateDialogs,
-                            [ticket.id]: open
-                          })}
-                        >
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Update Ticket Status</DialogTitle>
-                              <DialogDescription>
-                                Please provide a comment explaining the status change.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              <div>
-                                <Label>Status Change</Label>
-                                <p className="text-sm text-gray-600">
-                                  {ticket.status} → {statusUpdateData[ticket.id]?.status}
-                                </p>
+                        {/* Status Update Modal */}
+                        {statusUpdateDialogs[ticket.id] && (
+                          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+                              <div className="mb-4">
+                                <h2 className="text-xl font-semibold">Update Ticket Status</h2>
+                                <p className="text-gray-600 text-sm">Please provide a comment explaining the status change.</p>
                               </div>
-                              <div>
-                                <Label htmlFor={`comment-${ticket.id}`}>Comment *</Label>
-                                <Textarea
-                                  id={`comment-${ticket.id}`}
-                                  placeholder="Enter reason for status change..."
-                                  value={statusUpdateData[ticket.id]?.comment || ''}
-                                  onChange={(e) => setStatusUpdateData({
-                                    ...statusUpdateData,
-                                    [ticket.id]: {
-                                      ...statusUpdateData[ticket.id],
-                                      comment: e.target.value
-                                    }
-                                  })}
-                                  rows={3}
-                                />
+                              
+                              <div className="space-y-4">
+                                <div>
+                                  <Label>Status Change</Label>
+                                  <p className="text-sm text-gray-600">
+                                    {ticket.status} → {statusUpdateData[ticket.id]?.status}
+                                  </p>
+                                </div>
+                                <div>
+                                  <Label htmlFor={`comment-${ticket.id}`}>Comment *</Label>
+                                  <Textarea
+                                    id={`comment-${ticket.id}`}
+                                    placeholder="Enter reason for status change..."
+                                    value={statusUpdateData[ticket.id]?.comment || ''}
+                                    onChange={(e) => setStatusUpdateData({
+                                      ...statusUpdateData,
+                                      [ticket.id]: {
+                                        ...statusUpdateData[ticket.id],
+                                        comment: e.target.value
+                                      }
+                                    })}
+                                    rows={3}
+                                  />
+                                </div>
                               </div>
-                              <div className="flex justify-end space-x-2">
+                              
+                              <div className="flex justify-end space-x-2 mt-6">
                                 <Button
                                   variant="outline"
                                   onClick={() => setStatusUpdateDialogs({
@@ -783,13 +782,14 @@ export default function AdminPage() {
                                 <Button
                                   onClick={() => confirmStatusUpdate(ticket.id)}
                                   disabled={updateTicketMutation.isPending}
+                                  className="bg-tea-green hover:bg-tea-dark"
                                 >
                                   {updateTicketMutation.isPending ? "Updating..." : "Update Status"}
                                 </Button>
                               </div>
                             </div>
-                          </DialogContent>
-                        </Dialog>
+                          </div>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"

@@ -198,16 +198,22 @@ export default function RFIDCard() {
               )}
             </div>
             
-            <Dialog open={manageDialogOpen} onOpenChange={setManageDialogOpen}>
-              <DialogTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className="w-full mt-4"
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Manage Card
-                </Button>
-              </DialogTrigger>
+            <Button 
+              variant="outline" 
+              className="w-full mt-4"
+              onClick={() => {
+                console.log("Manage Card button clicked, opening dialog");
+                setManageDialogOpen(true);
+              }}
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Manage Card
+            </Button>
+
+            <Dialog open={manageDialogOpen} onOpenChange={(open) => {
+              console.log("Dialog state changing:", open);
+              setManageDialogOpen(open);
+            }}>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Manage RFID Card</DialogTitle>

@@ -340,6 +340,9 @@ export default function AdminPage() {
               <DialogContent className="sm:max-w-[525px]">
                 <DialogHeader>
                   <DialogTitle>System Settings</DialogTitle>
+                  <DialogDescription>
+                    Configure system-wide settings for the UrbanKetl tea dispensing system.
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-6 py-4">
                   <div className="grid grid-cols-4 items-center gap-4">

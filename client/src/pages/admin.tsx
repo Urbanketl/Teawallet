@@ -604,6 +604,7 @@ export default function AdminPage() {
             <TabsTrigger value="machines">Machines</TabsTrigger>
             <TabsTrigger value="support">Support Tickets</TabsTrigger>
             <TabsTrigger value="faq">FAQ Management</TabsTrigger>
+            <TabsTrigger value="settings">System Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">

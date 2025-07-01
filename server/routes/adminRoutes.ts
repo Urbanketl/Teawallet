@@ -118,3 +118,31 @@ export async function getDashboardStats(req: Request, res: Response) {
     res.status(500).json({ message: 'Failed to fetch dashboard stats' });
   }
 }
+
+// System Settings Management
+export async function getSystemSettings(req: Request, res: Response) {
+  try {
+    const settings = await storage.getAllSystemSettings();
+    res.json(settings);
+  } catch (error) {
+    console.error('Error fetching system settings:', error);
+    res.status(500).json({ message: 'Failed to fetch system settings' });
+  }
+}
+
+export async function updateSystemSetting(req: Request, res: Response) {
+  try {
+    const { key, value } = req.body;
+    const userId = (req as any).user?.id;
+    
+    if (!key || !value) {
+      return res.status(400).json({ message: 'Key and value are required' });
+    }
+
+    await storage.updateSystemSetting(key, value, userId || 'admin');
+    res.json({ message: 'System setting updated successfully' });
+  } catch (error) {
+    console.error('Error updating system setting:', error);
+    res.status(500).json({ message: 'Failed to update system setting' });
+  }
+}

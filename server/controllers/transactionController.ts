@@ -64,6 +64,25 @@ export async function verifyPaymentAndAddFunds(req: any, res: Response) {
       return res.status(400).json({ message: "Payment verification failed" });
     }
 
+    // Check max wallet limit
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const maxWalletBalanceStr = await storage.getSystemSetting('max_wallet_balance') || '5000.00';
+    const maxWalletBalance = parseFloat(maxWalletBalanceStr);
+    const currentBalance = parseFloat(user.walletBalance || '0');
+    const newBalance = currentBalance + amount;
+
+    if (newBalance > maxWalletBalance) {
+      return res.status(400).json({ 
+        message: `Cannot recharge. Maximum wallet balance is ₹${maxWalletBalance}. Current balance: ₹${currentBalance}`,
+        maxBalance: maxWalletBalance,
+        currentBalance: currentBalance
+      });
+    }
+
     // Add funds to wallet
     const updatedUser = await storage.updateWalletBalance(userId, amount.toString());
     

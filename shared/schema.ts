@@ -130,6 +130,16 @@ export const faqArticles = pgTable("faq_articles", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// System Settings
+export const systemSettings = pgTable("system_settings", {
+  id: serial("id").primaryKey(),
+  key: varchar("key").notNull().unique(),
+  value: text("value").notNull(),
+  description: text("description"),
+  updatedBy: varchar("updated_by"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   rfidCards: many(rfidCards),
@@ -198,6 +208,11 @@ export const insertFaqArticleSchema = createInsertSchema(faqArticles).omit({
   updatedAt: true,
 });
 
+export const insertSystemSettingSchema = createInsertSchema(systemSettings).omit({
+  id: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -219,3 +234,5 @@ export type TicketStatusHistory = typeof ticketStatusHistory.$inferSelect;
 export type InsertTicketStatusHistory = z.infer<typeof insertTicketStatusHistorySchema>;
 export type FaqArticle = typeof faqArticles.$inferSelect;
 export type InsertFaqArticle = z.infer<typeof insertFaqArticleSchema>;
+export type SystemSetting = typeof systemSettings.$inferSelect;
+export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;

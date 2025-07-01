@@ -129,6 +129,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // System Settings Routes
+  app.get('/api/admin/settings', requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const settings = await storage.getAllSystemSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error('Error fetching system settings:', error);
+      res.status(500).json({ message: 'Failed to fetch system settings' });
+    }
+  });
+
+  app.patch('/api/admin/settings', requireAuth, requireAdmin, async (req: any, res) => {
+    try {
+      const { key, value } = req.body;
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      
+      if (!key || !value) {
+        return res.status(400).json({ message: 'Key and value are required' });
+      }
+
+      await storage.updateSystemSetting(key, value, userId || 'admin');
+      res.json({ message: 'System setting updated successfully' });
+    } catch (error) {
+      console.error('Error updating system setting:', error);
+      res.status(500).json({ message: 'Failed to update system setting' });
+    }
+  });
+
   // Legacy routes (keeping for backward compatibility)
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {

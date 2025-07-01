@@ -1,13 +1,13 @@
 import { db } from "./db";
 import { 
   users, rfidCards, transactions, dispensingLogs, teaMachines,
-  referrals, supportTickets, supportMessages, ticketStatusHistory, faqArticles,
+  referrals, supportTickets, supportMessages, ticketStatusHistory, faqArticles, systemSettings,
   type User, type UpsertUser, type RfidCard, type InsertRfidCard,
   type Transaction, type InsertTransaction, type DispensingLog, type InsertDispensingLog,
   type TeaMachine, type InsertTeaMachine,
   type Referral, type InsertReferral, type SupportTicket, type InsertSupportTicket,
   type SupportMessage, type InsertSupportMessage, type FaqArticle, type InsertFaqArticle,
-  type TicketStatusHistory, type InsertTicketStatusHistory
+  type TicketStatusHistory, type InsertTicketStatusHistory, type SystemSetting
 } from "@shared/schema";
 import { eq, and, desc, asc, sql, gte } from "drizzle-orm";
 
@@ -80,6 +80,11 @@ export interface IStorage {
   getPeakHours(): Promise<{ hour: number; count: number }[]>;
   getMachinePerformance(): Promise<{ machineId: string; uptime: number; totalDispensed: number }[]>;
   getUserBehaviorInsights(): Promise<{ avgTeaPerDay: number; preferredTimes: number[]; topTeaTypes: string[] }>;
+  
+  // System settings operations
+  getSystemSetting(key: string): Promise<string | undefined>;
+  updateSystemSetting(key: string, value: string, updatedBy: string): Promise<void>;
+  getAllSystemSettings(): Promise<{ key: string; value: string; description: string | null }[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -604,6 +609,36 @@ export class DatabaseStorage implements IStorage {
       preferredTimes: preferredTimes.map(pt => pt.hour),
       topTeaTypes: topTeaTypes.map(tt => tt.teaType),
     };
+  }
+
+  // System Settings operations
+  async getSystemSetting(key: string): Promise<string | undefined> {
+    const [setting] = await db
+      .select({ value: systemSettings.value })
+      .from(systemSettings)
+      .where(eq(systemSettings.key, key));
+    return setting?.value;
+  }
+
+  async updateSystemSetting(key: string, value: string, updatedBy: string): Promise<void> {
+    await db
+      .insert(systemSettings)
+      .values({ key, value, updatedBy, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: systemSettings.key,
+        set: { value, updatedBy, updatedAt: new Date() }
+      });
+  }
+
+  async getAllSystemSettings(): Promise<{ key: string; value: string; description: string | null }[]> {
+    return await db
+      .select({
+        key: systemSettings.key,
+        value: systemSettings.value,
+        description: systemSettings.description
+      })
+      .from(systemSettings)
+      .orderBy(asc(systemSettings.key));
   }
 }
 

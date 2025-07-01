@@ -41,7 +41,7 @@ export default function AdminPage() {
     teaPrice: "5.00",
     maintenanceMode: false,
     autoRecharge: true,
-    maxWalletBalance: "1000.00",
+    maxWalletBalance: "5000.00",
     lowBalanceThreshold: "50.00",
     systemName: "UrbanKetl Tea System"
   });
@@ -1467,10 +1467,11 @@ function RfidManagement() {
 // System Settings Management Component  
 function SystemSettingsManagement() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [maxWalletBalance, setMaxWalletBalance] = useState('5000.00');
   const [isLoading, setIsLoading] = useState(false);
 
-  const { data: systemSettings } = useQuery({
+  const { data: systemSettings, refetch: refetchSettings } = useQuery({
     queryKey: ["/api/admin/settings"],
     retry: false,
   });
@@ -1496,9 +1497,13 @@ function SystemSettingsManagement() {
 
       if (!response.ok) throw new Error('Failed to update setting');
 
+      // Invalidate all relevant queries to refresh data
+      await queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
+      await refetchSettings();
+
       toast({
         title: "Success",
-        description: "Setting updated successfully",
+        description: "Setting updated successfully. Changes are now active for all payment validations.",
       });
     } catch (error) {
       toast({

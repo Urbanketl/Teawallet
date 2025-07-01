@@ -201,13 +201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { amount } = req.body;
       const userId = req.user.claims.sub;
 
-      console.log('=== CREATE PAYMENT ORDER ===');
-      console.log('Amount:', amount);
-      console.log('User ID:', userId);
-      console.log('Request body:', req.body);
-
       if (!amount || amount <= 0) {
-        console.log('Invalid amount, returning error');
         return res.status(400).json({ message: "Valid amount is required" });
       }
 
@@ -222,17 +216,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const currentBalance = parseFloat(user.walletBalance || '0');
       const newBalance = currentBalance + amount;
 
-      console.log('Wallet validation:', {
-        amount,
-        maxWalletBalanceStr,
-        maxWalletBalance,
-        currentBalance,
-        newBalance,
-        exceeds: newBalance > maxWalletBalance
-      });
-
       if (newBalance > maxWalletBalance) {
-        console.log('Wallet limit exceeded, returning error');
         return res.status(400).json({ 
           message: `Cannot recharge. Maximum wallet balance is ₹${maxWalletBalance}. Current balance: ₹${currentBalance}. You can add up to ₹${(maxWalletBalance - currentBalance).toFixed(2)} more.`,
           maxBalance: maxWalletBalance,

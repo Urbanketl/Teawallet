@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { MessageCircle, Plus, Search, HelpCircle, FileText, Clock, AlertCircle, CheckCircle, Camera } from "lucide-react";
 import { format } from "date-fns";
+import Navigation from "@/components/Navigation";
 
 interface SupportTicket {
   id: number;
@@ -222,8 +223,9 @@ export default function SupportPage() {
   const faqCategories = ['general', 'technical', 'billing'];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-neutral-warm">
+      <Navigation />
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Support Center</h1>
           <p className="text-gray-600">Get help with your tea experience</p>

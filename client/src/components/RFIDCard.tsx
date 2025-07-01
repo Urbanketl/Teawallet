@@ -336,11 +336,18 @@ export default function RFIDCard() {
                       </div>
 
                       <div className="space-y-3">
-                        {rfidCards?.filter((card: any) => {
-                          if (cardFilter === "active") return card.isActive;
-                          if (cardFilter === "inactive") return !card.isActive;
-                          return true; // "all"
-                        }).map((card: any, index: number) => (
+                        {(() => {
+                          console.log("All RFID cards:", rfidCards);
+                          console.log("Current filter:", cardFilter);
+                          const filteredCards = rfidCards?.filter((card: any) => {
+                            console.log(`Card ${card.id}: isActive = ${card.isActive}`);
+                            if (cardFilter === "active") return card.isActive;
+                            if (cardFilter === "inactive") return !card.isActive;
+                            return true; // "all"
+                          });
+                          console.log("Filtered cards:", filteredCards);
+                          return filteredCards;
+                        })()?.map((card: any, index: number) => (
                           <div key={card.id} className="p-3 border rounded-lg">
                             <div className="flex justify-between items-start mb-2">
                               <div>

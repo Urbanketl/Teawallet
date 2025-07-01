@@ -198,17 +198,27 @@ export default function RFIDCard() {
               )}
             </div>
             
-            <Button 
-              variant="outline" 
-              className="w-full mt-4"
-              onClick={() => {
-                console.log("BUTTON CLICKED - Opening dialog");
-                setManageDialogOpen(true);
-              }}
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Manage Card
-            </Button>
+            <div>
+              <Button 
+                variant="outline" 
+                className="w-full mt-4"
+                onClick={(e) => {
+                  console.log("BUTTON CLICKED - Opening dialog");
+                  console.log("Event:", e);
+                  console.log("Current manageDialogOpen state:", manageDialogOpen);
+                  setManageDialogOpen(true);
+                }}
+                onMouseDown={() => console.log("Button mouse down")}
+                onMouseUp={() => console.log("Button mouse up")}
+                style={{ backgroundColor: 'red', padding: '10px', cursor: 'pointer' }}
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                Manage Card [TEST]
+              </Button>
+              <div style={{ color: 'red', fontSize: '12px', marginTop: '5px' }}>
+                Dialog state: {manageDialogOpen ? 'OPEN' : 'CLOSED'}
+              </div>
+            </div>
 
             <Dialog open={manageDialogOpen} onOpenChange={setManageDialogOpen}>
               <DialogContent>

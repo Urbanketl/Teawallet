@@ -10,7 +10,7 @@ import authRoutes from "./routes/authRoutes";
 import transactionRoutes from "./routes/transactionRoutes";
 import supportRoutes from "./routes/supportRoutes";
 import analyticsRoutes from "./routes/analyticsRoutes";
-import * as adminController from "./routes/adminRoutes";
+import * as adminController from "./controllers/adminController";
 import { requireAuth, requireAdmin } from "./controllers/authController";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -39,17 +39,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/admin/rfid/suggest-card-number', requireAuth, requireAdmin, adminController.getSuggestedCardNumber);
   
   // Admin support routes
-  app.get('/api/admin/support/tickets', requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const tickets = await storage.getAllSupportTickets();
-      console.log('Admin support tickets response:', tickets.length, 'tickets found');
-      console.log('First ticket sample:', tickets[0]);
-      res.json(tickets);
-    } catch (error) {
-      console.error('Error fetching admin support tickets:', error);
-      res.status(500).json({ message: 'Failed to fetch support tickets' });
-    }
-  });
+  app.get('/api/admin/support/tickets', requireAuth, requireAdmin, adminController.getSupportTicketsPaginated);
 
   // Admin support ticket history
   app.get('/api/admin/support/tickets/:ticketId/history', requireAuth, requireAdmin, async (req, res) => {

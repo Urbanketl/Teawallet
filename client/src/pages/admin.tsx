@@ -29,9 +29,11 @@ import {
   CheckCircle,
   CreditCard,
   Plus,
-  Trash2
+  Trash2,
+  Search
 } from "lucide-react";
 import { format } from "date-fns";
+import Pagination from "@/components/Pagination";
 
 export default function AdminPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -46,9 +48,31 @@ export default function AdminPage() {
     systemName: "UrbanKetl Tea System"
   });
 
+  // Pagination state
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersSearch, setUsersSearch] = useState("");
+  const [ticketsPage, setTicketsPage] = useState(1);
+  const [ticketsStatus, setTicketsStatus] = useState("all");
+  const usersPerPage = 50;
+  const ticketsPerPage = 20;
+
   // Load system settings from database
   const { data: systemSettings } = useQuery({
     queryKey: ["/api/admin/settings"],
+    enabled: isAuthenticated && user?.isAdmin,
+    retry: false,
+  });
+
+  // Paginated users query
+  const { data: usersData, isLoading: usersLoading } = useQuery({
+    queryKey: ["/api/admin/users", { paginated: true, page: usersPage, limit: usersPerPage, search: usersSearch }],
+    enabled: isAuthenticated && user?.isAdmin,
+    retry: false,
+  });
+
+  // Paginated support tickets query
+  const { data: ticketsData, isLoading: ticketsLoading } = useQuery({
+    queryKey: ["/api/admin/support/tickets", { paginated: true, page: ticketsPage, limit: ticketsPerPage, status: ticketsStatus }],
     enabled: isAuthenticated && user?.isAdmin,
     retry: false,
   });

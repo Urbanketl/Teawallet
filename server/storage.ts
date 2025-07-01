@@ -9,7 +9,7 @@ import {
   type SupportMessage, type InsertSupportMessage, type FaqArticle, type InsertFaqArticle,
   type TicketStatusHistory, type InsertTicketStatusHistory, type SystemSetting
 } from "@shared/schema";
-import { eq, and, desc, asc, sql, gte } from "drizzle-orm";
+import { eq, and, desc, asc, sql, gte, or, ilike } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (mandatory for Replit Auth)
@@ -47,6 +47,7 @@ export interface IStorage {
   
   // Admin operations
   getAllUsers(): Promise<User[]>;
+  getUsersPaginated(page: number, limit: number, search?: string): Promise<{ users: User[], total: number }>;
   getTotalRevenue(): Promise<string>;
   getDailyStats(): Promise<{ totalUsers: number; totalRevenue: string; activeMachines: number; dailyDispensing: number }>;
   
@@ -62,6 +63,7 @@ export interface IStorage {
   createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket>;
   getUserSupportTickets(userId: string): Promise<SupportTicket[]>;
   getAllSupportTickets(): Promise<(SupportTicket & { user: User })[]>;
+  getSupportTicketsPaginated(page: number, limit: number, status?: string): Promise<{ tickets: (SupportTicket & { user: User })[], total: number }>;
   getSupportTicket(ticketId: number): Promise<SupportTicket | undefined>;
   updateSupportTicket(ticketId: number, updates: { status?: string; assignedTo?: string; comment?: string; updatedBy?: string }): Promise<SupportTicket>;
   getTicketStatusHistory(ticketId: number): Promise<(TicketStatusHistory & { updater: User })[]>;
@@ -301,6 +303,36 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(users.createdAt));
   }
 
+  async getUsersPaginated(page: number, limit: number, search?: string): Promise<{ users: User[], total: number }> {
+    const offset = (page - 1) * limit;
+    
+    // Simple approach: get total count first
+    const [countResult] = await db
+      .select({ count: sql<number>`COUNT(*)::int` })
+      .from(users);
+    
+    // Then get paginated results
+    let usersQuery = db
+      .select()
+      .from(users);
+      
+    if (search) {
+      usersQuery = usersQuery.where(
+        sql`${users.firstName} ILIKE ${`%${search}%`} OR ${users.lastName} ILIKE ${`%${search}%`} OR ${users.email} ILIKE ${`%${search}%`}`
+      );
+    }
+    
+    const usersResult = await usersQuery
+      .orderBy(desc(users.createdAt))
+      .limit(limit)
+      .offset(offset);
+    
+    return {
+      users: usersResult,
+      total: countResult.count || 0
+    };
+  }
+
   async getTotalRevenue(): Promise<string> {
     const [result] = await db
       .select({ total: sql<string>`COALESCE(SUM(amount), 0)` })
@@ -369,6 +401,34 @@ export class DatabaseStorage implements IStorage {
       ...support_tickets,
       user: user || { id: '', firstName: 'Unknown', lastName: 'User', email: '' }
     })) as any;
+  }
+
+  async getSupportTicketsPaginated(page: number, limit: number, status?: string): Promise<{ tickets: (SupportTicket & { user: User })[], total: number }> {
+    const offset = (page - 1) * limit;
+    
+    // Get total count
+    const [countResult] = await db
+      .select({ count: sql<number>`COUNT(*)::int` })
+      .from(supportTickets);
+    
+    // Get paginated tickets with users
+    const ticketsWithUsers = await db
+      .select()
+      .from(supportTickets)
+      .leftJoin(users, eq(supportTickets.userId, users.id))
+      .orderBy(desc(supportTickets.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    const tickets = ticketsWithUsers.map(({ support_tickets, users: user }) => ({
+      ...support_tickets,
+      user: user || { id: '', firstName: 'Unknown', lastName: 'User', email: '', walletBalance: '0', isAdmin: false, profileImageUrl: null, createdAt: null, updatedAt: null }
+    })) as (SupportTicket & { user: User })[];
+
+    return {
+      tickets,
+      total: countResult.count || 0
+    };
   }
 
   async updateSupportTicket(ticketId: number, updates: { status?: string; assignedTo?: string; comment?: string; updatedBy?: string }): Promise<SupportTicket> {

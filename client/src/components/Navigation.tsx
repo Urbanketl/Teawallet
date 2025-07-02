@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
 import { 
   LayoutDashboard, 
@@ -12,12 +14,14 @@ import {
   Award,
   Users,
   MessageCircle,
-  BarChart3
+  BarChart3,
+  Menu
 } from "lucide-react";
 
 export default function Navigation() {
   const [location] = useLocation();
   const { user, isLoading } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   if (isLoading || !user) return null;
 
@@ -71,29 +75,68 @@ export default function Navigation() {
               ))}
             </div>
 
-            {/* Mobile Navigation */}
-            <div className="lg:hidden flex items-center space-x-1 overflow-x-auto">
-              {navItems.map(({ href, icon: Icon, label }) => (
-                <Link key={href} href={href}>
-                  <Button
-                    variant={location === href ? "default" : "ghost"}
-                    size="sm"
-                    className={`flex flex-col items-center justify-center min-w-[60px] h-12 text-xs whitespace-nowrap ${
-                      location === href 
-                        ? "bg-tea-green hover:bg-tea-dark text-white" 
-                        : "text-gray-600 hover:text-gray-900"
-                    }`}
-                  >
-                    <Icon className="w-4 h-4 mb-1" />
-                    <span className="text-xs">{label}</span>
+            {/* Mobile Navigation - Menu Icon */}
+            <div className="lg:hidden">
+              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
+                    <Menu className="w-5 h-5" />
                   </Button>
-                </Link>
-              ))}
+                </SheetTrigger>
+                <SheetContent side="left" className="w-80">
+                  <div className="flex flex-col space-y-4 mt-8">
+                    <div className="flex items-center space-x-3 pb-4 border-b">
+                      <img 
+                        src="/logo-updated.jpg" 
+                        alt="UrbanKetl Logo" 
+                        className="h-8 w-auto object-contain"
+                      />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Welcome, {user.firstName}</p>
+                        <p className="text-xs text-gray-500">{user.email}</p>
+                      </div>
+                    </div>
+                    
+                    {navItems.map(({ href, icon: Icon, label }) => (
+                      <Link key={href} href={href}>
+                        <Button
+                          variant={location === href ? "default" : "ghost"}
+                          size="lg"
+                          className={`w-full justify-start text-left ${
+                            location === href 
+                              ? "bg-tea-green hover:bg-tea-dark text-white" 
+                              : "text-gray-600 hover:text-gray-900"
+                          }`}
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <Icon className="w-5 h-5 mr-3" />
+                          <span>{label}</span>
+                        </Button>
+                      </Link>
+                    ))}
+                    
+                    <div className="pt-4 border-t">
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          window.location.href = '/api/logout';
+                        }}
+                        className="w-full justify-start text-left flex items-center"
+                      >
+                        <LogOut className="w-5 h-5 mr-3" />
+                        <span>Logout</span>
+                      </Button>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
-            <div className="hidden md:block text-sm text-gray-600">
+          <div className="hidden lg:flex items-center space-x-4">
+            <div className="text-sm text-gray-600">
               Welcome, {user.firstName}
             </div>
             <Button

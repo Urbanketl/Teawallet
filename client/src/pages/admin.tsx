@@ -1315,6 +1315,7 @@ function UserManagement() {
   const { user: currentUser } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [usersPage, setUsersPage] = useState(1);
+  const [selectedUserDetails, setSelectedUserDetails] = useState<any>(null);
   const usersLimit = 20;
 
   // Fetch users with pagination
@@ -1471,7 +1472,11 @@ function UserManagement() {
                       </Button>
                     )}
                     
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setSelectedUserDetails(user)}
+                    >
                       <Eye className="w-4 h-4 mr-1" />
                       View Details
                     </Button>
@@ -1509,6 +1514,116 @@ function UserManagement() {
             Next
             <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
+        </div>
+      )}
+
+      {/* User Details Modal */}
+      {selectedUserDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold">User Details</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedUserDetails(null)}
+              >
+                ✕
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Basic Information */}
+              <div className="space-y-4">
+                <h3 className="font-medium text-gray-900 border-b pb-2">Basic Information</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Full Name</label>
+                    <p className="text-sm text-gray-900">{selectedUserDetails.firstName} {selectedUserDetails.lastName}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Email</label>
+                    <p className="text-sm text-gray-900">{selectedUserDetails.email}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">User ID</label>
+                    <p className="text-sm text-gray-900 font-mono">{selectedUserDetails.id}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Account Status</label>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant={selectedUserDetails.isAdmin ? "default" : "secondary"}>
+                        {selectedUserDetails.isAdmin ? "Admin" : "User"}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Account Details */}
+              <div className="space-y-4">
+                <h3 className="font-medium text-gray-900 border-b pb-2">Account Details</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Wallet Balance</label>
+                    <p className="text-sm text-gray-900 font-medium">₹{parseFloat(selectedUserDetails.walletBalance || "0").toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Account Created</label>
+                    <p className="text-sm text-gray-900">{format(new Date(selectedUserDetails.createdAt), 'MMMM dd, yyyy h:mm a')}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Last Updated</label>
+                    <p className="text-sm text-gray-900">{format(new Date(selectedUserDetails.updatedAt), 'MMMM dd, yyyy h:mm a')}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Information */}
+            <div className="mt-6 pt-6 border-t">
+              <h3 className="font-medium text-gray-900 mb-4">Additional Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="text-sm font-medium text-blue-900">Profile Picture</div>
+                  {selectedUserDetails.profilePicture ? (
+                    <img 
+                      src={selectedUserDetails.profilePicture} 
+                      alt="Profile" 
+                      className="w-16 h-16 rounded-full mt-2"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 bg-gradient-to-br from-tea-green to-tea-dark rounded-full flex items-center justify-center mt-2">
+                      <span className="text-white font-medium text-lg">
+                        {(selectedUserDetails.firstName?.[0] || '') + (selectedUserDetails.lastName?.[0] || '')}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <div className="text-sm font-medium text-green-900">Account Age</div>
+                  <div className="text-lg font-semibold text-green-800 mt-1">
+                    {Math.floor((new Date().getTime() - new Date(selectedUserDetails.createdAt).getTime()) / (1000 * 60 * 60 * 24))} days
+                  </div>
+                </div>
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <div className="text-sm font-medium text-purple-900">User Type</div>
+                  <div className="text-lg font-semibold text-purple-800 mt-1">
+                    {selectedUserDetails.isAdmin ? "Administrator" : "Regular User"}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2 mt-6 pt-6 border-t">
+              <Button
+                variant="outline"
+                onClick={() => setSelectedUserDetails(null)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

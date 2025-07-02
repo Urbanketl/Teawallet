@@ -44,7 +44,8 @@ export default function Navigation() {
     <nav className="bg-white shadow-sm border-b">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <div className="flex items-center space-x-8">
+          {/* Logo */}
+          <div className="flex items-center">
             <Link href="/">
               <div className="flex items-center space-x-3">
                 <img 
@@ -56,7 +57,7 @@ export default function Navigation() {
             </Link>
             
             {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center space-x-1">
+            <div className="hidden lg:flex items-center space-x-1 ml-8">
               {navItems.map(({ href, icon: Icon, label }) => (
                 <Link key={href} href={href}>
                   <Button
@@ -74,16 +75,39 @@ export default function Navigation() {
                 </Link>
               ))}
             </div>
+          </div>
 
-            {/* Mobile Navigation - Menu Icon */}
+          {/* Right side - Desktop Welcome + Logout, Mobile Menu */}
+          <div className="flex items-center space-x-4">
+            {/* Desktop Welcome and Logout */}
+            <div className="hidden lg:flex items-center space-x-4">
+              <div className="text-sm text-gray-600">
+                Welcome, {user.firstName}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.location.href = '/api/logout'}
+                className="flex items-center space-x-2"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Logout</span>
+              </Button>
+            </div>
+
+            {/* Mobile Navigation Menu */}
             <div className="lg:hidden">
               <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
-                    <Menu className="w-5 h-5" />
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-gray-600 hover:text-gray-900 p-2"
+                  >
+                    <Menu className="w-6 h-6" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-80">
+                <SheetContent side="right" className="w-80">
                   <div className="flex flex-col space-y-4 mt-8">
                     <div className="flex items-center space-x-3 pb-4 border-b">
                       <img 
@@ -133,21 +157,6 @@ export default function Navigation() {
                 </SheetContent>
               </Sheet>
             </div>
-          </div>
-
-          <div className="hidden lg:flex items-center space-x-4">
-            <div className="text-sm text-gray-600">
-              Welcome, {user.firstName}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.location.href = '/api/logout'}
-              className="flex items-center space-x-2"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Logout</span>
-            </Button>
           </div>
         </div>
       </div>

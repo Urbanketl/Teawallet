@@ -736,7 +736,7 @@ export default function AdminPage() {
                   <option value="custom">Custom Range</option>
                 </select>
                 <Badge variant="secondary" className="bg-tea-green/10 text-tea-green">
-                  {filterTicketsByDate(supportTickets || []).length} / {(supportTickets || []).length} Tickets
+                  {ticketsData?.tickets?.length || 0} / {ticketsData?.total || 0} Tickets (Page {ticketsPage})
                 </Badge>
               </div>
             </div>
@@ -773,7 +773,7 @@ export default function AdminPage() {
                     Loading support tickets...
                   </CardContent>
                 </Card>
-              ) : filterTicketsByDate(supportTickets || []).length === 0 ? (
+              ) : !ticketsData?.tickets || ticketsData.tickets.length === 0 ? (
                 <Card>
                   <CardContent className="p-6 text-center">
                     <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -781,7 +781,7 @@ export default function AdminPage() {
                   </CardContent>
                 </Card>
               ) : (
-                filterTicketsByDate(supportTickets || []).map((ticket: any) => {
+                (ticketsData?.tickets || []).map((ticket: any) => {
                   console.log('Rendering ticket:', ticket.id, 'with status:', ticket.status);
                   return (
                     <Card key={ticket.id} className="hover:shadow-md transition-shadow">
@@ -1035,6 +1035,19 @@ export default function AdminPage() {
                 })
                 )}
               </div>
+
+              {/* Pagination for Support Tickets */}
+              {ticketsData && ticketsData.total > ticketsPerPage && (
+                <div className="mt-6">
+                  <Pagination
+                    currentPage={ticketsPage}
+                    totalPages={Math.ceil(ticketsData.total / ticketsPerPage)}
+                    onPageChange={setTicketsPage}
+                    totalItems={ticketsData.total}
+                    itemsPerPage={ticketsPerPage}
+                  />
+                </div>
+              )}
             </TabsContent>
           <TabsContent value="faq">
             <FaqManagement />

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
 import { 
   LayoutDashboard, 
@@ -97,20 +97,17 @@ export default function Navigation() {
 
             {/* Mobile Navigation Menu */}
             <div className="lg:hidden">
+              <button
+                onClick={() => {
+                  console.log("Menu button clicked, current state:", mobileMenuOpen);
+                  setMobileMenuOpen(true);
+                }}
+                className="p-2 text-gray-600 hover:text-gray-900 rounded-md hover:bg-gray-100"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+
               <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                <SheetTrigger>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-gray-600 hover:text-gray-900 p-2"
-                    onClick={() => {
-                      console.log("Menu button clicked, current state:", mobileMenuOpen);
-                      setMobileMenuOpen(true);
-                    }}
-                  >
-                    <Menu className="w-6 h-6" />
-                  </Button>
-                </SheetTrigger>
                 <SheetContent side="right" className="w-80">
                   <div className="flex flex-col space-y-4 mt-8">
                     <div className="flex items-center space-x-3 pb-4 border-b">

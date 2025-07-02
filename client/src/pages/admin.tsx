@@ -765,7 +765,7 @@ export default function AdminPage() {
             )}
 
             <div className="grid gap-4">
-              {ticketsLoading ? (
+              {allTicketsLoading ? (
                 <Card>
                   <CardContent className="p-6 text-center">
                     Loading support tickets...

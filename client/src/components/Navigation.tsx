@@ -98,11 +98,15 @@ export default function Navigation() {
             {/* Mobile Navigation Menu */}
             <div className="lg:hidden">
               <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                <SheetTrigger asChild>
+                <SheetTrigger>
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     className="text-gray-600 hover:text-gray-900 p-2"
+                    onClick={() => {
+                      console.log("Menu button clicked, current state:", mobileMenuOpen);
+                      setMobileMenuOpen(true);
+                    }}
                   >
                     <Menu className="w-6 h-6" />
                   </Button>

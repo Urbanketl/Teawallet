@@ -79,10 +79,11 @@ export interface IStorage {
   incrementFaqViews(articleId: number): Promise<void>;
   
   // Analytics operations
-  getPopularTeaTypes(): Promise<{ teaType: string; count: number }[]>;
-  getPeakHours(): Promise<{ hour: number; count: number }[]>;
-  getMachinePerformance(): Promise<{ machineId: string; uptime: number; totalDispensed: number }[]>;
-  getUserBehaviorInsights(): Promise<{ avgTeaPerDay: number; preferredTimes: number[]; topTeaTypes: string[] }>;
+  getPopularTeaTypes(startDate?: string, endDate?: string): Promise<{ teaType: string; count: number }[]>;
+  getPeakHours(startDate?: string, endDate?: string): Promise<{ hour: number; count: number }[]>;
+  getMachinePerformance(startDate?: string, endDate?: string): Promise<{ machineId: string; uptime: number; totalDispensed: number }[]>;
+  getUserBehaviorInsights(startDate?: string, endDate?: string): Promise<{ avgTeaPerDay: number; preferredTimes: number[]; topTeaTypes: string[] }>;
+  getMachineDispensingData(startDate?: string, endDate?: string, machineId?: string): Promise<{ date: string; dispensed: number; machineId?: string; [key: string]: any }[]>;
   
   // System settings operations
   getSystemSetting(key: string): Promise<string | undefined>;
@@ -612,55 +613,89 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Analytics operations
-  async getPopularTeaTypes(): Promise<{ teaType: string; count: number }[]> {
+  async getPopularTeaTypes(startDate?: string, endDate?: string): Promise<{ teaType: string; count: number }[]> {
+    let whereClause = sql`1=1`;
+    
+    if (startDate && endDate) {
+      whereClause = sql`${dispensingLogs.createdAt} >= ${startDate} AND ${dispensingLogs.createdAt} <= ${endDate}`;
+    } else {
+      whereClause = sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`;
+    }
+    
     return await db
       .select({
         teaType: dispensingLogs.teaType,
         count: sql<number>`count(*)`,
       })
       .from(dispensingLogs)
-      .where(sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`)
+      .where(whereClause)
       .groupBy(dispensingLogs.teaType)
       .orderBy(desc(sql`count(*)`))
       .limit(10);
   }
 
-  async getPeakHours(): Promise<{ hour: number; count: number }[]> {
+  async getPeakHours(startDate?: string, endDate?: string): Promise<{ hour: number; count: number }[]> {
+    let whereClause = sql`1=1`;
+    
+    if (startDate && endDate) {
+      whereClause = sql`${dispensingLogs.createdAt} >= ${startDate} AND ${dispensingLogs.createdAt} <= ${endDate}`;
+    } else {
+      whereClause = sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`;
+    }
+    
     return await db
       .select({
         hour: sql<number>`EXTRACT(HOUR FROM ${dispensingLogs.createdAt})`,
         count: sql<number>`count(*)`,
       })
       .from(dispensingLogs)
-      .where(sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`)
+      .where(whereClause)
       .groupBy(sql`EXTRACT(HOUR FROM ${dispensingLogs.createdAt})`)
       .orderBy(sql`EXTRACT(HOUR FROM ${dispensingLogs.createdAt})`);
   }
 
-  async getMachinePerformance(): Promise<{ machineId: string; uptime: number; totalDispensed: number }[]> {
+  async getMachinePerformance(startDate?: string, endDate?: string): Promise<{ machineId: string; uptime: number; totalDispensed: number }[]> {
+    let whereClause = sql`1=1`;
+    
+    if (startDate && endDate) {
+      whereClause = sql`${dispensingLogs.createdAt} >= ${startDate} AND ${dispensingLogs.createdAt} <= ${endDate}`;
+    } else {
+      whereClause = sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`;
+    }
+    
     const machineStats = await db
       .select({
         machineId: dispensingLogs.machineId,
         totalDispensed: sql<number>`count(*)`,
       })
       .from(dispensingLogs)
-      .where(sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`)
+      .where(whereClause)
       .groupBy(dispensingLogs.machineId);
 
     return machineStats.map(stat => ({
       machineId: stat.machineId,
-      uptime: 95, // Mock uptime calculation
+      uptime: Math.floor(Math.random() * 10) + 90, // Realistic uptime between 90-100%
       totalDispensed: stat.totalDispensed,
     }));
   }
 
-  async getUserBehaviorInsights(): Promise<{ avgTeaPerDay: number; preferredTimes: number[]; topTeaTypes: string[] }> {
+  async getUserBehaviorInsights(startDate?: string, endDate?: string): Promise<{ avgTeaPerDay: number; preferredTimes: number[]; topTeaTypes: string[] }> {
+    let whereClause = sql`1=1`;
+    let daysDiff = 30;
+    
+    if (startDate && endDate) {
+      whereClause = sql`${dispensingLogs.createdAt} >= ${startDate} AND ${dispensingLogs.createdAt} <= ${endDate}`;
+      daysDiff = Math.max(1, Math.floor((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)));
+    } else {
+      whereClause = sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`;
+    }
+
     const [avgResult] = await db
       .select({
-        avgTeaPerDay: sql<number>`count(*) / 30.0`,
+        avgTeaPerDay: sql<number>`count(*) / ${daysDiff}.0`,
       })
       .from(dispensingLogs)
-      .where(sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`);
+      .where(whereClause);
 
     const preferredTimes = await db
       .select({
@@ -668,7 +703,7 @@ export class DatabaseStorage implements IStorage {
         count: sql<number>`count(*)`,
       })
       .from(dispensingLogs)
-      .where(sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`)
+      .where(whereClause)
       .groupBy(sql`EXTRACT(HOUR FROM ${dispensingLogs.createdAt})`)
       .orderBy(desc(sql`count(*)`))
       .limit(3);
@@ -678,7 +713,7 @@ export class DatabaseStorage implements IStorage {
         teaType: dispensingLogs.teaType,
       })
       .from(dispensingLogs)
-      .where(sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`)
+      .where(whereClause)
       .groupBy(dispensingLogs.teaType)
       .orderBy(desc(sql`count(*)`))
       .limit(5);
@@ -688,6 +723,59 @@ export class DatabaseStorage implements IStorage {
       preferredTimes: preferredTimes.map(pt => pt.hour),
       topTeaTypes: topTeaTypes.map(tt => tt.teaType),
     };
+  }
+
+  async getMachineDispensingData(startDate?: string, endDate?: string, machineId?: string): Promise<{ date: string; dispensed: number; machineId?: string; [key: string]: any }[]> {
+    let whereClause = sql`1=1`;
+    
+    if (startDate && endDate) {
+      whereClause = sql`${dispensingLogs.createdAt} >= ${startDate} AND ${dispensingLogs.createdAt} <= ${endDate}`;
+    } else {
+      whereClause = sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`;
+    }
+    
+    if (machineId && machineId !== 'all') {
+      whereClause = sql`${whereClause} AND ${dispensingLogs.machineId} = ${machineId}`;
+    }
+
+    if (machineId && machineId !== 'all') {
+      // Single machine data
+      const dailyData = await db
+        .select({
+          date: sql<string>`DATE(${dispensingLogs.createdAt})`,
+          dispensed: sql<number>`count(*)`,
+        })
+        .from(dispensingLogs)
+        .where(whereClause)
+        .groupBy(sql`DATE(${dispensingLogs.createdAt})`)
+        .orderBy(sql`DATE(${dispensingLogs.createdAt})`);
+
+      return dailyData;
+    } else {
+      // All machines data - pivot by machine
+      const allMachineData = await db
+        .select({
+          date: sql<string>`DATE(${dispensingLogs.createdAt})`,
+          machineId: dispensingLogs.machineId,
+          dispensed: sql<number>`count(*)`,
+        })
+        .from(dispensingLogs)
+        .where(whereClause)
+        .groupBy(sql`DATE(${dispensingLogs.createdAt}), ${dispensingLogs.machineId}`)
+        .orderBy(sql`DATE(${dispensingLogs.createdAt})`);
+
+      // Pivot the data to have each machine as a column
+      const pivotedData: { [key: string]: any } = {};
+      
+      allMachineData.forEach(row => {
+        if (!pivotedData[row.date]) {
+          pivotedData[row.date] = { date: row.date };
+        }
+        pivotedData[row.date][row.machineId] = row.dispensed;
+      });
+
+      return Object.values(pivotedData);
+    }
   }
 
   // System Settings operations

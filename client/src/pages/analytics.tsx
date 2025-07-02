@@ -1,31 +1,70 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { TrendingUp, Clock, Coffee, Activity, Users, DollarSign } from "lucide-react";
+import { TrendingUp, Clock, Coffee, Activity, Users, DollarSign, Calendar, Download } from "lucide-react";
+import { useState } from "react";
+import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 
 export default function AnalyticsPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
+  const [dateRange, setDateRange] = useState('7days');
+  const [selectedMachine, setSelectedMachine] = useState('all');
+
+  // Calculate date range
+  const getDateRange = () => {
+    const now = new Date();
+    switch (dateRange) {
+      case '1day':
+        return { start: subDays(now, 1), end: now };
+      case '7days':
+        return { start: subDays(now, 7), end: now };
+      case '30days':
+        return { start: subDays(now, 30), end: now };
+      case 'thisWeek':
+        return { start: startOfWeek(now), end: endOfWeek(now) };
+      case 'thisMonth':
+        return { start: startOfMonth(now), end: endOfMonth(now) };
+      default:
+        return { start: subDays(now, 7), end: now };
+    }
+  };
+
+  const { start: startDate, end: endDate } = getDateRange();
 
   const { data: popularTeas = [] } = useQuery({
-    queryKey: ['/api/analytics/popular-teas'],
+    queryKey: [`/api/analytics/popular-teas?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`],
     enabled: user?.isAdmin,
   });
 
   const { data: peakHours = [] } = useQuery({
-    queryKey: ['/api/analytics/peak-hours'],
+    queryKey: [`/api/analytics/peak-hours?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`],
     enabled: user?.isAdmin,
   });
 
   const { data: machinePerformance = [] } = useQuery({
-    queryKey: ['/api/analytics/machine-performance'],
+    queryKey: [`/api/analytics/machine-performance?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`],
     enabled: user?.isAdmin,
   });
 
   const { data: userBehavior } = useQuery({
-    queryKey: ['/api/analytics/user-behavior'],
+    queryKey: [`/api/analytics/user-behavior?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`],
+    enabled: user?.isAdmin,
+  });
+
+  // New query for machine dispensing data
+  const { data: machineDispensing = [] } = useQuery({
+    queryKey: [`/api/analytics/machine-dispensing?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}${selectedMachine !== 'all' ? `&machineId=${selectedMachine}` : ''}`],
+    enabled: user?.isAdmin,
+  });
+
+  // Get available machines for the filter
+  const { data: allMachines = [] } = useQuery({
+    queryKey: ['/api/admin/machines'],
     enabled: user?.isAdmin,
   });
 
@@ -67,8 +106,36 @@ export default function AnalyticsPage() {
       <Navigation />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Analytics Dashboard</h1>
-          <p className="text-gray-600">Business insights and performance metrics</p>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Analytics Dashboard</h1>
+              <p className="text-gray-600">Business insights and performance metrics</p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <Select value={dateRange} onValueChange={setDateRange}>
+                  <SelectTrigger className="w-36">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1day">Last 24 Hours</SelectItem>
+                    <SelectItem value="7days">Last 7 Days</SelectItem>
+                    <SelectItem value="30days">Last 30 Days</SelectItem>
+                    <SelectItem value="thisWeek">This Week</SelectItem>
+                    <SelectItem value="thisMonth">This Month</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button variant="outline" size="sm">
+                <Download className="w-4 h-4 mr-2" />
+                Export
+              </Button>
+            </div>
+          </div>
+          <div className="text-sm text-gray-500">
+            Showing data from {format(startDate, 'MMM dd, yyyy')} to {format(endDate, 'MMM dd, yyyy')}
+          </div>
         </div>
 
         {/* Key Metrics */}
@@ -159,33 +226,128 @@ export default function AnalyticsPage() {
           </Card>
         </div>
 
-        {/* Machine Performance */}
+        {/* Machine Dispensing Analytics */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle>Machine Performance Overview</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Machine Dispensing Analytics</CardTitle>
+              <div className="flex items-center space-x-2">
+                <Select value={selectedMachine} onValueChange={setSelectedMachine}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="All Machines" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Machines</SelectItem>
+                    {(allMachines as any[]).map((machine: any) => (
+                      <SelectItem key={machine.id} value={machine.id}>
+                        {machine.name} ({machine.id})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {machinePerformance.map((machine: any) => (
-                <Card key={machine.machineId} className="border">
+            {/* Machine Performance Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+              {(machinePerformance as any[]).map((machine: any) => (
+                <Card key={machine.machineId} className="border-l-4 border-l-tea-green">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-sm">{machine.machineId}</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm font-medium">{machine.machineId}</CardTitle>
+                      <div className={`w-3 h-3 rounded-full ${machine.uptime > 95 ? 'bg-green-400' : machine.uptime > 80 ? 'bg-yellow-400' : 'bg-red-400'}`} />
+                    </div>
                   </CardHeader>
-                  <CardContent className="space-y-2">
+                  <CardContent className="space-y-3">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600">Uptime</span>
-                      <Badge variant="outline" className="text-green-600">
+                      <Badge variant="outline" className={`${machine.uptime > 95 ? 'text-green-600 border-green-200' : machine.uptime > 80 ? 'text-yellow-600 border-yellow-200' : 'text-red-600 border-red-200'}`}>
                         {machine.uptime}%
                       </Badge>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600">Total Dispensed</span>
-                      <span className="font-semibold">{machine.totalDispensed}</span>
+                      <span className="font-semibold text-tea-green">{machine.totalDispensed}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Revenue Generated</span>
+                      <span className="font-semibold">₹{(machine.totalDispensed * 5).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Avg/Day</span>
+                      <span className="text-sm font-medium">
+                        {Math.round(machine.totalDispensed / Math.max(1, Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))))} cups
+                      </span>
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
+
+            {/* Dispensing Chart */}
+            {machineDispensing && (machineDispensing as any[]).length > 0 && (
+              <div className="mt-6">
+                <h4 className="text-lg font-medium mb-4">Daily Dispensing Trends</h4>
+                <ResponsiveContainer width="100%" height={350}>
+                  <BarChart data={machineDispensing as any[]}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" angle={-45} textAnchor="end" height={80} />
+                    <YAxis />
+                    <Tooltip 
+                      labelFormatter={(value) => `Date: ${value}`}
+                      formatter={(value, name) => [`${value} cups`, name]}
+                    />
+                    <Legend />
+                    {selectedMachine === 'all' ? (
+                      (allMachines as any[]).map((machine: any, index) => (
+                        <Bar 
+                          key={machine.id}
+                          dataKey={machine.id}
+                          name={machine.name}
+                          fill={COLORS[index % COLORS.length]}
+                        />
+                      ))
+                    ) : (
+                      <Bar dataKey="dispensed" name="Cups Dispensed" fill="#22c55e" />
+                    )}
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {/* Monthly Summary (if viewing monthly data) */}
+            {dateRange === 'thisMonth' && (
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                <h4 className="text-lg font-medium mb-3 text-blue-900">Monthly Summary</h4>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-900">
+                      {(machinePerformance as any[]).reduce((sum: number, machine: any) => sum + machine.totalDispensed, 0)}
+                    </div>
+                    <div className="text-sm text-blue-700">Total Cups</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-900">
+                      ₹{((machinePerformance as any[]).reduce((sum: number, machine: any) => sum + machine.totalDispensed, 0) * 5).toFixed(2)}
+                    </div>
+                    <div className="text-sm text-blue-700">Total Revenue</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-900">
+                      {(machinePerformance as any[]).filter((machine: any) => machine.uptime > 95).length}
+                    </div>
+                    <div className="text-sm text-blue-700">High Performing</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-900">
+                      {Math.round((machinePerformance as any[]).reduce((sum: number, machine: any) => sum + machine.uptime, 0) / Math.max(1, (machinePerformance as any[]).length))}%
+                    </div>
+                    <div className="text-sm text-blue-700">Avg Uptime</div>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

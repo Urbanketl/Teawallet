@@ -72,7 +72,7 @@ export default function AdminPage() {
 
   // Paginated support tickets query
   const { data: ticketsData, isLoading: ticketsLoading } = useQuery({
-    queryKey: ["/api/admin/support/tickets", { paginated: true, page: ticketsPage, limit: ticketsPerPage, status: ticketsStatus }],
+    queryKey: [`/api/admin/support/tickets?paginated=true&page=${ticketsPage}&limit=${ticketsPerPage}${ticketsStatus ? `&status=${ticketsStatus}` : ''}`],
     enabled: isAuthenticated && user?.isAdmin,
     retry: false,
   });

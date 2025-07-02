@@ -1319,7 +1319,7 @@ function UserManagement() {
 
   // Fetch users with pagination
   const { data: usersData, isLoading: usersLoading } = useQuery({
-    queryKey: ["/api/admin/users", { paginated: true, page: usersPage, limit: usersLimit, search: searchTerm }],
+    queryKey: [`/api/admin/users?paginated=true&page=${usersPage}&limit=${usersLimit}${searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : ''}`],
     enabled: !!currentUser?.isAdmin,
   });
 
@@ -1341,7 +1341,9 @@ function UserManagement() {
       return response.json();
     },
     onSuccess: (updatedUser, { isAdmin }) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => query.queryKey[0]?.toString()?.includes('/api/admin/users') || false
+      });
       toast({
         title: "Success",
         description: `User ${isAdmin ? 'granted' : 'revoked'} admin privileges`,
@@ -1365,7 +1367,7 @@ function UserManagement() {
     }
   };
 
-  const filteredUsers = usersData?.users || [];
+  const filteredUsers = (usersData as any)?.users || [];
 
   return (
     <div className="space-y-6">
@@ -1385,7 +1387,7 @@ function UserManagement() {
             className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <Badge variant="secondary" className="bg-tea-green/10 text-tea-green">
-            {usersData?.total || 0} Total Users
+            {(usersData as any)?.total || 0} Total Users
           </Badge>
         </div>
       </div>
@@ -1482,7 +1484,7 @@ function UserManagement() {
       )}
 
       {/* Pagination */}
-      {usersData?.total && usersData.total > usersLimit && (
+      {(usersData as any)?.total && (usersData as any).total > usersLimit && (
         <div className="flex items-center justify-center space-x-2 pt-4">
           <Button 
             variant="outline" 
@@ -1495,14 +1497,14 @@ function UserManagement() {
           </Button>
           
           <span className="text-sm text-gray-600 px-4">
-            Page {usersPage} of {Math.ceil(usersData.total / usersLimit)}
+            Page {usersPage} of {Math.ceil((usersData as any).total / usersLimit)}
           </span>
           
           <Button 
             variant="outline"
             size="sm" 
             onClick={() => setUsersPage(p => p + 1)}
-            disabled={usersPage >= Math.ceil(usersData.total / usersLimit)}
+            disabled={usersPage >= Math.ceil((usersData as any).total / usersLimit)}
           >
             Next
             <ChevronRight className="w-4 h-4 ml-1" />

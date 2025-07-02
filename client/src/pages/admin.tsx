@@ -28,6 +28,14 @@ import {
   AlertCircle,
   CheckCircle,
   CreditCard,
+  UserPlus,
+  UserMinus,
+  Shield,
+  Eye,
+  Wallet,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
   Plus,
   Trash2,
   Search
@@ -699,10 +707,7 @@ export default function AdminPage() {
           </TabsContent>
 
           <TabsContent value="users">
-            <div className="text-center py-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">User Management</h3>
-              <p className="text-gray-600">User data displayed in the cards above</p>
-            </div>
+            <UserManagement />
           </TabsContent>
 
           <TabsContent value="rfid">
@@ -1299,6 +1304,211 @@ function FaqManagement() {
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+// User Management Component
+function UserManagement() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [usersPage, setUsersPage] = useState(1);
+  const usersLimit = 20;
+
+  // Fetch users with pagination
+  const { data: usersData, isLoading: usersLoading } = useQuery({
+    queryKey: ["/api/admin/users", { paginated: true, page: usersPage, limit: usersLimit, search: searchTerm }],
+    enabled: !!currentUser?.isAdmin,
+  });
+
+  // Admin status toggle mutation
+  const toggleAdminMutation = useMutation({
+    mutationFn: async ({ userId, isAdmin }: { userId: string; isAdmin: boolean }) => {
+      const response = await fetch(`/api/admin/users/${userId}/admin-status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ isAdmin }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update admin status');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (updatedUser, { isAdmin }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: "Success",
+        description: `User ${isAdmin ? 'granted' : 'revoked'} admin privileges`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update admin status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleToggleAdmin = (user: any) => {
+    const newAdminStatus = !user.isAdmin;
+    const action = newAdminStatus ? 'grant' : 'revoke';
+    
+    if (confirm(`Are you sure you want to ${action} admin privileges for ${user.firstName} ${user.lastName}?`)) {
+      toggleAdminMutation.mutate({ userId: user.id, isAdmin: newAdminStatus });
+    }
+  };
+
+  const filteredUsers = usersData?.users || [];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">User Management</h3>
+          <p className="text-sm text-muted-foreground">
+            Manage user accounts and admin privileges
+          </p>
+        </div>
+        <div className="flex items-center space-x-4">
+          <input
+            type="text"
+            placeholder="Search users..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <Badge variant="secondary" className="bg-tea-green/10 text-tea-green">
+            {usersData?.total || 0} Total Users
+          </Badge>
+        </div>
+      </div>
+
+      {usersLoading ? (
+        <Card>
+          <CardContent className="p-6 text-center">
+            Loading users...
+          </CardContent>
+        </Card>
+      ) : !filteredUsers.length ? (
+        <Card>
+          <CardContent className="p-6 text-center">
+            <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500">No users found</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4">
+          {filteredUsers.map((user: any) => (
+            <Card key={user.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-tea-green to-tea-dark rounded-full flex items-center justify-center">
+                      <span className="text-white font-medium text-lg">
+                        {(user.firstName?.[0] || '') + (user.lastName?.[0] || '')}
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-1">
+                        <h4 className="font-semibold text-lg">
+                          {user.firstName} {user.lastName}
+                        </h4>
+                        {user.isAdmin && (
+                          <Badge className="bg-purple-100 text-purple-800 border-purple-200">
+                            <Shield className="w-3 h-3 mr-1" />
+                            Admin
+                          </Badge>
+                        )}
+                        {user.id === currentUser?.id && (
+                          <Badge variant="outline" className="text-blue-600 border-blue-200">
+                            You
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-gray-600 text-sm mb-2">{user.email}</p>
+                      <div className="flex items-center space-x-4 text-xs text-gray-500">
+                        <span className="flex items-center">
+                          <Wallet className="w-3 h-3 mr-1" />
+                          ₹{parseFloat(user.walletBalance || "0").toFixed(2)}
+                        </span>
+                        <span className="flex items-center">
+                          <Calendar className="w-3 h-3 mr-1" />
+                          Joined {format(new Date(user.createdAt), 'MMM dd, yyyy')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    {user.id !== currentUser?.id && (
+                      <Button
+                        variant={user.isAdmin ? "destructive" : "default"}
+                        size="sm"
+                        onClick={() => handleToggleAdmin(user)}
+                        disabled={toggleAdminMutation.isPending}
+                        className="flex items-center space-x-1"
+                      >
+                        {user.isAdmin ? (
+                          <>
+                            <UserMinus className="w-4 h-4" />
+                            <span>Revoke Admin</span>
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="w-4 h-4" />
+                            <span>Grant Admin</span>
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    
+                    <Button variant="outline" size="sm">
+                      <Eye className="w-4 h-4 mr-1" />
+                      View Details
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {usersData?.total && usersData.total > usersLimit && (
+        <div className="flex items-center justify-center space-x-2 pt-4">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setUsersPage(p => Math.max(1, p - 1))}
+            disabled={usersPage === 1}
+          >
+            <ChevronLeft className="w-4 h-4 mr-1" />
+            Previous
+          </Button>
+          
+          <span className="text-sm text-gray-600 px-4">
+            Page {usersPage} of {Math.ceil(usersData.total / usersLimit)}
+          </span>
+          
+          <Button 
+            variant="outline"
+            size="sm" 
+            onClick={() => setUsersPage(p => p + 1)}
+            disabled={usersPage >= Math.ceil(usersData.total / usersLimit)}
+          >
+            Next
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

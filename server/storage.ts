@@ -48,6 +48,7 @@ export interface IStorage {
   // Admin operations
   getAllUsers(): Promise<User[]>;
   getUsersPaginated(page: number, limit: number, search?: string): Promise<{ users: User[], total: number }>;
+  updateUserAdminStatus(userId: string, isAdmin: boolean, updatedBy: string): Promise<User>;
   getTotalRevenue(): Promise<string>;
   getDailyStats(): Promise<{ totalUsers: number; totalRevenue: string; activeMachines: number; dailyDispensing: number }>;
   
@@ -374,6 +375,24 @@ export class DatabaseStorage implements IStorage {
       activeMachines: machineCount.count || 0,
       dailyDispensing: dispensingCount.count || 0,
     };
+  }
+
+  async updateUserAdminStatus(userId: string, isAdmin: boolean, updatedBy: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({
+        isAdmin,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    if (!user) {
+      throw new Error('User not found');
+    }
+    
+    console.log(`Admin status updated: User ${userId} admin=${isAdmin} by ${updatedBy}`);
+    return user;
   }
 
   // Support operations

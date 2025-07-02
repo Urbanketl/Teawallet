@@ -32,6 +32,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Admin routes - require authentication and admin privileges
   app.get('/api/admin/users', requireAuth, requireAdmin, adminController.getAllUsers);
+  app.patch('/api/admin/users/:userId/admin-status', requireAuth, requireAdmin, adminController.updateUserAdminStatus);
   app.get('/api/admin/stats', requireAuth, requireAdmin, adminController.getDashboardStats);
   app.get('/api/admin/rfid/cards', requireAuth, requireAdmin, adminController.getAllRfidCards);
   app.post('/api/admin/rfid/cards', requireAuth, requireAdmin, adminController.createRfidCard);

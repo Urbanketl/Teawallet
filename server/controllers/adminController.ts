@@ -94,3 +94,26 @@ export async function getSupportTicketsPaginated(req: any, res: Response) {
     res.status(500).json({ message: 'Failed to fetch support tickets' });
   }
 }
+
+export async function updateUserAdminStatus(req: any, res: Response) {
+  try {
+    const { userId } = req.params;
+    const { isAdmin } = req.body;
+    const currentUserId = req.session?.user?.id || req.user?.claims?.sub;
+    
+    if (!currentUserId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    
+    // Prevent users from changing their own admin status
+    if (userId === currentUserId) {
+      return res.status(400).json({ message: 'Cannot change your own admin status' });
+    }
+    
+    const updatedUser = await storage.updateUserAdminStatus(userId, isAdmin, currentUserId);
+    res.json(updatedUser);
+  } catch (error) {
+    console.error('Error updating user admin status:', error);
+    res.status(500).json({ message: 'Failed to update user admin status' });
+  }
+}

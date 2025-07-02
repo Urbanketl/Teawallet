@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
 import { 
   LayoutDashboard, 
@@ -107,56 +106,82 @@ export default function Navigation() {
                 <Menu className="w-6 h-6" />
               </button>
 
-              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                <SheetContent side="right" className="w-80">
-                  <div className="flex flex-col space-y-4 mt-8">
-                    <div className="flex items-center space-x-3 pb-4 border-b">
-                      <img 
-                        src="/logo-updated.jpg" 
-                        alt="UrbanKetl Logo" 
-                        className="h-8 w-auto object-contain"
-                      />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Welcome, {user.firstName}</p>
-                        <p className="text-xs text-gray-500">{user.email}</p>
+              {/* Custom Mobile Menu Overlay */}
+              {mobileMenuOpen && (
+                <div className="fixed inset-0 z-50 lg:hidden">
+                  {/* Backdrop */}
+                  <div 
+                    className="fixed inset-0 bg-black bg-opacity-50"
+                    onClick={() => setMobileMenuOpen(false)}
+                  />
+                  
+                  {/* Menu Panel */}
+                  <div className="fixed inset-y-0 right-0 w-80 bg-white shadow-xl transform transition-transform duration-300 ease-in-out">
+                    <div className="flex flex-col h-full">
+                      {/* Header */}
+                      <div className="flex items-center justify-between p-4 border-b">
+                        <div className="flex items-center space-x-3">
+                          <img 
+                            src="/logo-updated.jpg" 
+                            alt="UrbanKetl Logo" 
+                            className="h-8 w-auto object-contain"
+                          />
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">Welcome, {user.firstName}</p>
+                            <p className="text-xs text-gray-500">{user.email}</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="p-2 text-gray-400 hover:text-gray-600"
+                        >
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+
+                      {/* Navigation Items */}
+                      <div className="flex-1 overflow-y-auto p-4">
+                        <div className="space-y-2">
+                          {navItems.map(({ href, icon: Icon, label }) => (
+                            <Link key={href} href={href}>
+                              <Button
+                                variant={location === href ? "default" : "ghost"}
+                                size="lg"
+                                className={`w-full justify-start text-left ${
+                                  location === href 
+                                    ? "bg-tea-green hover:bg-tea-dark text-white" 
+                                    : "text-gray-600 hover:text-gray-900"
+                                }`}
+                                onClick={() => setMobileMenuOpen(false)}
+                              >
+                                <Icon className="w-5 h-5 mr-3" />
+                                <span>{label}</span>
+                              </Button>
+                            </Link>
+                          ))}
+                        </div>
+                        
+                        <div className="mt-6 pt-4 border-t">
+                          <Button
+                            variant="outline"
+                            size="lg"
+                            onClick={() => {
+                              setMobileMenuOpen(false);
+                              window.location.href = '/api/logout';
+                            }}
+                            className="w-full justify-start text-left flex items-center"
+                          >
+                            <LogOut className="w-5 h-5 mr-3" />
+                            <span>Logout</span>
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                    
-                    {navItems.map(({ href, icon: Icon, label }) => (
-                      <Link key={href} href={href}>
-                        <Button
-                          variant={location === href ? "default" : "ghost"}
-                          size="lg"
-                          className={`w-full justify-start text-left ${
-                            location === href 
-                              ? "bg-tea-green hover:bg-tea-dark text-white" 
-                              : "text-gray-600 hover:text-gray-900"
-                          }`}
-                          onClick={() => setMobileMenuOpen(false)}
-                        >
-                          <Icon className="w-5 h-5 mr-3" />
-                          <span>{label}</span>
-                        </Button>
-                      </Link>
-                    ))}
-                    
-                    <div className="pt-4 border-t">
-                      <Button
-                        variant="outline"
-                        size="lg"
-                        onClick={() => {
-                          setMobileMenuOpen(false);
-                          window.location.href = '/api/logout';
-                        }}
-                        className="w-full justify-start text-left flex items-center"
-                      >
-                        <LogOut className="w-5 h-5 mr-3" />
-                        <span>Logout</span>
-                      </Button>
-                    </div>
                   </div>
-                </SheetContent>
-              </Sheet>
+                </div>
+              )}
             </div>
           </div>
         </div>

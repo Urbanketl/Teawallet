@@ -91,7 +91,7 @@ export default function AnalyticsPage() {
           <Card className="text-center py-12">
             <CardContent>
               <h3 className="text-lg font-semibold text-gray-600 mb-2">Access Denied</h3>
-              <p className="text-gray-500">You need admin privileges to view analytics.</p>
+              <p className="text-gray-500">You need business unit admin privileges to view analytics.</p>
             </CardContent>
           </Card>
         </div>
@@ -108,8 +108,8 @@ export default function AnalyticsPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Analytics Dashboard</h1>
-              <p className="text-gray-600">Business insights and performance metrics</p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Business Analytics Dashboard</h1>
+              <p className="text-gray-600">Employee tea consumption insights and business unit performance metrics</p>
             </div>
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
@@ -192,7 +192,7 @@ export default function AnalyticsPage() {
           {/* Popular Tea Types */}
           <Card>
             <CardHeader>
-              <CardTitle>Popular Tea Types (Last 30 Days)</CardTitle>
+              <CardTitle>Employee Tea Preferences (Last 30 Days)</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
@@ -210,7 +210,7 @@ export default function AnalyticsPage() {
           {/* Peak Hours */}
           <Card>
             <CardHeader>
-              <CardTitle>Tea Consumption by Hour</CardTitle>
+              <CardTitle>Employee Tea Consumption by Hour</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
@@ -230,7 +230,7 @@ export default function AnalyticsPage() {
         <Card className="mb-8">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Machine Dispensing Analytics</CardTitle>
+              <CardTitle>Tea Machine Performance Analytics</CardTitle>
               <div className="flex items-center space-x-2">
                 <Select value={selectedMachine} onValueChange={setSelectedMachine}>
                   <SelectTrigger className="w-48">

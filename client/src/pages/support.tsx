@@ -227,8 +227,8 @@ export default function SupportPage() {
       <Navigation />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Support Center</h1>
-          <p className="text-gray-600">Get help with your tea experience</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Business Support Center</h1>
+          <p className="text-gray-600">Get help with your business unit tea services and employee access</p>
         </div>
 
         <Tabs defaultValue="faq" className="space-y-6">
@@ -239,11 +239,11 @@ export default function SupportPage() {
             </TabsTrigger>
             <TabsTrigger value="tickets" className="flex items-center space-x-2">
               <FileText className="w-4 h-4" />
-              <span>My Tickets</span>
+              <span>Business Support Tickets</span>
             </TabsTrigger>
             <TabsTrigger value="chat" className="flex items-center space-x-2">
               <MessageCircle className="w-4 h-4" />
-              <span>Live Chat</span>
+              <span>Business Support Chat</span>
             </TabsTrigger>
           </TabsList>
 
@@ -320,12 +320,12 @@ export default function SupportPage() {
           {/* Tickets Tab */}
           <TabsContent value="tickets" className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Support Tickets</h2>
+              <h2 className="text-xl font-semibold">Business Support Tickets</h2>
               <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogTrigger asChild>
                   <Button className="bg-tea-green hover:bg-tea-dark">
                     <Plus className="w-4 h-4 mr-2" />
-                    New Ticket
+                    New Business Support Ticket
                   </Button>
                 </DialogTrigger>
                 <DialogContent>

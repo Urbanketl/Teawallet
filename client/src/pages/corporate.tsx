@@ -177,16 +177,16 @@ export default function CorporateDashboard() {
       
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Corporate Dashboard</h1>
-          <p className="text-gray-600 mt-2">Manage your business unit's tea machines and RFID cards</p>
+          <h1 className="text-3xl font-bold text-gray-900">Business Unit Management</h1>
+          <p className="text-gray-600 mt-2">Manage your tea machines, employee RFID cards, and business operations</p>
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="machines">Machines</TabsTrigger>
-            <TabsTrigger value="cards">RFID Cards</TabsTrigger>
-            <TabsTrigger value="usage">Usage Logs</TabsTrigger>
+            <TabsTrigger value="cards">Employee Cards</TabsTrigger>
+            <TabsTrigger value="usage">Employee Usage Logs</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -206,7 +206,7 @@ export default function CorporateDashboard() {
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Cards</CardTitle>
+                  <CardTitle className="text-sm font-medium">Active Employee Cards</CardTitle>
                   <CreditCard className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -219,13 +219,13 @@ export default function CorporateDashboard() {
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Today's Usage</CardTitle>
+                  <CardTitle className="text-sm font-medium">Today's Employee Usage</CardTitle>
                   <Activity className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{dispensingLogs.length}</div>
                   <p className="text-xs text-muted-foreground">
-                    tea servings dispensed
+                    employee tea servings dispensed
                   </p>
                 </CardContent>
               </Card>

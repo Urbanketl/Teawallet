@@ -549,7 +549,7 @@ export default function AdminPage() {
               <div className="text-3xl font-bold text-gray-900 mb-1">
                 {statsLoading ? "..." : adminStats?.totalUsers || 0}
               </div>
-              <div className="text-gray-600">Total Users</div>
+              <div className="text-gray-600">Total Business Units</div>
             </CardContent>
           </Card>
 

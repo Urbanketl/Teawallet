@@ -31,8 +31,8 @@ export default function WalletCard() {
   useEffect(() => {
     if (isLowBalance && balance > 0) {
       toast({
-        title: "Low Wallet Balance",
-        description: `Your balance is ₹${balance.toFixed(2)}. Recharge now to avoid interruption!`,
+        title: "Low Business Unit Balance",
+        description: `Your business unit balance is ₹${balance.toFixed(2)}. Recharge now to avoid interruption for your employees!`,
         variant: "destructive",
         duration: 8000,
       });
@@ -83,7 +83,7 @@ export default function WalletCard() {
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <Wallet className="w-5 h-5 text-tea-green" />
-          <span>Digital Wallet</span>
+          <span>Business Unit Wallet</span>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -98,12 +98,12 @@ export default function WalletCard() {
               <div className="bg-red-100 border border-red-300 rounded-lg p-2 mb-3 flex items-center space-x-2">
                 <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
                 <div className="text-xs text-red-700 font-medium">
-                  Low Balance Alert!
+                  Low Business Unit Balance Alert!
                 </div>
               </div>
             )}
             <div className="flex items-center justify-between mb-3">
-              <span className="text-gray-600 font-medium">Current Balance</span>
+              <span className="text-gray-600 font-medium">Business Unit Balance</span>
               <IndianRupee className={`w-5 h-5 ${isLowBalance ? 'text-red-500' : 'text-tea-green'}`} />
             </div>
             <div className={`text-3xl font-bold mb-2 ${
@@ -112,7 +112,7 @@ export default function WalletCard() {
               ₹{balance.toFixed(2)}
             </div>
             <div className={`text-sm ${isLowBalance ? 'text-red-500 font-medium' : 'text-gray-500'}`}>
-              {isLowBalance ? 'Recharge needed' : 'Available for use'}
+              {isLowBalance ? 'Recharge needed for employee tea access' : 'Available for employee tea purchases'}
             </div>
           </div>
           
@@ -162,7 +162,7 @@ export default function WalletCard() {
                             Recharge Information
                           </p>
                           <p className="text-xs text-blue-700 mt-1">
-                            Current Balance: ₹{balance.toFixed(2)}<br />
+                            Business Unit Balance: ₹{balance.toFixed(2)}<br />
                             Maximum Wallet Limit: ₹{parseFloat(maxWalletBalance).toFixed(2)}<br />
                             Maximum you can add: ₹{maxAllowedRecharge > 0 ? maxAllowedRecharge.toFixed(2) : '0.00'}
                           </p>

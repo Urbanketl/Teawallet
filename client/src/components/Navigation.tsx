@@ -26,10 +26,10 @@ export default function Navigation() {
 
   const navItems = [
     { href: "/", icon: LayoutDashboard, label: "Dashboard" },
-    { href: "/corporate", icon: Coffee, label: "Manage Business" },
-    { href: "/wallet", icon: Wallet, label: "Wallet" },
+    { href: "/corporate", icon: Coffee, label: "Business Unit" },
+    { href: "/wallet", icon: Wallet, label: "Business Wallet" },
     { href: "/history", icon: History, label: "History" },
-    { href: "/support", icon: MessageCircle, label: "Support" },
+    { href: "/support", icon: MessageCircle, label: "Business Support" },
     { href: "/profile", icon: User, label: "Profile" },
   ];
 

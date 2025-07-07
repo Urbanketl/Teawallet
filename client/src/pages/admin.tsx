@@ -1073,6 +1073,7 @@ function FaqManagement() {
   const [editingFaq, setEditingFaq] = useState<any>(null);
   const [faqData, setFaqData] = useState({ question: '', answer: '', category: 'general' });
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: faqList = [], refetch: refetchFaq } = useQuery({
     queryKey: ['/api/faq'],
@@ -1085,6 +1086,8 @@ function FaqManagement() {
     },
     onSuccess: () => {
       toast({ title: "Success", description: "FAQ created successfully!" });
+      // Invalidate all FAQ-related queries
+      queryClient.invalidateQueries({ queryKey: ['/api/faq'] });
       refetchFaq();
       setShowCreateForm(false);
       setFaqData({ question: '', answer: '', category: 'general' });
@@ -1104,6 +1107,8 @@ function FaqManagement() {
     },
     onSuccess: () => {
       toast({ title: "Success", description: "FAQ updated successfully!" });
+      // Invalidate all FAQ-related queries
+      queryClient.invalidateQueries({ queryKey: ['/api/faq'] });
       refetchFaq();
       setEditingFaq(null);
       setFaqData({ question: '', answer: '', category: 'general' });
@@ -1123,6 +1128,8 @@ function FaqManagement() {
     },
     onSuccess: () => {
       toast({ title: "Success", description: "FAQ deleted successfully!" });
+      // Invalidate all FAQ-related queries
+      queryClient.invalidateQueries({ queryKey: ['/api/faq'] });
       refetchFaq();
     },
     onError: (error: any) => {

@@ -26,14 +26,12 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// RFID Cards - Employee cards under business units
+// RFID Cards - Generic cards under business units
 export const rfidCards = pgTable("rfid_cards", {
   id: serial("id").primaryKey(),
   businessUnitAdminId: varchar("business_unit_admin_id").notNull().references(() => users.id), // The admin who manages this card
   cardNumber: varchar("card_number").notNull().unique(),
-  employeeName: varchar("employee_name"), // Name of the employee using this card
-  employeeId: varchar("employee_id"), // Company employee ID
-  department: varchar("department"), // Employee department
+  cardName: varchar("card_name"), // Optional name/label for the card (e.g., "Office Card #1")
   isActive: boolean("is_active").default(true),
   lastUsed: timestamp("last_used"),
   lastUsedMachineId: varchar("last_used_machine_id"),
@@ -59,7 +57,6 @@ export const dispensingLogs = pgTable("dispensing_logs", {
   businessUnitAdminId: varchar("business_unit_admin_id").notNull().references(() => users.id), // Admin whose wallet is charged
   rfidCardId: integer("rfid_card_id").notNull().references(() => rfidCards.id),
   machineId: varchar("machine_id").notNull().references(() => teaMachines.id),
-  employeeName: varchar("employee_name"), // Employee who used the card
   teaType: varchar("tea_type").notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   success: boolean("success").default(true),

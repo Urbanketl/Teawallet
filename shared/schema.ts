@@ -10,7 +10,7 @@ export const sessions = pgTable("sessions", {
   expire: timestamp("expire").notNull(),
 });
 
-// Users table
+// Users table - Corporate Business Unit Administrators
 export const users = pgTable("users", {
   id: varchar("id").primaryKey(),
   email: varchar("email").notNull().unique(),
@@ -18,18 +18,25 @@ export const users = pgTable("users", {
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   walletBalance: decimal("wallet_balance", { precision: 10, scale: 2 }).default("0.00"),
-  isAdmin: boolean("is_admin").default(false),
+  companyName: varchar("company_name"), // Business unit/company name
+  businessUnitId: varchar("business_unit_id"), // Unique identifier for the business unit
+  isAdmin: boolean("is_admin").default(false), // Platform admin vs business unit admin
+  isSuperAdmin: boolean("is_super_admin").default(false), // UrbanKetl platform super admin
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// RFID Cards
+// RFID Cards - Employee cards under business units
 export const rfidCards = pgTable("rfid_cards", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id),
+  businessUnitAdminId: varchar("business_unit_admin_id").notNull().references(() => users.id), // The admin who manages this card
   cardNumber: varchar("card_number").notNull().unique(),
+  employeeName: varchar("employee_name"), // Name of the employee using this card
+  employeeId: varchar("employee_id"), // Company employee ID
+  department: varchar("department"), // Employee department
   isActive: boolean("is_active").default(true),
   lastUsed: timestamp("last_used"),
+  lastUsedMachineId: varchar("last_used_machine_id"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -49,9 +56,10 @@ export const transactions = pgTable("transactions", {
 // Dispensing Logs
 export const dispensingLogs = pgTable("dispensing_logs", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull(),
+  businessUnitAdminId: varchar("business_unit_admin_id").notNull().references(() => users.id), // Admin whose wallet is charged
   rfidCardId: integer("rfid_card_id").notNull().references(() => rfidCards.id),
-  machineId: varchar("machine_id").notNull(),
+  machineId: varchar("machine_id").notNull().references(() => teaMachines.id),
+  employeeName: varchar("employee_name"), // Employee who used the card
   teaType: varchar("tea_type").notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   success: boolean("success").default(true),
@@ -59,14 +67,18 @@ export const dispensingLogs = pgTable("dispensing_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Tea Machines
+// Tea Machines - Linked to business unit administrators
 export const teaMachines = pgTable("tea_machines", {
   id: varchar("id").primaryKey(),
+  businessUnitAdminId: varchar("business_unit_admin_id").notNull().references(() => users.id), // Admin who manages this machine
   name: varchar("name").notNull(),
   location: varchar("location").notNull(),
   isActive: boolean("is_active").default(true),
   lastPing: timestamp("last_ping"),
   teaTypes: jsonb("tea_types"), // Array of available tea types with prices
+  serialNumber: varchar("serial_number"),
+  installationDate: timestamp("installation_date"),
+  maintenanceContact: varchar("maintenance_contact"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -140,16 +152,23 @@ export const systemSettings = pgTable("system_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Relations
+// Relations - Updated for B2B corporate model
 export const usersRelations = relations(users, ({ many }) => ({
-  rfidCards: many(rfidCards),
-  transactions: many(transactions),
+  managedRfidCards: many(rfidCards), // RFID cards under this admin's management
+  transactions: many(transactions), // Wallet transactions for this admin
+  managedMachines: many(teaMachines), // Machines under this admin's management
+  managedDispensingLogs: many(dispensingLogs), // Dispensing logs charged to this admin
   supportTickets: many(supportTickets),
   supportMessages: many(supportMessages),
 }));
 
 export const rfidCardsRelations = relations(rfidCards, ({ one, many }) => ({
-  user: one(users, { fields: [rfidCards.userId], references: [users.id] }),
+  businessUnitAdmin: one(users, { fields: [rfidCards.businessUnitAdminId], references: [users.id] }),
+  dispensingLogs: many(dispensingLogs),
+}));
+
+export const teaMachinesRelations = relations(teaMachines, ({ one, many }) => ({
+  businessUnitAdmin: one(users, { fields: [teaMachines.businessUnitAdminId], references: [users.id] }),
   dispensingLogs: many(dispensingLogs),
 }));
 
@@ -158,7 +177,9 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
 }));
 
 export const dispensingLogsRelations = relations(dispensingLogs, ({ one }) => ({
+  businessUnitAdmin: one(users, { fields: [dispensingLogs.businessUnitAdminId], references: [users.id] }),
   rfidCard: one(rfidCards, { fields: [dispensingLogs.rfidCardId], references: [rfidCards.id] }),
+  machine: one(teaMachines, { fields: [dispensingLogs.machineId], references: [teaMachines.id] }),
 }));
 
 // Insert schemas

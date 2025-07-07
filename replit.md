@@ -111,6 +111,8 @@ UrbanKetl is a comprehensive digital tea dispensing system that combines RFID ca
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- July 8, 2025: MAJOR ARCHITECTURAL CHANGE - Updated database schema to support B2B corporate business model where each user is a business unit administrator managing multiple machines and employee RFID cards
+- July 8, 2025: Schema changes include: business unit info in users table, linking machines to admins, employee details in RFID cards, and proper corporate dispensing workflow
 - July 2, 2025: COMPLETED - Support ticket pagination system fully implemented and tested with 103 tickets across 6 pages (20 per page)
 - July 2, 2025: Fixed React Query implementation to properly format pagination URLs with query parameters (paginated=true&page=X&limit=Y)
 - July 2, 2025: Enhanced admin dashboard support tickets section with working pagination controls and proper ticket count display

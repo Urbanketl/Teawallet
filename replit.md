@@ -1,7 +1,7 @@
 # UrbanKetl - Smart Tea Subscription & RFID System
 
 ## Overview
-UrbanKetl is a comprehensive digital tea dispensing system that combines RFID card technology with a modern web application for seamless tea purchasing. The system enables users to manage digital wallets, use RFID cards for contactless tea dispensing, and provides administrative tools for business management.
+UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines RFID card technology with a modern web application for business unit management. Each user account represents a business unit administrator who manages multiple tea machines, issues generic RFID cards to employees, and monitors all dispensing activity charged to their corporate wallet.
 
 ## System Architecture
 
@@ -31,14 +31,20 @@ UrbanKetl is a comprehensive digital tea dispensing system that combines RFID ca
 ### Authentication System
 - **Provider**: Replit Auth with OpenID Connect integration
 - **Session Management**: Server-side sessions with PostgreSQL persistence
-- **Authorization**: Role-based access control (admin/user roles)
+- **Authorization**: Role-based access control (business unit admin/super admin roles)
 - **Security**: CSRF protection, secure cookies, and session validation
 
+### B2B Corporate Model
+- **Business Unit Admins**: Each user manages multiple machines and RFID cards
+- **Generic RFID Cards**: Shared cards issued to business units, not individual employees
+- **Machine Ownership**: Each tea machine belongs to a specific business unit admin
+- **Corporate Billing**: All usage charged to business unit admin's wallet regardless of which employee uses the card
+
 ### RFID Integration
-- **Card Management**: User-assignable RFID cards with unique identifiers
+- **Card Management**: Business unit admins issue generic RFID cards for employee use
 - **Validation System**: Machine-facing API endpoints for card validation
-- **Transaction Processing**: Automatic wallet deduction on card usage
-- **History Tracking**: Complete audit trail of RFID transactions
+- **Transaction Processing**: Automatic wallet deduction from business unit admin on card usage
+- **History Tracking**: Complete audit trail of RFID transactions with business unit context
 
 ### Payment Processing
 - **Provider**: Razorpay integration for Indian market

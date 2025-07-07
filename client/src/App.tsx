@@ -19,6 +19,7 @@ const Admin = lazy(() => import("@/pages/admin"));
 const Profile = lazy(() => import("@/pages/profile"));
 const Support = lazy(() => import("@/pages/support"));
 const Analytics = lazy(() => import("@/pages/analytics"));
+const Corporate = lazy(() => import("@/pages/corporate"));
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -48,6 +49,7 @@ function Router() {
         <Route path="/admin" component={Admin} />
         <Route path="/support" component={Support} />
         <Route path="/analytics" component={Analytics} />
+        <Route path="/corporate" component={Corporate} />
         <Route path="*" component={NotFound} />
       </Switch>
     </Suspense>

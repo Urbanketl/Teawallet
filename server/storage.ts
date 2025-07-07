@@ -20,30 +20,33 @@ export interface IStorage {
   // Wallet operations
   updateWalletBalance(userId: string, amount: string): Promise<User>;
   
-  // RFID operations
-  getRfidCardByUserId(userId: string): Promise<RfidCard | undefined>;
-  getAllRfidCardsByUserId(userId: string): Promise<RfidCard[]>;
+  // B2B Corporate RFID operations
+  getManagedRfidCards(businessUnitAdminId: string): Promise<RfidCard[]>;
   getRfidCardByNumber(cardNumber: string): Promise<RfidCard | undefined>;
   createRfidCard(rfidCard: InsertRfidCard): Promise<RfidCard>;
   updateRfidCardLastUsed(cardId: number, machineId: string): Promise<void>;
   deactivateRfidCard(cardId: number): Promise<void>;
   
-  // Admin RFID operations
+  // B2B Corporate Machine operations
+  getManagedMachines(businessUnitAdminId: string): Promise<TeaMachine[]>;
+  getTeaMachine(id: string): Promise<TeaMachine | undefined>;
+  getAllTeaMachines(): Promise<TeaMachine[]>;
+  createTeaMachine(machine: InsertTeaMachine): Promise<TeaMachine>;
+  updateMachinePing(machineId: string): Promise<void>;
+  updateMachineStatus(machineId: string, isActive: boolean): Promise<void>;
+  
+  // Legacy Admin RFID operations (for super admin)
   createRfidCardForUser(userId: string, cardNumber: string): Promise<RfidCard>;
-  getAllRfidCards(): Promise<(RfidCard & { user: User })[]>;
+  getAllRfidCards(): Promise<(RfidCard & { businessUnitAdmin: User })[]>;
   
   // Transaction operations
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   getUserTransactions(userId: string, limit?: number): Promise<Transaction[]>;
   
-  // Dispensing operations
+  // B2B Corporate Dispensing operations
   createDispensingLog(log: InsertDispensingLog): Promise<DispensingLog>;
+  getManagedDispensingLogs(businessUnitAdminId: string, limit?: number): Promise<DispensingLog[]>;
   getUserDispensingLogs(userId: string, limit?: number): Promise<DispensingLog[]>;
-  
-  // Machine operations
-  getTeaMachine(id: string): Promise<TeaMachine | undefined>;
-  getAllTeaMachines(): Promise<TeaMachine[]>;
-  updateMachinePing(machineId: string): Promise<void>;
   
   // Admin operations
   getAllUsers(): Promise<User[]>;
@@ -140,12 +143,20 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  // RFID operations
+  // B2B Corporate RFID operations
+  async getManagedRfidCards(businessUnitAdminId: string): Promise<RfidCard[]> {
+    return await db
+      .select()
+      .from(rfidCards)
+      .where(eq(rfidCards.businessUnitAdminId, businessUnitAdminId))
+      .orderBy(desc(rfidCards.createdAt));
+  }
+
   async getRfidCardByUserId(userId: string): Promise<RfidCard | undefined> {
     const [card] = await db
       .select()
       .from(rfidCards)
-      .where(and(eq(rfidCards.userId, userId), eq(rfidCards.isActive, true)))
+      .where(and(eq(rfidCards.businessUnitAdminId, userId), eq(rfidCards.isActive, true)))
       .orderBy(desc(rfidCards.createdAt));
     return card;
   }
@@ -154,7 +165,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(rfidCards)
-      .where(eq(rfidCards.userId, userId))
+      .where(eq(rfidCards.businessUnitAdminId, userId))
       .orderBy(desc(rfidCards.createdAt));
   }
 
@@ -190,12 +201,12 @@ export class DatabaseStorage implements IStorage {
       .where(eq(rfidCards.id, cardId));
   }
 
-  // Admin RFID operations
+  // Legacy Admin RFID operations (for super admin)
   async createRfidCardForUser(userId: string, cardNumber: string): Promise<RfidCard> {
     const [newCard] = await db
       .insert(rfidCards)
       .values({
-        userId: userId,
+        businessUnitAdminId: userId,
         cardNumber: cardNumber,
         isActive: true,
       })
@@ -203,29 +214,34 @@ export class DatabaseStorage implements IStorage {
     return newCard;
   }
 
-  async getAllRfidCards(): Promise<(RfidCard & { user: User })[]> {
+  async getAllRfidCards(): Promise<(RfidCard & { businessUnitAdmin: User })[]> {
     return await db
       .select({
         id: rfidCards.id,
-        userId: rfidCards.userId,
+        businessUnitAdminId: rfidCards.businessUnitAdminId,
         cardNumber: rfidCards.cardNumber,
+        cardName: rfidCards.cardName,
         isActive: rfidCards.isActive,
         lastUsed: rfidCards.lastUsed,
+        lastUsedMachineId: rfidCards.lastUsedMachineId,
         createdAt: rfidCards.createdAt,
-        user: {
+        businessUnitAdmin: {
           id: users.id,
           email: users.email,
           firstName: users.firstName,
           lastName: users.lastName,
           profileImageUrl: users.profileImageUrl,
           walletBalance: users.walletBalance,
+          companyName: users.companyName,
+          businessUnitId: users.businessUnitId,
           isAdmin: users.isAdmin,
+          isSuperAdmin: users.isSuperAdmin,
           createdAt: users.createdAt,
           updatedAt: users.updatedAt,
         }
       })
       .from(rfidCards)
-      .leftJoin(users, eq(rfidCards.userId, users.id))
+      .leftJoin(users, eq(rfidCards.businessUnitAdminId, users.id))
       .orderBy(desc(rfidCards.createdAt));
   }
 
@@ -265,16 +281,33 @@ export class DatabaseStorage implements IStorage {
     return dispensingLog;
   }
 
-  async getUserDispensingLogs(userId: string, limit = 50): Promise<DispensingLog[]> {
+  async getManagedDispensingLogs(businessUnitAdminId: string, limit = 50): Promise<DispensingLog[]> {
     return await db
       .select()
       .from(dispensingLogs)
-      .where(eq(dispensingLogs.userId, userId))
+      .where(eq(dispensingLogs.businessUnitAdminId, businessUnitAdminId))
       .orderBy(desc(dispensingLogs.createdAt))
       .limit(limit);
   }
 
-  // Machine operations
+  async getUserDispensingLogs(userId: string, limit = 50): Promise<DispensingLog[]> {
+    return await db
+      .select()
+      .from(dispensingLogs)
+      .where(eq(dispensingLogs.businessUnitAdminId, userId))
+      .orderBy(desc(dispensingLogs.createdAt))
+      .limit(limit);
+  }
+
+  // B2B Corporate Machine operations
+  async getManagedMachines(businessUnitAdminId: string): Promise<TeaMachine[]> {
+    return await db
+      .select()
+      .from(teaMachines)
+      .where(eq(teaMachines.businessUnitAdminId, businessUnitAdminId))
+      .orderBy(desc(teaMachines.createdAt));
+  }
+
   async getTeaMachine(id: string): Promise<TeaMachine | undefined> {
     const [machine] = await db
       .select()
@@ -290,10 +323,25 @@ export class DatabaseStorage implements IStorage {
       .where(eq(teaMachines.isActive, true));
   }
 
+  async createTeaMachine(machine: InsertTeaMachine): Promise<TeaMachine> {
+    const [newMachine] = await db
+      .insert(teaMachines)
+      .values(machine)
+      .returning();
+    return newMachine;
+  }
+
   async updateMachinePing(machineId: string): Promise<void> {
     await db
       .update(teaMachines)
       .set({ lastPing: new Date() })
+      .where(eq(teaMachines.id, machineId));
+  }
+
+  async updateMachineStatus(machineId: string, isActive: boolean): Promise<void> {
+    await db
+      .update(teaMachines)
+      .set({ isActive })
       .where(eq(teaMachines.id, machineId));
   }
 

@@ -26,15 +26,16 @@ export default function Navigation() {
 
   const navItems = [
     { href: "/", icon: LayoutDashboard, label: "Dashboard" },
+    { href: "/corporate", icon: Coffee, label: "Manage Business" },
     { href: "/wallet", icon: Wallet, label: "Wallet" },
     { href: "/history", icon: History, label: "History" },
     { href: "/support", icon: MessageCircle, label: "Support" },
     { href: "/profile", icon: User, label: "Profile" },
   ];
 
-  if (user.isAdmin) {
+  if (user.isSuperAdmin) {
     navItems.push(
-      { href: "/admin", icon: Shield, label: "Admin" },
+      { href: "/admin", icon: Shield, label: "Platform Admin" },
       { href: "/analytics", icon: BarChart3, label: "Analytics" }
     );
   }

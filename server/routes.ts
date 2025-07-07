@@ -12,6 +12,7 @@ import supportRoutes from "./routes/supportRoutes";
 import analyticsRoutes from "./routes/analyticsRoutes";
 import * as adminController from "./controllers/adminController";
 import { requireAuth, requireAdmin } from "./controllers/authController";
+import { registerCorporateRoutes } from "./routes/corporateRoutes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize Razorpay
@@ -29,6 +30,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/transactions', transactionRoutes);
   app.use('/api/support', supportRoutes);
   app.use('/api/analytics', analyticsRoutes);
+  
+  // Register B2B Corporate routes
+  registerCorporateRoutes(app);
 
   // Admin routes - require authentication and admin privileges
   app.get('/api/admin/users', requireAuth, requireAdmin, adminController.getAllUsers);

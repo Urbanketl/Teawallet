@@ -82,11 +82,11 @@ export interface IStorage {
   incrementFaqViews(articleId: number): Promise<void>;
   
   // Analytics operations
-  getPopularTeaTypes(startDate?: string, endDate?: string): Promise<{ teaType: string; count: number }[]>;
-  getPeakHours(startDate?: string, endDate?: string): Promise<{ hour: number; count: number }[]>;
-  getMachinePerformance(startDate?: string, endDate?: string): Promise<{ machineId: string; uptime: number; totalDispensed: number }[]>;
-  getUserBehaviorInsights(startDate?: string, endDate?: string): Promise<{ avgTeaPerDay: number; preferredTimes: number[]; topTeaTypes: string[] }>;
-  getMachineDispensingData(startDate?: string, endDate?: string, machineId?: string): Promise<{ date: string; dispensed: number; machineId?: string; [key: string]: any }[]>;
+  getPopularTeaTypes(startDate?: string, endDate?: string, businessUnitAdminId?: string): Promise<{ teaType: string; count: number }[]>;
+  getPeakHours(startDate?: string, endDate?: string, businessUnitAdminId?: string): Promise<{ hour: number; count: number }[]>;
+  getMachinePerformance(startDate?: string, endDate?: string, businessUnitAdminId?: string): Promise<{ machineId: string; uptime: number; totalDispensed: number }[]>;
+  getUserBehaviorInsights(startDate?: string, endDate?: string, businessUnitAdminId?: string): Promise<{ avgTeaPerDay: number; preferredTimes: number[]; topTeaTypes: string[] }>;
+  getMachineDispensingData(startDate?: string, endDate?: string, machineId?: string, businessUnitAdminId?: string): Promise<{ date: string; dispensed: number; machineId?: string; [key: string]: any }[]>;
   
   // System settings operations
   getSystemSetting(key: string): Promise<string | undefined>;
@@ -661,13 +661,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Analytics operations
-  async getPopularTeaTypes(startDate?: string, endDate?: string): Promise<{ teaType: string; count: number }[]> {
+  async getPopularTeaTypes(startDate?: string, endDate?: string, businessUnitAdminId?: string): Promise<{ teaType: string; count: number }[]> {
     let whereClause = sql`1=1`;
     
     if (startDate && endDate) {
       whereClause = sql`${dispensingLogs.createdAt} >= ${startDate} AND ${dispensingLogs.createdAt} <= ${endDate}`;
     } else {
       whereClause = sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`;
+    }
+    
+    // Filter by business unit admin if specified (for regular admins)
+    if (businessUnitAdminId) {
+      whereClause = sql`${whereClause} AND ${dispensingLogs.businessUnitAdminId} = ${businessUnitAdminId}`;
     }
     
     return await db
@@ -682,13 +687,18 @@ export class DatabaseStorage implements IStorage {
       .limit(10);
   }
 
-  async getPeakHours(startDate?: string, endDate?: string): Promise<{ hour: number; count: number }[]> {
+  async getPeakHours(startDate?: string, endDate?: string, businessUnitAdminId?: string): Promise<{ hour: number; count: number }[]> {
     let whereClause = sql`1=1`;
     
     if (startDate && endDate) {
       whereClause = sql`${dispensingLogs.createdAt} >= ${startDate} AND ${dispensingLogs.createdAt} <= ${endDate}`;
     } else {
       whereClause = sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`;
+    }
+    
+    // Filter by business unit admin if specified (for regular admins)
+    if (businessUnitAdminId) {
+      whereClause = sql`${whereClause} AND ${dispensingLogs.businessUnitAdminId} = ${businessUnitAdminId}`;
     }
     
     return await db
@@ -702,13 +712,18 @@ export class DatabaseStorage implements IStorage {
       .orderBy(sql`EXTRACT(HOUR FROM ${dispensingLogs.createdAt})`);
   }
 
-  async getMachinePerformance(startDate?: string, endDate?: string): Promise<{ machineId: string; uptime: number; totalDispensed: number }[]> {
+  async getMachinePerformance(startDate?: string, endDate?: string, businessUnitAdminId?: string): Promise<{ machineId: string; uptime: number; totalDispensed: number }[]> {
     let whereClause = sql`1=1`;
     
     if (startDate && endDate) {
       whereClause = sql`${dispensingLogs.createdAt} >= ${startDate} AND ${dispensingLogs.createdAt} <= ${endDate}`;
     } else {
       whereClause = sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`;
+    }
+    
+    // Filter by business unit admin if specified (for regular admins)
+    if (businessUnitAdminId) {
+      whereClause = sql`${whereClause} AND ${dispensingLogs.businessUnitAdminId} = ${businessUnitAdminId}`;
     }
     
     const machineStats = await db
@@ -727,7 +742,7 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async getUserBehaviorInsights(startDate?: string, endDate?: string): Promise<{ avgTeaPerDay: number; preferredTimes: number[]; topTeaTypes: string[] }> {
+  async getUserBehaviorInsights(startDate?: string, endDate?: string, businessUnitAdminId?: string): Promise<{ avgTeaPerDay: number; preferredTimes: number[]; topTeaTypes: string[] }> {
     let whereClause = sql`1=1`;
     let daysDiff = 30;
     
@@ -736,6 +751,11 @@ export class DatabaseStorage implements IStorage {
       daysDiff = Math.max(1, Math.floor((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)));
     } else {
       whereClause = sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`;
+    }
+
+    // Filter by business unit admin if specified (for regular admins)
+    if (businessUnitAdminId) {
+      whereClause = sql`${whereClause} AND ${dispensingLogs.businessUnitAdminId} = ${businessUnitAdminId}`;
     }
 
     const [avgResult] = await db
@@ -773,7 +793,7 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async getMachineDispensingData(startDate?: string, endDate?: string, machineId?: string): Promise<{ date: string; dispensed: number; machineId?: string; [key: string]: any }[]> {
+  async getMachineDispensingData(startDate?: string, endDate?: string, machineId?: string, businessUnitAdminId?: string): Promise<{ date: string; dispensed: number; machineId?: string; [key: string]: any }[]> {
     let whereClause = sql`1=1`;
     
     if (startDate && endDate) {
@@ -784,6 +804,11 @@ export class DatabaseStorage implements IStorage {
     
     if (machineId && machineId !== 'all') {
       whereClause = sql`${whereClause} AND ${dispensingLogs.machineId} = ${machineId}`;
+    }
+    
+    // Filter by business unit admin if specified (for regular admins)
+    if (businessUnitAdminId) {
+      whereClause = sql`${whereClause} AND ${dispensingLogs.businessUnitAdminId} = ${businessUnitAdminId}`;
     }
 
     if (machineId && machineId !== 'all') {

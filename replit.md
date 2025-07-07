@@ -117,6 +117,11 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- July 8, 2025: COMPLETED - Analytics permissions and access control implemented per business unit requirements
+- July 8, 2025: Analytics page accessible to all admins but shows filtered data - regular admins see only their business unit data, super admins see all data
+- July 8, 2025: Admin Dashboard restricted to super admins only (platform-wide management)
+- July 8, 2025: Updated navigation to reflect proper permissions - Analytics for all admins, Platform Admin for super admins only
+- July 8, 2025: Enhanced all analytics API routes to filter data by business unit admin ID for data isolation
 - July 8, 2025: MAJOR ARCHITECTURAL CHANGE - Updated database schema to support B2B corporate business model where each user is a business unit administrator managing multiple machines and employee RFID cards
 - July 8, 2025: Schema changes include: business unit info in users table, linking machines to admins, employee details in RFID cards, and proper corporate dispensing workflow
 - July 2, 2025: COMPLETED - Support ticket pagination system fully implemented and tested with 103 tickets across 6 pages (20 per page)

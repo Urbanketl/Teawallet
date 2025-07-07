@@ -728,7 +728,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      const popularTeas = await storage.getPopularTeaTypes();
+      const { start, end } = req.query;
+      
+      // Super admins see all data, regular admins see only their business unit data
+      const businessUnitAdminId = user.isSuperAdmin ? undefined : userId;
+      
+      const popularTeas = await storage.getPopularTeaTypes(start as string, end as string, businessUnitAdminId);
       res.json(popularTeas);
     } catch (error) {
       console.error("Error fetching popular tea types:", error);
@@ -745,7 +750,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      const peakHours = await storage.getPeakHours();
+      const { start, end } = req.query;
+      
+      // Super admins see all data, regular admins see only their business unit data
+      const businessUnitAdminId = user.isSuperAdmin ? undefined : userId;
+
+      const peakHours = await storage.getPeakHours(start as string, end as string, businessUnitAdminId);
       res.json(peakHours);
     } catch (error) {
       console.error("Error fetching peak hours:", error);
@@ -762,7 +772,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      const performance = await storage.getMachinePerformance();
+      const { start, end } = req.query;
+      
+      // Super admins see all data, regular admins see only their business unit data
+      const businessUnitAdminId = user.isSuperAdmin ? undefined : userId;
+
+      const performance = await storage.getMachinePerformance(start as string, end as string, businessUnitAdminId);
       res.json(performance);
     } catch (error) {
       console.error("Error fetching machine performance:", error);
@@ -779,11 +794,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      const insights = await storage.getUserBehaviorInsights();
+      const { start, end } = req.query;
+      
+      // Super admins see all data, regular admins see only their business unit data
+      const businessUnitAdminId = user.isSuperAdmin ? undefined : userId;
+
+      const insights = await storage.getUserBehaviorInsights(start as string, end as string, businessUnitAdminId);
       res.json(insights);
     } catch (error) {
       console.error("Error fetching user behavior insights:", error);
       res.status(500).json({ message: "Failed to fetch user behavior insights" });
+    }
+  });
+
+  app.get('/api/analytics/machine-dispensing', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { start, end, machineId } = req.query;
+      
+      // Super admins see all data, regular admins see only their business unit data
+      const businessUnitAdminId = user.isSuperAdmin ? undefined : userId;
+
+      const dispensingData = await storage.getMachineDispensingData(start as string, end as string, machineId as string, businessUnitAdminId);
+      res.json(dispensingData);
+    } catch (error) {
+      console.error("Error fetching machine dispensing data:", error);
+      res.status(500).json({ message: "Failed to fetch machine dispensing data" });
     }
   });
 

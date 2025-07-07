@@ -117,6 +117,8 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- July 8, 2025: COMPLETED - Fixed FAQ cache invalidation issue preventing new FAQs from appearing immediately on Support page
+- July 8, 2025: Enhanced React Query cache management to properly invalidate all FAQ-related queries when FAQs are created, updated, or deleted in admin panel
 - July 8, 2025: COMPLETED - Fixed corporate routes authentication to show proper business management data
 - July 8, 2025: Updated all corporate API routes (/api/corporate/*) to use consistent authentication pattern
 - July 8, 2025: Added comprehensive dummy data: 87 dispensing logs, 6 RFID cards, 2 active machines, support tickets, transactions

@@ -760,7 +760,7 @@ export class DatabaseStorage implements IStorage {
 
     const [avgResult] = await db
       .select({
-        avgTeaPerDay: sql<number>`count(*) / ${daysDiff}.0`,
+        avgTeaPerDay: sql<number>`count(*) / ${daysDiff}::decimal`,
       })
       .from(dispensingLogs)
       .where(whereClause);

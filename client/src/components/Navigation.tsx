@@ -33,9 +33,9 @@ export default function Navigation() {
     { href: "/profile", icon: User, label: "Profile" },
   ];
 
-  if (user.isSuperAdmin) {
+  if (user.isAdmin || user.isSuperAdmin) {
     navItems.push(
-      { href: "/admin", icon: Shield, label: "Platform Admin" },
+      { href: "/admin", icon: Shield, label: "Admin Dashboard" },
       { href: "/analytics", icon: BarChart3, label: "Analytics" }
     );
   }

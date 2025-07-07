@@ -8,9 +8,10 @@ import { z } from "zod";
 export function registerCorporateRoutes(app: Express) {
   
   // Get business unit admin's managed RFID cards
-  app.get("/api/corporate/rfid-cards", isAuthenticated, async (req, res) => {
+  app.get("/api/corporate/rfid-cards", isAuthenticated, async (req: any, res) => {
     try {
-      const cards = await storage.getManagedRfidCards(req.user!.id);
+      const userId = req.session?.user?.id || req.user?.claims?.sub;
+      const cards = await storage.getManagedRfidCards(userId);
       res.json(cards);
     } catch (error) {
       console.error("Error fetching managed RFID cards:", error);
@@ -19,11 +20,12 @@ export function registerCorporateRoutes(app: Express) {
   });
 
   // Create new RFID card for business unit
-  app.post("/api/corporate/rfid-cards", isAuthenticated, async (req, res) => {
+  app.post("/api/corporate/rfid-cards", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.session?.user?.id || req.user?.claims?.sub;
       const cardData = insertRfidCardSchema.parse({
         ...req.body,
-        businessUnitAdminId: req.user!.id
+        businessUnitAdminId: userId
       });
       
       const newCard = await storage.createRfidCard(cardData);
@@ -35,12 +37,13 @@ export function registerCorporateRoutes(app: Express) {
   });
 
   // Deactivate RFID card
-  app.delete("/api/corporate/rfid-cards/:cardId", isAuthenticated, async (req, res) => {
+  app.delete("/api/corporate/rfid-cards/:cardId", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.session?.user?.id || req.user?.claims?.sub;
       const cardId = parseInt(req.params.cardId);
       
       // Verify the card belongs to this business unit admin
-      const cards = await storage.getManagedRfidCards(req.user!.id);
+      const cards = await storage.getManagedRfidCards(userId);
       const card = cards.find(c => c.id === cardId);
       
       if (!card) {
@@ -56,9 +59,10 @@ export function registerCorporateRoutes(app: Express) {
   });
 
   // Get business unit admin's managed machines
-  app.get("/api/corporate/machines", isAuthenticated, async (req, res) => {
+  app.get("/api/corporate/machines", isAuthenticated, async (req: any, res) => {
     try {
-      const machines = await storage.getManagedMachines(req.user!.id);
+      const userId = req.session?.user?.id || req.user?.claims?.sub;
+      const machines = await storage.getManagedMachines(userId);
       res.json(machines);
     } catch (error) {
       console.error("Error fetching managed machines:", error);
@@ -67,11 +71,12 @@ export function registerCorporateRoutes(app: Express) {
   });
 
   // Create new tea machine for business unit
-  app.post("/api/corporate/machines", isAuthenticated, async (req, res) => {
+  app.post("/api/corporate/machines", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.session?.user?.id || req.user?.claims?.sub;
       const machineData = insertTeaMachineSchema.parse({
         ...req.body,
-        businessUnitAdminId: req.user!.id
+        businessUnitAdminId: userId
       });
       
       const newMachine = await storage.createTeaMachine(machineData);
@@ -83,13 +88,14 @@ export function registerCorporateRoutes(app: Express) {
   });
 
   // Update machine status (activate/deactivate)
-  app.patch("/api/corporate/machines/:machineId/status", isAuthenticated, async (req, res) => {
+  app.patch("/api/corporate/machines/:machineId/status", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.session?.user?.id || req.user?.claims?.sub;
       const { machineId } = req.params;
       const { isActive } = req.body;
       
       // Verify the machine belongs to this business unit admin
-      const machines = await storage.getManagedMachines(req.user!.id);
+      const machines = await storage.getManagedMachines(userId);
       const machine = machines.find(m => m.id === machineId);
       
       if (!machine) {
@@ -105,10 +111,11 @@ export function registerCorporateRoutes(app: Express) {
   });
 
   // Get business unit admin's dispensing logs
-  app.get("/api/corporate/dispensing-logs", isAuthenticated, async (req, res) => {
+  app.get("/api/corporate/dispensing-logs", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.session?.user?.id || req.user?.claims?.sub;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
-      const logs = await storage.getManagedDispensingLogs(req.user!.id, limit);
+      const logs = await storage.getManagedDispensingLogs(userId, limit);
       res.json(logs);
     } catch (error) {
       console.error("Error fetching managed dispensing logs:", error);

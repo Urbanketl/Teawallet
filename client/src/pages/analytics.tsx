@@ -64,7 +64,7 @@ export default function AnalyticsPage() {
 
   // Get available machines for the filter
   const { data: allMachines = [] } = useQuery({
-    queryKey: ['/api/admin/machines'],
+    queryKey: user?.isSuperAdmin ? ['/api/admin/machines'] : ['/api/corporate/machines'],
     enabled: user?.isAdmin,
   });
 

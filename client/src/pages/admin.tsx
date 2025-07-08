@@ -155,6 +155,7 @@ export default function AdminPage() {
   const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
   const [newMessage, setNewMessage] = useState('');
   const [dateFilter, setDateFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
 
   const { data: supportTickets = [], isLoading: allTicketsLoading, refetch: refetchTickets } = useQuery({
@@ -725,21 +726,29 @@ export default function AdminPage() {
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold text-gray-900">Support Tickets</h2>
               <div className="flex items-center space-x-4">
-                <select 
-                  value={dateFilter} 
-                  onChange={(e) => {
-                    console.log('Date filter changed from', dateFilter, 'to', e.target.value);
-                    setDateFilter(e.target.value);
-                  }}
-                  className="w-40 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="all">All Time</option>
-                  <option value="today">Today</option>
-                  <option value="week">Last Week</option>
-                  <option value="month">Last Month</option>
-                  <option value="year">Last Year</option>
-                  <option value="custom">Custom Range</option>
-                </select>
+                <Select value={dateFilter} onValueChange={setDateFilter}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="week">This Week</SelectItem>
+                    <SelectItem value="month">This Month</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="open">Open</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="resolved">Resolved</SelectItem>
+                    <SelectItem value="closed">Closed</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Badge variant="secondary" className="bg-tea-green/10 text-tea-green">
                   {ticketsData?.tickets?.length || 0} / {ticketsData?.total || 0} Tickets (Page {ticketsPage})
                 </Badge>

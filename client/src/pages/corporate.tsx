@@ -74,6 +74,49 @@ export default function CorporateDashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Machine status helper functions (same as admin page)
+  const isRecentlyPinged = (lastPing: string | null) => {
+    if (!lastPing) return false;
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    return new Date(lastPing) > fiveMinutesAgo;
+  };
+
+  const getMachineStatus = (machine: TeaMachine) => {
+    if (!machine.isActive) return "Disabled";
+    if (isRecentlyPinged(machine.lastPing)) return "Online";
+    return "Offline";
+  };
+
+  const getMachineStatusVariant = (machine: TeaMachine) => {
+    const status = getMachineStatus(machine);
+    if (status === "Online") return "default";
+    if (status === "Offline") return "secondary";
+    return "destructive"; // Disabled
+  };
+
+  const getMachineStatusIndicator = (machine: TeaMachine) => {
+    const status = getMachineStatus(machine);
+    if (status === "Online") return "bg-green-400";
+    if (status === "Offline") return "bg-yellow-400";
+    return "bg-red-400"; // Disabled
+  };
+
+  const getTimeSinceLastPing = (lastPing: string | null) => {
+    if (!lastPing) return "Never pinged";
+    const now = new Date();
+    const ping = new Date(lastPing);
+    const diffInMinutes = Math.floor((now.getTime() - ping.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return "Just now";
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays}d ago`;
+  };
+
   // Fetch managed RFID cards
   const { data: rfidCards = [], isLoading: cardsLoading } = useQuery<RfidCard[]>({
     queryKey: ["/api/corporate/rfid-cards"],
@@ -197,9 +240,9 @@ export default function CorporateDashboard() {
                   <Coffee className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{machines.filter(m => m.isActive).length}</div>
+                  <div className="text-2xl font-bold">{machines.filter(m => getMachineStatus(m) === "Online").length}</div>
                   <p className="text-xs text-muted-foreground">
-                    of {machines.length} total machines
+                    {machines.filter(m => getMachineStatus(m) === "Offline").length} offline, {machines.filter(m => getMachineStatus(m) === "Disabled").length} disabled
                   </p>
                 </CardContent>
               </Card>
@@ -234,7 +277,23 @@ export default function CorporateDashboard() {
 
           <TabsContent value="machines" className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Tea Machines</h2>
+              <div>
+                <h2 className="text-xl font-semibold">Tea Machines</h2>
+                <div className="flex items-center space-x-3 mt-2">
+                  <Badge variant="secondary" className="bg-tea-green/10 text-tea-green">
+                    {machines.length} Total
+                  </Badge>
+                  <Badge variant="default" className="bg-green-100 text-green-700">
+                    {machines.filter(m => getMachineStatus(m) === "Online").length} Online
+                  </Badge>
+                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">
+                    {machines.filter(m => getMachineStatus(m) === "Offline").length} Offline
+                  </Badge>
+                  <Badge variant="destructive" className="bg-red-100 text-red-700">
+                    {machines.filter(m => getMachineStatus(m) === "Disabled").length} Disabled
+                  </Badge>
+                </div>
+              </div>
               <Dialog open={isMachineDialogOpen} onOpenChange={setIsMachineDialogOpen}>
                 <DialogTrigger asChild>
                   <Button>
@@ -298,33 +357,47 @@ export default function CorporateDashboard() {
                   <Card key={machine.id}>
                     <CardHeader>
                       <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="text-lg">{machine.name}</CardTitle>
-                          <CardDescription className="flex items-center mt-1">
-                            <MapPin className="w-4 h-4 mr-1" />
-                            {machine.location}
-                          </CardDescription>
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-3 h-3 rounded-full ${getMachineStatusIndicator(machine)}`} />
+                          <div>
+                            <CardTitle className="text-lg">{machine.name}</CardTitle>
+                            <CardDescription className="flex items-center mt-1">
+                              <MapPin className="w-4 h-4 mr-1" />
+                              {machine.location}
+                            </CardDescription>
+                          </div>
                         </div>
-                        <Badge variant={machine.isActive ? "default" : "secondary"}>
-                          {machine.isActive ? "Active" : "Inactive"}
+                        <Badge variant={getMachineStatusVariant(machine)}>
+                          {getMachineStatus(machine)}
                         </Badge>
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="flex justify-between items-center">
-                        <div className="text-sm text-gray-600">
-                          Last ping: {machine.lastPing ? format(new Date(machine.lastPing), "MMM d, HH:mm") : "Never"}
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-600">Last ping:</span>
+                          <span>{machine.lastPing ? format(new Date(machine.lastPing), "MMM d, HH:mm") : "Never"}</span>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleMachineStatusMutation.mutate({
-                            machineId: machine.id,
-                            isActive: !machine.isActive
-                          })}
-                        >
-                          {machine.isActive ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
-                        </Button>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-600">Status:</span>
+                          <span className="text-gray-500">{getTimeSinceLastPing(machine.lastPing)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-600">Tea Price:</span>
+                          <span className="font-medium">₹{machine.teaTypes?.[0]?.price || "5.00"}</span>
+                        </div>
+                        <div className="flex justify-end pt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => toggleMachineStatusMutation.mutate({
+                              machineId: machine.id,
+                              isActive: !machine.isActive
+                            })}
+                          >
+                            {machine.isActive ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

@@ -215,34 +215,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllRfidCards(): Promise<(RfidCard & { businessUnitAdmin: User })[]> {
-    return await db
+    const results = await db
       .select({
-        id: rfidCards.id,
-        businessUnitAdminId: rfidCards.businessUnitAdminId,
-        cardNumber: rfidCards.cardNumber,
-        cardName: rfidCards.cardName,
-        isActive: rfidCards.isActive,
-        lastUsed: rfidCards.lastUsed,
-        lastUsedMachineId: rfidCards.lastUsedMachineId,
-        createdAt: rfidCards.createdAt,
-        businessUnitAdmin: {
-          id: users.id,
-          email: users.email,
-          firstName: users.firstName,
-          lastName: users.lastName,
-          profileImageUrl: users.profileImageUrl,
-          walletBalance: users.walletBalance,
-          companyName: users.companyName,
-          businessUnitId: users.businessUnitId,
-          isAdmin: users.isAdmin,
-          isSuperAdmin: users.isSuperAdmin,
-          createdAt: users.createdAt,
-          updatedAt: users.updatedAt,
-        }
+        card: rfidCards,
+        user: users
       })
       .from(rfidCards)
       .leftJoin(users, eq(rfidCards.businessUnitAdminId, users.id))
       .orderBy(desc(rfidCards.createdAt));
+    
+    return results.map(row => ({
+      ...row.card,
+      businessUnitAdmin: row.user || {} as User
+    }));
   }
 
   // Transaction operations
@@ -256,16 +241,7 @@ export class DatabaseStorage implements IStorage {
 
   async getUserTransactions(userId: string, limit = 50): Promise<Transaction[]> {
     return await db
-      .select({
-        id: transactions.id,
-        userId: transactions.userId,
-        type: transactions.type,
-        amount: transactions.amount,
-        description: transactions.description,
-        status: transactions.status,
-        razorpayPaymentId: transactions.razorpayPaymentId,
-        createdAt: transactions.createdAt,
-      })
+      .select()
       .from(transactions)
       .where(eq(transactions.userId, userId))
       .orderBy(desc(transactions.createdAt))
@@ -362,17 +338,19 @@ export class DatabaseStorage implements IStorage {
       .from(users);
     
     // Then get paginated results
-    let usersQuery = db
-      .select()
-      .from(users);
+    let baseQuery = db.select().from(users);
       
     if (search) {
-      usersQuery = usersQuery.where(
-        sql`${users.firstName} ILIKE ${`%${search}%`} OR ${users.lastName} ILIKE ${`%${search}%`} OR ${users.email} ILIKE ${`%${search}%`}`
+      baseQuery = baseQuery.where(
+        or(
+          ilike(users.firstName, `%${search}%`),
+          ilike(users.lastName, `%${search}%`),
+          ilike(users.email, `%${search}%`)
+        )
       );
     }
     
-    const usersResult = await usersQuery
+    const usersResult = await baseQuery
       .orderBy(desc(users.createdAt))
       .limit(limit)
       .offset(offset);

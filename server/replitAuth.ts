@@ -116,7 +116,7 @@ export async function setupAuth(app: Express) {
   app.get("/api/login", (req, res, next) => {
     try {
       const strategyName = `replitauth:${req.hostname}`;
-      const strategy = passport._strategy(strategyName);
+      const strategy = (passport as any)._strategy(strategyName);
       if (strategy) {
         passport.authenticate(strategyName, {
           prompt: "login consent",
@@ -124,7 +124,7 @@ export async function setupAuth(app: Express) {
         })(req, res, next);
       } else {
         // Demo login fallback
-        req.session.user = {
+        (req.session as any).user = {
           id: "demo_user",
           email: "demo@urbanketl.com",
           firstName: "Demo",
@@ -143,7 +143,7 @@ export async function setupAuth(app: Express) {
   app.get("/api/callback", (req, res, next) => {
     try {
       const strategyName = `replitauth:${req.hostname}`;
-      const strategy = passport._strategy(strategyName);
+      const strategy = (passport as any)._strategy(strategyName);
       if (strategy) {
         passport.authenticate(strategyName, {
           successReturnToOrRedirect: "/",
@@ -183,8 +183,8 @@ export async function setupAuth(app: Express) {
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
   // Check for demo session first
-  if (req.session?.user) {
-    req.user = { claims: { sub: req.session.user.id } };
+  if ((req.session as any)?.user) {
+    req.user = { claims: { sub: (req.session as any).user.id } };
     return next();
   }
 

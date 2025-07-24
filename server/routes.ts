@@ -423,16 +423,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get tea prices for a specific machine
+  app.get('/api/machines/:machineId/tea-prices', async (req, res) => {
+    try {
+      const { machineId } = req.params;
+      const machine = await storage.getTeaMachine(machineId);
+      
+      if (!machine) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Machine not found" 
+        });
+      }
+
+      res.json({ 
+        success: true, 
+        machineId: machine.id,
+        teaTypes: machine.teaTypes || [],
+        location: machine.location
+      });
+    } catch (error) {
+      console.error("Error fetching tea prices:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch tea prices" 
+      });
+    }
+  });
+
   // RFID validation endpoint for tea machines
   app.post('/api/rfid/validate', async (req, res) => {
     try {
       const { cardNumber, machineId, teaType, amount } = req.body;
 
-      if (!cardNumber || !machineId || !teaType || !amount) {
+      if (!cardNumber || !machineId || !teaType) {
         return res.status(400).json({ 
           success: false, 
           message: "Missing required parameters" 
         });
+      }
+
+      // Get machine details to validate tea type and price
+      const machine = await storage.getTeaMachine(machineId);
+      if (!machine) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Machine not found" 
+        });
+      }
+
+      // Validate tea type and get correct price from machine configuration
+      let teaAmount = 0;
+      if (machine.teaTypes && Array.isArray(machine.teaTypes)) {
+        const teaConfig = machine.teaTypes.find((tea: any) => tea.name === teaType);
+        if (!teaConfig) {
+          return res.status(400).json({ 
+            success: false, 
+            message: `Tea type '${teaType}' not available on this machine` 
+          });
+        }
+        teaAmount = parseFloat(teaConfig.price);
+      } else {
+        // Fallback to provided amount if machine doesn't have price configuration
+        if (!amount) {
+          return res.status(400).json({ 
+            success: false, 
+            message: "Amount required when machine has no price configuration" 
+          });
+        }
+        teaAmount = parseFloat(amount);
       }
 
       // Get RFID card
@@ -444,8 +503,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Get user and check balance
-      const user = await storage.getUser(card.userId);
+      // Get user and check balance (using business unit admin ID since cards belong to business units)
+      const user = await storage.getUser(card.businessUnitAdminId);
       if (!user) {
         return res.status(404).json({ 
           success: false, 
@@ -454,7 +513,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const balance = parseFloat(user.walletBalance || "0");
-      const teaAmount = parseFloat(amount);
 
       if (balance < teaAmount) {
         return res.status(400).json({ 
@@ -470,7 +528,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.createTransaction({
         userId: user.id,
         type: 'dispensing',
-        amount: amount.toString(),
+        amount: teaAmount.toString(),
         description: `${teaType} Tea`,
         method: 'rfid',
         rfidCardId: card.id,
@@ -478,13 +536,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: 'completed',
       });
 
-      // Create dispensing log
+      // Create dispensing log (business unit admin is charged)
       await storage.createDispensingLog({
-        userId: user.id,
+        businessUnitAdminId: user.id,
         rfidCardId: card.id,
         machineId,
         teaType,
-        amount: amount.toString(),
+        amount: teaAmount.toString(),
         success: true,
       });
 

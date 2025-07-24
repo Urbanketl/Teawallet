@@ -297,7 +297,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(teaMachines)
-      .where(eq(teaMachines.isActive, true));
+      .orderBy(desc(teaMachines.createdAt));
   }
 
   async createTeaMachine(machine: InsertTeaMachine): Promise<TeaMachine> {

@@ -117,11 +117,11 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
-- July 24, 2025: COMPLETED - Implemented dynamic tea pricing control system with machine-specific pricing configuration
-- July 24, 2025: Fixed tea pricing being hardcoded at ₹5.00 by implementing database-driven pricing per machine
-- July 24, 2025: Enhanced RFID validation API to use machine-specific tea prices: Earl Grey (₹8.00), Green Tea (₹7.00), Masala Chai (₹6.00), Black Tea (₹5.00), Herbal Tea (₹9.00)
-- July 24, 2025: Added new GET /api/machines/:machineId/tea-prices endpoint for machines to retrieve current pricing
-- July 24, 2025: Updated database schema to store tea pricing as JSON objects with name and price for each tea type
+- July 24, 2025: COMPLETED - Implemented dynamic tea pricing control system with machine-specific pricing configuration for single "Regular Tea" variety
+- July 24, 2025: Simplified tea offerings from multiple varieties (Earl Grey, Green Tea, etc.) to single "Regular Tea" as requested by user
+- July 24, 2025: Added admin interface under "Machines" tab for real-time tea pricing control with validation and admin-only access
+- July 24, 2025: Fixed admin machine list to show ALL machines (active and inactive) instead of only active ones for comprehensive pricing management
+- July 24, 2025: Updated getAllTeaMachines() to return all machines regardless of status - platform admins need full visibility
 - July 24, 2025: COMPLETED - Fixed support ticket creation button that was blocked by accessibility focus conflicts in Radix Dialog component
 - July 24, 2025: Replaced problematic Radix Dialog with custom modal to resolve aria-hidden focus management issues
 - July 24, 2025: COMPLETED - Fixed category and priority dropdown selection issues by replacing Radix Select with native HTML select elements

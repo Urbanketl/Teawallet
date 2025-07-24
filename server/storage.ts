@@ -34,6 +34,7 @@ export interface IStorage {
   createTeaMachine(machine: InsertTeaMachine): Promise<TeaMachine>;
   updateMachinePing(machineId: string): Promise<void>;
   updateMachineStatus(machineId: string, isActive: boolean): Promise<void>;
+  updateMachineTeaTypes(machineId: string, teaTypes: any[]): Promise<void>;
   
   // Legacy Admin RFID operations (for super admin)
   createRfidCardForUser(userId: string, cardNumber: string): Promise<RfidCard>;
@@ -318,6 +319,13 @@ export class DatabaseStorage implements IStorage {
     await db
       .update(teaMachines)
       .set({ isActive })
+      .where(eq(teaMachines.id, machineId));
+  }
+
+  async updateMachineTeaTypes(machineId: string, teaTypes: any[]): Promise<void> {
+    await db
+      .update(teaMachines)
+      .set({ teaTypes: JSON.stringify(teaTypes) })
       .where(eq(teaMachines.id, machineId));
   }
 

@@ -716,10 +716,7 @@ export default function AdminPage() {
           </TabsContent>
 
           <TabsContent value="machines">
-            <div className="text-center py-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Machine Management</h3>
-              <p className="text-gray-600">Machine status displayed in the cards above</p>
-            </div>
+            <MachineManagement />
           </TabsContent>
 
           <TabsContent value="support" className="space-y-6">
@@ -1076,6 +1073,205 @@ export default function AdminPage() {
       </div>
     );
   }
+
+function MachineManagement() {
+  const [editingMachine, setEditingMachine] = useState<any>(null);
+  const [machinePrice, setMachinePrice] = useState("5.00");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: machines = [], isLoading: machinesLoading } = useQuery({
+    queryKey: ["/api/admin/machines"],
+    retry: false,
+  });
+
+  const updateMachinePriceMutation = useMutation({
+    mutationFn: async ({ machineId, price }: { machineId: string; price: string }) => {
+      return apiRequest('PATCH', `/api/admin/machines/${machineId}/pricing`, {
+        teaTypes: [{ name: "Regular Tea", price: price }]
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "Success", description: "Tea price updated successfully!" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/machines"] });
+      setEditingMachine(null);
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to update tea price",
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const startPriceEdit = (machine: any) => {
+    setEditingMachine(machine);
+    // Extract current price from tea_types if available
+    const currentPrice = machine.teaTypes?.[0]?.price || "5.00";
+    setMachinePrice(currentPrice);
+  };
+
+  const handlePriceUpdate = () => {
+    if (!machinePrice || parseFloat(machinePrice) <= 0) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid price greater than 0",
+        variant: "destructive"
+      });
+      return;
+    }
+    updateMachinePriceMutation.mutate({ 
+      machineId: editingMachine.id, 
+      price: parseFloat(machinePrice).toFixed(2) 
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-semibold">Machine Management & Pricing</h3>
+          <p className="text-sm text-muted-foreground">
+            Manage tea machines and set pricing for "Regular Tea" served by each machine
+          </p>
+        </div>
+        <Badge variant="secondary" className="bg-tea-green/10 text-tea-green">
+          {machines.length} Machines
+        </Badge>
+      </div>
+
+      {machinesLoading ? (
+        <Card>
+          <CardContent className="p-6 text-center">
+            Loading machines...
+          </CardContent>
+        </Card>
+      ) : !machines || machines.length === 0 ? (
+        <Card>
+          <CardContent className="p-6 text-center">
+            <Coffee className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500">No tea machines found</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4">
+          {machines.map((machine: any) => (
+            <Card key={machine.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className={`w-4 h-4 rounded-full ${machine.isActive ? 'bg-green-400' : 'bg-red-400'}`} />
+                    <div>
+                      <h4 className="font-semibold text-lg">{machine.name}</h4>
+                      <p className="text-gray-600 text-sm">{machine.location}</p>
+                      <p className="text-xs text-gray-500">ID: {machine.id}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-6">
+                    <div className="text-center">
+                      <Badge variant={machine.isActive ? "default" : "destructive"} className="mb-2">
+                        {machine.isActive ? "Online" : "Offline"}
+                      </Badge>
+                      <p className="text-xs text-gray-500">
+                        Last ping: {machine.lastPing ? format(new Date(machine.lastPing), 'h:mm a') : 'Never'}
+                      </p>
+                    </div>
+                    
+                    <div className="text-center border-l pl-6">
+                      <div className="text-lg font-bold text-tea-green">
+                        ₹{machine.teaTypes?.[0]?.price || "5.00"}
+                      </div>
+                      <p className="text-xs text-gray-500">per cup</p>
+                      <p className="text-xs text-gray-600 font-medium">Regular Tea</p>
+                    </div>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => startPriceEdit(machine)}
+                      className="flex items-center space-x-2"
+                    >
+                      <IndianRupee className="w-4 h-4" />
+                      <span>Edit Price</span>
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Price Edit Modal */}
+      {editingMachine && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="mb-4">
+              <h2 className="text-xl font-semibold">Update Tea Price</h2>
+              <p className="text-gray-600 text-sm">
+                Set the price per cup for "{editingMachine.name}"
+              </p>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="machineInfo">Machine Details</Label>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="font-medium">{editingMachine.name}</p>
+                  <p className="text-sm text-gray-600">{editingMachine.location}</p>
+                  <p className="text-xs text-gray-500">ID: {editingMachine.id}</p>
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="teaType">Tea Type</Label>
+                <Input
+                  value="Regular Tea"
+                  disabled
+                  className="bg-gray-50"
+                />
+                <p className="text-xs text-gray-500 mt-1">Only "Regular Tea" is served by all machines</p>
+              </div>
+              
+              <div>
+                <Label htmlFor="price">Price per Cup (₹)</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={machinePrice}
+                  onChange={(e) => setMachinePrice(e.target.value)}
+                  placeholder="5.00"
+                  className="text-lg"
+                />
+                <p className="text-xs text-gray-500 mt-1">Enter the price in rupees (e.g., 5.00)</p>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setEditingMachine(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handlePriceUpdate}
+                disabled={updateMachinePriceMutation.isPending}
+                className="bg-tea-green hover:bg-tea-dark"
+              >
+                {updateMachinePriceMutation.isPending ? "Updating..." : "Update Price"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function FaqManagement() {
   const [showCreateForm, setShowCreateForm] = useState(false);

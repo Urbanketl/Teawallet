@@ -7,14 +7,14 @@ import {
   getFaqArticles,
   incrementFaqViews
 } from "../controllers/supportController";
-import { requireAuth } from "../controllers/authController";
+import { isAuthenticated } from "../replitAuth";
 
 const router = Router();
 
-router.get('/tickets', requireAuth, getUserSupportTickets);
-router.post('/tickets', requireAuth, createSupportTicket);
-router.get('/tickets/:ticketId', requireAuth, getSupportTicketById);
-router.post('/tickets/:ticketId/messages', requireAuth, createSupportMessage);
+router.get('/tickets', isAuthenticated, getUserSupportTickets);
+router.post('/tickets', isAuthenticated, createSupportTicket);
+router.get('/tickets/:ticketId', isAuthenticated, getSupportTicketById);
+router.post('/tickets/:ticketId/messages', isAuthenticated, createSupportMessage);
 router.get('/faq', getFaqArticles);
 router.post('/faq/:articleId/view', incrementFaqViews);
 

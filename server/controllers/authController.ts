@@ -36,6 +36,12 @@ export async function updateUserProfile(req: any, res: Response) {
 }
 
 export function requireAuth(req: any, res: Response, next: NextFunction) {
+  // First check for Replit Auth session
+  if (req.isAuthenticated && req.isAuthenticated() && req.user?.claims?.sub) {
+    return next();
+  }
+  
+  // Then check for demo session
   const userId = req.session?.user?.id || req.user?.claims?.sub;
   if (!userId) {
     return res.status(401).json({ message: "Unauthorized" });

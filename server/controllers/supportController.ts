@@ -16,15 +16,20 @@ export async function getUserSupportTickets(req: any, res: Response) {
 export async function createSupportTicket(req: any, res: Response) {
   try {
     const userId = req.session?.user?.id || req.user?.claims?.sub;
+    console.log("Creating support ticket for userId:", userId);
+    console.log("Request body:", req.body);
+    
     const validated = insertSupportTicketSchema.parse({
       ...req.body,
       userId,
     });
 
     const ticket = await storage.createSupportTicket(validated);
+    console.log("Ticket created successfully:", ticket);
     res.status(201).json(ticket);
   } catch (error) {
     console.error("Error creating support ticket:", error);
+    console.error("Error details:", error);
     res.status(500).json({ message: "Failed to create support ticket" });
   }
 }

@@ -1082,6 +1082,49 @@ function MachineManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Machine status helper functions
+  const isRecentlyPinged = (lastPing: string | null) => {
+    if (!lastPing) return false;
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    return new Date(lastPing) > fiveMinutesAgo;
+  };
+
+  const getMachineStatus = (machine: any) => {
+    if (!machine.isActive) return "Disabled";
+    if (isRecentlyPinged(machine.lastPing)) return "Online";
+    return "Offline";
+  };
+
+  const getMachineStatusVariant = (machine: any) => {
+    const status = getMachineStatus(machine);
+    if (status === "Online") return "default";
+    if (status === "Offline") return "secondary";
+    return "destructive"; // Disabled
+  };
+
+  const getMachineStatusIndicator = (machine: any) => {
+    const status = getMachineStatus(machine);
+    if (status === "Online") return "bg-green-400";
+    if (status === "Offline") return "bg-yellow-400";
+    return "bg-red-400"; // Disabled
+  };
+
+  const getTimeSinceLastPing = (lastPing: string | null) => {
+    if (!lastPing) return "Never pinged";
+    const now = new Date();
+    const ping = new Date(lastPing);
+    const diffInMinutes = Math.floor((now.getTime() - ping.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return "Just now";
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays}d ago`;
+  };
+
   const { data: machines = [], isLoading: machinesLoading } = useQuery({
     queryKey: ["/api/admin/machines"],
     retry: false,
@@ -1140,9 +1183,20 @@ function MachineManagement() {
             Manage tea machines and set pricing for "Regular Tea" served by each machine
           </p>
         </div>
-        <Badge variant="secondary" className="bg-tea-green/10 text-tea-green">
-          {machines.length} Machines
-        </Badge>
+        <div className="flex items-center space-x-3">
+          <Badge variant="secondary" className="bg-tea-green/10 text-tea-green">
+            {machines.length} Total
+          </Badge>
+          <Badge variant="default" className="bg-green-100 text-green-700">
+            {machines.filter(m => getMachineStatus(m) === "Online").length} Online
+          </Badge>
+          <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">
+            {machines.filter(m => getMachineStatus(m) === "Offline").length} Offline
+          </Badge>
+          <Badge variant="destructive" className="bg-red-100 text-red-700">
+            {machines.filter(m => getMachineStatus(m) === "Disabled").length} Disabled
+          </Badge>
+        </div>
       </div>
 
       {machinesLoading ? (
@@ -1165,7 +1219,7 @@ function MachineManagement() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
-                    <div className={`w-4 h-4 rounded-full ${machine.isActive ? 'bg-green-400' : 'bg-red-400'}`} />
+                    <div className={`w-4 h-4 rounded-full ${getMachineStatusIndicator(machine)}`} />
                     <div>
                       <h4 className="font-semibold text-lg">{machine.name}</h4>
                       <p className="text-gray-600 text-sm">{machine.location}</p>
@@ -1175,11 +1229,14 @@ function MachineManagement() {
                   
                   <div className="flex items-center space-x-6">
                     <div className="text-center">
-                      <Badge variant={machine.isActive ? "default" : "destructive"} className="mb-2">
-                        {machine.isActive ? "Online" : "Offline"}
+                      <Badge variant={getMachineStatusVariant(machine)} className="mb-2">
+                        {getMachineStatus(machine)}
                       </Badge>
                       <p className="text-xs text-gray-500">
-                        Last ping: {machine.lastPing ? format(new Date(machine.lastPing), 'h:mm a') : 'Never'}
+                        Last ping: {machine.lastPing ? format(new Date(machine.lastPing), 'MMM dd, h:mm a') : 'Never'}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {getTimeSinceLastPing(machine.lastPing)}
                       </p>
                     </div>
                     

@@ -117,6 +117,10 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- July 24, 2025: COMPLETED - Enhanced machine status monitoring to consider both isActive flag AND recent lastPing timestamps for accurate Online/Offline/Disabled status
+- July 24, 2025: Added comprehensive machine health dashboard with color-coded status indicators and time-since-last-ping display
+- July 24, 2025: Implemented 3-tier status system: Online (active + recent ping), Offline (active + old ping), Disabled (inactive)
+- July 24, 2025: Added status summary badges showing real-time counts of Online/Offline/Disabled machines for quick monitoring overview
 - July 24, 2025: COMPLETED - Implemented dynamic tea pricing control system with machine-specific pricing configuration for single "Regular Tea" variety
 - July 24, 2025: Simplified tea offerings from multiple varieties (Earl Grey, Green Tea, etc.) to single "Regular Tea" as requested by user
 - July 24, 2025: Added admin interface under "Machines" tab for real-time tea pricing control with validation and admin-only access

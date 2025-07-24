@@ -622,32 +622,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Support routes
-  app.post('/api/support/tickets', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.session?.user?.id || req.user.claims.sub;
-      const { subject, description, category, priority } = req.body;
-      
-      if (!subject || !description) {
-        return res.status(400).json({ message: "Subject and description are required" });
-      }
-      
-      const ticket = await storage.createSupportTicket({
-        userId,
-        subject,
-        description,
-        category,
-        priority: priority || 'medium',
-      });
-
-      console.log('Ticket created successfully:', ticket);
-      res.json(ticket);
-    } catch (error) {
-      console.error("Error creating support ticket:", error);
-      console.error("Stack trace:", error.stack);
-      res.status(500).json({ message: "Failed to create support ticket", error: error.message });
-    }
-  });
+  // Note: Support routes are now handled by the supportRoutes module above
 
   app.get('/api/support/tickets/:id/messages', isAuthenticated, async (req: any, res) => {
     try {

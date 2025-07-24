@@ -18,6 +18,11 @@ export async function createSupportTicket(req: any, res: Response) {
     const userId = req.session?.user?.id || req.user?.claims?.sub;
     console.log("Creating support ticket for userId:", userId);
     console.log("Request body:", req.body);
+    console.log("Full request user info:", { session: req.session?.user, userClaims: req.user?.claims });
+    
+    if (!userId) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
     
     const validated = insertSupportTicketSchema.parse({
       ...req.body,

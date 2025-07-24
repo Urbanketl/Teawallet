@@ -35,6 +35,8 @@ export interface IStorage {
   updateMachinePing(machineId: string): Promise<void>;
   updateMachineStatus(machineId: string, isActive: boolean): Promise<void>;
   updateMachineTeaTypes(machineId: string, teaTypes: any[]): Promise<void>;
+  updateMachine(machineId: string, updates: { name?: string; location?: string; isActive?: boolean }): Promise<TeaMachine | undefined>;
+  assignMachineToBusinessUnit(machineId: string, businessUnitAdminId: string): Promise<TeaMachine | undefined>;
   
   // Legacy Admin RFID operations (for super admin)
   createRfidCardForUser(userId: string, cardNumber: string): Promise<RfidCard>;
@@ -327,6 +329,34 @@ export class DatabaseStorage implements IStorage {
       .update(teaMachines)
       .set({ teaTypes: JSON.stringify(teaTypes) })
       .where(eq(teaMachines.id, machineId));
+  }
+
+  async updateMachine(machineId: string, updates: { name?: string; location?: string; isActive?: boolean }): Promise<TeaMachine | undefined> {
+    const [updatedMachine] = await db
+      .update(teaMachines)
+      .set({
+        ...(updates.name && { name: updates.name }),
+        ...(updates.location && { location: updates.location }),
+        ...(updates.isActive !== undefined && { isActive: updates.isActive }),
+        updatedAt: new Date()
+      })
+      .where(eq(teaMachines.id, machineId))
+      .returning();
+    
+    return updatedMachine;
+  }
+
+  async assignMachineToBusinessUnit(machineId: string, businessUnitAdminId: string): Promise<TeaMachine | undefined> {
+    const [updatedMachine] = await db
+      .update(teaMachines)
+      .set({
+        businessUnitAdminId,
+        updatedAt: new Date()
+      })
+      .where(eq(teaMachines.id, machineId))
+      .returning();
+    
+    return updatedMachine;
   }
 
   // Admin operations

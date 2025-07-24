@@ -633,6 +633,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create new machine (Admin only)
+  app.post('/api/admin/machines', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { id, name, location, isActive = true } = req.body;
+
+      if (!id || !name || !location) {
+        return res.status(400).json({ message: "Machine ID, name, and location are required" });
+      }
+
+      // Check if machine ID already exists
+      const existingMachines = await storage.getAllTeaMachines();
+      if (existingMachines.find(m => m.id === id)) {
+        return res.status(400).json({ message: "Machine ID already exists" });
+      }
+
+      const machineData = {
+        id,
+        name,
+        location,
+        isActive,
+        businessUnitAdminId: "", // Initially unassigned (empty string instead of null)
+        lastPing: null
+      };
+
+      const newMachine = await storage.createTeaMachine(machineData);
+      res.json(newMachine);
+    } catch (error) {
+      console.error("Error creating machine:", error);
+      res.status(500).json({ message: "Failed to create machine" });
+    }
+  });
+
+  // Update machine details (Admin only)
+  app.patch('/api/admin/machines/:machineId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { machineId } = req.params;
+      const { name, location, isActive } = req.body;
+
+      if (!name || !location) {
+        return res.status(400).json({ message: "Machine name and location are required" });
+      }
+
+      const updatedMachine = await storage.updateMachine(machineId, {
+        name,
+        location,
+        isActive
+      });
+
+      if (!updatedMachine) {
+        return res.status(404).json({ message: "Machine not found" });
+      }
+
+      res.json(updatedMachine);
+    } catch (error) {
+      console.error("Error updating machine:", error);
+      res.status(500).json({ message: "Failed to update machine" });
+    }
+  });
+
+  // Update machine status (Admin only)
+  app.patch('/api/admin/machines/:machineId/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { machineId } = req.params;
+      const { isActive } = req.body;
+
+      await storage.updateMachineStatus(machineId, isActive);
+      res.json({ message: "Machine status updated successfully" });
+    } catch (error) {
+      console.error("Error updating machine status:", error);
+      res.status(500).json({ message: "Failed to update machine status" });
+    }
+  });
+
+  // Assign machine to business unit (Admin only)
+  app.patch('/api/admin/machines/:machineId/assign', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { machineId } = req.params;
+      const { businessUnitAdminId } = req.body;
+
+      if (!businessUnitAdminId) {
+        return res.status(400).json({ message: "Business unit admin ID is required" });
+      }
+
+      // Verify the business unit admin exists and is an admin
+      const businessUnitAdmin = await storage.getUser(businessUnitAdminId);
+      if (!businessUnitAdmin || !businessUnitAdmin.isAdmin || businessUnitAdmin.isSuperAdmin) {
+        return res.status(400).json({ message: "Invalid business unit administrator" });
+      }
+
+      const updatedMachine = await storage.assignMachineToBusinessUnit(machineId, businessUnitAdminId);
+      
+      if (!updatedMachine) {
+        return res.status(404).json({ message: "Machine not found" });
+      }
+
+      res.json(updatedMachine);
+    } catch (error) {
+      console.error("Error assigning machine:", error);
+      res.status(500).json({ message: "Failed to assign machine" });
+    }
+  });
+
   // Update machine tea pricing (Admin only)
   app.patch('/api/admin/machines/:machineId/pricing', isAuthenticated, async (req: any, res) => {
     try {

@@ -193,12 +193,13 @@ export class DatabaseStorage implements IStorage {
     return unit;
   }
 
-  // User-Business Unit assignments
+  // User-Business Unit assignments (only one user per business unit allowed)
   async assignUserToBusinessUnit(userId: string, businessUnitId: string, role: string): Promise<void> {
-    await db.insert(userBusinessUnits).values({ userId, businessUnitId, role }).onConflictDoUpdate({
-      target: [userBusinessUnits.userId, userBusinessUnits.businessUnitId],
-      set: { role: role }
-    });
+    // First, remove any existing user assignment for this business unit
+    await db.delete(userBusinessUnits).where(eq(userBusinessUnits.businessUnitId, businessUnitId));
+    
+    // Then assign the new user
+    await db.insert(userBusinessUnits).values({ userId, businessUnitId, role });
   }
 
   async removeUserFromBusinessUnit(userId: string, businessUnitId: string): Promise<void> {

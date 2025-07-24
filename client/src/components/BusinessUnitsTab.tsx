@@ -12,25 +12,36 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { BusinessUnit, User, TeaMachine } from "@shared/schema";
 
-// Component to show users assigned to a business unit
-function UserAssignments({ unitId }: { unitId: string }) {
+// Component to show user assigned to a business unit (only one allowed)
+function UserAssignments({ unitId, onChangeUser }: { unitId: string; onChangeUser: (unitId: string, currentUserId?: string) => void }) {
   const { data: assignments } = useQuery({
     queryKey: [`/api/admin/business-units/${unitId}/users`],
     retry: false,
   });
 
   if (!assignments || !Array.isArray(assignments) || assignments.length === 0) {
-    return <p className="text-sm text-gray-500 italic">No users assigned</p>;
+    return <p className="text-sm text-gray-500 italic">No user assigned</p>;
   }
 
+  const assignment = assignments[0]; // Only one user per business unit
+
   return (
-    <div className="space-y-1">
-      {assignments.map((assignment: any) => (
-        <div key={assignment.userId} className="flex items-center justify-between text-sm">
-          <span>{assignment.user?.firstName} {assignment.user?.lastName}</span>
-          <Badge variant="secondary" className="text-xs">{assignment.role}</Badge>
-        </div>
-      ))}
+    <div className="flex items-center justify-between text-sm">
+      <div>
+        <span className="font-medium">{assignment.user?.firstName} {assignment.user?.lastName}</span>
+        <div className="text-xs text-gray-500">{assignment.user?.email}</div>
+      </div>
+      <div className="flex items-center gap-2">
+        <Badge variant="secondary" className="text-xs">{assignment.role}</Badge>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => onChangeUser(unitId, assignment.userId)}
+          className="text-xs h-6 px-2"
+        >
+          Change
+        </Button>
+      </div>
     </div>
   );
 }
@@ -46,6 +57,7 @@ export function BusinessUnitsTab() {
   const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
   const [selectedAssignmentUnit, setSelectedAssignmentUnit] = useState<string>("");
   const [assignmentSearch, setAssignmentSearch] = useState<string>("");
+  const [changingUser, setChangingUser] = useState<{ unitId: string; currentUserId?: string } | null>(null);
   const [newUnitForm, setNewUnitForm] = useState({
     name: "",
     code: "",
@@ -140,6 +152,23 @@ export function BusinessUnitsTab() {
 
   const handleAssignUser = (unitId: string, userId: string) => {
     assignUserMutation.mutate({ unitId, userId, role: "manager" });
+  };
+
+  const handleChangeUser = (unitId: string, currentUserId?: string) => {
+    setChangingUser({ unitId, currentUserId });
+    setSelectedAssignmentUnit(unitId);
+  };
+
+  const handleConfirmUserChange = (newUserId: string) => {
+    if (!changingUser) return;
+    
+    // If there's a current user, we're changing; otherwise, we're assigning for the first time
+    assignUserMutation.mutate({ 
+      unitId: changingUser.unitId, 
+      userId: newUserId, 
+      role: "manager" 
+    });
+    setChangingUser(null);
   };
 
   const handleAssignMachine = (unitId: string, machineId: string) => {
@@ -311,7 +340,10 @@ export function BusinessUnitsTab() {
                       </label>
                       <select
                         value={selectedAssignmentUnit}
-                        onChange={(e) => setSelectedAssignmentUnit(e.target.value)}
+                        onChange={(e) => {
+                          setSelectedAssignmentUnit(e.target.value);
+                          setChangingUser(null); // Reset change mode when selecting different unit
+                        }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-tea-green focus:border-transparent"
                       >
                         <option value="">Choose Business Unit...</option>
@@ -325,29 +357,56 @@ export function BusinessUnitsTab() {
                     
                     <div>
                       <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        2. Select User to Assign:
+                        2. {changingUser ? "Select New User:" : "Select User to Assign:"}
                       </label>
                       <select
                         disabled={!selectedAssignmentUnit || assignUserMutation.isPending}
                         onChange={(e) => {
                           if (e.target.value && selectedAssignmentUnit) {
-                            handleAssignUser(selectedAssignmentUnit, e.target.value);
+                            if (changingUser) {
+                              handleConfirmUserChange(e.target.value);
+                            } else {
+                              handleAssignUser(selectedAssignmentUnit, e.target.value);
+                            }
                             e.target.value = ''; // Reset selection
                           }
                         }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-tea-green focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                       >
                         <option value="">
-                          {selectedAssignmentUnit ? "Choose User..." : "Select Business Unit First"}
+                          {selectedAssignmentUnit 
+                            ? (changingUser ? "Choose New User..." : "Choose User...") 
+                            : "Select Business Unit First"}
                         </option>
-                        {selectedAssignmentUnit && allUsers && Array.isArray(allUsers) && allUsers.map((user: User) => (
-                          <option key={user.id} value={user.id}>
-                            {user.firstName} {user.lastName} ({user.email})
-                          </option>
-                        ))}
+                        {selectedAssignmentUnit && allUsers && Array.isArray(allUsers) && allUsers
+                          .filter((user: User) => !changingUser || user.id !== changingUser.currentUserId) // Don't show current user in change mode
+                          .map((user: User) => (
+                            <option key={user.id} value={user.id}>
+                              {user.firstName} {user.lastName} ({user.email})
+                            </option>
+                          ))}
                       </select>
                     </div>
                   </div>
+                  
+                  {changingUser && (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                      <p className="text-sm text-blue-800">
+                        <strong>Change Mode:</strong> Select a new user to replace the current assignment for this business unit.
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setChangingUser(null);
+                            setSelectedAssignmentUnit("");
+                          }}
+                          className="ml-2 text-blue-600 hover:text-blue-800"
+                        >
+                          Cancel
+                        </Button>
+                      </p>
+                    </div>
+                  )}
                   
                   {assignUserMutation.isPending && (
                     <div className="text-center text-sm text-gray-600">
@@ -385,7 +444,7 @@ export function BusinessUnitsTab() {
                                   <Badge variant="outline">{unit.code}</Badge>
                                 </div>
                                 <div className="space-y-2">
-                                  <UserAssignments unitId={unit.id} />
+                                  <UserAssignments unitId={unit.id} onChangeUser={handleChangeUser} />
                                 </div>
                               </CardContent>
                             </Card>

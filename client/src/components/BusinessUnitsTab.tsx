@@ -49,7 +49,7 @@ export function BusinessUnitsTab() {
   // Create business unit mutation
   const createUnitMutation = useMutation({
     mutationFn: async (unitData: typeof newUnitForm) => {
-      return apiRequest("/api/admin/business-units", "POST", unitData);
+      return apiRequest("POST", "/api/admin/business-units", unitData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/business-units"] });
@@ -68,7 +68,7 @@ export function BusinessUnitsTab() {
   // Assign user to business unit mutation
   const assignUserMutation = useMutation({
     mutationFn: async ({ unitId, userId, role }: { unitId: string; userId: string; role: string }) => {
-      return apiRequest(`/api/admin/business-units/${unitId}/users`, "POST", { userId, role });
+      return apiRequest("POST", `/api/admin/business-units/${unitId}/users`, { userId, role });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/business-units"] });
@@ -86,7 +86,7 @@ export function BusinessUnitsTab() {
   // Assign machine to business unit mutation
   const assignMachineMutation = useMutation({
     mutationFn: async ({ unitId, machineId }: { unitId: string; machineId: string }) => {
-      return apiRequest(`/api/admin/business-units/${unitId}/machines`, "POST", { machineId });
+      return apiRequest("POST", `/api/admin/business-units/${unitId}/machines`, { machineId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/business-units"] });

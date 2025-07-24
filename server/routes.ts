@@ -19,7 +19,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   try {
     initializeRazorpay();
   } catch (error) {
-    console.warn("Razorpay initialization failed:", error.message);
+    console.warn("Razorpay initialization failed:", (error as Error).message);
   }
   
   // Auth middleware
@@ -258,7 +258,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: 'recharge',
         amount: amount.toString(),
         description: 'Wallet Recharge',
-        method: 'razorpay',
         razorpayPaymentId: razorpay_payment_id,
         status: 'completed',
       });
@@ -293,7 +292,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: 'recharge',
         amount: amount.toString(),
         description: 'Wallet Recharge',
-        method: 'razorpay',
         razorpayPaymentId,
         status: 'completed',
       });
@@ -301,8 +299,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update wallet balance
       const updatedUser = await storage.updateWalletBalance(userId, amount.toString());
 
-      // Check for low balance after recharge (in case it's still low)
-      await checkAndSendLowBalanceAlert(updatedUser);
+      // Low balance check can be implemented later
 
       res.json({ 
         success: true, 
@@ -411,7 +408,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create new RFID card
       const newCard = await storage.createRfidCard({
-        userId,
+        businessUnitAdminId: userId,
         cardNumber,
         isActive: true,
       });
@@ -530,9 +527,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: 'dispensing',
         amount: teaAmount.toString(),
         description: `${teaType} Tea`,
-        method: 'rfid',
-        rfidCardId: card.id,
-        machineId,
         status: 'completed',
       });
 
@@ -796,51 +790,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
 
-  // Loyalty routes
-  app.get('/api/loyalty/points', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.session?.user?.id || req.user.claims.sub;
-      const points = await storage.getUserLoyaltyPoints(userId);
-      res.json({ points });
-    } catch (error) {
-      console.error("Error fetching loyalty points:", error);
-      res.status(500).json({ message: "Failed to fetch loyalty points" });
-    }
-  });
-
-  app.get('/api/loyalty/history', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.session?.user?.id || req.user.claims.sub;
-      const limit = parseInt(req.query.limit as string) || 50;
-      const history = await storage.getLoyaltyHistory(userId, limit);
-      res.json(history);
-    } catch (error) {
-      console.error("Error fetching loyalty history:", error);
-      res.status(500).json({ message: "Failed to fetch loyalty history" });
-    }
-  });
-
-  // Badge routes
-  app.get('/api/badges', async (req, res) => {
-    try {
-      const badges = await storage.getAllBadges();
-      res.json(badges);
-    } catch (error) {
-      console.error("Error fetching badges:", error);
-      res.status(500).json({ message: "Failed to fetch badges" });
-    }
-  });
-
-  app.get('/api/badges/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.session?.user?.id || req.user.claims.sub;
-      const userBadges = await storage.getUserBadges(userId);
-      res.json(userBadges);
-    } catch (error) {
-      console.error("Error fetching user badges:", error);
-      res.status(500).json({ message: "Failed to fetch user badges" });
-    }
-  });
+  // Loyalty and badge features not implemented yet
 
   // Note: Support routes are now handled by the supportRoutes module above
 

@@ -337,8 +337,7 @@ export class DatabaseStorage implements IStorage {
       .set({
         ...(updates.name && { name: updates.name }),
         ...(updates.location && { location: updates.location }),
-        ...(updates.isActive !== undefined && { isActive: updates.isActive }),
-        updatedAt: new Date()
+        ...(updates.isActive !== undefined && { isActive: updates.isActive })
       })
       .where(eq(teaMachines.id, machineId))
       .returning();
@@ -350,8 +349,7 @@ export class DatabaseStorage implements IStorage {
     const [updatedMachine] = await db
       .update(teaMachines)
       .set({
-        businessUnitAdminId,
-        updatedAt: new Date()
+        businessUnitAdminId
       })
       .where(eq(teaMachines.id, machineId))
       .returning();
@@ -376,22 +374,30 @@ export class DatabaseStorage implements IStorage {
       .from(users);
     
     // Then get paginated results
-    let baseQuery = db.select().from(users);
+    let usersResult;
       
     if (search) {
-      baseQuery = baseQuery.where(
-        or(
-          ilike(users.firstName, `%${search}%`),
-          ilike(users.lastName, `%${search}%`),
-          ilike(users.email, `%${search}%`)
+      usersResult = await db
+        .select()
+        .from(users)
+        .where(
+          or(
+            ilike(users.firstName, `%${search}%`),
+            ilike(users.lastName, `%${search}%`),
+            ilike(users.email, `%${search}%`)
+          )
         )
-      );
+        .orderBy(desc(users.createdAt))
+        .limit(limit)
+        .offset(offset);
+    } else {
+      usersResult = await db
+        .select()
+        .from(users)
+        .orderBy(desc(users.createdAt))
+        .limit(limit)
+        .offset(offset);
     }
-    
-    const usersResult = await baseQuery
-      .orderBy(desc(users.createdAt))
-      .limit(limit)
-      .offset(offset);
     
     return {
       users: usersResult,

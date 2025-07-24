@@ -12,6 +12,29 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { BusinessUnit, User, TeaMachine } from "@shared/schema";
 
+// Component to show users assigned to a business unit
+function UserAssignments({ unitId }: { unitId: string }) {
+  const { data: assignments } = useQuery({
+    queryKey: [`/api/admin/business-units/${unitId}/users`],
+    retry: false,
+  });
+
+  if (!assignments || !Array.isArray(assignments) || assignments.length === 0) {
+    return <p className="text-sm text-gray-500 italic">No users assigned</p>;
+  }
+
+  return (
+    <div className="space-y-1">
+      {assignments.map((assignment: any) => (
+        <div key={assignment.userId} className="flex items-center justify-between text-sm">
+          <span>{assignment.user?.firstName} {assignment.user?.lastName}</span>
+          <Badge variant="secondary" className="text-xs">{assignment.role}</Badge>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 interface BusinessUnitWithDetails extends BusinessUnit {
   userCount?: number;
   machineCount?: number;
@@ -274,28 +297,39 @@ export function BusinessUnitsTab() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-6">
                 <div>
-                  <h3 className="font-medium mb-4">Available Users</h3>
-                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                  <h3 className="font-medium mb-4">User Assignment</h3>
+                  <div className="space-y-4">
                     {allUsers && Array.isArray(allUsers) ? allUsers.map((user: User) => (
-                      <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
+                      <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
+                        <div className="flex-1">
                           <div className="font-medium">{user.firstName} {user.lastName}</div>
                           <div className="text-sm text-gray-600">{user.email}</div>
                         </div>
-                        <div className="space-x-2">
-                          {businessUnits && Array.isArray(businessUnits) && businessUnits.map((unit: BusinessUnit) => (
-                            <Button
-                              key={unit.id}
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleAssignUser(unit.id, user.id)}
+                        <div className="flex items-center gap-3">
+                          <div className="min-w-0 flex-1">
+                            <label className="text-sm font-medium text-gray-700 mb-1 block">
+                              Assign to Business Unit:
+                            </label>
+                            <select
+                              className="w-48 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-tea-green focus:border-transparent"
+                              onChange={(e) => {
+                                if (e.target.value && e.target.value !== '') {
+                                  handleAssignUser(e.target.value, user.id);
+                                  e.target.value = ''; // Reset selection
+                                }
+                              }}
                               disabled={assignUserMutation.isPending}
                             >
-                              → {unit.code}
-                            </Button>
-                          ))}
+                              <option value="">Select Business Unit...</option>
+                              {businessUnits && Array.isArray(businessUnits) && businessUnits.map((unit: BusinessUnit) => (
+                                <option key={unit.id} value={unit.id}>
+                                  {unit.name} ({unit.code})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                         </div>
                       </div>
                     )) : (
@@ -303,23 +337,25 @@ export function BusinessUnitsTab() {
                     )}
                   </div>
                 </div>
-                
+
                 <div>
-                  <h3 className="font-medium mb-4">Business Units</h3>
-                  <div className="space-y-4">
-                    {businessUnits && businessUnits.map((unit: BusinessUnit) => (
-                      <Card key={unit.id}>
+                  <h3 className="font-medium mb-4">Current Assignments</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {businessUnits && Array.isArray(businessUnits) ? businessUnits.map((unit: BusinessUnit) => (
+                      <Card key={unit.id} className="border-l-4 border-l-tea-green">
                         <CardContent className="p-4">
-                          <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center justify-between mb-3">
                             <h4 className="font-medium">{unit.name}</h4>
                             <Badge variant="outline">{unit.code}</Badge>
                           </div>
-                          <p className="text-sm text-gray-600">
-                            Click user assignments on the left to assign to this unit
-                          </p>
+                          <div className="space-y-2">
+                            <UserAssignments unitId={unit.id} />
+                          </div>
                         </CardContent>
                       </Card>
-                    ))}
+                    )) : (
+                      <p className="text-gray-600">No business units available</p>
+                    )}
                   </div>
                 </div>
               </div>

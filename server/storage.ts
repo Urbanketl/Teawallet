@@ -210,6 +210,25 @@ export class DatabaseStorage implements IStorage {
     );
   }
 
+  async getBusinessUnitUsers(businessUnitId: string): Promise<any[]> {
+    const assignments = await db
+      .select({
+        userId: userBusinessUnits.userId,
+        role: userBusinessUnits.role,
+        user: {
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          email: users.email
+        }
+      })
+      .from(userBusinessUnits)
+      .innerJoin(users, eq(userBusinessUnits.userId, users.id))
+      .where(eq(userBusinessUnits.businessUnitId, businessUnitId));
+    
+    return assignments;
+  }
+
   // RFID operations
   async getBusinessUnitRfidCards(businessUnitId: string): Promise<RfidCard[]> {
     return await db

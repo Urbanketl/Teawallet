@@ -1031,6 +1031,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get users assigned to a business unit
+  app.get('/api/admin/business-units/:unitId/users', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { unitId } = req.params;
+      const assignments = await storage.getBusinessUnitUsers(unitId);
+      res.json(assignments);
+    } catch (error) {
+      console.error("Error fetching business unit users:", error);
+      res.status(500).json({ message: "Failed to fetch business unit users" });
+    }
+  });
+
   app.get('/api/admin/machines/unassigned', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.session?.user?.id || req.user.claims.sub;

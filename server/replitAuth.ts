@@ -130,7 +130,8 @@ export async function setupAuth(app: Express) {
           firstName: "Demo",
           lastName: "User",
           walletBalance: "100.00",
-          isAdmin: true
+          isAdmin: true,
+          isSuperAdmin: true
         };
         res.redirect("/");
       }

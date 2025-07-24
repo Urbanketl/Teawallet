@@ -278,7 +278,7 @@ export function BusinessUnitsTab() {
                 <div>
                   <h3 className="font-medium mb-4">Available Users</h3>
                   <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {allUsers && (allUsers as any).users && Array.isArray((allUsers as any).users) ? (allUsers as any).users.map((user: User) => (
+                    {allUsers && Array.isArray(allUsers) ? allUsers.map((user: User) => (
                       <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div>
                           <div className="font-medium">{user.firstName} {user.lastName}</div>

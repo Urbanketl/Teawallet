@@ -117,7 +117,10 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
-- July 24, 2025: COMPLETED - Restructured machine management with clear separation of permissions between platform admins and business unit admins
+- July 24, 2025: COMPLETED - Fixed machine creation API error by implementing missing POST endpoint and correcting apiRequest parameter order
+- July 24, 2025: Added complete backend API endpoints for machine administration: create, edit, assign, and status control
+- July 24, 2025: Implemented storage methods for machine updates and business unit assignments
+- July 24, 2025: Restructured machine management with clear separation of permissions between platform admins and business unit admins
 - July 24, 2025: Removed machine creation/control from business unit dashboard - now view-only for their assigned machines  
 - July 24, 2025: Added comprehensive Machine Management tab to platform admin with 4 sub-tabs: Create, Edit, Assign, Control
 - July 24, 2025: Implemented machine assignment system allowing platform admins to assign machines to specific business unit administrators

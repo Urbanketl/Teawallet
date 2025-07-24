@@ -1407,7 +1407,7 @@ function MachineAdministration() {
   // Create machine mutation
   const createMachineMutation = useMutation({
     mutationFn: (data: typeof newMachine) =>
-      apiRequest("/api/admin/machines", "POST", data),
+      apiRequest("POST", "/api/admin/machines", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/machines"] });
       toast({ title: "Success", description: "Machine created successfully!" });
@@ -1425,7 +1425,7 @@ function MachineAdministration() {
   // Update machine mutation
   const updateMachineMutation = useMutation({
     mutationFn: ({ machineId, data }: { machineId: string; data: typeof editForm }) =>
-      apiRequest(`/api/admin/machines/${machineId}`, "PATCH", data),
+      apiRequest("PATCH", `/api/admin/machines/${machineId}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/machines"] });
       toast({ title: "Success", description: "Machine updated successfully!" });
@@ -1443,7 +1443,7 @@ function MachineAdministration() {
   // Toggle machine status mutation
   const toggleMachineStatusMutation = useMutation({
     mutationFn: ({ machineId, isActive }: { machineId: string; isActive: boolean }) =>
-      apiRequest(`/api/admin/machines/${machineId}/status`, "PATCH", { isActive }),
+      apiRequest("PATCH", `/api/admin/machines/${machineId}/status`, { isActive }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/machines"] });
       toast({ title: "Success", description: "Machine status updated successfully!" });
@@ -1460,7 +1460,7 @@ function MachineAdministration() {
   // Assign machine mutation
   const assignMachineMutation = useMutation({
     mutationFn: (data: typeof assignForm) =>
-      apiRequest(`/api/admin/machines/${data.machineId}/assign`, "PATCH", { 
+      apiRequest("PATCH", `/api/admin/machines/${data.machineId}/assign`, { 
         businessUnitAdminId: data.businessUnitAdminId 
       }),
     onSuccess: () => {

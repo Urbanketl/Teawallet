@@ -333,8 +333,8 @@ export default function SupportPage() {
 
             {/* Custom Modal to avoid focus conflicts */}
             {dialogOpen && (
-              <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-lg shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-lg shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto relative z-[101]">
                   <div className="p-6 border-b">
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-semibold">Create Support Ticket</h3>
@@ -364,11 +364,17 @@ export default function SupportPage() {
                     
                     <div>
                       <Label htmlFor="category">Category</Label>
-                      <Select value={newTicket.category} onValueChange={(value) => setNewTicket({ ...newTicket, category: value })}>
+                      <Select 
+                        value={newTicket.category} 
+                        onValueChange={(value) => {
+                          console.log('Category selected:', value);
+                          setNewTicket({ ...newTicket, category: value });
+                        }}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="z-[200]">
                           <SelectItem value="technical">Technical Issue</SelectItem>
                           <SelectItem value="billing">Billing</SelectItem>
                           <SelectItem value="general">General Question</SelectItem>
@@ -378,11 +384,17 @@ export default function SupportPage() {
                     
                     <div>
                       <Label htmlFor="priority">Priority</Label>
-                      <Select value={newTicket.priority} onValueChange={(value) => setNewTicket({ ...newTicket, priority: value })}>
+                      <Select 
+                        value={newTicket.priority} 
+                        onValueChange={(value) => {
+                          console.log('Priority selected:', value);
+                          setNewTicket({ ...newTicket, priority: value });
+                        }}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Select priority" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="z-[200]">
                           <SelectItem value="low">Low</SelectItem>
                           <SelectItem value="medium">Medium</SelectItem>
                           <SelectItem value="high">High</SelectItem>

@@ -364,42 +364,36 @@ export default function SupportPage() {
                     
                     <div>
                       <Label htmlFor="category">Category</Label>
-                      <Select 
-                        value={newTicket.category} 
-                        onValueChange={(value) => {
-                          console.log('Category selected:', value);
-                          setNewTicket({ ...newTicket, category: value });
+                      <select
+                        id="category"
+                        value={newTicket.category}
+                        onChange={(e) => {
+                          console.log('Category selected:', e.target.value);
+                          setNewTicket({ ...newTicket, category: e.target.value });
                         }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-tea-green focus:border-transparent"
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent className="z-[200]">
-                          <SelectItem value="technical">Technical Issue</SelectItem>
-                          <SelectItem value="billing">Billing</SelectItem>
-                          <SelectItem value="general">General Question</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        <option value="general">General Question</option>
+                        <option value="technical">Technical Issue</option>
+                        <option value="billing">Billing</option>
+                      </select>
                     </div>
                     
                     <div>
                       <Label htmlFor="priority">Priority</Label>
-                      <Select 
-                        value={newTicket.priority} 
-                        onValueChange={(value) => {
-                          console.log('Priority selected:', value);
-                          setNewTicket({ ...newTicket, priority: value });
+                      <select
+                        id="priority"
+                        value={newTicket.priority}
+                        onChange={(e) => {
+                          console.log('Priority selected:', e.target.value);
+                          setNewTicket({ ...newTicket, priority: e.target.value });
                         }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-tea-green focus:border-transparent"
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select priority" />
-                        </SelectTrigger>
-                        <SelectContent className="z-[200]">
-                          <SelectItem value="low">Low</SelectItem>
-                          <SelectItem value="medium">Medium</SelectItem>
-                          <SelectItem value="high">High</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                        <option value="high">High</option>
+                      </select>
                     </div>
                     
                     <div>

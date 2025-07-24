@@ -117,6 +117,10 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- July 24, 2025: COMPLETED - Fixed support ticket creation button that was blocked by accessibility focus conflicts in Radix Dialog component
+- July 24, 2025: Replaced problematic Radix Dialog with custom modal to resolve aria-hidden focus management issues
+- July 24, 2025: COMPLETED - Fixed category and priority dropdown selection issues by replacing Radix Select with native HTML select elements
+- July 24, 2025: Enhanced authentication logging and confirmed real user (44064328) can successfully create support tickets
 - July 8, 2025: COMPLETED - Fixed FAQ cache invalidation issue preventing new FAQs from appearing immediately on Support page
 - July 8, 2025: Enhanced React Query cache management to properly invalidate all FAQ-related queries when FAQs are created, updated, or deleted in admin panel
 - July 8, 2025: COMPLETED - Fixed corporate routes authentication to show proper business management data

@@ -1,8 +1,9 @@
 import { db } from "./db";
 import { 
-  users, rfidCards, transactions, dispensingLogs, teaMachines,
+  users, businessUnits, userBusinessUnits, rfidCards, transactions, dispensingLogs, teaMachines,
   referrals, supportTickets, supportMessages, ticketStatusHistory, faqArticles, systemSettings,
-  type User, type UpsertUser, type RfidCard, type InsertRfidCard,
+  type User, type UpsertUser, type BusinessUnit, type InsertBusinessUnit,
+  type UserBusinessUnit, type InsertUserBusinessUnit, type RfidCard, type InsertRfidCard,
   type Transaction, type InsertTransaction, type DispensingLog, type InsertDispensingLog,
   type TeaMachine, type InsertTeaMachine,
   type Referral, type InsertReferral, type SupportTicket, type InsertSupportTicket,
@@ -17,18 +18,27 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserProfile(id: string, profileData: any): Promise<User>;
   
-  // Wallet operations
-  updateWalletBalance(userId: string, amount: string): Promise<User>;
+  // Business Unit operations
+  createBusinessUnit(businessUnit: InsertBusinessUnit): Promise<BusinessUnit>;
+  getBusinessUnit(id: string): Promise<BusinessUnit | undefined>;
+  getAllBusinessUnits(): Promise<BusinessUnit[]>;
+  getUserBusinessUnits(userId: string): Promise<BusinessUnit[]>;
+  updateBusinessUnitWallet(unitId: string, amount: string): Promise<BusinessUnit>;
   
-  // B2B Corporate RFID operations
-  getManagedRfidCards(businessUnitAdminId: string): Promise<RfidCard[]>;
+  // User-Business Unit assignments
+  assignUserToBusinessUnit(userId: string, businessUnitId: string, role: string): Promise<void>;
+  removeUserFromBusinessUnit(userId: string, businessUnitId: string): Promise<void>;
+  
+  // RFID operations
+  getBusinessUnitRfidCards(businessUnitId: string): Promise<RfidCard[]>;
   getRfidCardByNumber(cardNumber: string): Promise<RfidCard | undefined>;
   createRfidCard(rfidCard: InsertRfidCard): Promise<RfidCard>;
   updateRfidCardLastUsed(cardId: number, machineId: string): Promise<void>;
   deactivateRfidCard(cardId: number): Promise<void>;
   
-  // B2B Corporate Machine operations
-  getManagedMachines(businessUnitAdminId: string): Promise<TeaMachine[]>;
+  // Machine operations
+  getBusinessUnitMachines(businessUnitId: string): Promise<TeaMachine[]>;
+  getUnassignedMachines(): Promise<TeaMachine[]>;
   getTeaMachine(id: string): Promise<TeaMachine | undefined>;
   getAllTeaMachines(): Promise<TeaMachine[]>;
   createTeaMachine(machine: InsertTeaMachine): Promise<TeaMachine>;
@@ -36,24 +46,23 @@ export interface IStorage {
   updateMachineStatus(machineId: string, isActive: boolean): Promise<void>;
   updateMachineTeaTypes(machineId: string, teaTypes: any[]): Promise<void>;
   updateMachine(machineId: string, updates: { name?: string; location?: string; isActive?: boolean }): Promise<TeaMachine | undefined>;
-  assignMachineToBusinessUnit(machineId: string, businessUnitAdminId: string): Promise<TeaMachine | undefined>;
+  assignMachineToBusinessUnit(machineId: string, businessUnitId: string): Promise<TeaMachine | undefined>;
   
   // Legacy Admin RFID operations (for super admin)
-  createRfidCardForUser(userId: string, cardNumber: string): Promise<RfidCard>;
-  getAllRfidCards(): Promise<(RfidCard & { businessUnitAdmin: User })[]>;
+  getAllRfidCards(): Promise<(RfidCard & { businessUnit: BusinessUnit })[]>;
   
   // Transaction operations
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   getUserTransactions(userId: string, limit?: number): Promise<Transaction[]>;
   
-  // B2B Corporate Dispensing operations
+  // Dispensing operations
   createDispensingLog(log: InsertDispensingLog): Promise<DispensingLog>;
-  getManagedDispensingLogs(businessUnitAdminId: string, limit?: number): Promise<DispensingLog[]>;
+  getBusinessUnitDispensingLogs(businessUnitId: string, limit?: number): Promise<DispensingLog[]>;
   getUserDispensingLogs(userId: string, limit?: number): Promise<DispensingLog[]>;
   
   // Atomic RFID Transaction - Critical for billing accuracy
-  processRfidTransaction(params: {
-    userId: string;
+  processRfidTransactionForBusinessUnit(params: {
+    businessUnitId: string;
     cardId: number;
     machineId: string;
     teaType: string;
@@ -142,42 +151,96 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  // Wallet operations
-  async updateWalletBalance(userId: string, amount: string): Promise<User> {
-    const [user] = await db
-      .update(users)
-      .set({ 
-        walletBalance: sql`wallet_balance + ${amount}`,
-        updatedAt: new Date()
-      })
-      .where(eq(users.id, userId))
-      .returning();
-    return user;
+  // Business Unit operations
+  async createBusinessUnit(businessUnit: InsertBusinessUnit): Promise<BusinessUnit> {
+    const [unit] = await db.insert(businessUnits).values(businessUnit).returning();
+    return unit;
   }
 
-  // B2B Corporate RFID operations
-  async getManagedRfidCards(businessUnitAdminId: string): Promise<RfidCard[]> {
+  async getBusinessUnit(id: string): Promise<BusinessUnit | undefined> {
+    const [unit] = await db.select().from(businessUnits).where(eq(businessUnits.id, id));
+    return unit;
+  }
+
+  async getAllBusinessUnits(): Promise<BusinessUnit[]> {
+    return await db.select().from(businessUnits).orderBy(asc(businessUnits.name));
+  }
+
+  async getUserBusinessUnits(userId: string): Promise<BusinessUnit[]> {
+    const units = await db
+      .select({ 
+        id: businessUnits.id,
+        name: businessUnits.name,
+        code: businessUnits.code,
+        description: businessUnits.description,
+        walletBalance: businessUnits.walletBalance,
+        isActive: businessUnits.isActive,
+        createdAt: businessUnits.createdAt,
+        updatedAt: businessUnits.updatedAt
+      })
+      .from(businessUnits)
+      .innerJoin(userBusinessUnits, eq(businessUnits.id, userBusinessUnits.businessUnitId))
+      .where(eq(userBusinessUnits.userId, userId));
+    return units;
+  }
+
+  async updateBusinessUnitWallet(unitId: string, amount: string): Promise<BusinessUnit> {
+    const [unit] = await db.update(businessUnits).set({
+      walletBalance: amount,
+      updatedAt: new Date(),
+    }).where(eq(businessUnits.id, unitId)).returning();
+    return unit;
+  }
+
+  // User-Business Unit assignments
+  async assignUserToBusinessUnit(userId: string, businessUnitId: string, role: string): Promise<void> {
+    await db.insert(userBusinessUnits).values({ userId, businessUnitId, role }).onConflictDoUpdate({
+      target: [userBusinessUnits.userId, userBusinessUnits.businessUnitId],
+      set: { role: role }
+    });
+  }
+
+  async removeUserFromBusinessUnit(userId: string, businessUnitId: string): Promise<void> {
+    await db.delete(userBusinessUnits).where(
+      and(
+        eq(userBusinessUnits.userId, userId),
+        eq(userBusinessUnits.businessUnitId, businessUnitId)
+      )
+    );
+  }
+
+  // RFID operations
+  async getBusinessUnitRfidCards(businessUnitId: string): Promise<RfidCard[]> {
     return await db
       .select()
       .from(rfidCards)
-      .where(eq(rfidCards.businessUnitAdminId, businessUnitAdminId))
+      .where(eq(rfidCards.businessUnitId, businessUnitId))
       .orderBy(desc(rfidCards.createdAt));
   }
 
   async getRfidCardByUserId(userId: string): Promise<RfidCard | undefined> {
+    // Get business units for this user first
+    const userUnits = await this.getUserBusinessUnits(userId);
+    if (userUnits.length === 0) return undefined;
+    
     const [card] = await db
       .select()
       .from(rfidCards)
-      .where(and(eq(rfidCards.businessUnitAdminId, userId), eq(rfidCards.isActive, true)))
+      .where(and(eq(rfidCards.businessUnitId, userUnits[0].id), eq(rfidCards.isActive, true)))
       .orderBy(desc(rfidCards.createdAt));
     return card;
   }
 
   async getAllRfidCardsByUserId(userId: string): Promise<RfidCard[]> {
+    // Get all business units for this user
+    const userUnits = await this.getUserBusinessUnits(userId);
+    if (userUnits.length === 0) return [];
+    
+    const unitIds = userUnits.map(unit => unit.id);
     return await db
       .select()
       .from(rfidCards)
-      .where(eq(rfidCards.businessUnitAdminId, userId))
+      .where(sql`${rfidCards.businessUnitId} = ANY(${unitIds})`)
       .orderBy(desc(rfidCards.createdAt));
   }
 
@@ -269,30 +332,56 @@ export class DatabaseStorage implements IStorage {
     return dispensingLog;
   }
 
-  async getManagedDispensingLogs(businessUnitAdminId: string, limit = 50): Promise<DispensingLog[]> {
+  async getBusinessUnitDispensingLogs(businessUnitId: string, limit = 50): Promise<DispensingLog[]> {
     return await db
       .select()
       .from(dispensingLogs)
-      .where(eq(dispensingLogs.businessUnitAdminId, businessUnitAdminId))
+      .where(eq(dispensingLogs.businessUnitId, businessUnitId))
       .orderBy(desc(dispensingLogs.createdAt))
       .limit(limit);
   }
 
   async getUserDispensingLogs(userId: string, limit = 50): Promise<DispensingLog[]> {
+    // Get user's business units first
+    const userUnits = await this.getUserBusinessUnits(userId);
+    if (userUnits.length === 0) return [];
+    
+    const unitIds = userUnits.map(unit => unit.id);
     return await db
       .select()
       .from(dispensingLogs)
-      .where(eq(dispensingLogs.businessUnitAdminId, userId))
+      .where(sql`${dispensingLogs.businessUnitId} = ANY(${unitIds})`)
       .orderBy(desc(dispensingLogs.createdAt))
       .limit(limit);
   }
 
-  // B2B Corporate Machine operations
-  async getManagedMachines(businessUnitAdminId: string): Promise<TeaMachine[]> {
+  // Machine operations
+  async getBusinessUnitMachines(businessUnitId: string): Promise<TeaMachine[]> {
     return await db
       .select()
       .from(teaMachines)
-      .where(eq(teaMachines.businessUnitAdminId, businessUnitAdminId))
+      .where(eq(teaMachines.businessUnitId, businessUnitId))
+      .orderBy(desc(teaMachines.createdAt));
+  }
+
+  async getUnassignedMachines(): Promise<TeaMachine[]> {
+    return await db
+      .select()
+      .from(teaMachines)
+      .where(sql`${teaMachines.businessUnitId} IS NULL`)
+      .orderBy(desc(teaMachines.createdAt));
+  }
+
+  async getManagedMachines(businessUnitAdminId: string): Promise<TeaMachine[]> {
+    // Get user's business units first
+    const userUnits = await this.getUserBusinessUnits(businessUnitAdminId);
+    if (userUnits.length === 0) return [];
+    
+    const unitIds = userUnits.map(unit => unit.id);
+    return await db
+      .select()
+      .from(teaMachines)
+      .where(sql`${teaMachines.businessUnitId} = ANY(${unitIds})`)
       .orderBy(desc(teaMachines.createdAt));
   }
 
@@ -354,11 +443,11 @@ export class DatabaseStorage implements IStorage {
     return updatedMachine;
   }
 
-  async assignMachineToBusinessUnit(machineId: string, businessUnitAdminId: string): Promise<TeaMachine | undefined> {
+  async assignMachineToBusinessUnit(machineId: string, businessUnitId: string): Promise<TeaMachine | undefined> {
     const [updatedMachine] = await db
       .update(teaMachines)
       .set({
-        businessUnitAdminId
+        businessUnitId
       })
       .where(eq(teaMachines.id, machineId))
       .returning();

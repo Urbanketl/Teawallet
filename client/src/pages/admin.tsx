@@ -47,6 +47,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import Pagination from "@/components/Pagination";
+import { BusinessUnitsTab } from "@/components/BusinessUnitsTab";
 
 export default function AdminPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -703,6 +704,7 @@ export default function AdminPage() {
             <TabsTrigger value="rfid">RFID Cards</TabsTrigger>
             <TabsTrigger value="machines">Machines</TabsTrigger>
             <TabsTrigger value="machine-mgmt">Machine Mgmt</TabsTrigger>
+            <TabsTrigger value="business-units">Business Units</TabsTrigger>
             <TabsTrigger value="support">Support Tickets</TabsTrigger>
             <TabsTrigger value="faq">FAQ Management</TabsTrigger>
             <TabsTrigger value="settings">System Settings</TabsTrigger>
@@ -729,6 +731,10 @@ export default function AdminPage() {
 
           <TabsContent value="machine-mgmt">
             <MachineAdministration />
+          </TabsContent>
+
+          <TabsContent value="business-units">
+            <BusinessUnitsTab />
           </TabsContent>
 
           <TabsContent value="support" className="space-y-6">

@@ -955,6 +955,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Business Units routes
+  app.get('/api/admin/business-units', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const businessUnits = await storage.getAllBusinessUnits();
+      res.json(businessUnits);
+    } catch (error) {
+      console.error("Error fetching business units:", error);
+      res.status(500).json({ message: "Failed to fetch business units" });
+    }
+  });
+
+  app.post('/api/admin/business-units', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const businessUnit = await storage.createBusinessUnit({
+        ...req.body,
+        id: `BU_${Date.now().toString(36)}_${Math.random().toString(36).substring(2)}`,
+      });
+      res.json(businessUnit);
+    } catch (error) {
+      console.error("Error creating business unit:", error);
+      res.status(500).json({ message: "Failed to create business unit" });
+    }
+  });
+
+  app.post('/api/admin/business-units/:unitId/users', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { unitId } = req.params;
+      const { userId: targetUserId, role = "manager" } = req.body;
+      
+      await storage.assignUserToBusinessUnit(targetUserId, unitId, role);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error assigning user to business unit:", error);
+      res.status(500).json({ message: "Failed to assign user to business unit" });
+    }
+  });
+
+  app.post('/api/admin/business-units/:unitId/machines', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { unitId } = req.params;
+      const { machineId } = req.body;
+      
+      const machine = await storage.assignMachineToBusinessUnit(machineId, unitId);
+      res.json(machine);
+    } catch (error) {
+      console.error("Error assigning machine to business unit:", error);
+      res.status(500).json({ message: "Failed to assign machine to business unit" });
+    }
+  });
+
+  app.get('/api/admin/machines/unassigned', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const machines = await storage.getUnassignedMachines();
+      res.json(machines);
+    } catch (error) {
+      console.error("Error fetching unassigned machines:", error);
+      res.status(500).json({ message: "Failed to fetch unassigned machines" });
+    }
+  });
+
   // Payment redirect fallback for popup blockers
   app.post('/payment-redirect', (req, res) => {
     const { order_id, key, amount, currency, name, description } = req.body;

@@ -44,6 +44,8 @@ export function BusinessUnitsTab() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
+  const [selectedAssignmentUnit, setSelectedAssignmentUnit] = useState<string>("");
+  const [assignmentSearch, setAssignmentSearch] = useState<string>("");
   const [newUnitForm, setNewUnitForm] = useState({
     name: "",
     code: "",
@@ -93,8 +95,10 @@ export function BusinessUnitsTab() {
     mutationFn: async ({ unitId, userId, role }: { unitId: string; userId: string; role: string }) => {
       return apiRequest("POST", `/api/admin/business-units/${unitId}/users`, { userId, role });
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/business-units"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/admin/business-units/${variables.unitId}/users`] });
+      setSelectedAssignmentUnit(""); // Reset form after successful assignment
       toast({ title: "Success", description: "User assigned successfully" });
     },
     onError: (error: any) => {
@@ -299,63 +303,97 @@ export function BusinessUnitsTab() {
             <CardContent>
               <div className="space-y-6">
                 <div>
-                  <h3 className="font-medium mb-4">User Assignment</h3>
-                  <div className="space-y-4">
-                    {allUsers && Array.isArray(allUsers) ? allUsers.map((user: User) => (
-                      <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
-                        <div className="flex-1">
-                          <div className="font-medium">{user.firstName} {user.lastName}</div>
-                          <div className="text-sm text-gray-600">{user.email}</div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="min-w-0 flex-1">
-                            <label className="text-sm font-medium text-gray-700 mb-1 block">
-                              Assign to Business Unit:
-                            </label>
-                            <select
-                              className="w-48 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-tea-green focus:border-transparent"
-                              onChange={(e) => {
-                                if (e.target.value && e.target.value !== '') {
-                                  handleAssignUser(e.target.value, user.id);
-                                  e.target.value = ''; // Reset selection
-                                }
-                              }}
-                              disabled={assignUserMutation.isPending}
-                            >
-                              <option value="">Select Business Unit...</option>
-                              {businessUnits && Array.isArray(businessUnits) && businessUnits.map((unit: BusinessUnit) => (
-                                <option key={unit.id} value={unit.id}>
-                                  {unit.name} ({unit.code})
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                    )) : (
-                      <p className="text-gray-600">No users available</p>
-                    )}
+                  <h3 className="font-medium mb-4">New User Assignment</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg bg-gray-50">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-2 block">
+                        1. Select Business Unit:
+                      </label>
+                      <select
+                        value={selectedAssignmentUnit}
+                        onChange={(e) => setSelectedAssignmentUnit(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-tea-green focus:border-transparent"
+                      >
+                        <option value="">Choose Business Unit...</option>
+                        {businessUnits && Array.isArray(businessUnits) && businessUnits.map((unit: BusinessUnit) => (
+                          <option key={unit.id} value={unit.id}>
+                            {unit.name} ({unit.code})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-2 block">
+                        2. Select User to Assign:
+                      </label>
+                      <select
+                        disabled={!selectedAssignmentUnit || assignUserMutation.isPending}
+                        onChange={(e) => {
+                          if (e.target.value && selectedAssignmentUnit) {
+                            handleAssignUser(selectedAssignmentUnit, e.target.value);
+                            e.target.value = ''; // Reset selection
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-tea-green focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      >
+                        <option value="">
+                          {selectedAssignmentUnit ? "Choose User..." : "Select Business Unit First"}
+                        </option>
+                        {selectedAssignmentUnit && allUsers && Array.isArray(allUsers) && allUsers.map((user: User) => (
+                          <option key={user.id} value={user.id}>
+                            {user.firstName} {user.lastName} ({user.email})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
+                  
+                  {assignUserMutation.isPending && (
+                    <div className="text-center text-sm text-gray-600">
+                      Assigning user...
+                    </div>
+                  )}
                 </div>
 
                 <div>
-                  <h3 className="font-medium mb-4">Current Assignments</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {businessUnits && Array.isArray(businessUnits) ? businessUnits.map((unit: BusinessUnit) => (
-                      <Card key={unit.id} className="border-l-4 border-l-tea-green">
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-medium">{unit.name}</h4>
-                            <Badge variant="outline">{unit.code}</Badge>
-                          </div>
-                          <div className="space-y-2">
-                            <UserAssignments unitId={unit.id} />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )) : (
-                      <p className="text-gray-600">No business units available</p>
-                    )}
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-medium">Current Assignments</h3>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        placeholder="Search business units..."
+                        value={assignmentSearch}
+                        onChange={(e) => setAssignmentSearch(e.target.value)}
+                        className="w-64"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {businessUnits && Array.isArray(businessUnits) 
+                      ? businessUnits
+                          .filter((unit: BusinessUnit) => 
+                            !assignmentSearch || 
+                            unit.name.toLowerCase().includes(assignmentSearch.toLowerCase()) ||
+                            unit.code.toLowerCase().includes(assignmentSearch.toLowerCase())
+                          )
+                          .map((unit: BusinessUnit) => (
+                            <Card key={unit.id} className="border-l-4 border-l-tea-green">
+                              <CardContent className="p-4">
+                                <div className="flex items-center justify-between mb-3">
+                                  <h4 className="font-medium">{unit.name}</h4>
+                                  <Badge variant="outline">{unit.code}</Badge>
+                                </div>
+                                <div className="space-y-2">
+                                  <UserAssignments unitId={unit.id} />
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))
+                      : (
+                        <p className="text-gray-600 col-span-full">No business units available</p>
+                      )
+                    }
                   </div>
                 </div>
               </div>

@@ -982,14 +982,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Admin access required" });
       }
 
+      console.log('Creating business unit with data:', req.body);
+      
+      // Validate required fields
+      if (!req.body.name || !req.body.code) {
+        return res.status(400).json({ message: "Name and code are required" });
+      }
+
       const businessUnit = await storage.createBusinessUnit({
-        ...req.body,
         id: `BU_${Date.now().toString(36)}_${Math.random().toString(36).substring(2)}`,
+        name: req.body.name,
+        code: req.body.code,
+        description: req.body.description || null,
+        walletBalance: req.body.walletBalance || "0.00",
+        isActive: true,
       });
+      
+      console.log('Created business unit:', businessUnit);
       res.json(businessUnit);
     } catch (error) {
       console.error("Error creating business unit:", error);
-      res.status(500).json({ message: "Failed to create business unit" });
+      res.status(500).json({ message: "Failed to create business unit", error: error.message });
     }
   });
 

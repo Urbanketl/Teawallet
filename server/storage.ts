@@ -59,6 +59,7 @@ export interface IStorage {
   createDispensingLog(log: InsertDispensingLog): Promise<DispensingLog>;
   getBusinessUnitDispensingLogs(businessUnitId: string, limit?: number): Promise<DispensingLog[]>;
   getUserDispensingLogs(userId: string, limit?: number): Promise<DispensingLog[]>;
+  getManagedDispensingLogs(userId: string, limit?: number): Promise<DispensingLog[]>;
   
   // Atomic RFID Transaction - Critical for billing accuracy
   processRfidTransactionForBusinessUnit(params: {
@@ -342,6 +343,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserDispensingLogs(userId: string, limit = 50): Promise<DispensingLog[]> {
+    // Get user's business units first
+    const userUnits = await this.getUserBusinessUnits(userId);
+    if (userUnits.length === 0) return [];
+    
+    const unitIds = userUnits.map(unit => unit.id);
+    return await db
+      .select()
+      .from(dispensingLogs)
+      .where(sql`${dispensingLogs.businessUnitId} = ANY(${unitIds})`)
+      .orderBy(desc(dispensingLogs.createdAt))
+      .limit(limit);
+  }
+
+  async getManagedDispensingLogs(userId: string, limit = 50): Promise<DispensingLog[]> {
     // Get user's business units first
     const userUnits = await this.getUserBusinessUnits(userId);
     if (userUnits.length === 0) return [];

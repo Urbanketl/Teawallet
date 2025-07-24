@@ -38,7 +38,12 @@ import {
   ChevronRight,
   Plus,
   Trash2,
-  Search
+  Search,
+  Edit3,
+  Settings2,
+  MapPin,
+  Power,
+  PowerOff
 } from "lucide-react";
 import { format } from "date-fns";
 import Pagination from "@/components/Pagination";
@@ -697,6 +702,7 @@ export default function AdminPage() {
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="rfid">RFID Cards</TabsTrigger>
             <TabsTrigger value="machines">Machines</TabsTrigger>
+            <TabsTrigger value="machine-mgmt">Machine Mgmt</TabsTrigger>
             <TabsTrigger value="support">Support Tickets</TabsTrigger>
             <TabsTrigger value="faq">FAQ Management</TabsTrigger>
             <TabsTrigger value="settings">System Settings</TabsTrigger>
@@ -719,6 +725,10 @@ export default function AdminPage() {
 
           <TabsContent value="machines">
             <MachineManagement />
+          </TabsContent>
+
+          <TabsContent value="machine-mgmt">
+            <MachineAdministration />
           </TabsContent>
 
           <TabsContent value="support" className="space-y-6">
@@ -1330,6 +1340,491 @@ function MachineManagement() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function MachineAdministration() {
+  const [activeTab, setActiveTab] = useState("create");
+  const [editingMachine, setEditingMachine] = useState<any>(null);
+  const [newMachine, setNewMachine] = useState({
+    id: "",
+    name: "",
+    location: "",
+    isActive: true
+  });
+  const [editForm, setEditForm] = useState({
+    name: "",
+    location: "",
+    isActive: true
+  });
+  const [assignForm, setAssignForm] = useState({
+    machineId: "",
+    businessUnitAdminId: ""
+  });
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Fetch all machines for admin management
+  const { data: machines = [], isLoading: machinesLoading } = useQuery({
+    queryKey: ["/api/admin/machines"],
+    retry: false,
+  });
+
+  // Fetch all users for assignment
+  const { data: allUsers = [], isLoading: usersLoading } = useQuery({
+    queryKey: ["/api/admin/users"],
+    retry: false,
+  });
+
+  // Machine status helper functions (same as other components)
+  const isRecentlyPinged = (lastPing: string | null) => {
+    if (!lastPing) return false;
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    return new Date(lastPing) > fiveMinutesAgo;
+  };
+
+  const getMachineStatus = (machine: any) => {
+    if (!machine.isActive) return "Disabled";
+    if (isRecentlyPinged(machine.lastPing)) return "Online";
+    return "Offline";
+  };
+
+  const getMachineStatusVariant = (machine: any) => {
+    const status = getMachineStatus(machine);
+    if (status === "Online") return "default";
+    if (status === "Offline") return "secondary";
+    return "destructive";
+  };
+
+  const getMachineStatusIndicator = (machine: any) => {
+    const status = getMachineStatus(machine);
+    if (status === "Online") return "bg-green-400";
+    if (status === "Offline") return "bg-yellow-400";
+    return "bg-red-400";
+  };
+
+  // Create machine mutation
+  const createMachineMutation = useMutation({
+    mutationFn: (data: typeof newMachine) =>
+      apiRequest("/api/admin/machines", "POST", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/machines"] });
+      toast({ title: "Success", description: "Machine created successfully!" });
+      setNewMachine({ id: "", name: "", location: "", isActive: true });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to create machine",
+        variant: "destructive" 
+      });
+    }
+  });
+
+  // Update machine mutation
+  const updateMachineMutation = useMutation({
+    mutationFn: ({ machineId, data }: { machineId: string; data: typeof editForm }) =>
+      apiRequest(`/api/admin/machines/${machineId}`, "PATCH", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/machines"] });
+      toast({ title: "Success", description: "Machine updated successfully!" });
+      setEditingMachine(null);
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to update machine",
+        variant: "destructive" 
+      });
+    }
+  });
+
+  // Toggle machine status mutation
+  const toggleMachineStatusMutation = useMutation({
+    mutationFn: ({ machineId, isActive }: { machineId: string; isActive: boolean }) =>
+      apiRequest(`/api/admin/machines/${machineId}/status`, "PATCH", { isActive }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/machines"] });
+      toast({ title: "Success", description: "Machine status updated successfully!" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to update machine status",
+        variant: "destructive" 
+      });
+    }
+  });
+
+  // Assign machine mutation
+  const assignMachineMutation = useMutation({
+    mutationFn: (data: typeof assignForm) =>
+      apiRequest(`/api/admin/machines/${data.machineId}/assign`, "PATCH", { 
+        businessUnitAdminId: data.businessUnitAdminId 
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/machines"] });
+      toast({ title: "Success", description: "Machine assigned successfully!" });
+      setAssignForm({ machineId: "", businessUnitAdminId: "" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to assign machine",
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const handleCreateMachine = () => {
+    if (!newMachine.id.trim() || !newMachine.name.trim() || !newMachine.location.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+    createMachineMutation.mutate(newMachine);
+  };
+
+  const handleEditMachine = (machine: any) => {
+    setEditingMachine(machine);
+    setEditForm({
+      name: machine.name,
+      location: machine.location,
+      isActive: machine.isActive
+    });
+  };
+
+  const handleUpdateMachine = () => {
+    if (!editForm.name.trim() || !editForm.location.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+    updateMachineMutation.mutate({ 
+      machineId: editingMachine.id, 
+      data: editForm 
+    });
+  };
+
+  const handleAssignMachine = () => {
+    if (!assignForm.machineId || !assignForm.businessUnitAdminId) {
+      toast({
+        title: "Error",
+        description: "Please select both machine and business unit",
+        variant: "destructive"
+      });
+      return;
+    }
+    assignMachineMutation.mutate(assignForm);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold">Machine Administration</h3>
+        <p className="text-sm text-muted-foreground">
+          Create, edit, and assign tea machines to business units
+        </p>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="create">Create Machine</TabsTrigger>
+          <TabsTrigger value="edit">Edit Machines</TabsTrigger>
+          <TabsTrigger value="assign">Assign Machines</TabsTrigger>
+          <TabsTrigger value="control">Machine Control</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="create" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Plus className="w-5 h-5" />
+                <span>Create New Machine</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="machine-id">Machine ID *</Label>
+                  <Input
+                    id="machine-id"
+                    placeholder="MACHINE_005"
+                    value={newMachine.id}
+                    onChange={(e) => setNewMachine(prev => ({ ...prev, id: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="machine-name">Machine Name *</Label>
+                  <Input
+                    id="machine-name"
+                    placeholder="Tea Station Echo"
+                    value={newMachine.name}
+                    onChange={(e) => setNewMachine(prev => ({ ...prev, name: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="machine-location">Location *</Label>
+                <Input
+                  id="machine-location"
+                  placeholder="Building A, 3rd Floor, Break Room"
+                  value={newMachine.location}
+                  onChange={(e) => setNewMachine(prev => ({ ...prev, location: e.target.value }))}
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  checked={newMachine.isActive}
+                  onCheckedChange={(checked) => setNewMachine(prev => ({ ...prev, isActive: checked }))}
+                />
+                <Label>Machine Active</Label>
+              </div>
+              <Button 
+                onClick={handleCreateMachine}
+                disabled={createMachineMutation.isPending}
+                className="w-full"
+              >
+                {createMachineMutation.isPending ? "Creating..." : "Create Machine"}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="edit" className="space-y-4">
+          <div className="grid gap-4">
+            {machinesLoading ? (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  Loading machines...
+                </CardContent>
+              </Card>
+            ) : machines.length === 0 ? (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <Coffee className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No machines found</p>
+                </CardContent>
+              </Card>
+            ) : (
+              machines.map((machine: any) => (
+                <Card key={machine.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-3 h-3 rounded-full ${getMachineStatusIndicator(machine)}`} />
+                        <div>
+                          <h4 className="font-semibold">{machine.name}</h4>
+                          <p className="text-sm text-gray-600">{machine.location}</p>
+                          <p className="text-xs text-gray-500">ID: {machine.id}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Badge variant={getMachineStatusVariant(machine)}>
+                          {getMachineStatus(machine)}
+                        </Badge>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditMachine(machine)}
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+
+          {/* Edit Machine Modal */}
+          {editingMachine && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+                <div className="mb-4">
+                  <h2 className="text-xl font-semibold">Edit Machine</h2>
+                  <p className="text-gray-600 text-sm">Update machine details for {editingMachine.id}</p>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="edit-name">Machine Name *</Label>
+                    <Input
+                      id="edit-name"
+                      value={editForm.name}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-location">Location *</Label>
+                    <Input
+                      id="edit-location"
+                      value={editForm.location}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, location: e.target.value }))}
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={editForm.isActive}
+                      onCheckedChange={(checked) => setEditForm(prev => ({ ...prev, isActive: checked }))}
+                    />
+                    <Label>Machine Active</Label>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-2 mt-6">
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditingMachine(null)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleUpdateMachine}
+                    disabled={updateMachineMutation.isPending}
+                  >
+                    {updateMachineMutation.isPending ? "Updating..." : "Update Machine"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="assign" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <UserPlus className="w-5 h-5" />
+                <span>Assign Machine to Business Unit</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="assign-machine">Select Machine</Label>
+                  <Select value={assignForm.machineId} onValueChange={(value) => setAssignForm(prev => ({ ...prev, machineId: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a machine" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {machines.map((machine: any) => (
+                        <SelectItem key={machine.id} value={machine.id}>
+                          {machine.name} ({machine.id})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="assign-user">Business Unit Admin</Label>
+                  <Select value={assignForm.businessUnitAdminId} onValueChange={(value) => setAssignForm(prev => ({ ...prev, businessUnitAdminId: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a business unit admin" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allUsers.filter((user: any) => user.role === 'admin' && !user.isSuperAdmin).map((user: any) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.firstName} {user.lastName} ({user.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Button 
+                onClick={handleAssignMachine}
+                disabled={assignMachineMutation.isPending}
+                className="w-full"
+              >
+                {assignMachineMutation.isPending ? "Assigning..." : "Assign Machine"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Current Assignments */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Current Machine Assignments</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {machines.filter((m: any) => m.businessUnitAdminId).map((machine: any) => {
+                  const assignedUser = allUsers.find((u: any) => u.id === machine.businessUnitAdminId);
+                  return (
+                    <div key={machine.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-3 h-3 rounded-full ${getMachineStatusIndicator(machine)}`} />
+                        <div>
+                          <p className="font-medium">{machine.name}</p>
+                          <p className="text-sm text-gray-600">{machine.location}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">{assignedUser?.firstName} {assignedUser?.lastName}</p>
+                        <p className="text-sm text-gray-600">{assignedUser?.email}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+                {machines.filter((m: any) => m.businessUnitAdminId).length === 0 && (
+                  <p className="text-center text-gray-500 py-4">No machines assigned yet</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="control" className="space-y-4">
+          <div className="grid gap-4">
+            {machines.map((machine: any) => (
+              <Card key={machine.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-4 h-4 rounded-full ${getMachineStatusIndicator(machine)}`} />
+                      <div>
+                        <h4 className="font-semibold">{machine.name}</h4>
+                        <p className="text-sm text-gray-600">{machine.location}</p>
+                        <p className="text-xs text-gray-500">
+                          {machine.businessUnitAdminId ? 
+                            `Assigned to: ${allUsers.find((u: any) => u.id === machine.businessUnitAdminId)?.email || 'Unknown'}` :
+                            'Unassigned'
+                          }
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant={getMachineStatusVariant(machine)}>
+                        {getMachineStatus(machine)}
+                      </Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleMachineStatusMutation.mutate({
+                          machineId: machine.id,
+                          isActive: !machine.isActive
+                        })}
+                        disabled={toggleMachineStatusMutation.isPending}
+                      >
+                        {machine.isActive ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

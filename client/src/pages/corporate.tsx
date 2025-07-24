@@ -65,11 +65,7 @@ interface DispensingLog {
 export default function CorporateDashboard() {
   const [newCardName, setNewCardName] = useState("");
   const [newCardNumber, setNewCardNumber] = useState("");
-  const [newMachineName, setNewMachineName] = useState("");
-  const [newMachineLocation, setNewMachineLocation] = useState("");
-  const [newMachineId, setNewMachineId] = useState("");
   const [isCardDialogOpen, setIsCardDialogOpen] = useState(false);
-  const [isMachineDialogOpen, setIsMachineDialogOpen] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -148,23 +144,6 @@ export default function CorporateDashboard() {
     },
   });
 
-  // Create machine mutation
-  const createMachineMutation = useMutation({
-    mutationFn: (data: { id: string; name: string; location: string }) =>
-      apiRequest("/api/corporate/machines", "POST", data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/corporate/machines"] });
-      toast({ title: "Tea machine added successfully" });
-      setIsMachineDialogOpen(false);
-      setNewMachineName("");
-      setNewMachineLocation("");
-      setNewMachineId("");
-    },
-    onError: () => {
-      toast({ title: "Failed to add tea machine", variant: "destructive" });
-    },
-  });
-
   // Deactivate card mutation
   const deactivateCardMutation = useMutation({
     mutationFn: (cardId: number) =>
@@ -178,19 +157,6 @@ export default function CorporateDashboard() {
     },
   });
 
-  // Toggle machine status mutation
-  const toggleMachineStatusMutation = useMutation({
-    mutationFn: ({ machineId, isActive }: { machineId: string; isActive: boolean }) =>
-      apiRequest(`/api/corporate/machines/${machineId}/status`, "PATCH", { isActive }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/corporate/machines"] });
-      toast({ title: "Machine status updated successfully" });
-    },
-    onError: () => {
-      toast({ title: "Failed to update machine status", variant: "destructive" });
-    },
-  });
-
   const handleCreateCard = () => {
     if (!newCardNumber.trim()) {
       toast({ title: "Please enter a card number", variant: "destructive" });
@@ -199,18 +165,6 @@ export default function CorporateDashboard() {
     createCardMutation.mutate({
       cardNumber: newCardNumber,
       cardName: newCardName || undefined,
-    });
-  };
-
-  const handleCreateMachine = () => {
-    if (!newMachineId.trim() || !newMachineName.trim() || !newMachineLocation.trim()) {
-      toast({ title: "Please fill in all required fields", variant: "destructive" });
-      return;
-    }
-    createMachineMutation.mutate({
-      id: newMachineId,
-      name: newMachineName,
-      location: newMachineLocation,
     });
   };
 
@@ -278,7 +232,8 @@ export default function CorporateDashboard() {
           <TabsContent value="machines" className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
-                <h2 className="text-xl font-semibold">Tea Machines</h2>
+                <h2 className="text-xl font-semibold">Your Tea Machines</h2>
+                <p className="text-sm text-gray-600 mt-1">View the machines assigned to your business unit</p>
                 <div className="flex items-center space-x-3 mt-2">
                   <Badge variant="secondary" className="bg-tea-green/10 text-tea-green">
                     {machines.length} Total
@@ -294,59 +249,6 @@ export default function CorporateDashboard() {
                   </Badge>
                 </div>
               </div>
-              <Dialog open={isMachineDialogOpen} onOpenChange={setIsMachineDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Machine
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add New Tea Machine</DialogTitle>
-                    <DialogDescription>
-                      Register a new tea machine to your business unit
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="machineId">Machine ID</Label>
-                      <Input
-                        id="machineId"
-                        placeholder="MACHINE001"
-                        value={newMachineId}
-                        onChange={(e) => setNewMachineId(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="machineName">Machine Name</Label>
-                      <Input
-                        id="machineName"
-                        placeholder="Office Tea Machine"
-                        value={newMachineName}
-                        onChange={(e) => setNewMachineName(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="machineLocation">Location</Label>
-                      <Input
-                        id="machineLocation"
-                        placeholder="Main Office, 2nd Floor"
-                        value={newMachineLocation}
-                        onChange={(e) => setNewMachineLocation(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button
-                      onClick={handleCreateMachine}
-                      disabled={createMachineMutation.isPending}
-                    >
-                      Add Machine
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -386,18 +288,7 @@ export default function CorporateDashboard() {
                           <span className="text-gray-600">Tea Price:</span>
                           <span className="font-medium">₹{machine.teaTypes?.[0]?.price || "5.00"}</span>
                         </div>
-                        <div className="flex justify-end pt-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => toggleMachineStatusMutation.mutate({
-                              machineId: machine.id,
-                              isActive: !machine.isActive
-                            })}
-                          >
-                            {machine.isActive ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
-                          </Button>
-                        </div>
+
                       </div>
                     </CardContent>
                   </Card>

@@ -51,6 +51,15 @@ export interface IStorage {
   getManagedDispensingLogs(businessUnitAdminId: string, limit?: number): Promise<DispensingLog[]>;
   getUserDispensingLogs(userId: string, limit?: number): Promise<DispensingLog[]>;
   
+  // Atomic RFID Transaction - Critical for billing accuracy
+  processRfidTransaction(params: {
+    userId: string;
+    cardId: number;
+    machineId: string;
+    teaType: string;
+    amount: string;
+  }): Promise<{ success: true; remainingBalance: string } | { success: false; message: string }>;
+  
   // Admin operations
   getAllUsers(): Promise<User[]>;
   getUsersPaginated(page: number, limit: number, search?: string): Promise<{ users: User[], total: number }>;
@@ -901,6 +910,105 @@ export class DatabaseStorage implements IStorage {
       })
       .from(systemSettings)
       .orderBy(asc(systemSettings.key));
+  }
+
+  // CRITICAL: Atomic RFID Transaction for billing accuracy
+  async processRfidTransaction(params: {
+    userId: string;
+    cardId: number;
+    machineId: string;
+    teaType: string;
+    amount: string;
+  }): Promise<{ success: true; remainingBalance: string } | { success: false; message: string }> {
+    
+    return await db.transaction(async (tx) => {
+      try {
+        const amountNum = parseFloat(params.amount);
+        
+        // Step 1: Get current user balance with row lock to prevent race conditions
+        const [currentUser] = await tx
+          .select({ 
+            id: users.id, 
+            walletBalance: users.walletBalance 
+          })
+          .from(users)
+          .where(eq(users.id, params.userId))
+          .for('update'); // Row-level lock
+          
+        if (!currentUser) {
+          throw new Error("User not found");
+        }
+        
+        const currentBalance = parseFloat(currentUser.walletBalance || "0");
+        
+        // Step 2: Validate sufficient balance
+        if (currentBalance < amountNum) {
+          throw new Error("Insufficient wallet balance");
+        }
+        
+        const newBalance = currentBalance - amountNum;
+        
+        // Step 3: Update wallet balance
+        await tx
+          .update(users)
+          .set({ walletBalance: newBalance.toFixed(2) })
+          .where(eq(users.id, params.userId));
+        
+        // Step 4: Create transaction record
+        const [transaction] = await tx
+          .insert(transactions)
+          .values({
+            userId: params.userId,
+            type: 'dispensing',
+            amount: params.amount,
+            description: `${params.teaType} Tea`,
+            status: 'completed'
+          })
+          .returning();
+        
+        // Step 5: Create dispensing log
+        const [dispensingLog] = await tx
+          .insert(dispensingLogs)
+          .values({
+            businessUnitAdminId: params.userId,
+            rfidCardId: params.cardId,
+            machineId: params.machineId,
+            teaType: params.teaType,
+            amount: params.amount,
+            success: true
+          })
+          .returning();
+        
+        // Step 6: Update RFID card last used
+        await tx
+          .update(rfidCards)
+          .set({ 
+            lastUsed: new Date(),
+            lastUsedMachineId: params.machineId 
+          })
+          .where(eq(rfidCards.id, params.cardId));
+        
+        // Step 7: Update machine ping
+        await tx
+          .update(teaMachines)
+          .set({ lastPing: new Date() })
+          .where(eq(teaMachines.id, params.machineId));
+        
+        // All operations completed successfully
+        return {
+          success: true as const,
+          remainingBalance: newBalance.toFixed(2)
+        };
+        
+      } catch (error) {
+        // Transaction will be automatically rolled back
+        console.error("RFID transaction failed:", error);
+        return {
+          success: false as const,
+          message: error instanceof Error ? error.message : "Transaction failed"
+        };
+      }
+    });
   }
 }
 

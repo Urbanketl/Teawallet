@@ -511,46 +511,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const balance = parseFloat(user.walletBalance || "0");
 
-      if (balance < teaAmount) {
-        return res.status(400).json({ 
-          success: false, 
-          message: "Insufficient wallet balance" 
-        });
-      }
-
-      // Deduct amount from wallet
-      await storage.updateWalletBalance(user.id, (-teaAmount).toString());
-
-      // Create transaction record
-      await storage.createTransaction({
+      // CRITICAL: Use atomic transaction for billing accuracy
+      const result = await storage.processRfidTransaction({
         userId: user.id,
-        type: 'dispensing',
-        amount: teaAmount.toString(),
-        description: `${teaType} Tea`,
-        status: 'completed',
-      });
-
-      // Create dispensing log (business unit admin is charged)
-      await storage.createDispensingLog({
-        businessUnitAdminId: user.id,
-        rfidCardId: card.id,
+        cardId: card.id,
         machineId,
         teaType,
-        amount: teaAmount.toString(),
-        success: true,
+        amount: teaAmount.toString()
       });
 
-      // Update card last used
-      await storage.updateRfidCardLastUsed(card.id, machineId);
-
-      // Update machine ping
-      await storage.updateMachinePing(machineId);
-
-      res.json({ 
-        success: true, 
-        message: "Tea dispensed successfully",
-        remainingBalance: (balance - teaAmount).toFixed(2)
-      });
+      if (result.success) {
+        res.json({
+          success: true,
+          message: "Tea dispensed successfully", 
+          remainingBalance: result.remainingBalance
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: result.message
+        });
+      }
 
     } catch (error) {
       console.error("Error validating RFID:", error);

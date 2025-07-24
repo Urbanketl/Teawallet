@@ -157,9 +157,7 @@ export default function SupportPage() {
   const incrementViewMutation = useMutation({
     mutationFn: async (articleId: number) => {
       try {
-        return await apiRequest(`/api/faq/${articleId}/view`, {
-          method: 'POST',
-        });
+        return await apiRequest('POST', `/api/faq/${articleId}/view`);
       } catch (error) {
         console.error('Failed to increment view:', error);
         // Don't show error to user for view tracking
@@ -281,7 +279,7 @@ export default function SupportPage() {
               </CardHeader>
               <CardContent>
                 <Accordion type="single" collapsible className="space-y-2">
-                  {filteredFaq.map((article: FaqArticle) => (
+                  {(filteredFaq as FaqArticle[]).map((article: FaqArticle) => (
                     <AccordionItem key={article.id} value={article.id.toString()}>
                       <AccordionTrigger 
                         className="text-left"
@@ -321,21 +319,39 @@ export default function SupportPage() {
           <TabsContent value="tickets" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold">Business Support Tickets</h2>
-              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-tea-green hover:bg-tea-dark">
-                    <Plus className="w-4 h-4 mr-2" />
-                    New Business Support Ticket
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Create Support Ticket</DialogTitle>
-                    <DialogDescription>
+              <Button 
+                className="bg-tea-green hover:bg-tea-dark"
+                onClick={() => {
+                  console.log('New ticket button clicked');
+                  setDialogOpen(true);
+                }}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                New Business Support Ticket
+              </Button>
+            </div>
+
+            {/* Custom Modal to avoid focus conflicts */}
+            {dialogOpen && (
+              <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-lg shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+                  <div className="p-6 border-b">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Create Support Ticket</h3>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setDialogOpen(false)}
+                      >
+                        ×
+                      </Button>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-2">
                       Fill out the form below to create a new support ticket. We'll get back to you as soon as possible.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
+                    </p>
+                  </div>
+                  
+                  <div className="p-6 space-y-4">
                     <div>
                       <Label htmlFor="subject">Subject</Label>
                       <Input
@@ -385,41 +401,51 @@ export default function SupportPage() {
                       />
                     </div>
                     
-                    <Button 
-                      className="w-full"
-                      onClick={() => {
-                        if (!newTicket.subject.trim()) {
-                          toast({ 
-                            title: "Error", 
-                            description: "Subject is required",
-                            variant: "destructive" 
-                          });
-                          return;
-                        }
-                        if (!newTicket.description.trim()) {
-                          toast({ 
-                            title: "Error", 
-                            description: "Description is required",
-                            variant: "destructive" 
-                          });
-                          return;
-                        }
-                        console.log('Creating ticket with data:', newTicket);
-                        createTicketMutation.mutate(newTicket);
-                      }}
-                      disabled={createTicketMutation.isPending}
-                    >
-                      {createTicketMutation.isPending ? "Creating..." : "Create Ticket"}
-                    </Button>
+                    <div className="flex gap-3 pt-4">
+                      <Button 
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => setDialogOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        className="flex-1"
+                        onClick={() => {
+                          console.log('Create ticket button clicked');
+                          if (!newTicket.subject.trim()) {
+                            toast({ 
+                              title: "Error", 
+                              description: "Subject is required",
+                              variant: "destructive" 
+                            });
+                            return;
+                          }
+                          if (!newTicket.description.trim()) {
+                            toast({ 
+                              title: "Error", 
+                              description: "Description is required",
+                              variant: "destructive" 
+                            });
+                            return;
+                          }
+                          console.log('Creating ticket with data:', newTicket);
+                          createTicketMutation.mutate(newTicket);
+                        }}
+                        disabled={createTicketMutation.isPending}
+                      >
+                        {createTicketMutation.isPending ? "Creating..." : "Create Ticket"}
+                      </Button>
+                    </div>
                   </div>
-                </DialogContent>
-              </Dialog>
-            </div>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <h3 className="font-semibold">Your Tickets</h3>
-                {tickets.length === 0 ? (
+                {(tickets as SupportTicket[]).length === 0 ? (
                   <Card className="text-center py-8">
                     <CardContent>
                       <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -427,7 +453,7 @@ export default function SupportPage() {
                     </CardContent>
                   </Card>
                 ) : (
-                  tickets.map((ticket: SupportTicket) => (
+                  (tickets as SupportTicket[]).map((ticket: SupportTicket) => (
                     <Card 
                       key={ticket.id} 
                       className={`cursor-pointer transition-colors ${
@@ -469,13 +495,13 @@ export default function SupportPage() {
                   <h3 className="font-semibold">Conversation</h3>
                   <Card className="h-96 flex flex-col">
                     <div className="flex-1 p-4 overflow-y-auto space-y-4">
-                      {messages.length === 0 ? (
+                      {(messages as SupportMessage[]).length === 0 ? (
                         <div className="text-center text-gray-500 py-8">
                           <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                           <p>No messages yet. Start the conversation!</p>
                         </div>
                       ) : (
-                        messages.map((message: SupportMessage) => (
+                        (messages as SupportMessage[]).map((message: SupportMessage) => (
                           <div 
                             key={message.id}
                             className={`flex ${message.isFromSupport ? 'justify-start' : 'justify-end'}`}

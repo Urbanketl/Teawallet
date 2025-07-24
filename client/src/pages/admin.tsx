@@ -143,6 +143,8 @@ export default function AdminPage() {
     queryKey: ["/api/admin/machines"],
     enabled: isAuthenticated && user?.isAdmin,
     retry: false,
+    staleTime: 0, // Always fetch fresh data
+    refetchOnWindowFocus: true,
   });
 
   const queryClient = useQueryClient();
@@ -1083,6 +1085,8 @@ function MachineManagement() {
   const { data: machines = [], isLoading: machinesLoading } = useQuery({
     queryKey: ["/api/admin/machines"],
     retry: false,
+    staleTime: 0, // Always fetch fresh data
+    refetchOnWindowFocus: true,
   });
 
   const updateMachinePriceMutation = useMutation({

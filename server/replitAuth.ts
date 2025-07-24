@@ -183,36 +183,36 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
-  // Check for demo session first
-  if ((req.session as any)?.user) {
-    req.user = { claims: { sub: (req.session as any).user.id } };
-    return next();
-  }
-
   const user = req.user as any;
 
-  if (!req.isAuthenticated() || !user?.expires_at) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const now = Math.floor(Date.now() / 1000);
-  if (now <= user.expires_at) {
+  // First check for Replit authentication (real user)
+  if (req.isAuthenticated() && user?.claims?.sub && user?.expires_at) {
+    console.log("Replit auth valid for user:", user.claims.sub);
+    
+    // Check if token needs refresh
+    const now = Math.floor(Date.now() / 1000);
+    if (now > user.expires_at) {
+      const refreshToken = user.refresh_token;
+      if (refreshToken) {
+        try {
+          const config = await getOidcConfig();
+          const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
+          updateUserSession(user, tokenResponse);
+        } catch (error) {
+          console.log("Token refresh failed, using demo fallback");
+        }
+      }
+    }
     return next();
   }
 
-  const refreshToken = user.refresh_token;
-  if (!refreshToken) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
+  // Fallback to demo session only if no real auth
+  if ((req.session as any)?.user) {
+    req.user = { claims: { sub: (req.session as any).user.id } };
+    console.log("Using demo session for user:", (req.session as any).user.id);
+    return next();
   }
 
-  try {
-    const config = await getOidcConfig();
-    const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
-    updateUserSession(user, tokenResponse);
-    return next();
-  } catch (error) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
-  }
+  console.log("Authentication failed - no valid session found");
+  return res.status(401).json({ message: "Unauthorized" });
 };

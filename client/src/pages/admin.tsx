@@ -1711,33 +1711,35 @@ function MachineAdministration() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="assign-machine">Select Machine</Label>
-                  <Select value={assignForm.machineId} onValueChange={(value) => setAssignForm(prev => ({ ...prev, machineId: value }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose a machine" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {machines.map((machine: any) => (
-                        <SelectItem key={machine.id} value={machine.id}>
-                          {machine.name} ({machine.id})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <select
+                    id="assign-machine"
+                    value={assignForm.machineId}
+                    onChange={(e) => setAssignForm(prev => ({ ...prev, machineId: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Choose a machine</option>
+                    {machines.map((machine: any) => (
+                      <option key={machine.id} value={machine.id}>
+                        {machine.name} ({machine.id})
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <Label htmlFor="assign-user">Business Unit Admin</Label>
-                  <Select value={assignForm.businessUnitAdminId} onValueChange={(value) => setAssignForm(prev => ({ ...prev, businessUnitAdminId: value }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose a business unit admin" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {allUsers.filter((user: any) => user.role === 'admin' && !user.isSuperAdmin).map((user: any) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {user.firstName} {user.lastName} ({user.email})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <select
+                    id="assign-user"
+                    value={assignForm.businessUnitAdminId}
+                    onChange={(e) => setAssignForm(prev => ({ ...prev, businessUnitAdminId: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Choose a business unit admin</option>
+                    {allUsers.filter((user: any) => user.isAdmin && !user.isSuperAdmin).map((user: any) => (
+                      <option key={user.id} value={user.id}>
+                        {user.firstName} {user.lastName} ({user.email})
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <Button 

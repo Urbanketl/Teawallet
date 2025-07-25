@@ -1050,6 +1050,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all users with their business unit assignments for pseudo login
+  app.get('/api/admin/users-with-business-units', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const usersWithUnits = await storage.getUsersWithBusinessUnits();
+      res.json(usersWithUnits);
+    } catch (error) {
+      console.error("Error fetching users with business units:", error);
+      res.status(500).json({ message: "Failed to fetch users with business units" });
+    }
+  });
+
   app.get('/api/admin/machines/unassigned', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.session?.user?.id || req.user.claims.sub;

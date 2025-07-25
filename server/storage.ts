@@ -72,6 +72,7 @@ export interface IStorage {
   
   // Admin operations
   getAllUsers(): Promise<User[]>;
+  getUsersWithBusinessUnits(): Promise<any[]>;
   getUsersPaginated(page: number, limit: number, search?: string): Promise<{ users: User[], total: number }>;
   updateUserAdminStatus(userId: string, isAdmin: boolean, updatedBy: string): Promise<User>;
   getTotalRevenue(): Promise<string>;
@@ -509,6 +510,57 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(users)
       .orderBy(desc(users.createdAt));
+  }
+
+  // Get all users with their business unit assignments for pseudo login
+  async getUsersWithBusinessUnits(): Promise<any[]> {
+    try {
+      const result = await db
+        .select({
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          email: users.email,
+          businessUnitId: userBusinessUnits.businessUnitId,
+          businessUnitName: businessUnits.name,
+          businessUnitCode: businessUnits.code,
+          role: userBusinessUnits.role,
+        })
+        .from(users)
+        .leftJoin(userBusinessUnits, eq(users.id, userBusinessUnits.userId))
+        .leftJoin(businessUnits, eq(userBusinessUnits.businessUnitId, businessUnits.id))
+        .orderBy(users.firstName, users.lastName);
+
+      // Group by user to create nested structure
+      const groupedUsers = result.reduce((acc: any, row: any) => {
+        const userId = row.id;
+        if (!acc[userId]) {
+          acc[userId] = {
+            id: row.id,
+            firstName: row.firstName,
+            lastName: row.lastName,
+            email: row.email,
+            businessUnits: []
+          };
+        }
+        
+        if (row.businessUnitId) {
+          acc[userId].businessUnits.push({
+            id: row.businessUnitId,
+            name: row.businessUnitName,
+            code: row.businessUnitCode,
+            role: row.role
+          });
+        }
+        
+        return acc;
+      }, {});
+
+      return Object.values(groupedUsers);
+    } catch (error) {
+      console.error('Error in getUsersWithBusinessUnits:', error);
+      throw error;
+    }
   }
 
   async getUsersPaginated(page: number, limit: number, search?: string): Promise<{ users: User[], total: number }> {

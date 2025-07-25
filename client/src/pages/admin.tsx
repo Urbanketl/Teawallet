@@ -48,11 +48,13 @@ import {
 import { format } from "date-fns";
 import Pagination from "@/components/Pagination";
 import { BusinessUnitsTab } from "@/components/BusinessUnitsTab";
+import { PseudoLogin } from "@/components/PseudoLogin";
 
 export default function AdminPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [pseudoUserId, setPseudoUserId] = useState<string | null>(null);
   const [settings, setSettings] = useState({
     teaPrice: "5.00",
     maintenanceMode: false,
@@ -705,6 +707,7 @@ export default function AdminPage() {
             <TabsTrigger value="machines">Machines</TabsTrigger>
             <TabsTrigger value="machine-mgmt">Machine Mgmt</TabsTrigger>
             <TabsTrigger value="business-units">Business Units</TabsTrigger>
+            <TabsTrigger value="pseudo-login">Test Login</TabsTrigger>
             <TabsTrigger value="support">Support Tickets</TabsTrigger>
             <TabsTrigger value="faq">FAQ Management</TabsTrigger>
             <TabsTrigger value="settings">System Settings</TabsTrigger>
@@ -735,6 +738,14 @@ export default function AdminPage() {
 
           <TabsContent value="business-units">
             <BusinessUnitsTab />
+          </TabsContent>
+
+          <TabsContent value="pseudo-login">
+            <PseudoLogin onLogin={(userId) => {
+              setPseudoUserId(userId);
+              // Navigate to a business unit user view
+              window.open(`${window.location.origin}/corporate?pseudo=${userId}`, '_blank');
+            }} />
           </TabsContent>
 
           <TabsContent value="support" className="space-y-6">

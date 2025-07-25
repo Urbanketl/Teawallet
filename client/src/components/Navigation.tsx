@@ -22,6 +22,11 @@ export default function Navigation() {
   const { user, isLoading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Check for pseudo login parameter and preserve it across navigation
+  const urlParams = new URLSearchParams(window.location.search);
+  const pseudoParam = urlParams.get('pseudo');
+  const pseudoQuery = pseudoParam ? `?pseudo=${pseudoParam}` : '';
+
   if (isLoading || !user) return null;
 
   const navItems = [
@@ -53,7 +58,7 @@ export default function Navigation() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <Link href="/">
+            <Link href={pseudoQuery ? `/${pseudoQuery}` : "/"}>
               <div className="flex items-center space-x-3">
                 <img 
                   src="/logo-updated.jpg" 
@@ -66,7 +71,7 @@ export default function Navigation() {
             {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center space-x-1 ml-8">
               {navItems.map(({ href, icon: Icon, label }) => (
-                <Link key={href} href={href}>
+                <Link key={href} href={`${href}${pseudoQuery}`}>
                   <Button
                     variant={location === href ? "default" : "ghost"}
                     size="sm"
@@ -153,7 +158,7 @@ export default function Navigation() {
                       <div className="flex-1 overflow-y-auto p-4">
                         <div className="space-y-2">
                           {navItems.map(({ href, icon: Icon, label }) => (
-                            <Link key={href} href={href}>
+                            <Link key={href} href={`${href}${pseudoQuery}`}>
                               <Button
                                 variant={location === href ? "default" : "ghost"}
                                 size="lg"

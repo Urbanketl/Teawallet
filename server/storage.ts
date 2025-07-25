@@ -195,11 +195,19 @@ export class DatabaseStorage implements IStorage {
 
   // User-Business Unit assignments (only one user per business unit allowed)
   async assignUserToBusinessUnit(userId: string, businessUnitId: string, role: string): Promise<void> {
-    // First, remove any existing user assignment for this business unit
-    await db.delete(userBusinessUnits).where(eq(userBusinessUnits.businessUnitId, businessUnitId));
-    
-    // Then assign the new user
-    await db.insert(userBusinessUnits).values({ userId, businessUnitId, role });
+    try {
+      // Use a transaction to ensure atomicity
+      await db.transaction(async (tx) => {
+        // First, remove any existing user assignment for this business unit
+        await tx.delete(userBusinessUnits).where(eq(userBusinessUnits.businessUnitId, businessUnitId));
+        
+        // Then assign the new user
+        await tx.insert(userBusinessUnits).values({ userId, businessUnitId, role });
+      });
+    } catch (error) {
+      console.error('Error in assignUserToBusinessUnit:', error);
+      throw error;
+    }
   }
 
   async removeUserFromBusinessUnit(userId: string, businessUnitId: string): Promise<void> {
@@ -212,22 +220,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getBusinessUnitUsers(businessUnitId: string): Promise<any[]> {
-    const assignments = await db
-      .select({
-        userId: userBusinessUnits.userId,
-        role: userBusinessUnits.role,
-        user: {
-          id: users.id,
-          firstName: users.firstName,
-          lastName: users.lastName,
-          email: users.email
-        }
-      })
-      .from(userBusinessUnits)
-      .innerJoin(users, eq(userBusinessUnits.userId, users.id))
-      .where(eq(userBusinessUnits.businessUnitId, businessUnitId));
-    
-    return assignments;
+    try {
+      const assignments = await db
+        .select({
+          userId: userBusinessUnits.userId,
+          role: userBusinessUnits.role,
+          user: {
+            id: users.id,
+            firstName: users.firstName,
+            lastName: users.lastName,
+            email: users.email
+          }
+        })
+        .from(userBusinessUnits)
+        .innerJoin(users, eq(userBusinessUnits.userId, users.id))
+        .where(eq(userBusinessUnits.businessUnitId, businessUnitId));
+      
+      return assignments;
+    } catch (error) {
+      console.error('Error in getBusinessUnitUsers:', error);
+      throw error;
+    }
   }
 
   // RFID operations

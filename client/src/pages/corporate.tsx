@@ -22,13 +22,26 @@ import {
   Calendar,
   DollarSign,
   Activity,
-  TestTube
+  TestTube,
+  Building2,
+  Wallet
 } from "lucide-react";
 import { format } from "date-fns";
 
+interface BusinessUnit {
+  id: string;
+  name: string;
+  code: string;
+  description?: string;
+  walletBalance: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface RfidCard {
   id: number;
-  businessUnitAdminId: string;
+  businessUnitId: string;
   cardNumber: string;
   cardName?: string;
   isActive: boolean;
@@ -39,7 +52,7 @@ interface RfidCard {
 
 interface TeaMachine {
   id: string;
-  businessUnitAdminId: string;
+  businessUnitId: string;
   name: string;
   location: string;
   isActive: boolean;
@@ -53,7 +66,7 @@ interface TeaMachine {
 
 interface DispensingLog {
   id: number;
-  businessUnitAdminId: string;
+  businessUnitId: string;
   rfidCardId: number;
   machineId: string;
   teaType: string;
@@ -63,7 +76,127 @@ interface DispensingLog {
   createdAt: string;
 }
 
+function BusinessUnitTabs({ businessUnits, selectedBusinessUnitId, onSelectBusinessUnit }: {
+  businessUnits: BusinessUnit[];
+  selectedBusinessUnitId: string | null;
+  onSelectBusinessUnit: (id: string) => void;
+}) {
+  if (businessUnits.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <p className="text-center text-gray-500">No business units assigned to you.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+      {businessUnits.map((unit) => (
+        <Card 
+          key={unit.id} 
+          className={`cursor-pointer transition-all ${
+            selectedBusinessUnitId === unit.id 
+              ? 'ring-2 ring-blue-500 bg-blue-50' 
+              : 'hover:shadow-md'
+          }`}
+          onClick={() => onSelectBusinessUnit(unit.id)}
+        >
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                {unit.name}
+              </CardTitle>
+              <Badge variant={unit.isActive ? "default" : "secondary"}>
+                {unit.isActive ? "Active" : "Inactive"}
+              </Badge>
+            </div>
+            <CardDescription>Code: {unit.code}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Wallet className="h-4 w-4 text-green-600" />
+                <span className="font-semibold text-green-600">
+                  ₹{parseFloat(unit.walletBalance).toFixed(2)}
+                </span>
+              </div>
+              {selectedBusinessUnitId === unit.id && (
+                <Badge variant="default" className="text-xs">Selected</Badge>
+              )}
+            </div>
+            {unit.description && (
+              <p className="text-sm text-gray-600 mt-2">{unit.description}</p>
+            )}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function BusinessUnitOverview({ businessUnit, machines, rfidCards, dispensingLogs }: {
+  businessUnit: BusinessUnit;
+  machines: TeaMachine[];
+  rfidCards: RfidCard[];
+  dispensingLogs: DispensingLog[];
+}) {
+  const activeMachines = machines.filter(m => m.isActive);
+  const activeCards = rfidCards.filter(c => c.isActive);
+  const todayLogs = dispensingLogs.filter(log => {
+    const logDate = new Date(log.createdAt);
+    const today = new Date();
+    return logDate.toDateString() === today.toDateString();
+  });
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Active Machines</CardTitle>
+          <Coffee className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{activeMachines.length}</div>
+          <p className="text-xs text-muted-foreground">
+            {machines.length - activeMachines.length} offline, {machines.length} total
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Active Employee Cards</CardTitle>
+          <CreditCard className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{activeCards.length}</div>
+          <p className="text-xs text-muted-foreground">
+            of {rfidCards.length} total cards
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Today's Usage</CardTitle>
+          <Activity className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{todayLogs.length}</div>
+          <p className="text-xs text-muted-foreground">
+            employee tea servings dispensed
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function CorporateDashboard() {
+  const [selectedBusinessUnitId, setSelectedBusinessUnitId] = useState<string | null>(null);
   const [newCardName, setNewCardName] = useState("");
   const [newCardNumber, setNewCardNumber] = useState("");
   const [isCardDialogOpen, setIsCardDialogOpen] = useState(false);
@@ -73,395 +206,407 @@ export default function CorporateDashboard() {
   
   // Check for pseudo login parameter
   const urlParams = new URLSearchParams(window.location.search);
-  const pseudoUserId = urlParams.get('pseudo');
+  const pseudoParam = urlParams.get('pseudo') ? `?pseudo=${urlParams.get('pseudo')}` : '';
 
-  // Machine status helper functions (same as admin page)
-  const isRecentlyPinged = (lastPing: string | null) => {
-    if (!lastPing) return false;
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    return new Date(lastPing) > fiveMinutesAgo;
-  };
-
-  const getMachineStatus = (machine: TeaMachine) => {
-    if (!machine.isActive) return "Disabled";
-    if (isRecentlyPinged(machine.lastPing)) return "Online";
-    return "Offline";
-  };
-
-  const getMachineStatusVariant = (machine: TeaMachine) => {
-    const status = getMachineStatus(machine);
-    if (status === "Online") return "default";
-    if (status === "Offline") return "secondary";
-    return "destructive"; // Disabled
-  };
-
-  const getMachineStatusIndicator = (machine: TeaMachine) => {
-    const status = getMachineStatus(machine);
-    if (status === "Online") return "bg-green-400";
-    if (status === "Offline") return "bg-yellow-400";
-    return "bg-red-400"; // Disabled
-  };
-
-  const getTimeSinceLastPing = (lastPing: string | null) => {
-    if (!lastPing) return "Never pinged";
-    const now = new Date();
-    const ping = new Date(lastPing);
-    const diffInMinutes = Math.floor((now.getTime() - ping.getTime()) / (1000 * 60));
-    
-    if (diffInMinutes < 1) return "Just now";
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    
-    const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays}d ago`;
-  };
-
-  // Fetch managed RFID cards (with pseudo login support)
-  const { data: rfidCards = [], isLoading: cardsLoading } = useQuery<RfidCard[]>({
-    queryKey: pseudoUserId ? [`/api/corporate/rfid-cards?pseudo=${pseudoUserId}`] : ["/api/corporate/rfid-cards"],
+  // Get user's business units
+  const { data: businessUnits = [], isLoading: businessUnitsLoading } = useQuery({
+    queryKey: [`/api/corporate/business-units${pseudoParam}`],
+    retry: false,
   });
 
-  // Fetch managed machines (with pseudo login support)
-  const { data: machines = [], isLoading: machinesLoading } = useQuery<TeaMachine[]>({
-    queryKey: pseudoUserId ? [`/api/corporate/machines?pseudo=${pseudoUserId}`] : ["/api/corporate/machines"],
+  // Auto-select first business unit if none selected
+  if (businessUnits.length > 0 && !selectedBusinessUnitId) {
+    setSelectedBusinessUnitId(businessUnits[0].id);
+  }
+
+  const selectedBusinessUnit = businessUnits.find(bu => bu.id === selectedBusinessUnitId);
+
+  // Get data for selected business unit
+  const businessUnitParam = selectedBusinessUnitId ? `&businessUnitId=${selectedBusinessUnitId}` : '';
+  
+  const { data: machines = [] } = useQuery({
+    queryKey: [`/api/corporate/machines${pseudoParam}${businessUnitParam}`],
+    enabled: !!selectedBusinessUnitId,
+    retry: false,
   });
 
-  // Fetch dispensing logs (with pseudo login support)
-  const { data: dispensingLogs = [], isLoading: logsLoading } = useQuery<DispensingLog[]>({
-    queryKey: pseudoUserId ? [`/api/corporate/dispensing-logs?pseudo=${pseudoUserId}`] : ["/api/corporate/dispensing-logs"],
+  const { data: rfidCards = [] } = useQuery({
+    queryKey: [`/api/corporate/rfid-cards${pseudoParam}${businessUnitParam}`],
+    enabled: !!selectedBusinessUnitId,
+    retry: false,
   });
 
-  // Fetch pseudo user info for display
-  const { data: pseudoUser } = useQuery({
-    queryKey: pseudoUserId ? [`/api/admin/user/${pseudoUserId}`] : [],
-    enabled: !!pseudoUserId,
+  const { data: dispensingLogs = [] } = useQuery({
+    queryKey: [`/api/corporate/dispensing-logs${pseudoParam}${businessUnitParam}`],
+    enabled: !!selectedBusinessUnitId,
+    retry: false,
+  });
+
+  // Get user info for the testing banner
+  const userId = urlParams.get('pseudo');
+  const { data: testUser } = useQuery({
+    queryKey: [`/api/admin/user/${userId}`],
+    enabled: !!userId,
     retry: false,
   });
 
   // Create RFID card mutation
   const createCardMutation = useMutation({
-    mutationFn: (data: { cardNumber: string; cardName?: string }) =>
-      apiRequest("/api/corporate/rfid-cards", "POST", data),
+    mutationFn: async (cardData: { cardNumber: string; cardName: string; businessUnitId: string }) => {
+      return apiRequest("POST", `/api/corporate/rfid-cards${pseudoParam}`, cardData);
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/corporate/rfid-cards"] });
-      toast({ title: "RFID card created successfully" });
-      setIsCardDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: [`/api/corporate/rfid-cards${pseudoParam}${businessUnitParam}`] });
       setNewCardName("");
       setNewCardNumber("");
+      setIsCardDialogOpen(false);
+      toast({ title: "Success", description: "RFID card created successfully" });
     },
-    onError: () => {
-      toast({ title: "Failed to create RFID card", variant: "destructive" });
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create RFID card",
+        variant: "destructive",
+      });
     },
   });
 
   // Deactivate card mutation
   const deactivateCardMutation = useMutation({
-    mutationFn: (cardId: number) =>
-      apiRequest(`/api/corporate/rfid-cards/${cardId}`, "DELETE"),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/corporate/rfid-cards"] });
-      toast({ title: "RFID card deactivated successfully" });
+    mutationFn: async (cardId: number) => {
+      return apiRequest("DELETE", `/api/corporate/rfid-cards/${cardId}${pseudoParam}`);
     },
-    onError: () => {
-      toast({ title: "Failed to deactivate RFID card", variant: "destructive" });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/corporate/rfid-cards${pseudoParam}${businessUnitParam}`] });
+      toast({ title: "Success", description: "RFID card deactivated successfully" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to deactivate RFID card",
+        variant: "destructive",
+      });
     },
   });
 
   const handleCreateCard = () => {
-    if (!newCardNumber.trim()) {
-      toast({ title: "Please enter a card number", variant: "destructive" });
+    if (!selectedBusinessUnitId) {
+      toast({
+        title: "Error",
+        description: "Please select a business unit first",
+        variant: "destructive",
+      });
       return;
     }
+
     createCardMutation.mutate({
       cardNumber: newCardNumber,
-      cardName: newCardName || undefined,
+      cardName: newCardName,
+      businessUnitId: selectedBusinessUnitId,
     });
   };
+
+  const getMachineStatus = (machine: TeaMachine) => {
+    if (!machine.isActive) return "Disabled";
+    if (!machine.lastPing) return "Offline";
+    
+    const lastPing = new Date(machine.lastPing);
+    const now = new Date();
+    const diffMinutes = (now.getTime() - lastPing.getTime()) / (1000 * 60);
+    
+    return diffMinutes <= 30 ? "Online" : "Offline";
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Online": return "bg-green-500";
+      case "Offline": return "bg-yellow-500";
+      case "Disabled": return "bg-red-500";
+      default: return "bg-gray-500";
+    }
+  };
+
+  if (businessUnitsLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="container mx-auto p-4">
+          <div className="text-center py-8">Loading business units...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
       
-      <div className="container mx-auto px-4 py-8">
-        {/* Pseudo Login Banner */}
-        {pseudoUserId && (
-          <Card className="mb-6 border-blue-200 bg-blue-50">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <TestTube className="w-5 h-5 text-blue-600" />
-                <div>
-                  <p className="font-medium text-blue-900">
-                    Testing Mode: {pseudoUser ? `${pseudoUser.firstName} ${pseudoUser.lastName}` : 'Loading user...'}
-                  </p>
-                  <p className="text-sm text-blue-700">
-                    You are viewing the dashboard as this user. Data shown is specific to their business unit assignments.
-                  </p>
-                </div>
+      <div className="container mx-auto p-4">
+        {/* Testing Banner */}
+        {testUser && (
+          <div className="mb-4 p-3 bg-blue-100 border border-blue-300 rounded-lg flex items-center gap-2">
+            <TestTube className="h-4 w-4 text-blue-600" />
+            <span className="text-blue-800 font-medium">
+              Testing Mode: {testUser.firstName} {testUser.lastName}
+            </span>
+            <p className="text-blue-700 text-sm">
+              You are viewing the dashboard as this user. Data shown is specific to their business unit assignments.
+            </p>
+          </div>
+        )}
+
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Business Unit Management</h1>
+          <p className="text-gray-600">
+            Manage your tea machines, employee RFID cards, and business operations
+          </p>
+        </div>
+
+        {/* Business Unit Selection */}
+        <BusinessUnitTabs
+          businessUnits={businessUnits}
+          selectedBusinessUnitId={selectedBusinessUnitId}
+          onSelectBusinessUnit={setSelectedBusinessUnitId}
+        />
+
+        {/* Business Unit Content */}
+        {selectedBusinessUnit ? (
+          <div>
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                {selectedBusinessUnit.name}
+              </h2>
+              <div className="flex items-center gap-4 text-sm text-gray-600">
+                <span>Code: {selectedBusinessUnit.code}</span>
+                <span className="flex items-center gap-1">
+                  <Wallet className="h-4 w-4" />
+                  Wallet Balance: ₹{parseFloat(selectedBusinessUnit.walletBalance).toFixed(2)}
+                </span>
               </div>
+            </div>
+
+            {/* Overview */}
+            <BusinessUnitOverview
+              businessUnit={selectedBusinessUnit}
+              machines={machines}
+              rfidCards={rfidCards}
+              dispensingLogs={dispensingLogs}
+            />
+
+            {/* Tabs for detailed view */}
+            <Tabs defaultValue="machines" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="machines">Machines</TabsTrigger>
+                <TabsTrigger value="cards">Employee Cards</TabsTrigger>
+                <TabsTrigger value="logs">Usage Logs</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="machines" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Coffee className="h-5 w-5" />
+                      Tea Machines ({machines.length})
+                    </CardTitle>
+                    <CardDescription>
+                      Machines assigned to {selectedBusinessUnit.name}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {machines.length === 0 ? (
+                      <p className="text-center text-gray-500 py-4">No machines assigned to this business unit.</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {machines.map((machine) => {
+                          const status = getMachineStatus(machine);
+                          return (
+                            <div key={machine.id} className="flex items-center justify-between p-4 border rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-3 h-3 rounded-full ${getStatusColor(status)}`} />
+                                <div>
+                                  <h3 className="font-medium">{machine.name}</h3>
+                                  <p className="text-sm text-gray-500 flex items-center gap-1">
+                                    <MapPin className="h-3 w-3" />
+                                    {machine.location}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <Badge variant={status === "Online" ? "default" : status === "Offline" ? "secondary" : "destructive"}>
+                                  {status}
+                                </Badge>
+                                {machine.lastPing && (
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Last ping: {format(new Date(machine.lastPing), "MMM d, HH:mm")}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="cards" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          <CreditCard className="h-5 w-5" />
+                          Employee RFID Cards ({rfidCards.length})
+                        </CardTitle>
+                        <CardDescription>
+                          RFID cards for {selectedBusinessUnit.name} employees
+                        </CardDescription>
+                      </div>
+                      <Dialog open={isCardDialogOpen} onOpenChange={setIsCardDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Card
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Create New RFID Card</DialogTitle>
+                            <DialogDescription>
+                              Add a new RFID card for {selectedBusinessUnit.name} employees
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <Label htmlFor="cardNumber">Card Number</Label>
+                              <Input
+                                id="cardNumber"
+                                value={newCardNumber}
+                                onChange={(e) => setNewCardNumber(e.target.value)}
+                                placeholder="Enter card number"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="cardName">Card Name/Description</Label>
+                              <Input
+                                id="cardName"
+                                value={newCardName}
+                                onChange={(e) => setNewCardName(e.target.value)}
+                                placeholder="e.g., Employee Card 1"
+                              />
+                            </div>
+                          </div>
+                          <DialogFooter>
+                            <Button
+                              onClick={handleCreateCard}
+                              disabled={!newCardNumber || !newCardName || createCardMutation.isPending}
+                            >
+                              {createCardMutation.isPending ? "Creating..." : "Create Card"}
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {rfidCards.length === 0 ? (
+                      <p className="text-center text-gray-500 py-4">No RFID cards created for this business unit.</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {rfidCards.map((card) => (
+                          <div key={card.id} className="flex items-center justify-between p-4 border rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <CreditCard className={`h-5 w-5 ${card.isActive ? 'text-green-600' : 'text-gray-400'}`} />
+                              <div>
+                                <h3 className="font-medium">{card.cardName || `Card ${card.id}`}</h3>
+                                <p className="text-sm text-gray-500">Number: {card.cardNumber}</p>
+                                {card.lastUsed && (
+                                  <p className="text-xs text-gray-400">
+                                    Last used: {format(new Date(card.lastUsed), "MMM d, HH:mm")}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={card.isActive ? "default" : "secondary"}>
+                                {card.isActive ? "Active" : "Inactive"}
+                              </Badge>
+                              {card.isActive && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => deactivateCardMutation.mutate(card.id)}
+                                  disabled={deactivateCardMutation.isPending}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="logs" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Activity className="h-5 w-5" />
+                      Employee Usage Logs ({dispensingLogs.length})
+                    </CardTitle>
+                    <CardDescription>
+                      Recent tea dispensing activity for {selectedBusinessUnit.name}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {dispensingLogs.length === 0 ? (
+                      <p className="text-center text-gray-500 py-4">No usage logs for this business unit yet.</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {dispensingLogs.slice(0, 10).map((log) => (
+                          <div key={log.id} className="flex items-center justify-between p-4 border rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-3 h-3 rounded-full ${log.success ? 'bg-green-500' : 'bg-red-500'}`} />
+                              <div>
+                                <h3 className="font-medium">
+                                  {log.teaType} - ₹{log.amount}
+                                </h3>
+                                <p className="text-sm text-gray-500">
+                                  Card ID: {log.rfidCardId} • Machine: {log.machineId}
+                                </p>
+                                {log.errorMessage && (
+                                  <p className="text-xs text-red-500">{log.errorMessage}</p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <Badge variant={log.success ? "default" : "destructive"}>
+                                {log.success ? "Success" : "Failed"}
+                              </Badge>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {format(new Date(log.createdAt), "MMM d, HH:mm")}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="p-6">
+              <p className="text-center text-gray-500">Select a business unit to view its details.</p>
             </CardContent>
           </Card>
         )}
-        
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Business Unit Management</h1>
-          <p className="text-gray-600 mt-2">Manage your tea machines, employee RFID cards, and business operations</p>
-        </div>
-
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="machines">Machines</TabsTrigger>
-            <TabsTrigger value="cards">Employee Cards</TabsTrigger>
-            <TabsTrigger value="usage">Employee Usage Logs</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Machines</CardTitle>
-                  <Coffee className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{machines.filter(m => getMachineStatus(m) === "Online").length}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {machines.filter(m => getMachineStatus(m) === "Offline").length} offline, {machines.filter(m => getMachineStatus(m) === "Disabled").length} disabled
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Employee Cards</CardTitle>
-                  <CreditCard className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{rfidCards.filter(c => c.isActive).length}</div>
-                  <p className="text-xs text-muted-foreground">
-                    of {rfidCards.length} total cards
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Today's Employee Usage</CardTitle>
-                  <Activity className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{dispensingLogs.length}</div>
-                  <p className="text-xs text-muted-foreground">
-                    employee tea servings dispensed
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="machines" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-semibold">Your Tea Machines</h2>
-                <p className="text-sm text-gray-600 mt-1">View the machines assigned to your business unit</p>
-                <div className="flex items-center space-x-3 mt-2">
-                  <Badge variant="secondary" className="bg-tea-green/10 text-tea-green">
-                    {machines.length} Total
-                  </Badge>
-                  <Badge variant="default" className="bg-green-100 text-green-700">
-                    {machines.filter(m => getMachineStatus(m) === "Online").length} Online
-                  </Badge>
-                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">
-                    {machines.filter(m => getMachineStatus(m) === "Offline").length} Offline
-                  </Badge>
-                  <Badge variant="destructive" className="bg-red-100 text-red-700">
-                    {machines.filter(m => getMachineStatus(m) === "Disabled").length} Disabled
-                  </Badge>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {machinesLoading ? (
-                <div>Loading machines...</div>
-              ) : (
-                machines.map((machine) => (
-                  <Card key={machine.id}>
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div className="flex items-center space-x-3">
-                          <div className={`w-3 h-3 rounded-full ${getMachineStatusIndicator(machine)}`} />
-                          <div>
-                            <CardTitle className="text-lg">{machine.name}</CardTitle>
-                            <CardDescription className="flex items-center mt-1">
-                              <MapPin className="w-4 h-4 mr-1" />
-                              {machine.location}
-                            </CardDescription>
-                          </div>
-                        </div>
-                        <Badge variant={getMachineStatusVariant(machine)}>
-                          {getMachineStatus(machine)}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-gray-600">Last ping:</span>
-                          <span>{machine.lastPing ? format(new Date(machine.lastPing), "MMM d, HH:mm") : "Never"}</span>
-                        </div>
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-gray-600">Status:</span>
-                          <span className="text-gray-500">{getTimeSinceLastPing(machine.lastPing)}</span>
-                        </div>
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-gray-600">Tea Price:</span>
-                          <span className="font-medium">₹{machine.teaTypes?.[0]?.price || "5.00"}</span>
-                        </div>
-
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="cards" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">RFID Cards</h2>
-              <Dialog open={isCardDialogOpen} onOpenChange={setIsCardDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Card
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add New RFID Card</DialogTitle>
-                    <DialogDescription>
-                      Create a new RFID card for your business unit
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="cardNumber">Card Number</Label>
-                      <Input
-                        id="cardNumber"
-                        placeholder="CARD001"
-                        value={newCardNumber}
-                        onChange={(e) => setNewCardNumber(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="cardName">Card Name (Optional)</Label>
-                      <Input
-                        id="cardName"
-                        placeholder="Office Card #1"
-                        value={newCardName}
-                        onChange={(e) => setNewCardName(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button
-                      onClick={handleCreateCard}
-                      disabled={createCardMutation.isPending}
-                    >
-                      Add Card
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {cardsLoading ? (
-                <div>Loading cards...</div>
-              ) : (
-                rfidCards.map((card) => (
-                  <Card key={card.id}>
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="text-lg">{card.cardName || card.cardNumber}</CardTitle>
-                          <CardDescription>Card #{card.cardNumber}</CardDescription>
-                        </div>
-                        <Badge variant={card.isActive ? "default" : "secondary"}>
-                          {card.isActive ? "Active" : "Inactive"}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex justify-between items-center">
-                        <div className="text-sm text-gray-600">
-                          Last used: {card.lastUsed ? format(new Date(card.lastUsed), "MMM d, HH:mm") : "Never"}
-                        </div>
-                        {card.isActive && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => deactivateCardMutation.mutate(card.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="usage" className="space-y-6">
-            <h2 className="text-xl font-semibold">Usage Logs</h2>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Tea Dispensing Activity</CardTitle>
-                <CardDescription>
-                  Monitor tea usage across your machines
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {logsLoading ? (
-                  <div>Loading usage logs...</div>
-                ) : dispensingLogs.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    No dispensing activity yet
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {dispensingLogs.slice(0, 10).map((log) => (
-                      <div key={log.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center space-x-4">
-                          <Badge variant={log.success ? "default" : "destructive"}>
-                            {log.success ? "Success" : "Failed"}
-                          </Badge>
-                          <div>
-                            <div className="font-medium">{log.teaType}</div>
-                            <div className="text-sm text-gray-600">
-                              Machine: {log.machineId} • Card: {log.rfidCardId}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-medium">₹{log.amount}</div>
-                          <div className="text-sm text-gray-600">
-                            {format(new Date(log.createdAt), "MMM d, HH:mm")}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
       </div>
     </div>
   );

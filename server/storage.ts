@@ -280,7 +280,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(rfidCards)
-      .where(sql`${rfidCards.businessUnitId} = ANY(${unitIds})`)
+      .where(inArray(rfidCards.businessUnitId, unitIds))
       .orderBy(desc(rfidCards.createdAt));
   }
 

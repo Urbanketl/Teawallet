@@ -6,15 +6,36 @@ import { z } from "zod";
 
 // B2B Corporate RFID Management Routes
 export function registerCorporateRoutes(app: Express) {
+
+  // Get user's assigned business units (with pseudo login support)
+  app.get("/api/corporate/business-units", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
+      const businessUnits = await storage.getUserBusinessUnits(userId);
+      res.json(businessUnits);
+    } catch (error) {
+      console.error("Error fetching user business units:", error);
+      res.status(500).json({ error: "Failed to fetch business units" });
+    }
+  });
   
-  // Get business unit admin's managed RFID cards (with pseudo login support)
+  // Get RFID cards for specific business unit (with pseudo login support)
   app.get("/api/corporate/rfid-cards", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
-      const cards = await storage.getManagedRfidCards(userId);
-      res.json(cards);
+      const businessUnitId = req.query.businessUnitId as string;
+      
+      if (businessUnitId) {
+        // Get cards for specific business unit
+        const cards = await storage.getBusinessUnitRfidCards(businessUnitId);
+        res.json(cards);
+      } else {
+        // Get all managed cards (for backward compatibility)
+        const cards = await storage.getManagedRfidCards(userId);
+        res.json(cards);
+      }
     } catch (error) {
-      console.error("Error fetching managed RFID cards:", error);
+      console.error("Error fetching RFID cards:", error);
       res.status(500).json({ error: "Failed to fetch RFID cards" });
     }
   });
@@ -58,14 +79,23 @@ export function registerCorporateRoutes(app: Express) {
     }
   });
 
-  // Get business unit admin's managed machines (with pseudo login support)
+  // Get machines for specific business unit (with pseudo login support)
   app.get("/api/corporate/machines", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
-      const machines = await storage.getManagedMachines(userId);
-      res.json(machines);
+      const businessUnitId = req.query.businessUnitId as string;
+      
+      if (businessUnitId) {
+        // Get machines for specific business unit
+        const machines = await storage.getBusinessUnitMachines(businessUnitId);
+        res.json(machines);
+      } else {
+        // Get all managed machines (for backward compatibility)
+        const machines = await storage.getManagedMachines(userId);
+        res.json(machines);
+      }
     } catch (error) {
-      console.error("Error fetching managed machines:", error);
+      console.error("Error fetching machines:", error);
       res.status(500).json({ error: "Failed to fetch machines" });
     }
   });
@@ -122,15 +152,24 @@ export function registerCorporateRoutes(app: Express) {
     }
   });
 
-  // Get business unit admin's dispensing logs (with pseudo login support)
+  // Get dispensing logs for specific business unit (with pseudo login support)
   app.get("/api/corporate/dispensing-logs", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
+      const businessUnitId = req.query.businessUnitId as string;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
-      const logs = await storage.getManagedDispensingLogs(userId, limit);
-      res.json(logs);
+      
+      if (businessUnitId) {
+        // Get logs for specific business unit
+        const logs = await storage.getBusinessUnitDispensingLogs(businessUnitId, limit);
+        res.json(logs);
+      } else {
+        // Get all managed logs (for backward compatibility)
+        const logs = await storage.getManagedDispensingLogs(userId, limit);
+        res.json(logs);
+      }
     } catch (error) {
-      console.error("Error fetching managed dispensing logs:", error);
+      console.error("Error fetching dispensing logs:", error);
       res.status(500).json({ error: "Failed to fetch dispensing logs" });
     }
   });

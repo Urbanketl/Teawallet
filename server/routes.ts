@@ -190,42 +190,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Wallet routes
+  // Wallet routes - DEPRECATED: Use business unit wallet endpoints instead
   app.post('/api/wallet/create-order', isAuthenticated, async (req: any, res) => {
     try {
-      const { amount } = req.body;
-      const userId = req.user.claims.sub;
-
-      if (!amount || amount <= 0) {
-        return res.status(400).json({ message: "Valid amount is required" });
-      }
-
-      // Check max wallet limit before creating order
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      const maxWalletBalanceStr = await storage.getSystemSetting('max_wallet_balance') || '5000.00';
-      const maxWalletBalance = parseFloat(maxWalletBalanceStr);
-      const currentBalance = parseFloat(user.walletBalance || '0');
-      const newBalance = currentBalance + amount;
-
-      if (newBalance > maxWalletBalance) {
-        return res.status(400).json({ 
-          message: `Cannot recharge. Maximum wallet balance is ₹${maxWalletBalance}. Current balance: ₹${currentBalance}. You can add up to ₹${(maxWalletBalance - currentBalance).toFixed(2)} more.`,
-          maxBalance: maxWalletBalance,
-          currentBalance: currentBalance,
-          maxAllowedRecharge: maxWalletBalance - currentBalance
-        });
-      }
-
-      const order = await createOrder(amount);
-      
-      res.json({
-        success: true,
-        order,
-        keyId: process.env.RAZORPAY_KEY_ID,
+      return res.status(400).json({ 
+        message: "This endpoint is deprecated. Use /api/wallet/create-order with businessUnitId parameter instead" 
       });
     } catch (error) {
       console.error("Error creating Razorpay order:", error);
@@ -235,40 +204,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/wallet/verify-payment', isAuthenticated, async (req: any, res) => {
     try {
-      const { razorpay_order_id, razorpay_payment_id, razorpay_signature, amount } = req.body;
-      const userId = req.user.claims.sub;
-
-      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !amount) {
-        return res.status(400).json({ message: "Missing payment verification data" });
-      }
-
-      const isValidSignature = await verifyPayment(
-        razorpay_order_id,
-        razorpay_payment_id,
-        razorpay_signature
-      );
-
-      if (!isValidSignature) {
-        return res.status(400).json({ message: "Invalid payment signature" });
-      }
-
-      // Create transaction record
-      await storage.createTransaction({
-        userId,
-        type: 'recharge',
-        amount: amount.toString(),
-        description: 'Wallet Recharge',
-        razorpayPaymentId: razorpay_payment_id,
-        status: 'completed',
-      });
-
-      // Update wallet balance
-      const updatedUser = await storage.updateWalletBalance(userId, amount.toString());
-
-      res.json({ 
-        success: true, 
-        balance: updatedUser.walletBalance,
-        message: 'Payment verified and wallet recharged successfully'
+      return res.status(400).json({ 
+        message: "This endpoint is deprecated. Use business unit wallet endpoints instead" 
       });
     } catch (error) {
       console.error("Error verifying payment:", error);
@@ -278,33 +215,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/wallet/recharge', isAuthenticated, async (req: any, res) => {
     try {
-      const { amount, razorpayPaymentId } = req.body;
-      const userId = req.user.claims.sub;
-
-      // Validate input
-      if (!amount || !razorpayPaymentId) {
-        return res.status(400).json({ message: "Amount and payment ID are required" });
-      }
-
-      // Create transaction record
-      await storage.createTransaction({
-        userId,
-        type: 'recharge',
-        amount: amount.toString(),
-        description: 'Wallet Recharge',
-        razorpayPaymentId,
-        status: 'completed',
-      });
-
-      // Update wallet balance
-      const updatedUser = await storage.updateWalletBalance(userId, amount.toString());
-
-      // Low balance check can be implemented later
-
-      res.json({ 
-        success: true, 
-        balance: updatedUser.walletBalance,
-        message: 'Wallet recharged successfully'
+      return res.status(400).json({ 
+        message: "This endpoint is deprecated. Use business unit wallet endpoints instead" 
       });
     } catch (error) {
       console.error("Error recharging wallet:", error);
@@ -321,7 +233,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      res.json({ balance: user.walletBalance });
+      return res.status(400).json({ 
+        message: "This endpoint is deprecated. Use business unit wallet endpoints instead" 
+      });
     } catch (error) {
       console.error("Error fetching wallet balance:", error);
       res.status(500).json({ message: "Failed to fetch wallet balance" });
@@ -406,9 +320,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Card already assigned" });
       }
 
+      // Get user's first business unit to assign card
+      const userBusinessUnits = await storage.getUserBusinessUnits(userId);
+      if (userBusinessUnits.length === 0) {
+        return res.status(400).json({ message: "No business units assigned to user" });
+      }
+      
       // Create new RFID card
       const newCard = await storage.createRfidCard({
-        businessUnitAdminId: userId,
+        businessUnitId: userBusinessUnits[0].id,
         cardNumber,
         isActive: true,
       });
@@ -500,20 +420,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Get user and check balance (using business unit admin ID since cards belong to business units)
-      const user = await storage.getUser(card.businessUnitAdminId);
-      if (!user) {
+      // Get business unit and check balance (cards belong to business units)
+      const businessUnit = await storage.getBusinessUnit(card.businessUnitId);
+      if (!businessUnit) {
         return res.status(404).json({ 
           success: false, 
-          message: "User not found" 
+          message: "Business unit not found" 
         });
       }
 
-      const balance = parseFloat(user.walletBalance || "0");
+      const balance = parseFloat(businessUnit.walletBalance || "0");
 
       // CRITICAL: Use atomic transaction for billing accuracy
       const result = await storage.processRfidTransaction({
-        userId: user.id,
+        businessUnitId: businessUnit.id,
         cardId: card.id,
         machineId,
         teaType,
@@ -603,10 +523,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      const { id, name, location, isActive = true } = req.body;
+      const { id, name, location, businessUnitId, isActive = true } = req.body;
 
-      if (!id || !name || !location) {
-        return res.status(400).json({ message: "Machine ID, name, and location are required" });
+      if (!id || !name || !location || !businessUnitId) {
+        return res.status(400).json({ message: "Machine ID, name, location, and business unit ID are required" });
+      }
+
+      // Verify business unit exists
+      const businessUnit = await storage.getBusinessUnit(businessUnitId);
+      if (!businessUnit) {
+        return res.status(400).json({ message: "Business unit not found" });
       }
 
       // Check if machine ID already exists
@@ -619,8 +545,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id,
         name,
         location,
+        businessUnitId,
         isActive,
-        businessUnitAdminId: "", // Initially unassigned (empty string instead of null)
         lastPing: null
       };
 
@@ -698,19 +624,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { machineId } = req.params;
-      const { businessUnitAdminId } = req.body;
+      const { businessUnitId } = req.body;
 
-      if (!businessUnitAdminId) {
-        return res.status(400).json({ message: "Business unit admin ID is required" });
+      if (!businessUnitId) {
+        return res.status(400).json({ message: "Business unit ID is required" });
       }
 
-      // Verify the business unit admin exists and is an admin
-      const businessUnitAdmin = await storage.getUser(businessUnitAdminId);
-      if (!businessUnitAdmin || !businessUnitAdmin.isAdmin || businessUnitAdmin.isSuperAdmin) {
-        return res.status(400).json({ message: "Invalid business unit administrator" });
+      // Verify the business unit exists
+      const businessUnit = await storage.getBusinessUnit(businessUnitId);
+      if (!businessUnit) {
+        return res.status(400).json({ message: "Business unit not found" });
       }
 
-      const updatedMachine = await storage.assignMachineToBusinessUnit(machineId, businessUnitAdminId);
+      const updatedMachine = await storage.assignMachineToBusinessUnit(machineId, businessUnitId);
       
       if (!updatedMachine) {
         return res.status(404).json({ message: "Machine not found" });
@@ -1025,7 +951,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const machine = await storage.assignMachineToBusinessUnit(machineId, unitId);
       res.json(machine);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error assigning machine to business unit:", error);
       res.status(500).json({ message: "Failed to assign machine to business unit" });
     }

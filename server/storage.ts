@@ -472,6 +472,11 @@ export class DatabaseStorage implements IStorage {
 
 
 
+  async getBusinessUnit(id: string): Promise<BusinessUnit | undefined> {
+    const [unit] = await db.select().from(businessUnits).where(eq(businessUnits.id, id));
+    return unit;
+  }
+
   async getTeaMachine(id: string): Promise<TeaMachine | undefined> {
     const [machine] = await db
       .select()
@@ -488,6 +493,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTeaMachine(machine: InsertTeaMachine): Promise<TeaMachine> {
+    // Validate that businessUnitId is provided (machines must be assigned)
+    if (!machine.businessUnitId) {
+      throw new Error("businessUnitId is required - all machines must be assigned to a business unit");
+    }
+    
+    // Verify business unit exists
+    const businessUnit = await this.getBusinessUnit(machine.businessUnitId);
+    if (!businessUnit) {
+      throw new Error(`Business unit ${machine.businessUnitId} not found`);
+    }
+    
     const [newMachine] = await db
       .insert(teaMachines)
       .values(machine)
@@ -1141,7 +1157,7 @@ export class DatabaseStorage implements IStorage {
 
   // CRITICAL: Atomic RFID Transaction for billing accuracy
   async processRfidTransaction(params: {
-    userId: string;
+    businessUnitId: string;
     cardId: number;
     machineId: string;
     teaType: string;
@@ -1152,52 +1168,82 @@ export class DatabaseStorage implements IStorage {
       try {
         const amountNum = parseFloat(params.amount);
         
-        // Step 1: Get current user balance with row lock to prevent race conditions
-        const [currentUser] = await tx
+        // Step 1: Get current business unit balance with row lock to prevent race conditions
+        const [currentBusinessUnit] = await tx
           .select({ 
-            id: users.id, 
-            walletBalance: users.walletBalance 
+            id: businessUnits.id, 
+            walletBalance: businessUnits.walletBalance 
           })
-          .from(users)
-          .where(eq(users.id, params.userId))
+          .from(businessUnits)
+          .where(eq(businessUnits.id, params.businessUnitId))
           .for('update'); // Row-level lock
           
-        if (!currentUser) {
-          throw new Error("User not found");
+        if (!currentBusinessUnit) {
+          throw new Error("Business unit not found");
         }
         
-        const currentBalance = parseFloat(currentUser.walletBalance || "0");
+        const currentBalance = parseFloat(currentBusinessUnit.walletBalance || "0");
         
         // Step 2: Validate sufficient balance
         if (currentBalance < amountNum) {
-          throw new Error("Insufficient wallet balance");
+          throw new Error("Insufficient business unit wallet balance");
         }
         
         const newBalance = currentBalance - amountNum;
         
-        // Step 3: Update wallet balance
+        // Step 3: Update business unit wallet balance
         await tx
-          .update(users)
-          .set({ walletBalance: newBalance.toFixed(2) })
-          .where(eq(users.id, params.userId));
+          .update(businessUnits)
+          .set({ 
+            walletBalance: newBalance.toFixed(2),
+            updatedAt: new Date()
+          })
+          .where(eq(businessUnits.id, params.businessUnitId));
         
-        // Step 4: Create transaction record
+        // Step 4: Get machine to ensure it belongs to the same business unit
+        const [machine] = await tx
+          .select()
+          .from(teaMachines)
+          .where(eq(teaMachines.id, params.machineId));
+          
+        if (!machine) {
+          throw new Error("Machine not found");
+        }
+        
+        if (machine.businessUnitId !== params.businessUnitId) {
+          throw new Error("Machine does not belong to this business unit");
+        }
+        
+        // Step 5: Get business unit admin for transaction record
+        const [adminAssignment] = await tx
+          .select({ userId: userBusinessUnits.userId })
+          .from(userBusinessUnits)
+          .where(eq(userBusinessUnits.businessUnitId, params.businessUnitId))
+          .limit(1);
+          
+        if (!adminAssignment) {
+          throw new Error("No admin found for business unit");
+        }
+        
+        // Step 6: Create transaction record
         const [transaction] = await tx
           .insert(transactions)
           .values({
-            userId: params.userId,
+            userId: adminAssignment.userId,
+            businessUnitId: params.businessUnitId,
+            machineId: params.machineId,
             type: 'dispensing',
             amount: params.amount,
-            description: `${params.teaType} Tea`,
+            description: `${params.teaType} Tea - Machine ${machine.name}`,
             status: 'completed'
           })
           .returning();
         
-        // Step 5: Create dispensing log
+        // Step 7: Create dispensing log
         const [dispensingLog] = await tx
           .insert(dispensingLogs)
           .values({
-            businessUnitAdminId: params.userId,
+            businessUnitId: params.businessUnitId,
             rfidCardId: params.cardId,
             machineId: params.machineId,
             teaType: params.teaType,
@@ -1206,7 +1252,7 @@ export class DatabaseStorage implements IStorage {
           })
           .returning();
         
-        // Step 6: Update RFID card last used
+        // Step 8: Update RFID card last used
         await tx
           .update(rfidCards)
           .set({ 
@@ -1215,7 +1261,7 @@ export class DatabaseStorage implements IStorage {
           })
           .where(eq(rfidCards.id, params.cardId));
         
-        // Step 7: Update machine ping
+        // Step 9: Update machine ping
         await tx
           .update(teaMachines)
           .set({ lastPing: new Date() })

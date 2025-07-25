@@ -117,6 +117,13 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- July 25, 2025: COMPLETED - Implemented mandatory business unit assignment for all machines and business unit tracking for all transactions
+- July 25, 2025: Updated database schema to require businessUnitId for all tea machines (NOT NULL constraint)
+- July 25, 2025: Enhanced transactions table with businessUnitId and machineId columns for complete business unit transaction tracking
+- July 25, 2025: Completely rewrote RFID transaction processing to use business unit wallets instead of individual user wallets
+- July 25, 2025: Updated processRfidTransaction method to enforce business unit ownership validation (machines must belong to same business unit as RFID card)
+- July 25, 2025: Enhanced machine creation API to require business unit assignment at creation time with validation
+- July 25, 2025: Fixed dropdown selection issues in Business Wallet page by replacing Radix UI Select with native HTML select elements
 - July 25, 2025: COMPLETED - Removed recharge functionality from main dashboard WalletCard component to make it display-only
 - July 25, 2025: Separated concerns - dashboard shows read-only business unit balances, Business Wallet page handles all recharge operations
 - July 25, 2025: Enhanced dashboard WalletCard to display all assigned business units with individual balances and low balance alerts

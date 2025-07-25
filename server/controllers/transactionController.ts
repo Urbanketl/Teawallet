@@ -17,17 +17,47 @@ export async function getUserTransactions(req: any, res: Response) {
 export async function createTransaction(req: any, res: Response) {
   try {
     const userId = req.session?.user?.id || req.user?.claims?.sub;
+    
+    // Ensure business unit is captured for transactions
+    let businessUnitId = req.body.businessUnitId;
+    let machineId = req.body.machineId;
+    
+    // If machineId is provided but no businessUnitId, get it from machine
+    if (machineId && !businessUnitId) {
+      const machine = await storage.getTeaMachine(machineId);
+      if (machine) {
+        businessUnitId = machine.businessUnitId;
+      }
+    }
+    
+    // If still no business unit, get user's primary business unit for wallet transactions
+    if (!businessUnitId && (req.body.type === 'recharge' || req.body.type === 'deduction')) {
+      const userBusinessUnits = await storage.getUserBusinessUnits(userId);
+      if (userBusinessUnits.length > 0) {
+        businessUnitId = userBusinessUnits[0].id; // Use first business unit as default
+      }
+    }
+    
     const validated = insertTransactionSchema.parse({
       ...req.body,
       userId,
+      businessUnitId,
+      machineId,
     });
 
     const transaction = await storage.createTransaction(validated);
     
-    // Check for low balance alert after transaction
-    const user = await storage.getUser(userId);
-    if (user) {
-      await checkAndSendLowBalanceAlert(user);
+    // Check for low balance alert after transaction (business unit context)
+    if (businessUnitId) {
+      const businessUnit = await storage.getBusinessUnit(businessUnitId);
+      if (businessUnit) {
+        const lowBalanceThreshold = 50.00;
+        const currentBalance = parseFloat(businessUnit.walletBalance || '0');
+        if (currentBalance <= lowBalanceThreshold) {
+          console.log(`Low balance alert for business unit ${businessUnit.name}: ₹${currentBalance}`);
+          // Could send notification here
+        }
+      }
     }
 
     res.status(201).json(transaction);

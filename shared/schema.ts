@@ -59,7 +59,9 @@ export const rfidCards = pgTable("rfid_cards", {
 export const transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id),
-  type: varchar("type").notNull(), // 'recharge', 'deduction', 'refund'
+  businessUnitId: varchar("business_unit_id").references(() => businessUnits.id), // Business unit for this transaction
+  machineId: varchar("machine_id").references(() => teaMachines.id), // Machine involved (for dispensing transactions)
+  type: varchar("type").notNull(), // 'recharge', 'deduction', 'refund', 'dispensing'
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   description: text("description"),
   status: varchar("status").default("completed"), // 'pending', 'completed', 'failed'
@@ -84,7 +86,7 @@ export const dispensingLogs = pgTable("dispensing_logs", {
 // Tea Machines - Linked to business units
 export const teaMachines = pgTable("tea_machines", {
   id: varchar("id").primaryKey(),
-  businessUnitId: varchar("business_unit_id").references(() => businessUnits.id), // Business unit this machine belongs to (null = unassigned)
+  businessUnitId: varchar("business_unit_id").notNull().references(() => businessUnits.id), // Business unit this machine belongs to (REQUIRED)
   name: varchar("name").notNull(),
   location: varchar("location").notNull(),
   isActive: boolean("is_active").default(true),
@@ -179,6 +181,7 @@ export const businessUnitsRelations = relations(businessUnits, ({ many }) => ({
   rfidCards: many(rfidCards),
   teaMachines: many(teaMachines),
   dispensingLogs: many(dispensingLogs),
+  transactions: many(transactions),
 }));
 
 export const userBusinessUnitsRelations = relations(userBusinessUnits, ({ one }) => ({
@@ -198,6 +201,8 @@ export const teaMachinesRelations = relations(teaMachines, ({ one, many }) => ({
 
 export const transactionsRelations = relations(transactions, ({ one }) => ({
   user: one(users, { fields: [transactions.userId], references: [users.id] }),
+  businessUnit: one(businessUnits, { fields: [transactions.businessUnitId], references: [businessUnits.id] }),
+  machine: one(teaMachines, { fields: [transactions.machineId], references: [teaMachines.id] }),
 }));
 
 export const dispensingLogsRelations = relations(dispensingLogs, ({ one }) => ({

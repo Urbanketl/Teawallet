@@ -58,12 +58,11 @@ export function PseudoLogin({ onLogin }: { onLogin: (userId: string) => void }) 
       <CardContent>
         <div className="space-y-4">
           <p className="text-sm text-gray-600 mb-4">
-            Select a user to experience their business unit dashboard and see their data
+            Select any user to experience their dashboard view. Users with business units will see their assigned data, while unassigned users will see empty states.
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {usersWithUnits && Array.isArray(usersWithUnits) ? usersWithUnits
-              .filter((user: PseudoUser) => user.businessUnits && user.businessUnits.length > 0)
               .map((user: PseudoUser) => (
                 <Card key={user.id} className="border border-gray-200 hover:border-tea-green transition-colors">
                   <CardContent className="p-4">
@@ -76,13 +75,19 @@ export function PseudoLogin({ onLogin }: { onLogin: (userId: string) => void }) 
                         <div className="text-sm text-gray-600 mb-3">{user.email}</div>
                         
                         <div className="space-y-2">
-                          <p className="text-xs font-medium text-gray-700">Manages Business Units:</p>
+                          <p className="text-xs font-medium text-gray-700">Business Units:</p>
                           <div className="flex flex-wrap gap-1">
-                            {user.businessUnits.map((unit: any) => (
-                              <Badge key={unit.id} variant="secondary" className="text-xs">
-                                {unit.name} ({unit.code})
+                            {user.businessUnits && user.businessUnits.length > 0 ? (
+                              user.businessUnits.map((unit: any) => (
+                                <Badge key={unit.id} variant="secondary" className="text-xs">
+                                  {unit.name} ({unit.code})
+                                </Badge>
+                              ))
+                            ) : (
+                              <Badge variant="outline" className="text-xs text-gray-500">
+                                No assignments
                               </Badge>
-                            ))}
+                            )}
                           </div>
                         </div>
                       </div>
@@ -99,7 +104,7 @@ export function PseudoLogin({ onLogin }: { onLogin: (userId: string) => void }) 
                 </Card>
               ))
             : (
-              <p className="text-gray-600 col-span-full">No users with business unit assignments found</p>
+              <p className="text-gray-600 col-span-full">No users found in the system</p>
             )}
           </div>
         </div>

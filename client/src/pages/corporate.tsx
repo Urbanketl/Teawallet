@@ -21,7 +21,8 @@ import {
   Eye,
   Calendar,
   DollarSign,
-  Activity
+  Activity,
+  TestTube
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -69,6 +70,10 @@ export default function CorporateDashboard() {
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Check for pseudo login parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  const pseudoUserId = urlParams.get('pseudo');
 
   // Machine status helper functions (same as admin page)
   const isRecentlyPinged = (lastPing: string | null) => {
@@ -113,19 +118,26 @@ export default function CorporateDashboard() {
     return `${diffInDays}d ago`;
   };
 
-  // Fetch managed RFID cards
+  // Fetch managed RFID cards (with pseudo login support)
   const { data: rfidCards = [], isLoading: cardsLoading } = useQuery<RfidCard[]>({
-    queryKey: ["/api/corporate/rfid-cards"],
+    queryKey: pseudoUserId ? [`/api/corporate/rfid-cards?pseudo=${pseudoUserId}`] : ["/api/corporate/rfid-cards"],
   });
 
-  // Fetch managed machines
+  // Fetch managed machines (with pseudo login support)
   const { data: machines = [], isLoading: machinesLoading } = useQuery<TeaMachine[]>({
-    queryKey: ["/api/corporate/machines"],
+    queryKey: pseudoUserId ? [`/api/corporate/machines?pseudo=${pseudoUserId}`] : ["/api/corporate/machines"],
   });
 
-  // Fetch dispensing logs
+  // Fetch dispensing logs (with pseudo login support)
   const { data: dispensingLogs = [], isLoading: logsLoading } = useQuery<DispensingLog[]>({
-    queryKey: ["/api/corporate/dispensing-logs"],
+    queryKey: pseudoUserId ? [`/api/corporate/dispensing-logs?pseudo=${pseudoUserId}`] : ["/api/corporate/dispensing-logs"],
+  });
+
+  // Fetch pseudo user info for display
+  const { data: pseudoUser } = useQuery({
+    queryKey: pseudoUserId ? [`/api/admin/user/${pseudoUserId}`] : [],
+    enabled: !!pseudoUserId,
+    retry: false,
   });
 
   // Create RFID card mutation
@@ -173,6 +185,25 @@ export default function CorporateDashboard() {
       <Navigation />
       
       <div className="container mx-auto px-4 py-8">
+        {/* Pseudo Login Banner */}
+        {pseudoUserId && (
+          <Card className="mb-6 border-blue-200 bg-blue-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <TestTube className="w-5 h-5 text-blue-600" />
+                <div>
+                  <p className="font-medium text-blue-900">
+                    Testing Mode: {pseudoUser ? `${pseudoUser.firstName} ${pseudoUser.lastName}` : 'Loading user...'}
+                  </p>
+                  <p className="text-sm text-blue-700">
+                    You are viewing the dashboard as this user. Data shown is specific to their business unit assignments.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Business Unit Management</h1>
           <p className="text-gray-600 mt-2">Manage your tea machines, employee RFID cards, and business operations</p>

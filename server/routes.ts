@@ -1068,6 +1068,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get specific user for pseudo login display
+  app.get('/api/admin/user/:userId', isAuthenticated, async (req: any, res) => {
+    try {
+      const adminUserId = req.session?.user?.id || req.user.claims.sub;
+      const adminUser = await storage.getUser(adminUserId);
+      
+      if (!adminUser?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { userId } = req.params;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Corporate routes with pseudo login support
+  app.get('/api/corporate/machines', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.query.pseudo || req.user.claims.sub;
+      const machines = await storage.getUserTeaMachines(userId);
+      res.json(machines);
+    } catch (error) {
+      console.error("Error fetching user machines:", error);
+      res.status(500).json({ message: "Failed to fetch user machines" });
+    }
+  });
+
+  app.get('/api/corporate/rfid-cards', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.query.pseudo || req.user.claims.sub;
+      const cards = await storage.getAllRfidCardsByUserId(userId);
+      res.json(cards);
+    } catch (error) {
+      console.error("Error fetching user RFID cards:", error);
+      res.status(500).json({ message: "Failed to fetch user RFID cards" });
+    }
+  });
+
+  app.get('/api/corporate/dispensing-logs', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.query.pseudo || req.user.claims.sub;
+      const logs = await storage.getUserDispensingLogs(userId, 100);
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching user dispensing logs:", error);
+      res.status(500).json({ message: "Failed to fetch user dispensing logs" });
+    }
+  });
+
   app.get('/api/admin/machines/unassigned', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.session?.user?.id || req.user.claims.sub;

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useRazorpay } from "@/hooks/useRazorpay";
+import { useQuery } from "@tanstack/react-query";
 import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,12 @@ export default function WalletPage() {
   const { toast } = useToast();
   const { initiatePayment, loading } = useRazorpay();
   const [customAmount, setCustomAmount] = useState("");
+
+  // Check if user has business units assigned
+  const { data: businessUnits = [] } = useQuery({
+    queryKey: ["/api/corporate/business-units"],
+    retry: false,
+  });
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -115,12 +122,30 @@ export default function WalletPage() {
                     variant="outline"
                     className="h-12 text-lg hover:bg-tea-green hover:text-white hover:border-tea-green"
                     onClick={() => handleQuickRecharge(amount)}
-                    disabled={loading}
+                    disabled={loading || businessUnits.length === 0}
                   >
                     ₹{amount}
                   </Button>
                 ))}
               </div>
+              
+              {/* Show message if no business units */}
+              {businessUnits.length === 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-start space-x-2">
+                    <div className="w-5 h-5 rounded-full bg-amber-400 flex-shrink-0 mt-0.5"></div>
+                    <div className="flex-1">
+                      <p className="text-sm text-amber-800 font-medium mb-1">
+                        No Business Units Assigned
+                      </p>
+                      <p className="text-xs text-amber-700">
+                        You need to be assigned to a business unit before you can recharge your wallet. 
+                        Please contact your administrator to assign you to a business unit.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <div className="space-y-4">
                 <div>
@@ -139,7 +164,7 @@ export default function WalletPage() {
                 <Button
                   className="w-full bg-tea-green hover:bg-tea-dark"
                   onClick={handleCustomRecharge}
-                  disabled={loading || !customAmount}
+                  disabled={loading || !customAmount || businessUnits.length === 0}
                 >
                   {loading ? "Processing..." : "Recharge Wallet"}
                 </Button>

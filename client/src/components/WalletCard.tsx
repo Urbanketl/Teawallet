@@ -13,6 +13,12 @@ import { Wallet, Plus, IndianRupee, AlertTriangle, CreditCard, Minus } from "luc
 export default function WalletCard() {
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Check if user has business units assigned
+  const { data: businessUnits = [] } = useQuery({
+    queryKey: ["/api/corporate/business-units"],
+    retry: false,
+  });
   
   const balance = parseFloat(user?.walletBalance || '0');
   const LOW_BALANCE_THRESHOLD = 50.00;
@@ -126,7 +132,7 @@ export default function WalletCard() {
                   variant="outline"
                   className="hover:bg-tea-green hover:text-white hover:border-tea-green transition-all duration-200"
                   onClick={() => handleQuickRecharge(amount)}
-                  disabled={loading}
+                  disabled={loading || businessUnits.length === 0}
                 >
                   ₹{amount}
                 </Button>
@@ -136,10 +142,29 @@ export default function WalletCard() {
             <Button 
               className="w-full bg-tea-green hover:bg-tea-dark"
               onClick={() => setDialogOpen(true)}
+              disabled={businessUnits.length === 0}
             >
               <Plus className="w-4 h-4 mr-2" />
               Custom Amount
             </Button>
+            
+            {/* Show message if no business units */}
+            {businessUnits.length === 0 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-4">
+                <div className="flex items-start space-x-2">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm text-amber-800 font-medium mb-1">
+                      No Business Units Assigned
+                    </p>
+                    <p className="text-xs text-amber-700">
+                      You need to be assigned to a business unit before you can recharge your wallet. 
+                      Please contact your administrator to assign you to a business unit.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Custom Modal */}
             {dialogOpen && (

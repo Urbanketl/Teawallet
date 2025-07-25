@@ -93,6 +93,22 @@ export default function Navigation() {
           <div className="flex items-center space-x-4">
             {/* Desktop Welcome and Logout */}
             <div className="hidden lg:flex items-center space-x-4">
+              {/* Show pseudo login indicator */}
+              {pseudoParam && (
+                <div className="bg-amber-100 border border-amber-300 rounded-lg px-3 py-1 flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                  <span className="text-xs text-amber-800 font-medium">Test Mode</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => window.location.href = window.location.pathname}
+                    className="h-auto p-1 text-amber-700 hover:text-amber-900 hover:bg-amber-200"
+                  >
+                    Exit
+                  </Button>
+                </div>
+              )}
+              
               <div className="text-sm text-gray-600">
                 Welcome, {user.firstName}
               </div>
@@ -140,7 +156,12 @@ export default function Navigation() {
                             className="h-8 w-auto object-contain"
                           />
                           <div>
-                            <p className="text-sm font-medium text-gray-900">Welcome, {user.firstName}</p>
+                            <div className="flex items-center space-x-2">
+                              <p className="text-sm font-medium text-gray-900">Welcome, {user.firstName}</p>
+                              {pseudoParam && (
+                                <span className="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full">Test</span>
+                              )}
+                            </div>
                             <p className="text-xs text-gray-500">{user.email}</p>
                           </div>
                         </div>
@@ -176,7 +197,25 @@ export default function Navigation() {
                           ))}
                         </div>
                         
-                        <div className="mt-6 pt-4 border-t">
+                        <div className="mt-6 pt-4 border-t space-y-2">
+                          {/* Exit Test Mode Button */}
+                          {pseudoParam && (
+                            <Button
+                              variant="outline"
+                              size="lg"
+                              onClick={() => {
+                                setMobileMenuOpen(false);
+                                window.location.href = window.location.pathname;
+                              }}
+                              className="w-full justify-start text-left flex items-center bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100"
+                            >
+                              <div className="w-5 h-5 mr-3 bg-amber-500 rounded-full flex items-center justify-center">
+                                <span className="text-white text-xs">✕</span>
+                              </div>
+                              <span>Exit Test Mode</span>
+                            </Button>
+                          )}
+                          
                           <Button
                             variant="outline"
                             size="lg"

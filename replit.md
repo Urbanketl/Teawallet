@@ -117,6 +117,10 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- July 25, 2025: COMPLETED - Fixed pseudo login navigation persistence across all pages with exit functionality
+- July 25, 2025: Added manual exit option for pseudo login test mode via "Exit Test Mode" button in navigation
+- July 25, 2025: Updated authentication system to handle pseudo login parameters in both frontend and backend
+- July 25, 2025: Enhanced business unit assignment restrictions for wallet recharge functionality
 - July 24, 2025: COMPLETED - Fixed dropdown selection issues by replacing Radix UI Select with native HTML select elements and correcting user filtering logic
 - July 24, 2025: Added test business unit administrators to demonstrate machine assignment functionality
 - July 24, 2025: COMPLETED - Fixed machine creation API error by implementing missing POST endpoint and correcting apiRequest parameter order

@@ -1096,7 +1096,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/corporate/machines', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.query.pseudo || req.user.claims.sub;
-      const machines = await storage.getUserTeaMachines(userId);
+      const machines = await storage.getManagedMachines(userId);
       res.json(machines);
     } catch (error) {
       console.error("Error fetching user machines:", error);

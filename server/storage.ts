@@ -51,6 +51,10 @@ export interface IStorage {
   // Legacy Admin RFID operations (for super admin)
   getAllRfidCards(): Promise<(RfidCard & { businessUnit: BusinessUnit })[]>;
   
+  // User machine operations (corporate dashboard)
+  getManagedMachines(businessUnitAdminId: string): Promise<TeaMachine[]>;
+  getAllRfidCardsByUserId(userId: string): Promise<RfidCard[]>;
+  
   // Transaction operations
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   getUserTransactions(userId: string, limit?: number): Promise<Transaction[]>;
@@ -433,6 +437,8 @@ export class DatabaseStorage implements IStorage {
       .where(sql`${teaMachines.businessUnitId} = ANY(${unitIds})`)
       .orderBy(desc(teaMachines.createdAt));
   }
+
+
 
   async getTeaMachine(id: string): Promise<TeaMachine | undefined> {
     const [machine] = await db

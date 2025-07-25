@@ -7,10 +7,10 @@ import { z } from "zod";
 // B2B Corporate RFID Management Routes
 export function registerCorporateRoutes(app: Express) {
   
-  // Get business unit admin's managed RFID cards
+  // Get business unit admin's managed RFID cards (with pseudo login support)
   app.get("/api/corporate/rfid-cards", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session?.user?.id || req.user?.claims?.sub;
+      const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
       const cards = await storage.getManagedRfidCards(userId);
       res.json(cards);
     } catch (error) {
@@ -58,15 +58,27 @@ export function registerCorporateRoutes(app: Express) {
     }
   });
 
-  // Get business unit admin's managed machines
+  // Get business unit admin's managed machines (with pseudo login support)
   app.get("/api/corporate/machines", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session?.user?.id || req.user?.claims?.sub;
+      const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
       const machines = await storage.getManagedMachines(userId);
       res.json(machines);
     } catch (error) {
       console.error("Error fetching managed machines:", error);
       res.status(500).json({ error: "Failed to fetch machines" });
+    }
+  });
+
+  // Get business unit admin's dispensing logs (with pseudo login support)
+  app.get("/api/corporate/dispensing-logs", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
+      const logs = await storage.getManagedDispensingLogs(userId, 100);
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching managed dispensing logs:", error);
+      res.status(500).json({ error: "Failed to fetch dispensing logs" });
     }
   });
 
@@ -110,10 +122,10 @@ export function registerCorporateRoutes(app: Express) {
     }
   });
 
-  // Get business unit admin's dispensing logs
+  // Get business unit admin's dispensing logs (with pseudo login support)
   app.get("/api/corporate/dispensing-logs", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session?.user?.id || req.user?.claims?.sub;
+      const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
       const logs = await storage.getManagedDispensingLogs(userId, limit);
       res.json(logs);

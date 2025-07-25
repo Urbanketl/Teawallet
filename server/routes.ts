@@ -1092,39 +1092,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Corporate routes with pseudo login support
-  app.get('/api/corporate/machines', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.query.pseudo || req.user.claims.sub;
-      const machines = await storage.getManagedMachines(userId);
-      res.json(machines);
-    } catch (error) {
-      console.error("Error fetching user machines:", error);
-      res.status(500).json({ message: "Failed to fetch user machines" });
-    }
-  });
 
-  app.get('/api/corporate/rfid-cards', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.query.pseudo || req.user.claims.sub;
-      const cards = await storage.getAllRfidCardsByUserId(userId);
-      res.json(cards);
-    } catch (error) {
-      console.error("Error fetching user RFID cards:", error);
-      res.status(500).json({ message: "Failed to fetch user RFID cards" });
-    }
-  });
-
-  app.get('/api/corporate/dispensing-logs', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.query.pseudo || req.user.claims.sub;
-      const logs = await storage.getUserDispensingLogs(userId, 100);
-      res.json(logs);
-    } catch (error) {
-      console.error("Error fetching user dispensing logs:", error);
-      res.status(500).json({ message: "Failed to fetch user dispensing logs" });
-    }
-  });
 
   app.get('/api/admin/machines/unassigned', isAuthenticated, async (req: any, res) => {
     try {

@@ -53,6 +53,7 @@ export interface IStorage {
   
   // User machine operations (corporate dashboard)
   getManagedMachines(businessUnitAdminId: string): Promise<TeaMachine[]>;
+  getManagedRfidCards(businessUnitAdminId: string): Promise<RfidCard[]>;
   getAllRfidCardsByUserId(userId: string): Promise<RfidCard[]>;
   
   // Transaction operations
@@ -426,16 +427,47 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getManagedMachines(businessUnitAdminId: string): Promise<TeaMachine[]> {
+    console.log(`DEBUG: getManagedMachines called for user: ${businessUnitAdminId}`);
+    
     // Get user's business units first
     const userUnits = await this.getUserBusinessUnits(businessUnitAdminId);
+    console.log(`DEBUG: Found ${userUnits.length} business units for user ${businessUnitAdminId}:`, userUnits);
+    
     if (userUnits.length === 0) return [];
     
     const unitIds = userUnits.map(unit => unit.id);
-    return await db
+    console.log(`DEBUG: Looking for machines in business units:`, unitIds);
+    
+    const machines = await db
       .select()
       .from(teaMachines)
       .where(sql`${teaMachines.businessUnitId} = ANY(${unitIds})`)
       .orderBy(desc(teaMachines.createdAt));
+    
+    console.log(`DEBUG: Found ${machines.length} machines:`, machines);
+    return machines;
+  }
+
+  async getManagedRfidCards(businessUnitAdminId: string): Promise<RfidCard[]> {
+    console.log(`DEBUG: getManagedRfidCards called for user: ${businessUnitAdminId}`);
+    
+    // Get user's business units first
+    const userUnits = await this.getUserBusinessUnits(businessUnitAdminId);
+    console.log(`DEBUG: Found ${userUnits.length} business units for RFID cards:`, userUnits);
+    
+    if (userUnits.length === 0) return [];
+    
+    const unitIds = userUnits.map(unit => unit.id);
+    console.log(`DEBUG: Looking for RFID cards in business units:`, unitIds);
+    
+    const cards = await db
+      .select()
+      .from(rfidCards)
+      .where(sql`${rfidCards.businessUnitId} = ANY(${unitIds})`)
+      .orderBy(desc(rfidCards.createdAt));
+    
+    console.log(`DEBUG: Found ${cards.length} RFID cards:`, cards);
+    return cards;
   }
 
 

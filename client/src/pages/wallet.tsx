@@ -18,10 +18,41 @@ export default function WalletPage() {
   const [customAmount, setCustomAmount] = useState("");
   const [selectedBusinessUnitId, setSelectedBusinessUnitId] = useState<string>("");
 
-  // Check if user has business units assigned
-  const { data: businessUnits = [] } = useQuery({
-    queryKey: ["/api/corporate/business-units"],
+  // Get pseudo parameter for business units query
+  const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const pseudoParam = urlParams?.get('pseudo');
+  const pseudoQuery = pseudoParam ? `?pseudo=${pseudoParam}` : '';
+
+  // Build query key that includes user identifier to prevent cache conflicts
+  const userIdentifier = pseudoParam || user?.id || 'anonymous';
+  const businessUnitsQueryKey = `/api/corporate/business-units${pseudoQuery}`;
+
+  // Check if user has business units assigned (with pseudo support)
+  const { data: businessUnits = [], isLoading: unitsLoading } = useQuery({
+    queryKey: [`business-units`, userIdentifier, businessUnitsQueryKey],
+    queryFn: async () => {
+      const response = await fetch(businessUnitsQueryKey, {
+        credentials: 'include' // Include cookies for authentication
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch business units');
+      }
+      return response.json();
+    },
     retry: false,
+    staleTime: 0, // Always fetch fresh data
+    gcTime: 0, // Don't cache for pseudo users (React Query v5 uses gcTime instead of cacheTime)
+  });
+
+  // Debug logging
+  console.log('Wallet page debug:', {
+    pseudoParam,
+    pseudoQuery,
+    userIdentifier,
+    queryKey: businessUnitsQueryKey,
+    businessUnits,
+    unitsLoading,
+    user
   });
 
   // Auto-select first business unit if user has only one
@@ -194,7 +225,7 @@ export default function WalletPage() {
                 {/* Business Unit Selector */}
                 {businessUnits.length > 1 && (
                   <div>
-                    <Label htmlFor="business-unit-select">Select Business Unit</Label>
+                    <Label htmlFor="business-unit-select">Select Business Unit to Recharge</Label>
                     <Select value={selectedBusinessUnitId} onValueChange={setSelectedBusinessUnitId}>
                       <SelectTrigger>
                         <SelectValue placeholder="Choose business unit to recharge" />
@@ -211,6 +242,30 @@ export default function WalletPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                )}
+
+                {/* Business Unit Info Display */}
+                {selectedBusinessUnitId && businessUnits.length > 0 && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div className="flex items-center space-x-2 text-blue-800">
+                      <Building2 className="w-4 h-4" />
+                      <span className="text-sm font-medium">
+                        Recharging: {businessUnits.find((bu: any) => bu.id === selectedBusinessUnitId)?.name}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Business Unit Info Display */}
+                {selectedBusinessUnitId && businessUnits.length > 0 && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div className="flex items-center space-x-2 text-blue-800">
+                      <Building2 className="w-4 h-4" />
+                      <span className="text-sm font-medium">
+                        Recharging: {businessUnits.find((bu: any) => bu.id === selectedBusinessUnitId)?.name}
+                      </span>
+                    </div>
                   </div>
                 )}
 

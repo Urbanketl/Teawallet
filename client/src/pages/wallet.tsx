@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { Wallet, Plus, IndianRupee, Building2 } from "lucide-react";
 
 export default function WalletPage() {
@@ -226,34 +226,19 @@ export default function WalletPage() {
                 {businessUnits.length > 1 && (
                   <div>
                     <Label htmlFor="business-unit-select">Select Business Unit to Recharge</Label>
-                    <Select value={selectedBusinessUnitId} onValueChange={setSelectedBusinessUnitId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose business unit to recharge" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {businessUnits.map((businessUnit: any) => (
-                          <SelectItem key={businessUnit.id} value={businessUnit.id}>
-                            <div className="flex items-center space-x-2">
-                              <Building2 className="w-4 h-4" />
-                              <span>{businessUnit.name}</span>
-                              <span className="text-sm text-gray-500">- ₹{parseFloat(businessUnit.walletBalance || "0").toFixed(2)}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {/* Business Unit Info Display */}
-                {selectedBusinessUnitId && businessUnits.length > 0 && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <div className="flex items-center space-x-2 text-blue-800">
-                      <Building2 className="w-4 h-4" />
-                      <span className="text-sm font-medium">
-                        Recharging: {businessUnits.find((bu: any) => bu.id === selectedBusinessUnitId)?.name}
-                      </span>
-                    </div>
+                    <select 
+                      id="business-unit-select"
+                      value={selectedBusinessUnitId} 
+                      onChange={(e) => setSelectedBusinessUnitId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-tea-green focus:border-transparent bg-white text-gray-900"
+                    >
+                      <option value="">Choose business unit to recharge</option>
+                      {businessUnits.map((businessUnit: any) => (
+                        <option key={businessUnit.id} value={businessUnit.id}>
+                          {businessUnit.name} - ₹{parseFloat(businessUnit.walletBalance || "0").toFixed(2)}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 )}
 

@@ -41,11 +41,13 @@ export function useRazorpay() {
       
       const amount = JSON.parse(localStorage.getItem('lastPaymentOrder') || '{}').amount;
       
+      const lastOrder = JSON.parse(localStorage.getItem('lastPaymentOrder') || '{}');
       const verifyRes = await apiRequest("POST", "/api/wallet/verify-payment", {
         razorpay_order_id: paymentData.razorpay_order_id,
         razorpay_payment_id: paymentData.razorpay_payment_id,
         razorpay_signature: paymentData.razorpay_signature,
         amount: amount / 100, // Convert from paise to rupees
+        businessUnitId: lastOrder.businessUnitId,
       });
 
       if (verifyRes.ok) {
@@ -61,6 +63,7 @@ export function useRazorpay() {
         // Refresh wallet data
         queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
         queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/corporate/business-units"] });
         
         // Clear stored order
         localStorage.removeItem('lastPaymentOrder');
@@ -154,7 +157,7 @@ export function useRazorpay() {
     });
   };
 
-  const initiatePayment = async (amount: number, userDetails?: { name?: string; email?: string }) => {
+  const initiatePayment = async (amount: number, userDetails?: { name?: string; email?: string; businessUnitId?: string }) => {
     // Prevent rapid-fire requests (debounce)
     const now = Date.now();
     if (now - lastAttemptTime < 2000) { // 2 second cooldown
@@ -182,7 +185,11 @@ export function useRazorpay() {
 
       // Create order first
       console.log("Creating order...");
-      const orderRes = await apiRequest("POST", "/api/wallet/create-order", { amount });
+      const orderData = { 
+        amount,
+        ...(userDetails?.businessUnitId && { businessUnitId: userDetails.businessUnitId })
+      };
+      const orderRes = await apiRequest("POST", "/api/wallet/create-order", orderData);
       
       if (!orderRes.ok) {
         const errorData = await orderRes.json();
@@ -209,7 +216,8 @@ export function useRazorpay() {
       localStorage.setItem('lastPaymentOrder', JSON.stringify({
         id: orderResponse.order.id,
         amount: orderResponse.order.amount,
-        key: orderResponse.keyId
+        key: orderResponse.keyId,
+        businessUnitId: userDetails?.businessUnitId
       }));
 
       const { order, keyId } = orderResponse;

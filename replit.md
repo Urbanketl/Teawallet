@@ -117,6 +117,10 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- July 25, 2025: COMPLETED - Implemented business unit-specific wallet recharge selection for users with multiple business units
+- July 25, 2025: Added business unit selector dropdown in wallet recharge interface allowing users to choose which unit wallet to recharge
+- July 25, 2025: Updated payment system to handle business unit wallet recharge including validation, limits, and transaction recording
+- July 25, 2025: Enhanced wallet display to show separate balance cards for each business unit instead of single combined balance
 - July 25, 2025: COMPLETED - Fixed pseudo login navigation persistence across all pages with exit functionality
 - July 25, 2025: Added manual exit option for pseudo login test mode via "Exit Test Mode" button in navigation
 - July 25, 2025: Updated authentication system to handle pseudo login parameters in both frontend and backend

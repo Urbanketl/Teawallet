@@ -8,19 +8,28 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Wallet, Plus, IndianRupee } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Wallet, Plus, IndianRupee, Building2 } from "lucide-react";
 
 export default function WalletPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const { initiatePayment, loading } = useRazorpay();
   const [customAmount, setCustomAmount] = useState("");
+  const [selectedBusinessUnitId, setSelectedBusinessUnitId] = useState<string>("");
 
   // Check if user has business units assigned
   const { data: businessUnits = [] } = useQuery({
     queryKey: ["/api/corporate/business-units"],
     retry: false,
   });
+
+  // Auto-select first business unit if user has only one
+  useEffect(() => {
+    if (businessUnits.length === 1 && !selectedBusinessUnitId) {
+      setSelectedBusinessUnitId(businessUnits[0].id);
+    }
+  }, [businessUnits, selectedBusinessUnitId]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -48,9 +57,19 @@ export default function WalletPage() {
   const quickAmounts = [100, 250, 500, 1000];
 
   const handleQuickRecharge = (amount: number) => {
+    if (!selectedBusinessUnitId) {
+      toast({
+        title: "Business Unit Required",
+        description: "Please select a business unit to recharge",
+        variant: "destructive",
+      });
+      return;
+    }
+
     initiatePayment(amount, {
       name: `${user?.firstName} ${user?.lastName}`.trim(),
       email: user?.email || "",
+      businessUnitId: selectedBusinessUnitId,
     });
   };
 
@@ -64,10 +83,20 @@ export default function WalletPage() {
       });
       return;
     }
+
+    if (!selectedBusinessUnitId) {
+      toast({
+        title: "Business Unit Required",
+        description: "Please select a business unit to recharge",
+        variant: "destructive",
+      });
+      return;
+    }
     
     initiatePayment(amount, {
       name: `${user?.firstName} ${user?.lastName}`.trim(),
       email: user?.email || "",
+      businessUnitId: selectedBusinessUnitId,
     });
     
     setCustomAmount("");
@@ -89,20 +118,34 @@ export default function WalletPage() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Wallet className="w-5 h-5 text-tea-green" />
-                <span>Current Balance</span>
+                <span>Business Unit Wallets</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="bg-gradient-to-br from-tea-green/10 to-tea-light/10 rounded-xl p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-gray-600 font-medium">Available Balance</span>
-                  <IndianRupee className="w-5 h-5 text-tea-green" />
+              {businessUnits.length > 0 ? (
+                <div className="space-y-4">
+                  {businessUnits.map((businessUnit: any) => (
+                    <div key={businessUnit.id} className="bg-gradient-to-br from-tea-green/10 to-tea-light/10 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <Building2 className="w-4 h-4 text-tea-green" />
+                          <span className="font-medium text-gray-900">{businessUnit.name}</span>
+                        </div>
+                        <IndianRupee className="w-4 h-4 text-tea-green" />
+                      </div>
+                      <div className="text-2xl font-bold text-tea-dark">
+                        ₹{parseFloat(businessUnit.walletBalance || "0").toFixed(2)}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">{businessUnit.code}</div>
+                    </div>
+                  ))}
                 </div>
-                <div className="text-4xl font-bold text-tea-dark mb-2">
-                  ₹{parseFloat(user.walletBalance || "0").toFixed(2)}
+              ) : (
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 text-center">
+                  <div className="text-gray-500 mb-2">No Business Units Assigned</div>
+                  <div className="text-sm text-gray-400">Contact your administrator</div>
                 </div>
-                <div className="text-sm text-gray-500">Ready to use</div>
-              </div>
+              )}
             </CardContent>
           </Card>
 
@@ -122,7 +165,7 @@ export default function WalletPage() {
                     variant="outline"
                     className="h-12 text-lg hover:bg-tea-green hover:text-white hover:border-tea-green"
                     onClick={() => handleQuickRecharge(amount)}
-                    disabled={loading || businessUnits.length === 0}
+                    disabled={loading || businessUnits.length === 0 || (businessUnits.length > 1 && !selectedBusinessUnitId)}
                   >
                     ₹{amount}
                   </Button>
@@ -148,6 +191,29 @@ export default function WalletPage() {
               )}
               
               <div className="space-y-4">
+                {/* Business Unit Selector */}
+                {businessUnits.length > 1 && (
+                  <div>
+                    <Label htmlFor="business-unit-select">Select Business Unit</Label>
+                    <Select value={selectedBusinessUnitId} onValueChange={setSelectedBusinessUnitId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose business unit to recharge" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {businessUnits.map((businessUnit: any) => (
+                          <SelectItem key={businessUnit.id} value={businessUnit.id}>
+                            <div className="flex items-center space-x-2">
+                              <Building2 className="w-4 h-4" />
+                              <span>{businessUnit.name}</span>
+                              <span className="text-sm text-gray-500">- ₹{parseFloat(businessUnit.walletBalance || "0").toFixed(2)}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 <div>
                   <Label htmlFor="custom-amount">Custom Amount</Label>
                   <Input
@@ -164,9 +230,12 @@ export default function WalletPage() {
                 <Button
                   className="w-full bg-tea-green hover:bg-tea-dark"
                   onClick={handleCustomRecharge}
-                  disabled={loading || !customAmount || businessUnits.length === 0}
+                  disabled={loading || !customAmount || businessUnits.length === 0 || (businessUnits.length > 1 && !selectedBusinessUnitId)}
                 >
-                  {loading ? "Processing..." : "Recharge Wallet"}
+                  {loading ? "Processing..." : selectedBusinessUnitId ? 
+                    `Recharge ${businessUnits.find((bu: any) => bu.id === selectedBusinessUnitId)?.name || 'Business Unit'}` : 
+                    "Recharge Wallet"
+                  }
                 </Button>
               </div>
             </CardContent>

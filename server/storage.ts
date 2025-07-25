@@ -10,7 +10,7 @@ import {
   type SupportMessage, type InsertSupportMessage, type FaqArticle, type InsertFaqArticle,
   type TicketStatusHistory, type InsertTicketStatusHistory, type SystemSetting
 } from "@shared/schema";
-import { eq, and, desc, asc, sql, gte, or, ilike } from "drizzle-orm";
+import { eq, and, desc, asc, sql, gte, or, ilike, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (mandatory for Replit Auth)
@@ -390,7 +390,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(dispensingLogs)
-      .where(sql`${dispensingLogs.businessUnitId} = ANY(${unitIds})`)
+      .where(inArray(dispensingLogs.businessUnitId, unitIds))
       .orderBy(desc(dispensingLogs.createdAt))
       .limit(limit);
   }
@@ -404,7 +404,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(dispensingLogs)
-      .where(sql`${dispensingLogs.businessUnitId} = ANY(${unitIds})`)
+      .where(inArray(dispensingLogs.businessUnitId, unitIds))
       .orderBy(desc(dispensingLogs.createdAt))
       .limit(limit);
   }
@@ -441,7 +441,7 @@ export class DatabaseStorage implements IStorage {
     const machines = await db
       .select()
       .from(teaMachines)
-      .where(sql`${teaMachines.businessUnitId} = ANY(${unitIds})`)
+      .where(inArray(teaMachines.businessUnitId, unitIds))
       .orderBy(desc(teaMachines.createdAt));
     
     console.log(`DEBUG: Found ${machines.length} machines:`, machines);
@@ -463,7 +463,7 @@ export class DatabaseStorage implements IStorage {
     const cards = await db
       .select()
       .from(rfidCards)
-      .where(sql`${rfidCards.businessUnitId} = ANY(${unitIds})`)
+      .where(inArray(rfidCards.businessUnitId, unitIds))
       .orderBy(desc(rfidCards.createdAt));
     
     console.log(`DEBUG: Found ${cards.length} RFID cards:`, cards);

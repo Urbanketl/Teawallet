@@ -3,13 +3,19 @@ import { storage } from "../storage";
 
 export async function getCurrentUser(req: any, res: Response) {
   try {
-    const userId = req.session?.user?.id || req.user?.claims?.sub;
+    // Check for pseudo login parameter first
+    const pseudoUserId = req.query.pseudo;
+    const userId = pseudoUserId || req.session?.user?.id || req.user?.claims?.sub;
+    
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
     const user = await storage.getUser(userId);
     if (!user) {
+      if (pseudoUserId) {
+        return res.status(404).json({ message: "Pseudo user not found" });
+      }
       return res.status(404).json({ message: "User not found" });
     }
 

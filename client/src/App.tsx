@@ -1,9 +1,10 @@
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import { PseudoLoginBanner } from "@/components/PseudoLoginBanner";
 import { FullPageLoader } from "@/components/ui/loading-spinner";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 
@@ -26,6 +27,17 @@ function Router() {
 
   console.log("Router state:", { isAuthenticated, isLoading });
 
+  // Check for pseudo login parameter
+  const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const pseudoParam = urlParams?.get('pseudo');
+
+  // Get pseudo user info for banner
+  const { data: pseudoUser } = useQuery({
+    queryKey: [`/api/admin/user/${pseudoParam}`],
+    enabled: !!pseudoParam,
+    retry: false,
+  });
+
   if (isLoading) {
     return <FullPageLoader message="Loading application..." />;
   }
@@ -40,19 +52,29 @@ function Router() {
   }
 
   return (
-    <Suspense fallback={<FullPageLoader message="Loading page..." />}>
-      <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/wallet" component={Wallet} />
-        <Route path="/history" component={History} />
-        <Route path="/profile" component={Profile} />
-        <Route path="/admin" component={Admin} />
-        <Route path="/support" component={Support} />
-        <Route path="/analytics" component={Analytics} />
-        <Route path="/corporate" component={Corporate} />
-        <Route path="*" component={NotFound} />
-      </Switch>
-    </Suspense>
+    <>
+      {/* Show pseudo login banner when in test mode */}
+      {pseudoParam && (
+        <PseudoLoginBanner 
+          pseudoUserId={pseudoParam} 
+          userName={pseudoUser ? `${pseudoUser.firstName} ${pseudoUser.lastName}` : undefined}
+        />
+      )}
+      
+      <Suspense fallback={<FullPageLoader message="Loading page..." />}>
+        <Switch>
+          <Route path="/" component={Dashboard} />
+          <Route path="/wallet" component={Wallet} />
+          <Route path="/history" component={History} />
+          <Route path="/profile" component={Profile} />
+          <Route path="/admin" component={Admin} />
+          <Route path="/support" component={Support} />
+          <Route path="/analytics" component={Analytics} />
+          <Route path="/corporate" component={Corporate} />
+          <Route path="*" component={NotFound} />
+        </Switch>
+      </Suspense>
+    </>
   );
 }
 

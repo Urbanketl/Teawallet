@@ -55,6 +55,7 @@ export default function AdminPage() {
   const { toast } = useToast();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pseudoUserId, setPseudoUserId] = useState<string | null>(null);
+  const [currentTab, setCurrentTab] = useState("overview");
   const [settings, setSettings] = useState({
     teaPrice: "5.00",
     maintenanceMode: false,
@@ -700,19 +701,75 @@ export default function AdminPage() {
           </Card>
         </div>
 
-        {/* Tabs Interface */}
-        <Tabs defaultValue="overview" className="space-y-6 mt-12">
-          <TabsList className="bg-white shadow-sm">
+        {/* Mobile Navigation Selector (visible on small screens) */}
+        <div className="md:hidden mb-6 mt-12">
+          <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <Shield className="h-5 w-5 text-orange-600" />
+                <h3 className="font-semibold text-orange-800">Platform Admin</h3>
+              </div>
+              <Select 
+                value={currentTab}
+                onValueChange={(value) => {
+                  setCurrentTab(value);
+                  // Find and click the corresponding tab trigger
+                  const tabTrigger = document.querySelector(`button[value="${value}"]`) as HTMLButtonElement;
+                  if (tabTrigger) tabTrigger.click();
+                }}
+              >
+                <SelectTrigger className="w-full bg-white border-orange-200">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="overview">📊 Overview Dashboard</SelectItem>
+                  <SelectItem value="users">👥 User Management</SelectItem>
+                  <SelectItem value="business-units">🏢 Business Units</SelectItem>
+                  <SelectItem value="machines">☕ Tea Machines</SelectItem>
+                  <SelectItem value="machine-mgmt">🔧 Machine Admin</SelectItem>
+                  <SelectItem value="rfid">💳 RFID Cards</SelectItem>
+                  <SelectItem value="support">📞 Support Tickets</SelectItem>
+                  <SelectItem value="faq">❓ FAQ Management</SelectItem>
+                  <SelectItem value="pseudo-login">🔓 Test Login</SelectItem>
+                  <SelectItem value="settings">⚙️ System Settings</SelectItem>
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Responsive Tabs Interface */}
+        <Tabs 
+          value={currentTab} 
+          onValueChange={setCurrentTab}
+          className="space-y-6 mt-12"
+        >
+          {/* Desktop horizontal tabs */}
+          <TabsList className="bg-white shadow-sm hidden md:flex overflow-x-auto">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="rfid">RFID Cards</TabsTrigger>
+            <TabsTrigger value="business-units">Business Units</TabsTrigger>
             <TabsTrigger value="machines">Machines</TabsTrigger>
             <TabsTrigger value="machine-mgmt">Machine Mgmt</TabsTrigger>
+            <TabsTrigger value="rfid">RFID Cards</TabsTrigger>
+            <TabsTrigger value="support">Support</TabsTrigger>
+            <TabsTrigger value="faq">FAQ</TabsTrigger>
+            <TabsTrigger value="pseudo-login">Test</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+          </TabsList>
+
+          {/* Hidden tablist for mobile functionality */}
+          <TabsList className="hidden">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger> 
             <TabsTrigger value="business-units">Business Units</TabsTrigger>
-            <TabsTrigger value="pseudo-login">Test Login</TabsTrigger>
-            <TabsTrigger value="support">Support Tickets</TabsTrigger>
-            <TabsTrigger value="faq">FAQ Management</TabsTrigger>
-            <TabsTrigger value="settings">System Settings</TabsTrigger>
+            <TabsTrigger value="machines">Machines</TabsTrigger>
+            <TabsTrigger value="machine-mgmt">Machine Mgmt</TabsTrigger>
+            <TabsTrigger value="rfid">RFID Cards</TabsTrigger>
+            <TabsTrigger value="support">Support</TabsTrigger>
+            <TabsTrigger value="faq">FAQ</TabsTrigger>
+            <TabsTrigger value="pseudo-login">Test</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">

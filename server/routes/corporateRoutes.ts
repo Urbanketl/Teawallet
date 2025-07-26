@@ -284,12 +284,12 @@ export function registerCorporateRoutes(app: Express) {
     }
   });
 
-  // Monthly transaction summary for reporting
-  app.get("/api/corporate/monthly-summary", isAuthenticated, async (req: any, res) => {
+  // Monthly transaction summary for reporting - with path parameter support
+  app.get("/api/corporate/monthly-summary/:businessUnitId/:month", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;  
-      const businessUnitId = req.query.businessUnitId as string;
-      const month = req.query.month as string; // Format: YYYY-MM
+      const businessUnitId = req.params.businessUnitId as string;
+      const month = req.params.month as string; // Format: YYYY-MM
 
       if (!businessUnitId || !month) {
         return res.status(400).json({ error: "businessUnitId and month are required" });
@@ -311,12 +311,12 @@ export function registerCorporateRoutes(app: Express) {
     }
   });
 
-  // Export CSV transactions for a month
-  app.get("/api/corporate/export/csv", isAuthenticated, async (req: any, res) => {
+  // Export CSV transactions for a month - with path parameter support
+  app.get("/api/corporate/monthly-export/:businessUnitId/:month", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
-      const businessUnitId = req.query.businessUnitId as string;
-      const month = req.query.month as string; // Format: YYYY-MM
+      const businessUnitId = req.params.businessUnitId as string;
+      const month = req.params.month as string; // Format: YYYY-MM
 
       if (!businessUnitId || !month) {
         return res.status(400).json({ error: "businessUnitId and month are required" });
@@ -370,12 +370,12 @@ export function registerCorporateRoutes(app: Express) {
     }
   });
 
-  // Generate PDF invoice for a month
-  app.get("/api/corporate/export/invoice", isAuthenticated, async (req: any, res) => {
+  // Generate PDF invoice for a month - with path parameter support
+  app.get("/api/corporate/monthly-invoice/:businessUnitId/:month", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
-      const businessUnitId = req.query.businessUnitId as string;
-      const month = req.query.month as string; // Format: YYYY-MM
+      const businessUnitId = req.params.businessUnitId as string;
+      const month = req.params.month as string; // Format: YYYY-MM
 
       if (!businessUnitId || !month) {
         return res.status(400).json({ error: "businessUnitId and month are required" });

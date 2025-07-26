@@ -55,15 +55,24 @@ export function registerCorporateRoutes(app: Express) {
         'ETag': false
       });
 
+      console.log(`=== TRANSACTION FILTER DEBUG ===`);
+      console.log(`User ID: ${userId}`);
+      console.log(`Business Unit ID: ${businessUnitId}`);
+      console.log(`Limit: ${limit}`);
+      console.log(`Query params:`, req.query);
+
       let transactions;
-      if (businessUnitId) {
+      if (businessUnitId && businessUnitId !== 'null' && businessUnitId !== 'undefined') {
         // Get transactions for specific business unit
+        console.log(`Filtering transactions for business unit: ${businessUnitId}`);
         transactions = await storage.getBusinessUnitTransactions(businessUnitId, limit);
-        console.log(`Fetching transactions for business unit: ${businessUnitId}, found: ${transactions.length}`);
+        console.log(`Found ${transactions.length} transactions for business unit ${businessUnitId}`);
+        console.log(`Sample transaction IDs:`, transactions.slice(0, 3).map(t => `${t.id}(${t.description?.substring(0, 30)})`));
       } else {
         // Get transactions for all user's business units
+        console.log(`Getting all transactions for user: ${userId}`);
         transactions = await storage.getUserTransactions(userId, limit);
-        console.log(`Fetching all transactions for user: ${userId}, found: ${transactions.length}`);
+        console.log(`Found ${transactions.length} transactions for user ${userId}`);
       }
       res.json(transactions);
     } catch (error) {

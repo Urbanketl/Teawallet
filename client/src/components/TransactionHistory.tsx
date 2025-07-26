@@ -19,15 +19,27 @@ export default function TransactionHistory({ businessUnitId }: TransactionHistor
       const params = new URLSearchParams();
       if (businessUnitId) {
         params.append('businessUnitId', businessUnitId);
+        console.log(`Frontend: Fetching transactions for business unit: ${businessUnitId}`);
+      } else {
+        console.log(`Frontend: Fetching all transactions`);
       }
       // Add timestamp to prevent caching
       params.append('_t', Date.now().toString());
-      return fetch(`/api/transactions?${params}`, {
+      const url = `/api/transactions?${params}`;
+      console.log(`Frontend: Making request to: ${url}`);
+      
+      return fetch(url, {
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
         }
-      }).then(res => res.json());
+      }).then(res => {
+        console.log(`Frontend: Response status: ${res.status}`);
+        return res.json();
+      }).then(data => {
+        console.log(`Frontend: Received ${data.length} transactions, first transaction ID: ${data[0]?.id}, description: ${data[0]?.description}`);
+        return data;
+      });
     },
     enabled: isAuthenticated,
     retry: false,

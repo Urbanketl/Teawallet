@@ -27,7 +27,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register route modules
   app.use('/api/auth', authRoutes);
-  app.use('/api/transactions', transactionRoutes);
+  // Note: /api/transactions is now handled by corporateRoutes with business unit filtering
   app.use('/api/support', supportRoutes);
   app.use('/api/analytics', analyticsRoutes);
   

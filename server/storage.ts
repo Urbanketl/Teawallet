@@ -2,13 +2,15 @@ import { db } from "./db";
 import { 
   users, businessUnits, userBusinessUnits, rfidCards, transactions, dispensingLogs, teaMachines,
   referrals, supportTickets, supportMessages, ticketStatusHistory, faqArticles, systemSettings,
+  businessUnitTransfers,
   type User, type UpsertUser, type BusinessUnit, type InsertBusinessUnit,
   type UserBusinessUnit, type InsertUserBusinessUnit, type RfidCard, type InsertRfidCard,
   type Transaction, type InsertTransaction, type DispensingLog, type InsertDispensingLog,
   type TeaMachine, type InsertTeaMachine,
   type Referral, type InsertReferral, type SupportTicket, type InsertSupportTicket,
   type SupportMessage, type InsertSupportMessage, type FaqArticle, type InsertFaqArticle,
-  type TicketStatusHistory, type InsertTicketStatusHistory, type SystemSetting
+  type TicketStatusHistory, type InsertTicketStatusHistory, type SystemSetting,
+  type BusinessUnitTransfer, type InsertBusinessUnitTransfer
 } from "@shared/schema";
 import { eq, and, desc, asc, sql, gte, or, ilike, inArray } from "drizzle-orm";
 
@@ -28,6 +30,16 @@ export interface IStorage {
   // User-Business Unit assignments
   assignUserToBusinessUnit(userId: string, businessUnitId: string, role: string): Promise<void>;
   removeUserFromBusinessUnit(userId: string, businessUnitId: string): Promise<void>;
+  
+  // Business Unit Transfer Operations (Admin Only)
+  transferBusinessUnitAdmin(params: {
+    businessUnitId: string;
+    newAdminId: string;
+    transferredBy: string;
+    reason: string;
+  }): Promise<{ success: boolean; message: string }>;
+  getBusinessUnitTransferHistory(businessUnitId: string): Promise<(BusinessUnitTransfer & { fromUser?: User; toUser: User; transferrer: User })[]>;
+  getAllBusinessUnitTransfers(): Promise<(BusinessUnitTransfer & { businessUnit: BusinessUnit; fromUser?: User; toUser: User; transferrer: User })[]>;
   
   // RFID operations
   getBusinessUnitRfidCards(businessUnitId: string): Promise<RfidCard[]>;
@@ -1432,6 +1444,139 @@ export class DatabaseStorage implements IStorage {
         };
       }
     });
+  }
+
+  // Business Unit Transfer Operations (Admin Only)
+  async transferBusinessUnitAdmin(params: {
+    businessUnitId: string;
+    newAdminId: string;
+    transferredBy: string;
+    reason: string;
+  }): Promise<{ success: boolean; message: string }> {
+    try {
+      const { businessUnitId, newAdminId, transferredBy, reason } = params;
+
+      // Get current admin (if any)
+      const currentAssignments = await db
+        .select()
+        .from(userBusinessUnits)
+        .where(eq(userBusinessUnits.businessUnitId, businessUnitId));
+
+      const currentAdmin = currentAssignments[0];
+      
+      // Get business unit details for asset snapshot
+      const businessUnit = await this.getBusinessUnit(businessUnitId);
+      if (!businessUnit) {
+        return { success: false, message: "Business unit not found" };
+      }
+
+      // Get counts for asset snapshot
+      const [transactionCount] = await db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(transactions)
+        .where(eq(transactions.businessUnitId, businessUnitId));
+
+      const [machineCount] = await db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(teaMachines)
+        .where(eq(teaMachines.businessUnitId, businessUnitId));
+
+      const [cardCount] = await db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(rfidCards)
+        .where(eq(rfidCards.businessUnitId, businessUnitId));
+
+      const assetsSnapshot = {
+        walletBalance: businessUnit.walletBalance,
+        transactionCount: transactionCount.count || 0,
+        machineCount: machineCount.count || 0,
+        rfidCardCount: cardCount.count || 0,
+        transferDate: new Date().toISOString()
+      };
+
+      // Perform transfer in transaction
+      await db.transaction(async (tx) => {
+        // Remove current admin assignment if exists
+        if (currentAdmin) {
+          await tx.delete(userBusinessUnits)
+            .where(eq(userBusinessUnits.businessUnitId, businessUnitId));
+        }
+
+        // Assign new admin
+        await tx.insert(userBusinessUnits).values({
+          userId: newAdminId,
+          businessUnitId,
+          role: 'manager'
+        });
+
+        // Log the transfer
+        await tx.insert(businessUnitTransfers).values({
+          businessUnitId,
+          fromUserId: currentAdmin?.userId || null,
+          toUserId: newAdminId,
+          transferredBy,
+          reason,
+          assetsTransferred: assetsSnapshot
+        });
+      });
+
+      return { 
+        success: true, 
+        message: `Business unit successfully transferred. Assets: ₹${businessUnit.walletBalance} wallet, ${assetsSnapshot.transactionCount} transactions, ${assetsSnapshot.machineCount} machines, ${assetsSnapshot.rfidCardCount} RFID cards.`
+      };
+
+    } catch (error) {
+      console.error('Error in transferBusinessUnitAdmin:', error);
+      return { success: false, message: "Transfer failed due to system error" };
+    }
+  }
+
+  async getBusinessUnitTransferHistory(businessUnitId: string): Promise<(BusinessUnitTransfer & { fromUser?: User; toUser: User; transferrer: User })[]> {
+    const transfers = await db
+      .select({
+        transfer: businessUnitTransfers,
+        fromUser: users,
+        toUser: users,
+        transferrer: users
+      })
+      .from(businessUnitTransfers)
+      .leftJoin(users, eq(businessUnitTransfers.fromUserId, users.id))
+      .innerJoin(users, eq(businessUnitTransfers.toUserId, users.id))
+      .innerJoin(users, eq(businessUnitTransfers.transferredBy, users.id))
+      .where(eq(businessUnitTransfers.businessUnitId, businessUnitId))
+      .orderBy(desc(businessUnitTransfers.transferDate));
+
+    return transfers.map(row => ({
+      ...row.transfer,
+      fromUser: row.fromUser || undefined,
+      toUser: row.toUser,
+      transferrer: row.transferrer
+    }));
+  }
+
+  async getAllBusinessUnitTransfers(): Promise<(BusinessUnitTransfer & { businessUnit: BusinessUnit; fromUser?: User; toUser: User; transferrer: User })[]> {
+    const transfers = await db
+      .select({
+        transfer: businessUnitTransfers,
+        businessUnit: businessUnits,
+        fromUser: users,
+        toUser: users,
+        transferrer: users
+      })
+      .from(businessUnitTransfers)
+      .innerJoin(businessUnits, eq(businessUnitTransfers.businessUnitId, businessUnits.id))
+      .leftJoin(users, eq(businessUnitTransfers.fromUserId, users.id))
+      .innerJoin(users, eq(businessUnitTransfers.toUserId, users.id))
+      .innerJoin(users, eq(businessUnitTransfers.transferredBy, users.id))
+      .orderBy(desc(businessUnitTransfers.transferDate));
+
+    return transfers.map(row => ({
+      ...row.transfer,
+      businessUnit: row.businessUnit,
+      fromUser: row.fromUser || undefined,
+      toUser: row.toUser,
+      transferrer: row.transferrer
+    }));
   }
 }
 

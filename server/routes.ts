@@ -1150,6 +1150,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     `);
   });
 
+  // Admin Transfer Interface Routes
+  app.post('/api/admin/business-units/:id/transfer', isAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = req.user.claims.sub;
+      const admin = await storage.getUser(adminId);
+      
+      if (!admin?.isAdmin) {
+        return res.status(403).json({ message: "Access denied. Admin privileges required." });
+      }
+
+      const { id: businessUnitId } = req.params;
+      const { newAdminId, reason } = req.body;
+
+      if (!newAdminId || !reason) {
+        return res.status(400).json({ message: "New admin ID and reason are required" });
+      }
+
+      const result = await storage.transferBusinessUnitAdmin({
+        businessUnitId,
+        newAdminId,
+        transferredBy: adminId,
+        reason
+      });
+
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      console.error("Error transferring business unit:", error);
+      res.status(500).json({ message: "Failed to transfer business unit" });
+    }
+  });
+
+  // Get transfer history for a business unit
+  app.get('/api/admin/business-units/:id/transfers', isAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = req.user.claims.sub;
+      const admin = await storage.getUser(adminId);
+      
+      if (!admin?.isAdmin) {
+        return res.status(403).json({ message: "Access denied. Admin privileges required." });
+      }
+
+      const { id: businessUnitId } = req.params;
+      const transfers = await storage.getBusinessUnitTransferHistory(businessUnitId);
+      
+      res.json(transfers);
+    } catch (error) {
+      console.error("Error fetching transfer history:", error);
+      res.status(500).json({ message: "Failed to fetch transfer history" });
+    }
+  });
+
+  // Get all business unit transfers (admin dashboard)
+  app.get('/api/admin/transfers', isAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = req.user.claims.sub;
+      const admin = await storage.getUser(adminId);
+      
+      if (!admin?.isAdmin) {
+        return res.status(403).json({ message: "Access denied. Admin privileges required." });
+      }
+
+      const transfers = await storage.getAllBusinessUnitTransfers();
+      
+      res.json(transfers);
+    } catch (error) {
+      console.error("Error fetching all transfers:", error);
+      res.status(500).json({ message: "Failed to fetch transfers" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

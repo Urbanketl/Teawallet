@@ -57,6 +57,7 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Analytics**: Revenue tracking, usage patterns, and machine performance
 - **Support System**: Ticket management and FAQ system
 - **Machine Monitoring**: Real-time machine status and maintenance alerts
+- **Secure Admin Transfer**: Business unit ownership transfer with audit logging and asset protection
 
 ## Data Flow
 
@@ -117,6 +118,13 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- July 26, 2025: COMPLETED - Implemented secure Admin Transfer Interface with comprehensive audit logging and asset protection
+- July 26, 2025: Completely replaced unsafe "Assign" tab functionality with security-focused business unit transfer system
+- July 26, 2025: Added businessUnitTransfers database table with complete asset snapshot logging (wallet balance, transaction count, machine count, RFID card count)
+- July 26, 2025: Built comprehensive AdminTransferInterface component with confirmation dialogs, transfer history, and security warnings
+- July 26, 2025: Implemented backend API endpoints for secure transfers (/api/admin/business-units/:id/transfer) with validation and audit trails
+- July 26, 2025: Enhanced business unit ownership transfer process with mandatory reason documentation and platform admin authorization
+- July 26, 2025: Added transfer history tracking with full audit trail showing from/to users, transfer reasons, asset summaries, and timestamps
 - July 26, 2025: COMPLETED - Fixed critical transaction filtering issue where business unit selection wasn't working on mobile dashboard
 - July 26, 2025: Resolved competing API route conflicts that prevented proper business unit data segregation  
 - July 26, 2025: Removed duplicate transaction routes from server/routes.ts and transactionRoutes module that were intercepting requests

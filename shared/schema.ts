@@ -168,6 +168,18 @@ export const systemSettings = pgTable("system_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Business Unit Transfer Audit Log
+export const businessUnitTransfers = pgTable("business_unit_transfers", {
+  id: serial("id").primaryKey(),
+  businessUnitId: varchar("business_unit_id").notNull().references(() => businessUnits.id),
+  fromUserId: varchar("from_user_id").references(() => users.id), // null for initial assignments
+  toUserId: varchar("to_user_id").notNull().references(() => users.id),
+  transferredBy: varchar("transferred_by").notNull().references(() => users.id),
+  reason: text("reason"),
+  transferDate: timestamp("transfer_date").defaultNow(),
+  assetsTransferred: jsonb("assets_transferred"), // snapshot of assets at transfer time
+});
+
 // Relations - Updated for multi-business unit model
 export const usersRelations = relations(users, ({ many }) => ({
   userBusinessUnits: many(userBusinessUnits),
@@ -272,6 +284,11 @@ export const insertSystemSettingSchema = createInsertSchema(systemSettings).omit
   updatedAt: true,
 });
 
+export const insertBusinessUnitTransferSchema = createInsertSchema(businessUnitTransfers).omit({
+  id: true,
+  transferDate: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -299,3 +316,5 @@ export type FaqArticle = typeof faqArticles.$inferSelect;
 export type InsertFaqArticle = z.infer<typeof insertFaqArticleSchema>;
 export type SystemSetting = typeof systemSettings.$inferSelect;
 export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
+export type BusinessUnitTransfer = typeof businessUnitTransfers.$inferSelect;
+export type InsertBusinessUnitTransfer = z.infer<typeof insertBusinessUnitTransferSchema>;

@@ -7,44 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, Settings, Plus, DollarSign } from "lucide-react";
+import { Building2, Settings, Plus, DollarSign, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { BusinessUnit, User, TeaMachine } from "@shared/schema";
+import type { BusinessUnit, TeaMachine } from "@shared/schema";
+import { AdminTransferInterface } from "./AdminTransferInterface";
 
-// Component to show user assigned to a business unit (only one allowed)
-function UserAssignments({ unitId, onChangeUser }: { unitId: string; onChangeUser: (unitId: string, currentUserId?: string) => void }) {
-  const { data: assignments } = useQuery({
-    queryKey: [`/api/admin/business-units/${unitId}/users`],
-    retry: false,
-  });
 
-  if (!assignments || !Array.isArray(assignments) || assignments.length === 0) {
-    return <p className="text-sm text-gray-500 italic">No user assigned</p>;
-  }
-
-  const assignment = assignments[0]; // Only one user per business unit
-
-  return (
-    <div className="flex items-center justify-between text-sm">
-      <div>
-        <span className="font-medium">{assignment.user?.firstName} {assignment.user?.lastName}</span>
-        <div className="text-xs text-gray-500">{assignment.user?.email}</div>
-      </div>
-      <div className="flex items-center gap-2">
-        <Badge variant="secondary" className="text-xs">{assignment.role}</Badge>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => onChangeUser(unitId, assignment.userId)}
-          className="text-xs h-6 px-2"
-        >
-          Change
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 interface BusinessUnitWithDetails extends BusinessUnit {
   userCount?: number;
@@ -54,10 +23,6 @@ interface BusinessUnitWithDetails extends BusinessUnit {
 export function BusinessUnitsTab() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
-  const [selectedAssignmentUnit, setSelectedAssignmentUnit] = useState<string>("");
-  const [assignmentSearch, setAssignmentSearch] = useState<string>("");
-  const [changingUser, setChangingUser] = useState<{ unitId: string; currentUserId?: string } | null>(null);
   const [newUnitForm, setNewUnitForm] = useState({
     name: "",
     code: "",
@@ -71,11 +36,7 @@ export function BusinessUnitsTab() {
     retry: false,
   });
 
-  // Fetch all users for assignment
-  const { data: allUsers } = useQuery({
-    queryKey: ["/api/admin/users"],
-    retry: false,
-  });
+
 
   // Fetch unassigned machines
   const { data: unassignedMachines } = useQuery({
@@ -102,25 +63,7 @@ export function BusinessUnitsTab() {
     }
   });
 
-  // Assign user to business unit mutation
-  const assignUserMutation = useMutation({
-    mutationFn: async ({ unitId, userId, role }: { unitId: string; userId: string; role: string }) => {
-      return apiRequest("POST", `/api/admin/business-units/${unitId}/users`, { userId, role });
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/business-units"] });
-      queryClient.invalidateQueries({ queryKey: [`/api/admin/business-units/${variables.unitId}/users`] });
-      setSelectedAssignmentUnit(""); // Reset form after successful assignment
-      toast({ title: "Success", description: "User assigned successfully" });
-    },
-    onError: (error: any) => {
-      toast({ 
-        title: "Error", 
-        description: error.message || "Failed to assign user",
-        variant: "destructive" 
-      });
-    }
-  });
+
 
   // Assign machine to business unit mutation
   const assignMachineMutation = useMutation({
@@ -192,7 +135,7 @@ export function BusinessUnitsTab() {
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="create">Create Unit</TabsTrigger>
-          <TabsTrigger value="assign-users">Assign Users</TabsTrigger>
+          <TabsTrigger value="admin-transfer">Admin Transfer</TabsTrigger>
           <TabsTrigger value="assign-machines">Assign Machines</TabsTrigger>
         </TabsList>
 
@@ -321,15 +264,8 @@ export function BusinessUnitsTab() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="assign-users" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                Assign Users to Business Units
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+        <TabsContent value="admin-transfer" className="space-y-6">
+          <AdminTransferInterface />
               <div className="space-y-6">
                 <div>
                   <h3 className="font-medium mb-4">New User Assignment</h3>

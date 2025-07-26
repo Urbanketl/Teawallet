@@ -702,33 +702,31 @@ export default function AdminPage() {
         </div>
 
         {/* Mobile Navigation Selector (visible on small screens) */}
-        <div className="md:hidden mb-6 mt-12">
+        <div className="sm:hidden mb-6 mt-12">
           <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
             <CardContent className="p-4">
               <div className="flex items-center gap-3 mb-3">
                 <Shield className="h-5 w-5 text-orange-600" />
                 <h3 className="font-semibold text-orange-800">Platform Admin</h3>
               </div>
-              <Select 
+
+              {/* Native HTML Select for better mobile compatibility */}
+              <select 
                 value={currentTab}
-                onValueChange={setCurrentTab}
+                onChange={(e) => setCurrentTab(e.target.value)}
+                className="w-full bg-white border border-orange-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
               >
-                <SelectTrigger className="w-full bg-white border-orange-200">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="overview">📊 Overview Dashboard</SelectItem>
-                  <SelectItem value="users">👥 User Management</SelectItem>
-                  <SelectItem value="business-units">🏢 Business Units</SelectItem>
-                  <SelectItem value="machines">☕ Tea Machines</SelectItem>
-                  <SelectItem value="machine-mgmt">🔧 Machine Admin</SelectItem>
-                  <SelectItem value="rfid">💳 RFID Cards</SelectItem>
-                  <SelectItem value="support">📞 Support Tickets</SelectItem>
-                  <SelectItem value="faq">❓ FAQ Management</SelectItem>
-                  <SelectItem value="pseudo-login">🔓 Test Login</SelectItem>
-                  <SelectItem value="settings">⚙️ System Settings</SelectItem>
-                </SelectContent>
-              </Select>
+                <option value="overview">📊 Overview Dashboard</option>
+                <option value="users">👥 User Management</option>
+                <option value="business-units">🏢 Business Units</option>
+                <option value="machines">☕ Tea Machines</option>
+                <option value="machine-mgmt">🔧 Machine Admin</option>
+                <option value="rfid">💳 RFID Cards</option>
+                <option value="support">📞 Support Tickets</option>
+                <option value="faq">❓ FAQ Management</option>
+                <option value="pseudo-login">🔓 Test Login</option>
+                <option value="settings">⚙️ System Settings</option>
+              </select>
             </CardContent>
           </Card>
         </div>
@@ -740,7 +738,7 @@ export default function AdminPage() {
           className="space-y-6 mt-12"
         >
           {/* Desktop horizontal tabs */}
-          <TabsList className="bg-white shadow-sm hidden md:flex overflow-x-auto">
+          <TabsList className="bg-white shadow-sm hidden sm:flex overflow-x-auto">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="business-units">Business Units</TabsTrigger>

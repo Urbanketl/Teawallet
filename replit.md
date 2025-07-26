@@ -117,6 +117,10 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- July 26, 2025: COMPLETED - Fixed critical transaction filtering issue where business unit selection wasn't working on mobile dashboard
+- July 26, 2025: Resolved competing API route conflicts that prevented proper business unit data segregation  
+- July 26, 2025: Removed duplicate transaction routes from server/routes.ts and transactionRoutes module that were intercepting requests
+- July 26, 2025: Enhanced transaction filtering now properly shows different data per business unit: Kulhad party (10 KP transactions) vs New Urban ketl (10 UK transactions)
 - July 25, 2025: COMPLETED - Implemented mandatory business unit assignment for all machines and business unit tracking for all transactions
 - July 25, 2025: Updated database schema to require businessUnitId for all tea machines (NOT NULL constraint)
 - July 25, 2025: Enhanced transactions table with businessUnitId and machineId columns for complete business unit transaction tracking

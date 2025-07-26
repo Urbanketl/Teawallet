@@ -92,13 +92,19 @@ export default function Dashboard() {
                   Welcome back, {user.firstName || "Tea Lover"}!
                 </h2>
                 {selectedBusinessUnitId && dashboardStats?.businessUnitName && (
-                  <p className="text-lg opacity-90 flex items-center gap-2">
-                    <Building2 className="w-5 h-5" />
-                    {dashboardStats.businessUnitName}
-                  </p>
+                  <div className="bg-white/20 rounded-lg px-3 py-2 mt-2 inline-block">
+                    <p className="text-lg font-semibold flex items-center gap-2">
+                      <Building2 className="w-5 h-5" />
+                      {dashboardStats.businessUnitName}
+                    </p>
+                    <p className="text-sm opacity-80">Business Unit Selected</p>
+                  </div>
                 )}
                 {!selectedBusinessUnitId && (
-                  <p className="text-lg opacity-90">Viewing all business units</p>
+                  <div className="bg-white/20 rounded-lg px-3 py-2 mt-2 inline-block">
+                    <p className="text-lg font-semibold">All Business Units</p>
+                    <p className="text-sm opacity-80">Aggregate View</p>
+                  </div>
                 )}
                 <p className="text-lg drop-shadow-sm text-[#A67C52]">Ready for your next cup of premium tea?</p>
               </div>

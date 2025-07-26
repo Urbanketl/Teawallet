@@ -77,15 +77,15 @@ export default function BusinessUnitSelector({
           {businessUnits.length > 1 && (
             <div className="mt-4">
               <h4 className="text-sm font-medium text-gray-700 mb-2">Quick Overview:</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {businessUnits.map((unit) => (
                   <div
                     key={unit.id}
                     onClick={() => onBusinessUnitChange(unit.id)}
-                    className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                    className={`p-3 rounded-lg border cursor-pointer transition-all touch-friendly ${
                       selectedBusinessUnitId === unit.id
                         ? "border-tea-green bg-tea-green/10 ring-2 ring-tea-green/20"
-                        : "border-gray-200 hover:border-tea-green/50 hover:bg-gray-50"
+                        : "border-gray-200 hover:border-tea-green/50 hover:bg-gray-50 active:bg-gray-100"
                     }`}
                   >
                     <div className="text-sm font-medium text-gray-900 truncate">

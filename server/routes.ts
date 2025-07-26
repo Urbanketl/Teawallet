@@ -242,27 +242,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Transaction routes with business unit filtering
-  app.get('/api/transactions', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const limit = parseInt(req.query.limit as string) || 50;
-      const businessUnitId = req.query.businessUnitId as string;
-      
-      if (businessUnitId) {
-        // Get transactions for specific business unit
-        const transactions = await storage.getBusinessUnitTransactions(businessUnitId, limit);
-        res.json(transactions);
-      } else {
-        // Get all transactions for user's business units
-        const transactions = await storage.getUserTransactions(userId, limit);
-        res.json(transactions);
-      }
-    } catch (error) {
-      console.error("Error fetching transactions:", error);
-      res.status(500).json({ message: "Failed to fetch transactions" });
-    }
-  });
+  // Transaction routes are now handled in corporateRoutes.ts with enhanced business unit filtering
 
   // RFID routes
   app.get('/api/rfid/card', isAuthenticated, async (req: any, res) => {

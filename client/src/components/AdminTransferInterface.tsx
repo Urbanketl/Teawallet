@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -77,10 +77,20 @@ export function AdminTransferInterface() {
   });
 
   // Fetch users for assignment
-  const { data: usersData } = useQuery<{ users: User[] }>({
-    queryKey: ['/api/admin/users', { page: 1, limit: 100 }]
+  const { data: users = [], isLoading: usersLoading, error: usersError } = useQuery<User[]>({
+    queryKey: ['/api/admin/users']
   });
-  const users = usersData?.users || [];
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log('AdminTransferInterface Debug:', {
+      users,
+      usersLength: users.length,
+      usersLoading,
+      usersError,
+      businessUnits: businessUnits.length
+    });
+  }, [users, usersLoading, usersError, businessUnits]);
 
   // Fetch all transfers for history
   const { data: allTransfers = [] } = useQuery<Transfer[]>({

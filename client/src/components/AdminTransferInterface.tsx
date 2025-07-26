@@ -105,10 +105,10 @@ export function AdminTransferInterface() {
         reason
       });
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast({
         title: "Transfer Successful",
-        description: data.message,
+        description: data.message || "Business unit ownership transferred successfully",
         variant: "default",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/business-units'] });

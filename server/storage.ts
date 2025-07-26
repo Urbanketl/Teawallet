@@ -13,6 +13,7 @@ import {
   type BusinessUnitTransfer, type InsertBusinessUnitTransfer
 } from "@shared/schema";
 import { eq, and, desc, asc, sql, gte, or, ilike, inArray } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 export interface IStorage {
   // User operations (mandatory for Replit Auth)
@@ -1702,19 +1703,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllBusinessUnitTransfers(): Promise<(BusinessUnitTransfer & { businessUnit: BusinessUnit; fromUser?: User; toUser: User; transferrer: User })[]> {
+    const fromUsers = alias(users, 'fromUsers');
+    const toUsers = alias(users, 'toUsers');  
+    const transferrerUsers = alias(users, 'transferrerUsers');
+
     const transfers = await db
       .select({
         transfer: businessUnitTransfers,
         businessUnit: businessUnits,
-        fromUser: users,
-        toUser: users,
-        transferrer: users
+        fromUser: fromUsers,
+        toUser: toUsers,
+        transferrer: transferrerUsers
       })
       .from(businessUnitTransfers)
       .innerJoin(businessUnits, eq(businessUnitTransfers.businessUnitId, businessUnits.id))
-      .leftJoin(users, eq(businessUnitTransfers.fromUserId, users.id))
-      .innerJoin(users, eq(businessUnitTransfers.toUserId, users.id))
-      .innerJoin(users, eq(businessUnitTransfers.transferredBy, users.id))
+      .leftJoin(fromUsers, eq(businessUnitTransfers.fromUserId, fromUsers.id))
+      .innerJoin(toUsers, eq(businessUnitTransfers.toUserId, toUsers.id))
+      .innerJoin(transferrerUsers, eq(businessUnitTransfers.transferredBy, transferrerUsers.id))
       .orderBy(desc(businessUnitTransfers.transferDate));
 
     return transfers.map(row => ({

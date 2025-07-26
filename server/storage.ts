@@ -143,6 +143,19 @@ export interface IStorage {
   getSystemSetting(key: string): Promise<string | undefined>;
   updateSystemSetting(key: string, value: string, updatedBy: string): Promise<void>;
   getAllSystemSettings(): Promise<{ key: string; value: string; description: string | null }[]>;
+  
+  // Monthly reporting operations
+  getMonthlyTransactionSummary(businessUnitId: string, month: string): Promise<{
+    totalTransactions: number;
+    totalAmount: string;
+    uniqueMachines: number;
+    uniqueCards: number;
+  }>;
+  getMonthlyTransactions(businessUnitId: string, month: string): Promise<(DispensingLog & {
+    cardNumber?: string;
+    machineName?: string;
+    machineLocation?: string;
+  })[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1728,6 +1741,78 @@ export class DatabaseStorage implements IStorage {
       fromUser: row.fromUser || undefined,
       toUser: row.toUser,
       transferrer: row.transferrer
+    }));
+  }
+
+  // Monthly reporting operations
+  async getMonthlyTransactionSummary(businessUnitId: string, month: string): Promise<{
+    totalTransactions: number;
+    totalAmount: string;
+    uniqueMachines: number;
+    uniqueCards: number;
+  }> {
+    const [year, monthNum] = month.split('-');
+    const startDate = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
+    const endDate = new Date(parseInt(year), parseInt(monthNum), 0, 23, 59, 59, 999);
+
+    const result = await db
+      .select({
+        totalTransactions: sql<number>`COUNT(*)`,
+        totalAmount: sql<string>`SUM(CAST(${dispensingLogs.amount} AS DECIMAL))`,
+        uniqueMachines: sql<number>`COUNT(DISTINCT ${dispensingLogs.machineId})`,
+        uniqueCards: sql<number>`COUNT(DISTINCT ${dispensingLogs.rfidCardId})`
+      })
+      .from(dispensingLogs)
+      .where(
+        and(
+          eq(dispensingLogs.businessUnitId, businessUnitId),
+          eq(dispensingLogs.success, true),
+          gte(dispensingLogs.createdAt, startDate),
+          sql`${dispensingLogs.createdAt} <= ${endDate}`
+        )
+      );
+
+    return {
+      totalTransactions: result[0]?.totalTransactions || 0,
+      totalAmount: result[0]?.totalAmount || '0',
+      uniqueMachines: result[0]?.uniqueMachines || 0,
+      uniqueCards: result[0]?.uniqueCards || 0
+    };
+  }
+
+  async getMonthlyTransactions(businessUnitId: string, month: string): Promise<(DispensingLog & {
+    cardNumber?: string;
+    machineName?: string;
+    machineLocation?: string;
+  })[]> {
+    const [year, monthNum] = month.split('-');
+    const startDate = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
+    const endDate = new Date(parseInt(year), parseInt(monthNum), 0, 23, 59, 59, 999);
+
+    const transactions = await db
+      .select({
+        log: dispensingLogs,
+        cardNumber: rfidCards.cardNumber,
+        machineName: teaMachines.name,
+        machineLocation: teaMachines.location
+      })
+      .from(dispensingLogs)
+      .leftJoin(rfidCards, eq(dispensingLogs.rfidCardId, rfidCards.id))
+      .leftJoin(teaMachines, eq(dispensingLogs.machineId, teaMachines.id))
+      .where(
+        and(
+          eq(dispensingLogs.businessUnitId, businessUnitId),
+          gte(dispensingLogs.createdAt, startDate),
+          sql`${dispensingLogs.createdAt} <= ${endDate}`
+        )
+      )
+      .orderBy(desc(dispensingLogs.createdAt));
+
+    return transactions.map(row => ({
+      ...row.log,
+      cardNumber: row.cardNumber,
+      machineName: row.machineName,
+      machineLocation: row.machineLocation
     }));
   }
 }

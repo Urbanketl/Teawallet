@@ -3,6 +3,8 @@ import { storage } from "../storage";
 import { isAuthenticated } from "../replitAuth";
 import { insertRfidCardSchema, insertTeaMachineSchema } from "@shared/schema";
 import { z } from "zod";
+import * as csvWriter from 'csv-writer';
+import * as PDFDocument from 'pdfkit';
 
 // B2B Corporate RFID Management Routes
 export function registerCorporateRoutes(app: Express) {
@@ -279,6 +281,195 @@ export function registerCorporateRoutes(app: Express) {
     } catch (error) {
       console.error("Error fetching dispensing logs:", error);
       res.status(500).json({ error: "Failed to fetch dispensing logs" });
+    }
+  });
+
+  // Monthly transaction summary for reporting
+  app.get("/api/corporate/monthly-summary", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;  
+      const businessUnitId = req.query.businessUnitId as string;
+      const month = req.query.month as string; // Format: YYYY-MM
+
+      if (!businessUnitId || !month) {
+        return res.status(400).json({ error: "businessUnitId and month are required" });
+      }
+
+      // Verify business unit belongs to user
+      const userBusinessUnits = await storage.getUserBusinessUnits(userId);
+      const businessUnit = userBusinessUnits.find(bu => bu.id === businessUnitId);
+      
+      if (!businessUnit) {
+        return res.status(403).json({ error: "Access denied to this business unit" });
+      }
+
+      const summary = await storage.getMonthlyTransactionSummary(businessUnitId, month);
+      res.json(summary);
+    } catch (error) {
+      console.error("Error fetching monthly summary:", error);
+      res.status(500).json({ error: "Failed to fetch monthly summary" });
+    }
+  });
+
+  // Export CSV transactions for a month
+  app.get("/api/corporate/export/csv", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
+      const businessUnitId = req.query.businessUnitId as string;
+      const month = req.query.month as string; // Format: YYYY-MM
+
+      if (!businessUnitId || !month) {
+        return res.status(400).json({ error: "businessUnitId and month are required" });
+      }
+
+      // Verify business unit belongs to user
+      const userBusinessUnits = await storage.getUserBusinessUnits(userId);
+      const businessUnit = userBusinessUnits.find(bu => bu.id === businessUnitId);
+      
+      if (!businessUnit) {
+        return res.status(403).json({ error: "Access denied to this business unit" });
+      }
+
+      const transactions = await storage.getMonthlyTransactions(businessUnitId, month);
+      
+      // Create CSV
+      const csv = csvWriter.createObjectCsvStringifier({
+        header: [
+          { id: 'date', title: 'Date' },
+          { id: 'time', title: 'Time' },
+          { id: 'cardNumber', title: 'Employee Card' },
+          { id: 'machineName', title: 'Machine' },
+          { id: 'machineLocation', title: 'Location' },
+          { id: 'teaType', title: 'Tea Type' },
+          { id: 'amount', title: 'Amount (₹)' },
+          { id: 'status', title: 'Status' },
+          { id: 'errorMessage', title: 'Error Details' }
+        ]
+      });
+
+      const csvData = transactions.map((t: any) => ({
+        date: new Date(t.createdAt).toLocaleDateString('en-IN'),
+        time: new Date(t.createdAt).toLocaleTimeString('en-IN'),
+        cardNumber: t.cardNumber || t.rfidCardId,
+        machineName: t.machineName || t.machineId,
+        machineLocation: t.machineLocation || '',
+        teaType: t.teaType,
+        amount: t.amount,
+        status: t.success ? 'Success' : 'Failed',
+        errorMessage: t.errorMessage || ''
+      }));
+
+      const csvString = csv.getHeaderString() + csv.stringifyRecords(csvData);
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="${businessUnit.name}-transactions-${month}.csv"`);
+      res.send(csvString);
+    } catch (error) {
+      console.error("Error exporting CSV:", error);
+      res.status(500).json({ error: "Failed to export CSV" });
+    }
+  });
+
+  // Generate PDF invoice for a month
+  app.get("/api/corporate/export/invoice", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
+      const businessUnitId = req.query.businessUnitId as string;
+      const month = req.query.month as string; // Format: YYYY-MM
+
+      if (!businessUnitId || !month) {
+        return res.status(400).json({ error: "businessUnitId and month are required" });
+      }
+
+      // Verify business unit belongs to user
+      const userBusinessUnits = await storage.getUserBusinessUnits(userId);
+      const businessUnit = userBusinessUnits.find(bu => bu.id === businessUnitId);
+      
+      if (!businessUnit) {
+        return res.status(403).json({ error: "Access denied to this business unit" });
+      }
+
+      const summary = await storage.getMonthlyTransactionSummary(businessUnitId, month);
+      const transactions = await storage.getMonthlyTransactions(businessUnitId, month);
+
+      // Create PDF
+      const doc = new PDFDocument({ margin: 50 });
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${businessUnit.name}-invoice-${month}.pdf"`);
+      doc.pipe(res);
+
+      // Header
+      doc.fontSize(20).text('UrbanKetl Tea Service Invoice', { align: 'center' });
+      doc.moveDown();
+
+      // Invoice details
+      const [year, monthNum] = month.split('-');
+      const monthName = new Date(parseInt(year), parseInt(monthNum) - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      
+      doc.fontSize(14);
+      doc.text(`Invoice for: ${businessUnit.name}`, { align: 'left' });
+      doc.text(`Business Unit Code: ${businessUnit.code}`);
+      doc.text(`Period: ${monthName}`);
+      doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`);
+      doc.moveDown();
+
+      // Summary section
+      doc.fontSize(16).text('Monthly Summary', { underline: true });
+      doc.fontSize(12);
+      doc.text(`Total Transactions: ${summary.totalTransactions || 0}`);
+      doc.text(`Total Amount: ₹${parseFloat(summary.totalAmount || 0).toFixed(2)}`);
+      doc.text(`Machines Used: ${summary.uniqueMachines || 0}`);
+      doc.text(`Employee Cards Active: ${summary.uniqueCards || 0}`);
+      doc.moveDown();
+
+      // Transaction details
+      if (transactions.length > 0) {
+        doc.fontSize(16).text('Transaction Details', { underline: true });
+        doc.fontSize(10);
+        
+        // Table header
+        const startY = doc.y;
+        doc.text('Date', 50, startY);
+        doc.text('Time', 120, startY);
+        doc.text('Card', 180, startY);
+        doc.text('Machine', 220, startY);
+        doc.text('Tea Type', 300, startY);
+        doc.text('Amount', 380, startY);
+        doc.text('Status', 430, startY);
+        
+        doc.moveTo(50, doc.y + 5).lineTo(500, doc.y + 5).stroke();
+        doc.moveDown(0.5);
+
+        // Transaction rows
+        transactions.slice(0, 50).forEach((t: any, index: number) => {
+          const y = doc.y;
+          doc.text(new Date(t.createdAt).toLocaleDateString('en-IN'), 50, y);
+          doc.text(new Date(t.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }), 120, y);
+          doc.text(String(t.cardNumber || t.rfidCardId).substring(0, 8), 180, y);
+          doc.text(String(t.machineName || t.machineId).substring(0, 12), 220, y);
+          doc.text(String(t.teaType).substring(0, 12), 300, y);
+          doc.text(`₹${t.amount}`, 380, y);
+          doc.text(t.success ? 'OK' : 'Failed', 430, y);
+          doc.moveDown(0.3);
+          
+          if (index % 20 === 19 && index < transactions.length - 1) {
+            doc.addPage();
+          }
+        });
+
+        if (transactions.length > 50) {
+          doc.moveDown();
+          doc.fontSize(10).text(`... and ${transactions.length - 50} more transactions`, { align: 'center', color: 'gray' });
+        }
+      }
+
+      // Footer
+      doc.fontSize(8).text('This is a system-generated invoice from UrbanKetl Tea Service Platform.', 50, doc.page.height - 50, { align: 'center', color: 'gray' });
+      
+      doc.end();
+    } catch (error) {
+      console.error("Error generating invoice:", error);
+      res.status(500).json({ error: "Failed to generate invoice" });
     }
   });
 }

@@ -24,7 +24,10 @@ import {
   Activity,
   TestTube,
   Building2,
-  Wallet
+  Wallet,
+  Download,
+  FileText,
+  Receipt
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -395,10 +398,11 @@ export default function CorporateDashboard() {
 
             {/* Tabs for detailed view */}
             <Tabs defaultValue="machines" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="machines">Machines</TabsTrigger>
                 <TabsTrigger value="cards">Employee Cards</TabsTrigger>
                 <TabsTrigger value="logs">Usage Logs</TabsTrigger>
+                <TabsTrigger value="reports">Monthly Reports</TabsTrigger>
               </TabsList>
 
               <TabsContent value="machines" className="space-y-4">
@@ -598,6 +602,10 @@ export default function CorporateDashboard() {
                   </CardContent>
                 </Card>
               </TabsContent>
+
+              <TabsContent value="reports" className="space-y-4">
+                <MonthlyReportsTab businessUnitId={selectedBusinessUnitId!} businessUnitName={selectedBusinessUnit.name} />
+              </TabsContent>
             </Tabs>
           </div>
         ) : (
@@ -609,5 +617,218 @@ export default function CorporateDashboard() {
         )}
       </div>
     </div>
+  );
+}
+
+function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitId: string; businessUnitName: string }) {
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [isExporting, setIsExporting] = useState(false);
+  const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
+  const { toast } = useToast();
+
+  // Generate month options for the last 12 months
+  const getMonthOptions = () => {
+    const options = [];
+    const now = new Date();
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const label = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+      options.push({ value, label });
+    }
+    return options;
+  };
+
+  // Get monthly transaction summary
+  const { data: monthlyData, isLoading: monthlyLoading } = useQuery({
+    queryKey: [`/api/corporate/monthly-summary`, businessUnitId, selectedMonth],
+    enabled: !!businessUnitId && !!selectedMonth,
+    retry: false,
+  });
+
+  const handleExportCSV = async () => {
+    setIsExporting(true);
+    try {
+      const response = await fetch(`/api/corporate/export/csv?businessUnitId=${businessUnitId}&month=${selectedMonth}`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${businessUnitName}-transactions-${selectedMonth}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Export Successful",
+        description: `Transaction data exported for ${selectedMonth}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Unable to export transaction data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleGenerateInvoice = async () => {
+    setIsGeneratingInvoice(true);
+    try {
+      const response = await fetch(`/api/corporate/export/invoice?businessUnitId=${businessUnitId}&month=${selectedMonth}`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Invoice generation failed');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${businessUnitName}-invoice-${selectedMonth}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Invoice Generated",
+        description: `Invoice created for ${selectedMonth}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Invoice Generation Failed",
+        description: "Unable to generate invoice",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingInvoice(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Receipt className="h-5 w-5" />
+          Monthly Reports & Invoicing
+        </CardTitle>
+        <CardDescription>
+          Export transaction data and generate invoices for {businessUnitName}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Month Selection */}
+        <div>
+          <Label htmlFor="month-select">Select Month</Label>
+          <select
+            id="month-select"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {getMonthOptions().map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Monthly Summary */}
+        {monthlyLoading ? (
+          <div className="text-center py-4">Loading monthly summary...</div>
+        ) : monthlyData ? (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-green-600">
+                  {monthlyData.totalTransactions || 0}
+                </div>
+                <p className="text-sm text-gray-600">Total Transactions</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-blue-600">
+                  ₹{parseFloat(monthlyData.totalAmount || 0).toFixed(2)}
+                </div>
+                <p className="text-sm text-gray-600">Total Amount</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-orange-600">
+                  {monthlyData.uniqueMachines || 0}
+                </div>
+                <p className="text-sm text-gray-600">Machines Used</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-purple-600">
+                  {monthlyData.uniqueCards || 0}
+                </div>
+                <p className="text-sm text-gray-600">Employee Cards</p>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <div className="text-center py-4 text-gray-500">
+            No transaction data available for the selected month
+          </div>
+        )}
+
+        {/* Export Actions */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Button
+            onClick={handleExportCSV}
+            disabled={isExporting || !monthlyData}
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            {isExporting ? "Exporting..." : "Export CSV"}
+          </Button>
+          
+          <Button
+            onClick={handleGenerateInvoice}
+            disabled={isGeneratingInvoice || !monthlyData}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <FileText className="h-4 w-4" />
+            {isGeneratingInvoice ? "Generating..." : "Generate Invoice PDF"}
+          </Button>
+        </div>
+
+        {/* Export Information */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h4 className="font-semibold text-blue-900 mb-2">Export Information</h4>
+          <ul className="text-sm text-blue-800 space-y-1">
+            <li>• <strong>CSV Export:</strong> Contains all transaction details, timestamps, machine IDs, and amounts</li>
+            <li>• <strong>Invoice PDF:</strong> Professional invoice with company branding and transaction summary</li>
+            <li>• <strong>Data Scope:</strong> All dispensing transactions charged to {businessUnitName} wallet</li>
+            <li>• <strong>File Naming:</strong> Files include business unit name and month for easy organization</li>
+          </ul>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

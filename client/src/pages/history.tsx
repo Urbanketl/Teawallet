@@ -43,10 +43,10 @@ export default function HistoryPage() {
     retry: false,
   });
 
-  const transactions = transactionsData?.transactions || [];
-  const transactionsTotal = transactionsData?.total || 0;
-  const dispensingHistory = dispensingData?.logs || [];
-  const dispensingTotal = dispensingData?.total || 0;
+  const transactions = transactionsData && 'transactions' in transactionsData ? transactionsData.transactions : [];
+  const transactionsTotal = transactionsData && 'total' in transactionsData ? transactionsData.total : 0;
+  const dispensingHistory = dispensingData && 'logs' in dispensingData ? dispensingData.logs : [];
+  const dispensingTotal = dispensingData && 'total' in dispensingData ? dispensingData.total : 0;
 
   if (isLoading) {
     return <div className="min-h-screen bg-neutral-warm flex items-center justify-center">Loading...</div>;
@@ -139,17 +139,17 @@ export default function HistoryPage() {
                     </div>
                   ))}
                 </div>
-                {transactionsTotal > 0 && (
-                  <div className="mt-6">
-                    <Pagination
-                      currentPage={transactionsPage}
-                      totalPages={Math.ceil(transactionsTotal / itemsPerPage)}
-                      totalItems={transactionsTotal}
-                      itemsPerPage={itemsPerPage}
-                      onPageChange={setTransactionsPage}
-                    />
-                  </div>
-                )}
+              )}
+              {transactionsTotal > 0 && (
+                <div className="mt-6">
+                  <Pagination
+                    currentPage={transactionsPage}
+                    totalPages={Math.ceil(transactionsTotal / itemsPerPage)}
+                    totalItems={transactionsTotal}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={setTransactionsPage}
+                  />
+                </div>
               )}
             </CardContent>
           </Card>
@@ -204,17 +204,17 @@ export default function HistoryPage() {
                     </div>
                   ))}
                 </div>
-                {dispensingTotal > 0 && (
-                  <div className="mt-6">
-                    <Pagination
-                      currentPage={dispensingPage}
-                      totalPages={Math.ceil(dispensingTotal / itemsPerPage)}
-                      totalItems={dispensingTotal}
-                      itemsPerPage={itemsPerPage}
-                      onPageChange={setDispensingPage}
-                    />
-                  </div>
-                )}
+              )}
+              {dispensingTotal > 0 && (
+                <div className="mt-6">
+                  <Pagination
+                    currentPage={dispensingPage}
+                    totalPages={Math.ceil(dispensingTotal / itemsPerPage)}
+                    totalItems={dispensingTotal}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={setDispensingPage}
+                  />
+                </div>
               )}
             </CardContent>
           </Card>

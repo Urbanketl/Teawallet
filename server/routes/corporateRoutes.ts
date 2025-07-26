@@ -46,6 +46,8 @@ export function registerCorporateRoutes(app: Express) {
       const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
       const businessUnitId = req.query.businessUnitId as string;
       const limit = parseInt(req.query.limit as string) || 50;
+      const page = parseInt(req.query.page as string);
+      const paginated = req.query.paginated === 'true';
 
       // Disable caching for this endpoint
       res.set({
@@ -59,22 +61,33 @@ export function registerCorporateRoutes(app: Express) {
       console.log(`User ID: ${userId}`);
       console.log(`Business Unit ID: ${businessUnitId}`);
       console.log(`Limit: ${limit}`);
+      console.log(`Page: ${page}, Paginated: ${paginated}`);
       console.log(`Query params:`, req.query);
 
       let transactions;
-      if (businessUnitId && businessUnitId !== 'null' && businessUnitId !== 'undefined') {
-        // Get transactions for specific business unit
-        console.log(`Filtering transactions for business unit: ${businessUnitId}`);
-        transactions = await storage.getBusinessUnitTransactions(businessUnitId, limit);
-        console.log(`Found ${transactions.length} transactions for business unit ${businessUnitId}`);
-        console.log(`Sample transaction IDs:`, transactions.slice(0, 3).map(t => `${t.id}(${t.description?.substring(0, 30)})`));
+      if (paginated && page && page > 0) {
+        // Paginated response
+        if (businessUnitId && businessUnitId !== 'null' && businessUnitId !== 'undefined') {
+          console.log(`Getting paginated transactions for business unit: ${businessUnitId}`);
+          transactions = await storage.getBusinessUnitTransactionsPaginated(businessUnitId, page, limit);
+        } else {
+          console.log(`Getting paginated transactions for user: ${userId}`);
+          transactions = await storage.getUserTransactionsPaginated(userId, page, limit);
+        }
+        res.json(transactions);
       } else {
-        // Get transactions for all user's business units
-        console.log(`Getting all transactions for user: ${userId}`);
-        transactions = await storage.getUserTransactions(userId, limit);
-        console.log(`Found ${transactions.length} transactions for user ${userId}`);
+        // Legacy non-paginated response
+        if (businessUnitId && businessUnitId !== 'null' && businessUnitId !== 'undefined') {
+          console.log(`Filtering transactions for business unit: ${businessUnitId}`);
+          transactions = await storage.getBusinessUnitTransactions(businessUnitId, limit);
+          console.log(`Found ${transactions.length} transactions for business unit ${businessUnitId}`);
+        } else {
+          console.log(`Getting all transactions for user: ${userId}`);
+          transactions = await storage.getUserTransactions(userId, limit);
+          console.log(`Found ${transactions.length} transactions for user ${userId}`);
+        }
+        res.json(transactions);
       }
-      res.json(transactions);
     } catch (error) {
       console.error("Error fetching transactions:", error);
       res.status(500).json({ message: "Failed to fetch transactions" });
@@ -87,16 +100,27 @@ export function registerCorporateRoutes(app: Express) {
       const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
       const businessUnitId = req.query.businessUnitId as string;
       const limit = parseInt(req.query.limit as string) || 50;
+      const page = parseInt(req.query.page as string);
+      const paginated = req.query.paginated === 'true';
 
       let dispensingLogs;
-      if (businessUnitId) {
-        // Get dispensing logs for specific business unit
-        dispensingLogs = await storage.getBusinessUnitDispensingLogs(businessUnitId, limit);
+      if (paginated && page && page > 0) {
+        // Paginated response
+        if (businessUnitId) {
+          dispensingLogs = await storage.getBusinessUnitDispensingLogsPaginated(businessUnitId, page, limit);
+        } else {
+          dispensingLogs = await storage.getUserDispensingLogsPaginated(userId, page, limit);
+        }
+        res.json(dispensingLogs);
       } else {
-        // Get dispensing logs for all user's business units
-        dispensingLogs = await storage.getUserDispensingLogs(userId, limit);
+        // Legacy non-paginated response
+        if (businessUnitId) {
+          dispensingLogs = await storage.getBusinessUnitDispensingLogs(businessUnitId, limit);
+        } else {
+          dispensingLogs = await storage.getUserDispensingLogs(userId, limit);
+        }
+        res.json(dispensingLogs);
       }
-      res.json(dispensingLogs);
     } catch (error) {
       console.error("Error fetching dispensing history:", error);
       res.status(500).json({ message: "Failed to fetch dispensing history" });

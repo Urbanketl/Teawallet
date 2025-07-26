@@ -38,7 +38,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/admin/users', requireAuth, requireAdmin, adminController.getAllUsers);
   app.patch('/api/admin/users/:userId/admin-status', requireAuth, requireAdmin, adminController.updateUserAdminStatus);
   app.get('/api/admin/stats', requireAuth, requireAdmin, adminController.getDashboardStats);
-  app.get('/api/admin/rfid/cards', requireAuth, requireAdmin, adminController.getAllRfidCards);
+  app.get('/api/admin/rfid/cards', requireAuth, requireAdmin, async (req: any, res) => {
+    try {
+      const page = parseInt(req.query.page as string);
+      const limit = parseInt(req.query.limit as string) || 20;
+      const paginated = req.query.paginated === 'true';
+
+      if (paginated && page && page > 0) {
+        // Paginated response
+        const result = await storage.getAllRfidCardsPaginated(page, limit);
+        res.json(result);
+      } else {
+        // Legacy non-paginated response
+        const cards = await storage.getAllRfidCards();
+        res.json(cards);
+      }
+    } catch (error) {
+      console.error('Error fetching RFID cards:', error);
+      res.status(500).json({ message: 'Failed to fetch RFID cards' });
+    }
+  });
   app.post('/api/admin/rfid/cards', requireAuth, requireAdmin, adminController.createRfidCard);
   app.delete('/api/admin/rfid/cards/:cardId', requireAuth, requireAdmin, adminController.deleteRfidCard);
   app.get('/api/admin/rfid/suggest-card-number', requireAuth, requireAdmin, adminController.getSuggestedCardNumber);

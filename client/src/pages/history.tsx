@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
@@ -7,10 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { History, Plus, Coffee, Calendar, IndianRupee } from "lucide-react";
 import { format } from "date-fns";
+import Pagination from "@/components/Pagination";
 
 export default function HistoryPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
+  const [transactionsPage, setTransactionsPage] = useState(1);
+  const [dispensingPage, setDispensingPage] = useState(1);
+  const itemsPerPage = 20;
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -27,17 +31,22 @@ export default function HistoryPage() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: transactions, isLoading: transactionsLoading } = useQuery({
-    queryKey: ["/api/transactions"],
+  const { data: transactionsData, isLoading: transactionsLoading } = useQuery({
+    queryKey: [`/api/transactions?paginated=true&page=${transactionsPage}&limit=${itemsPerPage}`],
     enabled: isAuthenticated,
     retry: false,
   });
 
-  const { data: dispensingHistory, isLoading: dispensingLoading } = useQuery({
-    queryKey: ["/api/dispensing/history"],
+  const { data: dispensingData, isLoading: dispensingLoading } = useQuery({
+    queryKey: [`/api/dispensing/history?paginated=true&page=${dispensingPage}&limit=${itemsPerPage}`],
     enabled: isAuthenticated,
     retry: false,
   });
+
+  const transactions = transactionsData?.transactions || [];
+  const transactionsTotal = transactionsData?.total || 0;
+  const dispensingHistory = dispensingData?.logs || [];
+  const dispensingTotal = dispensingData?.total || 0;
 
   if (isLoading) {
     return <div className="min-h-screen bg-neutral-warm flex items-center justify-center">Loading...</div>;
@@ -95,7 +104,7 @@ export default function HistoryPage() {
                   No transactions found
                 </div>
               ) : (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
+                <div className="space-y-3">
                   {transactions.map((transaction: any) => (
                     <div
                       key={transaction.id}
@@ -130,6 +139,17 @@ export default function HistoryPage() {
                     </div>
                   ))}
                 </div>
+                {transactionsTotal > 0 && (
+                  <div className="mt-6">
+                    <Pagination
+                      currentPage={transactionsPage}
+                      totalPages={Math.ceil(transactionsTotal / itemsPerPage)}
+                      totalItems={transactionsTotal}
+                      itemsPerPage={itemsPerPage}
+                      onPageChange={setTransactionsPage}
+                    />
+                  </div>
+                )}
               )}
             </CardContent>
           </Card>
@@ -150,7 +170,7 @@ export default function HistoryPage() {
                   No tea dispensing history found
                 </div>
               ) : (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
+                <div className="space-y-3">
                   {dispensingHistory.map((log: any) => (
                     <div
                       key={log.id}
@@ -184,6 +204,17 @@ export default function HistoryPage() {
                     </div>
                   ))}
                 </div>
+                {dispensingTotal > 0 && (
+                  <div className="mt-6">
+                    <Pagination
+                      currentPage={dispensingPage}
+                      totalPages={Math.ceil(dispensingTotal / itemsPerPage)}
+                      totalItems={dispensingTotal}
+                      itemsPerPage={itemsPerPage}
+                      onPageChange={setDispensingPage}
+                    />
+                  </div>
+                )}
               )}
             </CardContent>
           </Card>

@@ -69,8 +69,10 @@ export default function AdminPage() {
   const [usersSearch, setUsersSearch] = useState("");
   const [ticketsPage, setTicketsPage] = useState(1);
   const [ticketsStatus, setTicketsStatus] = useState("all");
+  const [rfidCardsPage, setRfidCardsPage] = useState(1);
   const usersPerPage = 50;
   const ticketsPerPage = 20;
+  const rfidCardsPerPage = 20;
 
   // Load system settings from database
   const { data: systemSettings } = useQuery({
@@ -725,7 +727,11 @@ export default function AdminPage() {
           </TabsContent>
 
           <TabsContent value="rfid">
-            <RfidManagement />
+            <RfidManagement 
+              rfidCardsPage={rfidCardsPage}
+              setRfidCardsPage={setRfidCardsPage}
+              rfidCardsPerPage={rfidCardsPerPage}
+            />
           </TabsContent>
 
           <TabsContent value="machines">
@@ -2417,7 +2423,11 @@ function UserManagement() {
   );
 }
 
-function RfidManagement() {
+function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: { 
+  rfidCardsPage: number;
+  setRfidCardsPage: (page: number) => void;
+  rfidCardsPerPage: number;
+}) {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [companyInitials, setCompanyInitials] = useState("");
@@ -2429,9 +2439,12 @@ function RfidManagement() {
     queryKey: ["/api/admin/users"],
   });
 
-  const { data: rfidCards, refetch: refetchCards } = useQuery({
-    queryKey: ["/api/admin/rfid/cards"],
+  const { data: rfidCardsData, refetch: refetchCards } = useQuery({
+    queryKey: [`/api/admin/rfid/cards?paginated=true&page=${rfidCardsPage}&limit=${rfidCardsPerPage}`],
   });
+
+  const rfidCards = (rfidCardsData as any)?.cards || [];
+  const rfidCardsTotal = (rfidCardsData as any)?.total || 0;
 
   const { data: suggestion } = useQuery({
     queryKey: ["/api/admin/rfid/suggest-card-number", selectedUser, companyInitials, userInitials],
@@ -2668,6 +2681,18 @@ function RfidManagement() {
             {(!rfidCards || rfidCards.length === 0) && (
               <div className="text-center py-8 text-muted-foreground">
                 No RFID cards found
+              </div>
+            )}
+            
+            {rfidCardsTotal > 0 && (
+              <div className="mt-6">
+                <Pagination
+                  currentPage={rfidCardsPage}
+                  totalPages={Math.ceil(rfidCardsTotal / rfidCardsPerPage)}
+                  totalItems={rfidCardsTotal}
+                  itemsPerPage={rfidCardsPerPage}
+                  onPageChange={setRfidCardsPage}
+                />
               </div>
             )}
           </div>

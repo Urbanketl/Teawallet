@@ -62,6 +62,7 @@ export interface IStorage {
   
   // Legacy Admin RFID operations (for super admin)
   getAllRfidCards(): Promise<(RfidCard & { businessUnit: BusinessUnit })[]>;
+  getAllRfidCardsPaginated(page: number, limit: number): Promise<{ cards: (RfidCard & { businessUnit: BusinessUnit })[], total: number }>;
   
   // User machine operations (corporate dashboard)
   getManagedMachines(businessUnitId: string): Promise<TeaMachine[]>;
@@ -72,12 +73,16 @@ export interface IStorage {
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   getUserTransactions(userId: string, limit?: number): Promise<Transaction[]>;
   getBusinessUnitTransactions(businessUnitId: string, limit?: number): Promise<Transaction[]>;
+  getUserTransactionsPaginated(userId: string, page: number, limit: number): Promise<{ transactions: Transaction[], total: number }>;
+  getBusinessUnitTransactionsPaginated(businessUnitId: string, page: number, limit: number): Promise<{ transactions: Transaction[], total: number }>;
   
   // Dispensing operations
   createDispensingLog(log: InsertDispensingLog): Promise<DispensingLog>;
   getBusinessUnitDispensingLogs(businessUnitId: string, limit?: number): Promise<DispensingLog[]>;
   getUserDispensingLogs(userId: string, limit?: number): Promise<DispensingLog[]>;
   getManagedDispensingLogs(userId: string, limit?: number): Promise<DispensingLog[]>;
+  getUserDispensingLogsPaginated(userId: string, page: number, limit: number): Promise<{ logs: DispensingLog[], total: number }>;
+  getBusinessUnitDispensingLogsPaginated(businessUnitId: string, page: number, limit: number): Promise<{ logs: DispensingLog[], total: number }>;
   
   // Dashboard stats operations
   getBusinessUnitDashboardStats(businessUnitId: string): Promise<any>;
@@ -362,6 +367,44 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
+  async getAllRfidCardsPaginated(page: number, limit: number): Promise<{ cards: (RfidCard & { businessUnit: BusinessUnit })[], total: number }> {
+    const offset = (page - 1) * limit;
+    
+    // Get total count
+    const [countResult] = await db
+      .select({ count: sql<number>`COUNT(*)::int` })
+      .from(rfidCards);
+    
+    // Get paginated cards with business units
+    const results = await db
+      .select({
+        card: rfidCards,
+        businessUnit: businessUnits
+      })
+      .from(rfidCards)
+      .leftJoin(businessUnits, eq(rfidCards.businessUnitId, businessUnits.id))
+      .orderBy(desc(rfidCards.createdAt))
+      .limit(limit)
+      .offset(offset);
+    
+    const cards = results.map(row => ({
+      ...row.card,
+      businessUnit: row.businessUnit || { 
+        id: '', 
+        name: 'Unassigned', 
+        code: '', 
+        walletBalance: '0', 
+        createdAt: null, 
+        updatedAt: null 
+      } as BusinessUnit
+    })) as (RfidCard & { businessUnit: BusinessUnit })[];
+    
+    return {
+      cards,
+      total: countResult.count || 0
+    };
+  }
+
   // Transaction operations
   async createTransaction(transaction: InsertTransaction): Promise<Transaction> {
     const [txn] = await db
@@ -387,6 +430,58 @@ export class DatabaseStorage implements IStorage {
       .where(eq(transactions.businessUnitId, businessUnitId))
       .orderBy(desc(transactions.createdAt))
       .limit(limit);
+  }
+
+  async getUserTransactionsPaginated(userId: string, page: number, limit: number): Promise<{ transactions: Transaction[], total: number }> {
+    const offset = (page - 1) * limit;
+    
+    // Get total count for user's business units
+    const userUnits = await this.getUserBusinessUnits(userId);
+    const unitIds = userUnits.map(unit => unit.id);
+    
+    if (unitIds.length === 0) {
+      return { transactions: [], total: 0 };
+    }
+    
+    const [countResult] = await db
+      .select({ count: sql<number>`COUNT(*)::int` })
+      .from(transactions)
+      .where(inArray(transactions.businessUnitId, unitIds));
+    
+    const transactionsResult = await db
+      .select()
+      .from(transactions)
+      .where(inArray(transactions.businessUnitId, unitIds))
+      .orderBy(desc(transactions.createdAt))
+      .limit(limit)
+      .offset(offset);
+    
+    return {
+      transactions: transactionsResult,
+      total: countResult.count || 0
+    };
+  }
+
+  async getBusinessUnitTransactionsPaginated(businessUnitId: string, page: number, limit: number): Promise<{ transactions: Transaction[], total: number }> {
+    const offset = (page - 1) * limit;
+    
+    const [countResult] = await db
+      .select({ count: sql<number>`COUNT(*)::int` })
+      .from(transactions)
+      .where(eq(transactions.businessUnitId, businessUnitId));
+    
+    const transactionsResult = await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.businessUnitId, businessUnitId))
+      .orderBy(desc(transactions.createdAt))
+      .limit(limit)
+      .offset(offset);
+    
+    return {
+      transactions: transactionsResult,
+      total: countResult.count || 0
+    };
   }
 
   async getBusinessUnitDashboardStats(businessUnitId: string): Promise<any> {
@@ -569,6 +664,58 @@ export class DatabaseStorage implements IStorage {
       .where(inArray(dispensingLogs.businessUnitId, unitIds))
       .orderBy(desc(dispensingLogs.createdAt))
       .limit(limit);
+  }
+
+  async getUserDispensingLogsPaginated(userId: string, page: number, limit: number): Promise<{ logs: DispensingLog[], total: number }> {
+    const offset = (page - 1) * limit;
+    
+    // Get user's business units first
+    const userUnits = await this.getUserBusinessUnits(userId);
+    const unitIds = userUnits.map(unit => unit.id);
+    
+    if (unitIds.length === 0) {
+      return { logs: [], total: 0 };
+    }
+    
+    const [countResult] = await db
+      .select({ count: sql<number>`COUNT(*)::int` })
+      .from(dispensingLogs)
+      .where(inArray(dispensingLogs.businessUnitId, unitIds));
+    
+    const logsResult = await db
+      .select()
+      .from(dispensingLogs)
+      .where(inArray(dispensingLogs.businessUnitId, unitIds))
+      .orderBy(desc(dispensingLogs.createdAt))
+      .limit(limit)
+      .offset(offset);
+    
+    return {
+      logs: logsResult,
+      total: countResult.count || 0
+    };
+  }
+
+  async getBusinessUnitDispensingLogsPaginated(businessUnitId: string, page: number, limit: number): Promise<{ logs: DispensingLog[], total: number }> {
+    const offset = (page - 1) * limit;
+    
+    const [countResult] = await db
+      .select({ count: sql<number>`COUNT(*)::int` })
+      .from(dispensingLogs)
+      .where(eq(dispensingLogs.businessUnitId, businessUnitId));
+    
+    const logsResult = await db
+      .select()
+      .from(dispensingLogs)
+      .where(eq(dispensingLogs.businessUnitId, businessUnitId))
+      .orderBy(desc(dispensingLogs.createdAt))
+      .limit(limit)
+      .offset(offset);
+    
+    return {
+      logs: logsResult,
+      total: countResult.count || 0
+    };
   }
 
   // Machine operations

@@ -20,12 +20,21 @@ export default function TransactionHistory({ businessUnitId }: TransactionHistor
       if (businessUnitId) {
         params.append('businessUnitId', businessUnitId);
       }
-      return fetch(`/api/transactions?${params}`).then(res => res.json());
+      // Add timestamp to prevent caching
+      params.append('_t', Date.now().toString());
+      return fetch(`/api/transactions?${params}`, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      }).then(res => res.json());
     },
     enabled: isAuthenticated,
     retry: false,
-    staleTime: 0, // Always refetch when business unit changes
+    staleTime: 0,
+    gcTime: 0,
     refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 
   const getTransactionIcon = (type: string) => {

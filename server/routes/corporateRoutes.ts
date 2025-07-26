@@ -47,13 +47,23 @@ export function registerCorporateRoutes(app: Express) {
       const businessUnitId = req.query.businessUnitId as string;
       const limit = parseInt(req.query.limit as string) || 50;
 
+      // Disable caching for this endpoint
+      res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'ETag': false
+      });
+
       let transactions;
       if (businessUnitId) {
         // Get transactions for specific business unit
         transactions = await storage.getBusinessUnitTransactions(businessUnitId, limit);
+        console.log(`Fetching transactions for business unit: ${businessUnitId}, found: ${transactions.length}`);
       } else {
         // Get transactions for all user's business units
         transactions = await storage.getUserTransactions(userId, limit);
+        console.log(`Fetching all transactions for user: ${userId}, found: ${transactions.length}`);
       }
       res.json(transactions);
     } catch (error) {

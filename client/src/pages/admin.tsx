@@ -711,12 +711,7 @@ export default function AdminPage() {
               </div>
               <Select 
                 value={currentTab}
-                onValueChange={(value) => {
-                  setCurrentTab(value);
-                  // Find and click the corresponding tab trigger
-                  const tabTrigger = document.querySelector(`button[value="${value}"]`) as HTMLButtonElement;
-                  if (tabTrigger) tabTrigger.click();
-                }}
+                onValueChange={setCurrentTab}
               >
                 <SelectTrigger className="w-full bg-white border-orange-200">
                   <SelectValue />
@@ -758,19 +753,7 @@ export default function AdminPage() {
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
-          {/* Hidden tablist for mobile functionality */}
-          <TabsList className="hidden">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger> 
-            <TabsTrigger value="business-units">Business Units</TabsTrigger>
-            <TabsTrigger value="machines">Machines</TabsTrigger>
-            <TabsTrigger value="machine-mgmt">Machine Mgmt</TabsTrigger>
-            <TabsTrigger value="rfid">RFID Cards</TabsTrigger>
-            <TabsTrigger value="support">Support</TabsTrigger>
-            <TabsTrigger value="faq">FAQ</TabsTrigger>
-            <TabsTrigger value="pseudo-login">Test</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-          </TabsList>
+
 
           <TabsContent value="overview">
             <div className="text-center py-8">

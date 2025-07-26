@@ -7,10 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Settings, Plus, DollarSign, Shield } from "lucide-react";
+import { Building2, Settings, Plus, DollarSign, Shield, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { BusinessUnit, TeaMachine } from "@shared/schema";
+import type { BusinessUnit, TeaMachine, User } from "@shared/schema";
 import { AdminTransferInterface } from "./AdminTransferInterface";
 
 
@@ -29,6 +29,11 @@ export function BusinessUnitsTab() {
     description: "",
     walletBalance: "0.00"
   });
+  
+  // State for user assignment
+  const [selectedAssignmentUnit, setSelectedAssignmentUnit] = useState("");
+  const [changingUser, setChangingUser] = useState<{ unitId: string; currentUserId?: string } | null>(null);
+  const [assignmentSearch, setAssignmentSearch] = useState("");
 
   // Fetch business units
   const { data: businessUnits, isLoading: unitsLoading } = useQuery({
@@ -36,7 +41,11 @@ export function BusinessUnitsTab() {
     retry: false,
   });
 
-
+  // Fetch all users for assignment
+  const { data: allUsers } = useQuery({
+    queryKey: ["/api/admin/users"],
+    retry: false,
+  });
 
   // Fetch unassigned machines
   const { data: unassignedMachines } = useQuery({
@@ -63,7 +72,24 @@ export function BusinessUnitsTab() {
     }
   });
 
-
+  // Assign user to business unit mutation
+  const assignUserMutation = useMutation({
+    mutationFn: async ({ unitId, userId, role }: { unitId: string; userId: string; role: string }) => {
+      return apiRequest("POST", `/api/admin/business-units/${unitId}/users`, { userId, role });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/business-units"] });
+      setSelectedAssignmentUnit("");
+      toast({ title: "Success", description: "User assigned successfully" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to assign user",
+        variant: "destructive" 
+      });
+    }
+  });
 
   // Assign machine to business unit mutation
   const assignMachineMutation = useMutation({
@@ -266,6 +292,14 @@ export function BusinessUnitsTab() {
 
         <TabsContent value="admin-transfer" className="space-y-6">
           <AdminTransferInterface />
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="w-5 h-5" />
+                User Assignment Management
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="space-y-6">
                 <div>
                   <h3 className="font-medium mb-4">New User Assignment</h3>
@@ -283,7 +317,7 @@ export function BusinessUnitsTab() {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-tea-green focus:border-transparent"
                       >
                         <option value="">Choose Business Unit...</option>
-                        {businessUnits && Array.isArray(businessUnits) && businessUnits.map((unit: BusinessUnit) => (
+                        {businessUnits && Array.isArray(businessUnits) && (businessUnits as BusinessUnit[]).map((unit: BusinessUnit) => (
                           <option key={unit.id} value={unit.id}>
                             {unit.name} ({unit.code})
                           </option>
@@ -314,7 +348,7 @@ export function BusinessUnitsTab() {
                             ? (changingUser ? "Choose New User..." : "Choose User...") 
                             : "Select Business Unit First"}
                         </option>
-                        {selectedAssignmentUnit && allUsers && Array.isArray(allUsers) && allUsers
+                        {selectedAssignmentUnit && allUsers && Array.isArray(allUsers) && (allUsers as User[])
                           .filter((user: User) => !changingUser || user.id !== changingUser.currentUserId) // Don't show current user in change mode
                           .map((user: User) => (
                             <option key={user.id} value={user.id}>
@@ -380,7 +414,12 @@ export function BusinessUnitsTab() {
                                   <Badge variant="outline">{unit.code}</Badge>
                                 </div>
                                 <div className="space-y-2">
-                                  <UserAssignments unitId={unit.id} onChangeUser={handleChangeUser} />
+                                  <div className="flex items-center gap-2">
+                                    <Users className="w-4 h-4 text-gray-400" />
+                                    <span className="text-sm text-gray-600">
+                                      Business unit assignments managed in Admin Transfer tab
+                                    </span>
+                                  </div>
                                 </div>
                               </CardContent>
                             </Card>
@@ -410,14 +449,14 @@ export function BusinessUnitsTab() {
                   <h3 className="font-medium mb-4">Unassigned Machines</h3>
                   <div className="space-y-2 max-h-96 overflow-y-auto">
                     {unassignedMachines && Array.isArray(unassignedMachines) && unassignedMachines.length > 0 ? (
-                      unassignedMachines.map((machine: TeaMachine) => (
+                      (unassignedMachines as TeaMachine[]).map((machine: TeaMachine) => (
                         <div key={machine.id} className="flex items-center justify-between p-3 border rounded-lg">
                           <div>
                             <div className="font-medium">{machine.name}</div>
                             <div className="text-sm text-gray-600">{machine.location}</div>
                           </div>
                           <div className="space-x-2">
-                            {businessUnits && Array.isArray(businessUnits) && businessUnits.map((unit: BusinessUnit) => (
+                            {businessUnits && Array.isArray(businessUnits) && (businessUnits as BusinessUnit[]).map((unit: BusinessUnit) => (
                               <Button
                                 key={unit.id}
                                 size="sm"
@@ -440,7 +479,7 @@ export function BusinessUnitsTab() {
                 <div>
                   <h3 className="font-medium mb-4">Business Units</h3>
                   <div className="space-y-4">
-                    {businessUnits && Array.isArray(businessUnits) && businessUnits.map((unit: BusinessUnit) => (
+                    {businessUnits && Array.isArray(businessUnits) && (businessUnits as BusinessUnit[]).map((unit: BusinessUnit) => (
                       <Card key={unit.id}>
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between mb-2">

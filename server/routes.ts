@@ -242,14 +242,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Transaction routes
+  // Transaction routes with business unit filtering
   app.get('/api/transactions', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const limit = parseInt(req.query.limit as string) || 50;
+      const businessUnitId = req.query.businessUnitId as string;
       
-      const transactions = await storage.getUserTransactions(userId, limit);
-      res.json(transactions);
+      if (businessUnitId) {
+        // Get transactions for specific business unit
+        const transactions = await storage.getBusinessUnitTransactions(businessUnitId, limit);
+        res.json(transactions);
+      } else {
+        // Get all transactions for user's business units
+        const transactions = await storage.getUserTransactions(userId, limit);
+        res.json(transactions);
+      }
     } catch (error) {
       console.error("Error fetching transactions:", error);
       res.status(500).json({ message: "Failed to fetch transactions" });
@@ -467,12 +475,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const limit = parseInt(req.query.limit as string) || 50;
+      const businessUnitId = req.query.businessUnitId as string;
       
-      const logs = await storage.getUserDispensingLogs(userId, limit);
-      res.json(logs);
+      if (businessUnitId) {
+        // Get dispensing logs for specific business unit
+        const history = await storage.getBusinessUnitDispensingLogs(businessUnitId, limit);
+        res.json(history);
+      } else {
+        // Get all dispensing logs for user's business units
+        const logs = await storage.getUserDispensingLogs(userId, limit);
+        res.json(logs);
+      }
     } catch (error) {
       console.error("Error fetching dispensing history:", error);
       res.status(500).json({ message: "Failed to fetch dispensing history" });
+    }
+  });
+
+  // Dashboard stats with business unit filtering
+  app.get('/api/dashboard/stats', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const businessUnitId = req.query.businessUnitId as string;
+      
+      let stats;
+      if (businessUnitId) {
+        // Get stats for specific business unit
+        stats = await storage.getBusinessUnitDashboardStats(businessUnitId);
+      } else {
+        // Get aggregated stats for all user's business units
+        stats = await storage.getUserDashboardStats(userId);
+      }
+      
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+      res.status(500).json({ message: "Failed to fetch dashboard stats" });
     }
   });
 

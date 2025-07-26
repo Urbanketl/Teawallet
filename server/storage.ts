@@ -52,13 +52,14 @@ export interface IStorage {
   getAllRfidCards(): Promise<(RfidCard & { businessUnit: BusinessUnit })[]>;
   
   // User machine operations (corporate dashboard)
-  getManagedMachines(businessUnitAdminId: string): Promise<TeaMachine[]>;
-  getManagedRfidCards(businessUnitAdminId: string): Promise<RfidCard[]>;
+  getManagedMachines(businessUnitId: string): Promise<TeaMachine[]>;
+  getManagedRfidCards(businessUnitId: string): Promise<RfidCard[]>;
   getAllRfidCardsByUserId(userId: string): Promise<RfidCard[]>;
   
   // Transaction operations
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   getUserTransactions(userId: string, limit?: number): Promise<Transaction[]>;
+  getBusinessUnitTransactions(businessUnitId: string, limit?: number): Promise<Transaction[]>;
   
   // Dispensing operations
   createDispensingLog(log: InsertDispensingLog): Promise<DispensingLog>;
@@ -66,6 +67,10 @@ export interface IStorage {
   getUserDispensingLogs(userId: string, limit?: number): Promise<DispensingLog[]>;
   getManagedDispensingLogs(userId: string, limit?: number): Promise<DispensingLog[]>;
   
+  // Dashboard stats operations
+  getBusinessUnitDashboardStats(businessUnitId: string): Promise<any>;
+  getUserDashboardStats(userId: string): Promise<any>;
+
   // Atomic RFID Transaction - Critical for billing accuracy
   processRfidTransactionForBusinessUnit(params: {
     businessUnitId: string;
@@ -110,11 +115,11 @@ export interface IStorage {
   incrementFaqViews(articleId: number): Promise<void>;
   
   // Analytics operations
-  getPopularTeaTypes(startDate?: string, endDate?: string, businessUnitAdminId?: string): Promise<{ teaType: string; count: number }[]>;
-  getPeakHours(startDate?: string, endDate?: string, businessUnitAdminId?: string): Promise<{ hour: number; count: number }[]>;
-  getMachinePerformance(startDate?: string, endDate?: string, businessUnitAdminId?: string): Promise<{ machineId: string; uptime: number; totalDispensed: number }[]>;
-  getUserBehaviorInsights(startDate?: string, endDate?: string, businessUnitAdminId?: string): Promise<{ avgTeaPerDay: number; preferredTimes: number[]; topTeaTypes: string[] }>;
-  getMachineDispensingData(startDate?: string, endDate?: string, machineId?: string, businessUnitAdminId?: string): Promise<{ date: string; dispensed: number; machineId?: string; [key: string]: any }[]>;
+  getPopularTeaTypes(startDate?: string, endDate?: string, businessUnitId?: string): Promise<{ teaType: string; count: number }[]>;
+  getPeakHours(startDate?: string, endDate?: string, businessUnitId?: string): Promise<{ hour: number; count: number }[]>;
+  getMachinePerformance(startDate?: string, endDate?: string, businessUnitId?: string): Promise<{ machineId: string; uptime: number; totalDispensed: number }[]>;
+  getUserBehaviorInsights(startDate?: string, endDate?: string, businessUnitId?: string): Promise<{ avgTeaPerDay: number; preferredTimes: number[]; topTeaTypes: string[] }>;
+  getMachineDispensingData(startDate?: string, endDate?: string, machineId?: string, businessUnitId?: string): Promise<{ date: string; dispensed: number; machineId?: string; [key: string]: any }[]>;
   
   // System settings operations
   getSystemSetting(key: string): Promise<string | undefined>;
@@ -321,7 +326,7 @@ export class DatabaseStorage implements IStorage {
     const [newCard] = await db
       .insert(rfidCards)
       .values({
-        businessUnitAdminId: userId,
+        businessUnitId: userId,
         cardNumber: cardNumber,
         isActive: true,
       })
@@ -336,12 +341,12 @@ export class DatabaseStorage implements IStorage {
         user: users
       })
       .from(rfidCards)
-      .leftJoin(users, eq(rfidCards.businessUnitAdminId, users.id))
+      .leftJoin(users, eq(rfidCards.businessUnitId, users.id))
       .orderBy(desc(rfidCards.createdAt));
     
     return results.map(row => ({
       ...row.card,
-      businessUnitAdmin: row.user || {} as User
+      businessUnit: row.user || {} as User
     }));
   }
 
@@ -361,6 +366,151 @@ export class DatabaseStorage implements IStorage {
       .where(eq(transactions.userId, userId))
       .orderBy(desc(transactions.createdAt))
       .limit(limit);
+  }
+
+  async getBusinessUnitTransactions(businessUnitId: string, limit = 50): Promise<Transaction[]> {
+    return await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.businessUnitId, businessUnitId))
+      .orderBy(desc(transactions.createdAt))
+      .limit(limit);
+  }
+
+  async getBusinessUnitDashboardStats(businessUnitId: string): Promise<any> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Get business unit
+    const businessUnit = await this.getBusinessUnit(businessUnitId);
+    if (!businessUnit) {
+      throw new Error('Business unit not found');
+    }
+
+    // Count dispensing logs for today
+    const [todayDispensing] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(dispensingLogs)
+      .where(and(
+        eq(dispensingLogs.businessUnitId, businessUnitId),
+        gte(dispensingLogs.createdAt, today)
+      ));
+
+    // Count dispensing logs for this week
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const [weekDispensing] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(dispensingLogs)
+      .where(and(
+        eq(dispensingLogs.businessUnitId, businessUnitId),
+        gte(dispensingLogs.createdAt, weekAgo)
+      ));
+
+    // Count dispensing logs for this month
+    const monthAgo = new Date();
+    monthAgo.setMonth(monthAgo.getMonth() - 1);
+    const [monthDispensing] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(dispensingLogs)
+      .where(and(
+        eq(dispensingLogs.businessUnitId, businessUnitId),
+        gte(dispensingLogs.createdAt, monthAgo)
+      ));
+
+    // Count active machines
+    const [activeMachines] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(teaMachines)
+      .where(and(
+        eq(teaMachines.businessUnitId, businessUnitId),
+        eq(teaMachines.isActive, true)
+      ));
+
+    return {
+      businessUnitName: businessUnit.name,
+      walletBalance: businessUnit.walletBalance,
+      cupsToday: todayDispensing.count || 0,
+      cupsThisWeek: weekDispensing.count || 0,
+      cupsThisMonth: monthDispensing.count || 0,
+      activeMachines: activeMachines.count || 0
+    };
+  }
+
+  async getUserDashboardStats(userId: string): Promise<any> {
+    // Get all business units for the user
+    const userBusinessUnits = await this.getUserBusinessUnits(userId);
+    
+    if (userBusinessUnits.length === 0) {
+      return {
+        totalWalletBalance: "0",
+        totalCupsToday: 0,
+        totalCupsThisWeek: 0,
+        totalCupsThisMonth: 0,
+        totalActiveMachines: 0,
+        businessUnits: []
+      };
+    }
+
+    const businessUnitIds = userBusinessUnits.map(bu => bu.id);
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Aggregate stats across all business units
+    const [todayDispensing] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(dispensingLogs)
+      .where(and(
+        inArray(dispensingLogs.businessUnitId, businessUnitIds),
+        gte(dispensingLogs.createdAt, today)
+      ));
+
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const [weekDispensing] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(dispensingLogs)
+      .where(and(
+        inArray(dispensingLogs.businessUnitId, businessUnitIds),
+        gte(dispensingLogs.createdAt, weekAgo)
+      ));
+
+    const monthAgo = new Date();
+    monthAgo.setMonth(monthAgo.getMonth() - 1);
+    const [monthDispensing] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(dispensingLogs)
+      .where(and(
+        inArray(dispensingLogs.businessUnitId, businessUnitIds),
+        gte(dispensingLogs.createdAt, monthAgo)
+      ));
+
+    const [activeMachines] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(teaMachines)
+      .where(and(
+        inArray(teaMachines.businessUnitId, businessUnitIds),
+        eq(teaMachines.isActive, true)
+      ));
+
+    // Calculate total wallet balance
+    const totalWalletBalance = userBusinessUnits.reduce((sum, unit) => {
+      return sum + parseFloat(unit.walletBalance || "0");
+    }, 0).toString();
+
+    return {
+      totalWalletBalance,
+      totalCupsToday: todayDispensing.count || 0,
+      totalCupsThisWeek: weekDispensing.count || 0,
+      totalCupsThisMonth: monthDispensing.count || 0,
+      totalActiveMachines: activeMachines.count || 0,
+      businessUnits: userBusinessUnits.map(unit => ({
+        id: unit.id,
+        name: unit.name,
+        walletBalance: unit.walletBalance
+      }))
+    };
   }
 
   // Dispensing operations
@@ -426,12 +576,12 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(teaMachines.createdAt));
   }
 
-  async getManagedMachines(businessUnitAdminId: string): Promise<TeaMachine[]> {
-    console.log(`DEBUG: getManagedMachines called for user: ${businessUnitAdminId}`);
+  async getManagedMachines(businessUnitId: string): Promise<TeaMachine[]> {
+    console.log(`DEBUG: getManagedMachines called for user: ${businessUnitId}`);
     
     // Get user's business units first
-    const userUnits = await this.getUserBusinessUnits(businessUnitAdminId);
-    console.log(`DEBUG: Found ${userUnits.length} business units for user ${businessUnitAdminId}:`, userUnits);
+    const userUnits = await this.getUserBusinessUnits(businessUnitId);
+    console.log(`DEBUG: Found ${userUnits.length} business units for user ${businessUnitId}:`, userUnits);
     
     if (userUnits.length === 0) return [];
     
@@ -448,11 +598,11 @@ export class DatabaseStorage implements IStorage {
     return machines;
   }
 
-  async getManagedRfidCards(businessUnitAdminId: string): Promise<RfidCard[]> {
-    console.log(`DEBUG: getManagedRfidCards called for user: ${businessUnitAdminId}`);
+  async getManagedRfidCards(businessUnitId: string): Promise<RfidCard[]> {
+    console.log(`DEBUG: getManagedRfidCards called for user: ${businessUnitId}`);
     
     // Get user's business units first
-    const userUnits = await this.getUserBusinessUnits(businessUnitAdminId);
+    const userUnits = await this.getUserBusinessUnits(businessUnitId);
     console.log(`DEBUG: Found ${userUnits.length} business units for RFID cards:`, userUnits);
     
     if (userUnits.length === 0) return [];
@@ -935,7 +1085,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Analytics operations
-  async getPopularTeaTypes(startDate?: string, endDate?: string, businessUnitAdminId?: string): Promise<{ teaType: string; count: number }[]> {
+  async getPopularTeaTypes(startDate?: string, endDate?: string, businessUnitId?: string): Promise<{ teaType: string; count: number }[]> {
     let whereClause = sql`1=1`;
     
     if (startDate && endDate) {
@@ -945,8 +1095,8 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Filter by business unit admin if specified (for regular admins)
-    if (businessUnitAdminId) {
-      whereClause = sql`${whereClause} AND ${dispensingLogs.businessUnitAdminId} = ${businessUnitAdminId}`;
+    if (businessUnitId) {
+      whereClause = sql`${whereClause} AND ${dispensingLogs.businessUnitId} = ${businessUnitId}`;
     }
     
     return await db
@@ -961,7 +1111,7 @@ export class DatabaseStorage implements IStorage {
       .limit(10);
   }
 
-  async getPeakHours(startDate?: string, endDate?: string, businessUnitAdminId?: string): Promise<{ hour: number; count: number }[]> {
+  async getPeakHours(startDate?: string, endDate?: string, businessUnitId?: string): Promise<{ hour: number; count: number }[]> {
     let whereClause = sql`1=1`;
     
     if (startDate && endDate) {
@@ -971,8 +1121,8 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Filter by business unit admin if specified (for regular admins)
-    if (businessUnitAdminId) {
-      whereClause = sql`${whereClause} AND ${dispensingLogs.businessUnitAdminId} = ${businessUnitAdminId}`;
+    if (businessUnitId) {
+      whereClause = sql`${whereClause} AND ${dispensingLogs.businessUnitId} = ${businessUnitId}`;
     }
     
     return await db
@@ -986,7 +1136,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(sql`EXTRACT(HOUR FROM ${dispensingLogs.createdAt})`);
   }
 
-  async getMachinePerformance(startDate?: string, endDate?: string, businessUnitAdminId?: string): Promise<{ machineId: string; uptime: number; totalDispensed: number }[]> {
+  async getMachinePerformance(startDate?: string, endDate?: string, businessUnitId?: string): Promise<{ machineId: string; uptime: number; totalDispensed: number }[]> {
     let whereClause = sql`1=1`;
     
     if (startDate && endDate) {
@@ -996,8 +1146,8 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Filter by business unit admin if specified (for regular admins)
-    if (businessUnitAdminId) {
-      whereClause = sql`${whereClause} AND ${dispensingLogs.businessUnitAdminId} = ${businessUnitAdminId}`;
+    if (businessUnitId) {
+      whereClause = sql`${whereClause} AND ${dispensingLogs.businessUnitId} = ${businessUnitId}`;
     }
     
     const machineStats = await db
@@ -1016,7 +1166,7 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async getUserBehaviorInsights(startDate?: string, endDate?: string, businessUnitAdminId?: string): Promise<{ avgTeaPerDay: number; preferredTimes: number[]; topTeaTypes: string[] }> {
+  async getUserBehaviorInsights(startDate?: string, endDate?: string, businessUnitId?: string): Promise<{ avgTeaPerDay: number; preferredTimes: number[]; topTeaTypes: string[] }> {
     let whereClause = sql`1=1`;
     let daysDiff = 30;
     
@@ -1028,8 +1178,8 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Filter by business unit admin if specified (for regular admins)
-    if (businessUnitAdminId) {
-      whereClause = sql`${whereClause} AND ${dispensingLogs.businessUnitAdminId} = ${businessUnitAdminId}`;
+    if (businessUnitId) {
+      whereClause = sql`${whereClause} AND ${dispensingLogs.businessUnitId} = ${businessUnitId}`;
     }
 
     const [avgResult] = await db
@@ -1067,7 +1217,7 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async getMachineDispensingData(startDate?: string, endDate?: string, machineId?: string, businessUnitAdminId?: string): Promise<{ date: string; dispensed: number; machineId?: string; [key: string]: any }[]> {
+  async getMachineDispensingData(startDate?: string, endDate?: string, machineId?: string, businessUnitId?: string): Promise<{ date: string; dispensed: number; machineId?: string; [key: string]: any }[]> {
     let whereClause = sql`1=1`;
     
     if (startDate && endDate) {
@@ -1081,8 +1231,8 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Filter by business unit admin if specified (for regular admins)
-    if (businessUnitAdminId) {
-      whereClause = sql`${whereClause} AND ${dispensingLogs.businessUnitAdminId} = ${businessUnitAdminId}`;
+    if (businessUnitId) {
+      whereClause = sql`${whereClause} AND ${dispensingLogs.businessUnitId} = ${businessUnitId}`;
     }
 
     if (machineId && machineId !== 'all') {

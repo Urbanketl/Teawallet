@@ -6,11 +6,22 @@ import { History, Plus, Coffee, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "wouter";
 
-export default function TransactionHistory() {
+interface TransactionHistoryProps {
+  businessUnitId?: string | null;
+}
+
+export default function TransactionHistory({ businessUnitId }: TransactionHistoryProps) {
   const { isAuthenticated } = useAuth();
 
   const { data: transactions, isLoading } = useQuery({
-    queryKey: ["/api/transactions"],
+    queryKey: ["/api/transactions", businessUnitId],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (businessUnitId) {
+        params.append('businessUnitId', businessUnitId);
+      }
+      return fetch(`/api/transactions?${params}`).then(res => res.json());
+    },
     enabled: isAuthenticated,
     retry: false,
   });

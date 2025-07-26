@@ -18,6 +18,71 @@ export function registerCorporateRoutes(app: Express) {
       res.status(500).json({ error: "Failed to fetch business units" });
     }
   });
+
+  // Dashboard stats endpoint with business unit filtering
+  app.get('/api/dashboard/stats', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
+      const businessUnitId = req.query.businessUnitId as string;
+
+      if (businessUnitId) {
+        // Get stats for specific business unit
+        const stats = await storage.getBusinessUnitDashboardStats(businessUnitId);
+        res.json(stats);
+      } else {
+        // Get aggregated stats for all user's business units
+        const stats = await storage.getUserDashboardStats(userId);
+        res.json(stats);
+      }
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+      res.status(500).json({ message: "Failed to fetch dashboard stats" });
+    }
+  });
+
+  // Enhanced transactions endpoint with business unit filtering
+  app.get('/api/transactions', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
+      const businessUnitId = req.query.businessUnitId as string;
+      const limit = parseInt(req.query.limit as string) || 50;
+
+      let transactions;
+      if (businessUnitId) {
+        // Get transactions for specific business unit
+        transactions = await storage.getBusinessUnitTransactions(businessUnitId, limit);
+      } else {
+        // Get transactions for all user's business units
+        transactions = await storage.getUserTransactions(userId, limit);
+      }
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+      res.status(500).json({ message: "Failed to fetch transactions" });
+    }
+  });
+
+  // Enhanced dispensing history endpoint with business unit filtering
+  app.get('/api/dispensing/history', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
+      const businessUnitId = req.query.businessUnitId as string;
+      const limit = parseInt(req.query.limit as string) || 50;
+
+      let dispensingLogs;
+      if (businessUnitId) {
+        // Get dispensing logs for specific business unit
+        dispensingLogs = await storage.getBusinessUnitDispensingLogs(businessUnitId, limit);
+      } else {
+        // Get dispensing logs for all user's business units
+        dispensingLogs = await storage.getUserDispensingLogs(userId, limit);
+      }
+      res.json(dispensingLogs);
+    } catch (error) {
+      console.error("Error fetching dispensing history:", error);
+      res.status(500).json({ message: "Failed to fetch dispensing history" });
+    }
+  });
   
   // Get RFID cards for specific business unit (with pseudo login support)
   app.get("/api/corporate/rfid-cards", isAuthenticated, async (req: any, res) => {

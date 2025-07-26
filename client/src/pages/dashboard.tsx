@@ -1,19 +1,21 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import WalletCard from "@/components/WalletCard";
 import TransactionHistory from "@/components/TransactionHistory";
 import RFIDCard from "@/components/RFIDCard";
+import BusinessUnitSelector from "@/components/BusinessUnitSelector";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
-import { Coffee, CreditCard, History, User, Plus, Headphones } from "lucide-react";
+import { Coffee, CreditCard, History, User, Plus, Headphones, Building2, Activity } from "lucide-react";
 import { isUnauthorizedError } from "@/lib/authUtils";
 
 export default function Dashboard() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
+  const [selectedBusinessUnitId, setSelectedBusinessUnitId] = useState<string | null>(null);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -30,8 +32,29 @@ export default function Dashboard() {
     }
   }, [isAuthenticated, isLoading]);
 
+  // Queries with business unit filtering
   const { data: dispensingHistory } = useQuery({
-    queryKey: ["/api/dispensing/history"],
+    queryKey: ["/api/dispensing/history", selectedBusinessUnitId],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (selectedBusinessUnitId) {
+        params.append('businessUnitId', selectedBusinessUnitId);
+      }
+      return fetch(`/api/dispensing/history?${params}`).then(res => res.json());
+    },
+    enabled: isAuthenticated,
+    retry: false,
+  });
+
+  const { data: dashboardStats } = useQuery({
+    queryKey: ["/api/dashboard/stats", selectedBusinessUnitId],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (selectedBusinessUnitId) {
+        params.append('businessUnitId', selectedBusinessUnitId);
+      }
+      return fetch(`/api/dashboard/stats?${params}`).then(res => res.json());
+    },
     enabled: isAuthenticated,
     retry: false,
   });
@@ -44,27 +67,22 @@ export default function Dashboard() {
     return null;
   }
 
-  const cupsToday = Array.isArray(dispensingHistory) ? dispensingHistory.filter((log: any) => {
-    const today = new Date().toDateString();
-    return new Date(log.createdAt).toDateString() === today;
-  }).length : 0;
-
-  const cupsThisWeek = Array.isArray(dispensingHistory) ? dispensingHistory.filter((log: any) => {
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    return new Date(log.createdAt) > weekAgo;
-  }).length : 0;
-
-  const cupsThisMonth = Array.isArray(dispensingHistory) ? dispensingHistory.filter((log: any) => {
-    const monthAgo = new Date();
-    monthAgo.setMonth(monthAgo.getMonth() - 1);
-    return new Date(log.createdAt) > monthAgo;
-  }).length : 0;
+  // Use stats from API instead of client-side calculation
+  const cupsToday = dashboardStats?.cupsToday || dashboardStats?.totalCupsToday || 0;
+  const cupsThisWeek = dashboardStats?.cupsThisWeek || dashboardStats?.totalCupsThisWeek || 0;
+  const cupsThisMonth = dashboardStats?.cupsThisMonth || dashboardStats?.totalCupsThisMonth || 0;
+  const activeMachines = dashboardStats?.activeMachines || dashboardStats?.totalActiveMachines || 0;
 
   return (
     <div className="min-h-screen bg-neutral-warm">
       <Navigation />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Business Unit Selector */}
+        <BusinessUnitSelector 
+          selectedBusinessUnitId={selectedBusinessUnitId}
+          onBusinessUnitChange={setSelectedBusinessUnitId}
+        />
+
         {/* Welcome Banner */}
         <div className="mb-8">
           <div className="bg-gradient-to-r from-tea-dark to-tea-green rounded-2xl p-8 text-white shadow-material-lg">
@@ -73,6 +91,15 @@ export default function Dashboard() {
                 <h2 className="text-2xl md:text-3xl font-inter font-bold mb-2 drop-shadow-sm text-[#A67C52]">
                   Welcome back, {user.firstName || "Tea Lover"}!
                 </h2>
+                {selectedBusinessUnitId && dashboardStats?.businessUnitName && (
+                  <p className="text-lg opacity-90 flex items-center gap-2">
+                    <Building2 className="w-5 h-5" />
+                    {dashboardStats.businessUnitName}
+                  </p>
+                )}
+                {!selectedBusinessUnitId && (
+                  <p className="text-lg opacity-90">Viewing all business units</p>
+                )}
                 <p className="text-lg drop-shadow-sm text-[#A67C52]">Ready for your next cup of premium tea?</p>
               </div>
               <div className="flex items-center space-x-6">
@@ -96,7 +123,7 @@ export default function Dashboard() {
           {/* Left Column - Wallet & Transaction History */}
           <div className="lg:col-span-2 space-y-6">
             <WalletCard />
-            <TransactionHistory />
+            <TransactionHistory businessUnitId={selectedBusinessUnitId} />
           </div>
 
           {/* Right Column - RFID & Stats */}

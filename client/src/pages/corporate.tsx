@@ -644,7 +644,7 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
 
   // Get monthly transaction summary
   const { data: monthlyData, isLoading: monthlyLoading } = useQuery({
-    queryKey: [`/api/corporate/monthly-summary`, businessUnitId, selectedMonth],
+    queryKey: [`/api/corporate/monthly-summary/${businessUnitId}/${selectedMonth}`],
     enabled: !!businessUnitId && !!selectedMonth,
     retry: false,
   });
@@ -652,7 +652,7 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
   const handleExportCSV = async () => {
     setIsExporting(true);
     try {
-      const response = await fetch(`/api/corporate/export/csv?businessUnitId=${businessUnitId}&month=${selectedMonth}`, {
+      const response = await fetch(`/api/corporate/monthly-export/${businessUnitId}/${selectedMonth}`, {
         method: 'GET',
         credentials: 'include',
       });
@@ -689,7 +689,7 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
   const handleGenerateInvoice = async () => {
     setIsGeneratingInvoice(true);
     try {
-      const response = await fetch(`/api/corporate/export/invoice?businessUnitId=${businessUnitId}&month=${selectedMonth}`, {
+      const response = await fetch(`/api/corporate/monthly-invoice/${businessUnitId}/${selectedMonth}`, {
         method: 'GET',
         credentials: 'include',
       });

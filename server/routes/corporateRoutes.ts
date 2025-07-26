@@ -4,7 +4,7 @@ import { isAuthenticated } from "../replitAuth";
 import { insertRfidCardSchema, insertTeaMachineSchema } from "@shared/schema";
 import { z } from "zod";
 import * as csvWriter from 'csv-writer';
-import * as PDFDocument from 'pdfkit';
+import PDFDocument from 'pdfkit';
 
 // B2B Corporate RFID Management Routes
 export function registerCorporateRoutes(app: Express) {

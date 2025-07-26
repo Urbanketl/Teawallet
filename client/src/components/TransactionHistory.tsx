@@ -24,6 +24,8 @@ export default function TransactionHistory({ businessUnitId }: TransactionHistor
     },
     enabled: isAuthenticated,
     retry: false,
+    staleTime: 0, // Always refetch when business unit changes
+    refetchOnMount: true,
   });
 
   const getTransactionIcon = (type: string) => {

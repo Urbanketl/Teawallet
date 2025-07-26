@@ -142,6 +142,21 @@ export default function Dashboard() {
                 <h3 className="text-lg font-inter font-semibold text-gray-900 mb-6">Usage Statistics</h3>
                 
                 <div className="space-y-6">
+                  {/* Today */}
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-gray-600">Today</span>
+                      <span className="font-semibold text-gray-900">{cupsToday} cups</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-coffee h-2 rounded-full" 
+                        style={{ width: `${Math.min((cupsToday / 5) * 100, 100)}%` }}
+                      />
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">Daily goal: 5 cups</div>
+                  </div>
+
                   {/* This Week */}
                   <div>
                     <div className="flex justify-between items-center mb-2">

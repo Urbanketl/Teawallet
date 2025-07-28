@@ -1161,6 +1161,8 @@ function MachineManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+  const [sortBy, setSortBy] = useState<string>("name");
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -1225,8 +1227,64 @@ function MachineManagement() {
     return unit ? unit.name : "Unassigned";
   };
 
-  // Filter and search machines
-  const filteredMachines = (machines as any[]).filter((machine: any) => {
+  // Sorting function
+  const handleSort = (column: string) => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortOrder('asc');
+    }
+    setCurrentPage(1); // Reset to first page when sorting
+  };
+
+  // Sort machines
+  const sortedMachines = [...(machines as any[])].sort((a: any, b: any) => {
+    let aValue: any;
+    let bValue: any;
+
+    switch (sortBy) {
+      case 'name':
+        aValue = a.name || '';
+        bValue = b.name || '';
+        break;
+      case 'businessUnit':
+        aValue = getBusinessUnitName(a.businessUnitId);
+        bValue = getBusinessUnitName(b.businessUnitId);
+        break;
+      case 'location':
+        aValue = a.location || '';
+        bValue = b.location || '';
+        break;
+      case 'status':
+        aValue = getMachineStatus(a);
+        bValue = getMachineStatus(b);
+        break;
+      case 'price':
+        aValue = parseFloat(a.teaTypes?.[0]?.price || '0');
+        bValue = parseFloat(b.teaTypes?.[0]?.price || '0');
+        break;
+      case 'lastPing':
+        aValue = a.lastPing ? new Date(a.lastPing).getTime() : 0;
+        bValue = b.lastPing ? new Date(b.lastPing).getTime() : 0;
+        break;
+      default:
+        aValue = a.name || '';
+        bValue = b.name || '';
+    }
+
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
+      aValue = aValue.toLowerCase();
+      bValue = bValue.toLowerCase();
+    }
+
+    if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  // Filter and search machines (after sorting)
+  const filteredMachines = sortedMachines.filter((machine: any) => {
     const matchesSearch = !searchTerm || 
       machine.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       machine.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1395,12 +1453,96 @@ function MachineManagement() {
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-4 font-semibold">Machine</th>
-                  <th className="text-left p-4 font-semibold">Business Unit</th>
-                  <th className="text-left p-4 font-semibold">Location</th>
-                  <th className="text-left p-4 font-semibold">Status</th>
-                  <th className="text-left p-4 font-semibold">Price</th>
-                  <th className="text-left p-4 font-semibold">Last Ping</th>
+                  <th className="text-left p-4 font-semibold">
+                    <button
+                      onClick={() => handleSort('name')}
+                      className={`flex items-center gap-2 hover:text-tea-green transition-colors ${
+                        sortBy === 'name' ? 'text-tea-green' : ''
+                      }`}
+                    >
+                      Machine
+                      {sortBy === 'name' ? (
+                        sortOrder === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <ArrowUpDown className="w-4 h-4 opacity-50" />
+                      )}
+                    </button>
+                  </th>
+                  <th className="text-left p-4 font-semibold">
+                    <button
+                      onClick={() => handleSort('businessUnit')}
+                      className={`flex items-center gap-2 hover:text-tea-green transition-colors ${
+                        sortBy === 'businessUnit' ? 'text-tea-green' : ''
+                      }`}
+                    >
+                      Business Unit
+                      {sortBy === 'businessUnit' ? (
+                        sortOrder === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <ArrowUpDown className="w-4 h-4 opacity-50" />
+                      )}
+                    </button>
+                  </th>
+                  <th className="text-left p-4 font-semibold">
+                    <button
+                      onClick={() => handleSort('location')}
+                      className={`flex items-center gap-2 hover:text-tea-green transition-colors ${
+                        sortBy === 'location' ? 'text-tea-green' : ''
+                      }`}
+                    >
+                      Location
+                      {sortBy === 'location' ? (
+                        sortOrder === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <ArrowUpDown className="w-4 h-4 opacity-50" />
+                      )}
+                    </button>
+                  </th>
+                  <th className="text-left p-4 font-semibold">
+                    <button
+                      onClick={() => handleSort('status')}
+                      className={`flex items-center gap-2 hover:text-tea-green transition-colors ${
+                        sortBy === 'status' ? 'text-tea-green' : ''
+                      }`}
+                    >
+                      Status
+                      {sortBy === 'status' ? (
+                        sortOrder === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <ArrowUpDown className="w-4 h-4 opacity-50" />
+                      )}
+                    </button>
+                  </th>
+                  <th className="text-left p-4 font-semibold">
+                    <button
+                      onClick={() => handleSort('price')}
+                      className={`flex items-center gap-2 hover:text-tea-green transition-colors ${
+                        sortBy === 'price' ? 'text-tea-green' : ''
+                      }`}
+                    >
+                      Price
+                      {sortBy === 'price' ? (
+                        sortOrder === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <ArrowUpDown className="w-4 h-4 opacity-50" />
+                      )}
+                    </button>
+                  </th>
+                  <th className="text-left p-4 font-semibold">
+                    <button
+                      onClick={() => handleSort('lastPing')}
+                      className={`flex items-center gap-2 hover:text-tea-green transition-colors ${
+                        sortBy === 'lastPing' ? 'text-tea-green' : ''
+                      }`}
+                    >
+                      Last Ping
+                      {sortBy === 'lastPing' ? (
+                        sortOrder === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <ArrowUpDown className="w-4 h-4 opacity-50" />
+                      )}
+                    </button>
+                  </th>
                   <th className="text-left p-4 font-semibold">Actions</th>
                 </tr>
               </thead>

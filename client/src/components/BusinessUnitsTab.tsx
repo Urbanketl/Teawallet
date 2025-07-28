@@ -30,7 +30,7 @@ interface BusinessUnitWithDetails extends BusinessUnit {
   machineCount?: number;
 }
 
-type SortField = 'name' | 'code' | 'walletBalance' | 'isActive' | 'createdAt';
+type SortField = 'name' | 'code' | 'walletBalance' | 'isActive' | 'ownerName' | 'createdAt';
 type SortDirection = 'asc' | 'desc';
 
 export function BusinessUnitsTab() {
@@ -84,7 +84,8 @@ export function BusinessUnitsTab() {
       const searchMatch = searchTerm === "" || 
         unit.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         unit.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (unit.description || "").toLowerCase().includes(searchTerm.toLowerCase());
+        (unit.description || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (unit.ownerName || "").toLowerCase().includes(searchTerm.toLowerCase());
       
       // Status filter
       const statusMatch = statusFilter === "all" || 
@@ -113,6 +114,9 @@ export function BusinessUnitsTab() {
       } else if (sortField === 'isActive') {
         aValue = a.isActive ? 1 : 0;
         bValue = b.isActive ? 1 : 0;
+      } else if (sortField === 'ownerName') {
+        aValue = (a.ownerName || "").toLowerCase();
+        bValue = (b.ownerName || "").toLowerCase();
       } else if (typeof aValue === 'string') {
         aValue = aValue.toLowerCase();
         bValue = bValue.toLowerCase();
@@ -191,7 +195,7 @@ export function BusinessUnitsTab() {
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
-                    placeholder="Search by name, code, or description..."
+                    placeholder="Search by name, code, description, or owner..."
                     value={searchTerm}
                     onChange={(e) => {
                       setSearchTerm(e.target.value);
@@ -319,6 +323,20 @@ export function BusinessUnitsTab() {
                           )}
                         </Button>
                       </th>
+                      <th className="text-left p-4">
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleSort('ownerName')}
+                          className="flex items-center gap-2 font-semibold"
+                        >
+                          Business Owner
+                          {sortField === 'ownerName' ? (
+                            sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                          ) : (
+                            <ArrowUpDown className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </th>
                       <th className="text-left p-4">Description</th>
                     </tr>
                   </thead>
@@ -343,6 +361,15 @@ export function BusinessUnitsTab() {
                               {unit.isActive ? "Active" : "Inactive"}
                             </Badge>
                           </td>
+                          <td className="p-4">
+                            {unit.ownerName ? (
+                              <span className="text-sm font-medium text-gray-900">{unit.ownerName}</span>
+                            ) : (
+                              <Badge variant="outline" className="text-orange-600 border-orange-300">
+                                Unassigned
+                              </Badge>
+                            )}
+                          </td>
                           <td className="p-4 max-w-xs">
                             <p className="text-sm text-gray-600 truncate" title={unit.description || ""}>
                               {unit.description || "—"}
@@ -352,7 +379,7 @@ export function BusinessUnitsTab() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={5} className="p-8 text-center text-gray-500">
+                        <td colSpan={6} className="p-8 text-center text-gray-500">
                           {filteredAndSortedUnits.length === 0 ? "No business units match your search criteria." : "No business units found."}
                         </td>
                       </tr>
@@ -435,6 +462,16 @@ export function BusinessUnitsTab() {
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Wallet Balance:</span>
                           <span className="font-medium text-tea-green">₹{parseFloat(unit.walletBalance || "0").toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Owner:</span>
+                          {unit.ownerName ? (
+                            <span className="font-medium">{unit.ownerName}</span>
+                          ) : (
+                            <Badge variant="outline" className="text-xs text-orange-600 border-orange-300">
+                              Unassigned
+                            </Badge>
+                          )}
                         </div>
                       </div>
                       

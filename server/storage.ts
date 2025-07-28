@@ -207,7 +207,41 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllBusinessUnits(): Promise<BusinessUnit[]> {
-    return await db.select().from(businessUnits).orderBy(asc(businessUnits.name));
+    const units = await db
+      .select({
+        id: businessUnits.id,
+        name: businessUnits.name,
+        code: businessUnits.code,
+        description: businessUnits.description,
+        walletBalance: businessUnits.walletBalance,
+        isActive: businessUnits.isActive,
+        createdAt: businessUnits.createdAt,
+        updatedAt: businessUnits.updatedAt,
+        ownerFirstName: users.firstName,
+        ownerLastName: users.lastName,
+        ownerEmail: users.email,
+        assignedAt: userBusinessUnits.createdAt
+      })
+      .from(businessUnits)
+      .leftJoin(userBusinessUnits, eq(businessUnits.id, userBusinessUnits.businessUnitId))
+      .leftJoin(users, eq(userBusinessUnits.userId, users.id))
+      .orderBy(asc(businessUnits.name));
+    
+    return units.map(unit => ({
+      id: unit.id,
+      name: unit.name,
+      code: unit.code,
+      description: unit.description,
+      walletBalance: unit.walletBalance,
+      isActive: unit.isActive,
+      createdAt: unit.createdAt,
+      updatedAt: unit.updatedAt,
+      ownerName: unit.ownerFirstName && unit.ownerLastName 
+        ? `${unit.ownerFirstName} ${unit.ownerLastName}` 
+        : null,
+      ownerEmail: unit.ownerEmail,
+      assignedAt: unit.assignedAt
+    }));
   }
 
   async getUserBusinessUnits(userId: string): Promise<BusinessUnit[]> {
@@ -792,13 +826,6 @@ export class DatabaseStorage implements IStorage {
     
     console.log(`DEBUG: Found ${cards.length} RFID cards:`, cards);
     return cards;
-  }
-
-
-
-  async getBusinessUnit(id: string): Promise<BusinessUnit | undefined> {
-    const [unit] = await db.select().from(businessUnits).where(eq(businessUnits.id, id));
-    return unit;
   }
 
   async getTeaMachine(id: string): Promise<TeaMachine | undefined> {

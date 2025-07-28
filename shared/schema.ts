@@ -292,7 +292,11 @@ export const insertBusinessUnitTransferSchema = createInsertSchema(businessUnitT
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
-export type BusinessUnit = typeof businessUnits.$inferSelect;
+export type BusinessUnit = typeof businessUnits.$inferSelect & {
+  ownerName?: string | null;
+  ownerEmail?: string | null;
+  assignedAt?: Date | null;
+};
 export type InsertBusinessUnit = z.infer<typeof insertBusinessUnitSchema>;
 export type UserBusinessUnit = typeof userBusinessUnits.$inferSelect;
 export type InsertUserBusinessUnit = z.infer<typeof insertUserBusinessUnitSchema>;

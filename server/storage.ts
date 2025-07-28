@@ -841,33 +841,11 @@ export class DatabaseStorage implements IStorage {
     totalSpent: string;
     averagePerCup: string;
   }> {
-    // Build date conditions
-    let dateConditions = [];
-    if (startDate) {
-      dateConditions.push(gte(transactions.createdAt, new Date(startDate)));
-    }
-    if (endDate) {
-      dateConditions.push(lte(transactions.createdAt, new Date(endDate)));
-    }
-
-    // Get recharge transactions (types = 'credit', 'recharge')
-    let rechargeConditions = [
-      eq(transactions.businessUnitId, businessUnitId),
-      or(
-        eq(transactions.type, 'credit'),
-        eq(transactions.type, 'recharge')
-      )
-    ];
-    if (dateConditions.length > 0) {
-      rechargeConditions.push(...dateConditions);
-    }
-
-    const [rechargeResult] = await db
-      .select({ 
-        total: sql<string>`COALESCE(SUM(${transactions.amount}), '0')::text` 
-      })
-      .from(transactions)
-      .where(and(...rechargeConditions));
+    // Get current wallet balance
+    const [businessUnit] = await db
+      .select({ walletBalance: businessUnits.walletBalance })
+      .from(businessUnits)
+      .where(eq(businessUnits.id, businessUnitId));
 
     // Get dispensing logs for cups and spending calculation
     let dispensingConditions = [eq(dispensingLogs.businessUnitId, businessUnitId)];
@@ -894,13 +872,18 @@ export class DatabaseStorage implements IStorage {
       .from(dispensingLogs)
       .where(and(...dispensingConditions, eq(dispensingLogs.success, true)));
 
-    const totalRecharged = rechargeResult?.total || '0';
     const cupsDispensed = cupsResult?.count || 0;
     const totalSpent = spentResult?.total || '0';
     
+    // Calculate total recharged as current balance + total spent
+    // This accounts for initial wallet balance + all historical spending
+    const currentBalance = parseFloat(businessUnit?.walletBalance || '0');
+    const spentAmount = parseFloat(totalSpent);
+    const totalRecharged = (currentBalance + spentAmount).toFixed(2);
+    
     // Calculate average per cup
     const averagePerCup = cupsDispensed > 0 
-      ? (parseFloat(totalSpent) / cupsDispensed).toFixed(2)
+      ? (spentAmount / cupsDispensed).toFixed(2)
       : '0.00';
 
     return {

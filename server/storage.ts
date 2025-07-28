@@ -213,7 +213,7 @@ export class DatabaseStorage implements IStorage {
       .from(businessUnits)
       .orderBy(asc(businessUnits.name));
 
-    // Then get the owner information for each unit
+    // Then get the owner information and machines for each unit
     const unitsWithOwners = await Promise.all(
       allUnits.map(async (unit) => {
         // Get the assigned user for this business unit
@@ -229,6 +229,18 @@ export class DatabaseStorage implements IStorage {
           .where(eq(userBusinessUnits.businessUnitId, unit.id))
           .limit(1);
 
+        // Get machines assigned to this business unit
+        const machines = await db
+          .select({
+            id: teaMachines.id,
+            name: teaMachines.name,
+            location: teaMachines.location,
+            isActive: teaMachines.isActive
+          })
+          .from(teaMachines)
+          .where(eq(teaMachines.businessUnitId, unit.id))
+          .orderBy(asc(teaMachines.name));
+
         const owner = assignment[0];
         
         return {
@@ -237,7 +249,8 @@ export class DatabaseStorage implements IStorage {
             ? `${owner.firstName} ${owner.lastName}` 
             : null,
           ownerEmail: owner?.email || null,
-          assignedAt: owner?.assignedAt || null
+          assignedAt: owner?.assignedAt || null,
+          machines: machines || []
         };
       })
     );

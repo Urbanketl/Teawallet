@@ -28,6 +28,12 @@ import { AdminTransferInterface } from "./AdminTransferInterface";
 interface BusinessUnitWithDetails extends BusinessUnit {
   userCount?: number;
   machineCount?: number;
+  machines?: Array<{
+    id: string;
+    name: string;
+    location: string;
+    isActive: boolean;
+  }>;
 }
 
 type SortField = 'name' | 'code' | 'walletBalance' | 'isActive' | 'ownerName' | 'createdAt';
@@ -337,6 +343,7 @@ export function BusinessUnitsTab() {
                           )}
                         </Button>
                       </th>
+                      <th className="text-left p-4">Machines</th>
                       <th className="text-left p-4">Description</th>
                     </tr>
                   </thead>
@@ -370,6 +377,23 @@ export function BusinessUnitsTab() {
                               </Badge>
                             )}
                           </td>
+                          <td className="p-4">
+                            {unit.machines && unit.machines.length > 0 ? (
+                              <div className="space-y-1">
+                                {unit.machines.map((machine) => (
+                                  <div key={machine.id} className="flex items-center gap-2 text-sm">
+                                    <div className={`w-2 h-2 rounded-full ${machine.isActive ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                                    <span className="font-medium">{machine.name}</span>
+                                    <span className="text-gray-500">({machine.location})</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <Badge variant="outline" className="text-gray-500">
+                                No machines
+                              </Badge>
+                            )}
+                          </td>
                           <td className="p-4 max-w-xs">
                             <p className="text-sm text-gray-600 truncate" title={unit.description || ""}>
                               {unit.description || "—"}
@@ -379,7 +403,7 @@ export function BusinessUnitsTab() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={6} className="p-8 text-center text-gray-500">
+                        <td colSpan={7} className="p-8 text-center text-gray-500">
                           {filteredAndSortedUnits.length === 0 ? "No business units match your search criteria." : "No business units found."}
                         </td>
                       </tr>

@@ -118,6 +118,11 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- July 28, 2025: COMPLETED - Fixed duplicate business unit entries and implemented Business Owner column with proper data integrity
+- July 28, 2025: Added Business Owner column showing assigned administrator names with search functionality
+- July 28, 2025: Cleaned up multiple user assignments per business unit to enforce one-admin-per-unit model
+- July 28, 2025: Enhanced search functionality to include owner names and display "Unassigned" status for units without owners
+- July 28, 2025: Fixed database integrity issues where multiple users were incorrectly assigned to same business unit
 - July 28, 2025: COMPLETED - Implemented comprehensive table view with pagination and advanced search for Business Units management
 - July 28, 2025: Added scalable business units interface with search-first design, sortable columns, balance/status filters, and 10-50 items per page
 - July 28, 2025: Enhanced business units display with table/grid view toggle, real-time search, and intelligent pagination with page numbers

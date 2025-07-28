@@ -219,17 +219,7 @@ export function registerCorporateRoutes(app: Express) {
     }
   });
 
-  // Get business unit admin's dispensing logs (with pseudo login support)
-  app.get("/api/corporate/dispensing-logs", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
-      const logs = await storage.getManagedDispensingLogs(userId, 100);
-      res.json(logs);
-    } catch (error) {
-      console.error("Error fetching managed dispensing logs:", error);
-      res.status(500).json({ error: "Failed to fetch dispensing logs" });
-    }
-  });
+  // Removed duplicate route - proper implementation is below with business unit filtering and pagination
 
   // Create new tea machine for business unit
   app.post("/api/corporate/machines", isAuthenticated, async (req: any, res) => {

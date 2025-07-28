@@ -195,13 +195,22 @@ export function registerCorporateRoutes(app: Express) {
       const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
       const businessUnitId = req.query.businessUnitId as string;
       
+      console.log(`=== MACHINES API DEBUG ===`);
+      console.log(`User ID: ${userId}`);
+      console.log(`Business Unit ID: ${businessUnitId}`);
+      console.log(`Query params:`, req.query);
+      
       if (businessUnitId) {
         // Get machines for specific business unit
+        console.log(`Getting machines for business unit: ${businessUnitId}`);
         const machines = await storage.getBusinessUnitMachines(businessUnitId);
+        console.log(`Found ${machines.length} machines for business unit ${businessUnitId}:`, machines);
         res.json(machines);
       } else {
         // Get all managed machines (for backward compatibility)
+        console.log(`Getting all managed machines for user: ${userId}`);
         const machines = await storage.getManagedMachines(userId);
+        console.log(`Found ${machines.length} managed machines for user ${userId}:`, machines);
         res.json(machines);
       }
     } catch (error) {

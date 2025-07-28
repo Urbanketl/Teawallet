@@ -225,22 +225,38 @@ export default function CorporateDashboard() {
   const selectedBusinessUnit = businessUnits.find(bu => bu.id === selectedBusinessUnitId);
 
   // Get data for selected business unit
-  const businessUnitParam = selectedBusinessUnitId ? `&businessUnitId=${selectedBusinessUnitId}` : '';
-  
   const { data: machines = [] } = useQuery({
-    queryKey: [`/api/corporate/machines${pseudoParam}${businessUnitParam}`],
+    queryKey: [`/api/corporate/machines`, selectedBusinessUnitId, pseudoParam],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (selectedBusinessUnitId) params.set('businessUnitId', selectedBusinessUnitId);
+      if (pseudoParam) params.set('pseudo', pseudoParam.replace('?pseudo=', ''));
+      return fetch(`/api/corporate/machines?${params.toString()}`, { credentials: 'include' }).then(res => res.json());
+    },
     enabled: !!selectedBusinessUnitId,
     retry: false,
   });
 
   const { data: rfidCards = [] } = useQuery({
-    queryKey: [`/api/corporate/rfid-cards${pseudoParam}${businessUnitParam}`],
+    queryKey: [`/api/corporate/rfid-cards`, selectedBusinessUnitId, pseudoParam],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (selectedBusinessUnitId) params.set('businessUnitId', selectedBusinessUnitId);
+      if (pseudoParam) params.set('pseudo', pseudoParam.replace('?pseudo=', ''));
+      return fetch(`/api/corporate/rfid-cards?${params.toString()}`, { credentials: 'include' }).then(res => res.json());
+    },
     enabled: !!selectedBusinessUnitId,
     retry: false,
   });
 
   const { data: dispensingLogs = [] } = useQuery({
-    queryKey: [`/api/corporate/dispensing-logs${pseudoParam}${businessUnitParam}`],
+    queryKey: [`/api/corporate/dispensing-logs`, selectedBusinessUnitId, pseudoParam],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (selectedBusinessUnitId) params.set('businessUnitId', selectedBusinessUnitId);
+      if (pseudoParam) params.set('pseudo', pseudoParam.replace('?pseudo=', ''));
+      return fetch(`/api/corporate/dispensing-logs?${params.toString()}`, { credentials: 'include' }).then(res => res.json());
+    },
     enabled: !!selectedBusinessUnitId,
     retry: false,
   });

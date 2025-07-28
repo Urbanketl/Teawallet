@@ -259,20 +259,33 @@ export default function CorporateDashboard() {
   });
 
   const { data: dispensingData, isLoading: dispensingLoading } = useQuery({
-    queryKey: [`/api/corporate/dispensing-logs`, selectedBusinessUnitId, logsCurrentPage, logsItemsPerPage, pseudoParam],
-    queryFn: () => {
+    queryKey: [`/api/corporate/dispensing-logs-paginated`, selectedBusinessUnitId, logsCurrentPage, logsItemsPerPage, pseudoParam],
+    queryFn: async () => {
+      if (!selectedBusinessUnitId) return { logs: [], total: 0 };
+      
       const params = new URLSearchParams();
-      if (selectedBusinessUnitId) params.set('businessUnitId', selectedBusinessUnitId);
+      params.set('businessUnitId', selectedBusinessUnitId);
       if (pseudoParam) params.set('pseudo', pseudoParam.replace('?pseudo=', ''));
       params.set('page', logsCurrentPage.toString());
       params.set('limit', logsItemsPerPage.toString());
       params.set('paginated', 'true');
+      params.set('cache_bust', Date.now().toString());
       
-      const url = `/api/corporate/dispensing-logs?${params.toString()}`;
-      return fetch(url, { credentials: 'include' }).then(res => res.json());
+      const response = await fetch(`/api/corporate/dispensing-logs?${params.toString()}`, { 
+        credentials: 'include',
+        cache: 'no-store'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return response.json();
     },
     enabled: !!selectedBusinessUnitId,
     retry: false,
+    staleTime: 0,
+    cacheTime: 0,
   });
 
   const dispensingLogs = dispensingData?.logs || [];

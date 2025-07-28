@@ -550,6 +550,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get next available machine ID (Admin only)
+  app.get('/api/admin/machines/next-id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const nextId = await storage.generateNextMachineId();
+      res.json({ nextId });
+    } catch (error: any) {
+      console.error('Error generating machine ID:', error);
+      res.status(500).json({ message: error.message || "Failed to generate machine ID" });
+    }
+  });
+
   // Create new machine (Admin only)
   app.post('/api/admin/machines', isAuthenticated, async (req: any, res) => {
     try {
@@ -560,10 +578,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      const { id, name, location, businessUnitId, isActive = true } = req.body;
+      const { name, location, businessUnitId, isActive = true } = req.body;
 
-      if (!id || !name || !location || !businessUnitId) {
-        return res.status(400).json({ message: "Machine ID, name, location, and business unit ID are required" });
+      if (!name || !location || !businessUnitId) {
+        return res.status(400).json({ message: "Name, location, and business unit ID are required" });
       }
 
       // Verify business unit exists
@@ -572,14 +590,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Business unit not found" });
       }
 
-      // Check if machine ID already exists
-      const existingMachines = await storage.getAllTeaMachines();
-      if (existingMachines.find(m => m.id === id)) {
-        return res.status(400).json({ message: "Machine ID already exists" });
-      }
-
       const machineData = {
-        id,
         name,
         location,
         businessUnitId,

@@ -1412,8 +1412,22 @@ function MachineAdministration() {
     id: "",
     name: "",
     location: "",
+    businessUnitId: "",
     isActive: true
   });
+
+  // Fetch next machine ID when component loads
+  const { data: nextIdData } = useQuery({
+    queryKey: ["/api/admin/machines/next-id"],
+    retry: false,
+  });
+
+  // Update machine ID when next ID is fetched
+  useEffect(() => {
+    if (nextIdData?.nextId && !newMachine.id) {
+      setNewMachine(prev => ({ ...prev, id: nextIdData.nextId }));
+    }
+  }, [nextIdData, newMachine.id]);
   const [editForm, setEditForm] = useState({
     name: "",
     location: "",
@@ -1474,8 +1488,9 @@ function MachineAdministration() {
       apiRequest("POST", "/api/admin/machines", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/machines"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/machines/next-id"] });
       toast({ title: "Success", description: "Machine created successfully!" });
-      setNewMachine({ id: "", name: "", location: "", isActive: true });
+      setNewMachine({ id: "", name: "", location: "", businessUnitId: "", isActive: true });
     },
     onError: (error: any) => {
       toast({ 
@@ -1542,7 +1557,7 @@ function MachineAdministration() {
   });
 
   const handleCreateMachine = () => {
-    if (!newMachine.id.trim() || !newMachine.name.trim() || !newMachine.location.trim()) {
+    if (!newMachine.name.trim() || !newMachine.location.trim() || !newMachine.businessUnitId.trim()) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
@@ -1633,10 +1648,12 @@ function MachineAdministration() {
                   <Label htmlFor="machine-id">Machine ID *</Label>
                   <Input
                     id="machine-id"
-                    placeholder="MACHINE_005"
+                    placeholder="Auto-generated"
                     value={newMachine.id}
-                    onChange={(e) => setNewMachine(prev => ({ ...prev, id: e.target.value }))}
+                    readOnly
+                    className="bg-gray-50 cursor-not-allowed"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Auto-generated with format UK_XXXX</p>
                 </div>
                 <div>
                   <Label htmlFor="machine-name">Machine Name *</Label>
@@ -1656,6 +1673,22 @@ function MachineAdministration() {
                   value={newMachine.location}
                   onChange={(e) => setNewMachine(prev => ({ ...prev, location: e.target.value }))}
                 />
+              </div>
+              <div>
+                <Label htmlFor="business-unit">Business Unit *</Label>
+                <select
+                  id="business-unit"
+                  value={newMachine.businessUnitId}
+                  onChange={(e) => setNewMachine(prev => ({ ...prev, businessUnitId: e.target.value }))}
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <option value="">Select Business Unit</option>
+                  {businessUnits.map((unit: any) => (
+                    <option key={unit.id} value={unit.id}>
+                      {unit.name} ({unit.code})
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch

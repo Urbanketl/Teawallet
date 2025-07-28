@@ -54,6 +54,7 @@ export interface IStorage {
   getUnassignedMachines(): Promise<TeaMachine[]>;
   getTeaMachine(id: string): Promise<TeaMachine | undefined>;
   getAllTeaMachines(): Promise<TeaMachine[]>;
+  generateNextMachineId(): Promise<string>;
   createTeaMachine(machine: InsertTeaMachine): Promise<TeaMachine>;
   updateMachinePing(machineId: string): Promise<void>;
   updateMachineStatus(machineId: string, isActive: boolean): Promise<void>;
@@ -815,6 +816,30 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(teaMachines.createdAt));
   }
 
+  async generateNextMachineId(): Promise<string> {
+    // Get all existing machine IDs that follow UK_XXXX pattern
+    const machines = await db
+      .select({ id: teaMachines.id })
+      .from(teaMachines)
+      .where(sql`${teaMachines.id} ~ '^UK_[0-9]{4}$'`)
+      .orderBy(teaMachines.id);
+    
+    let nextNumber = 1;
+    
+    if (machines.length > 0) {
+      // Extract numbers from existing IDs and find the highest
+      const numbers = machines
+        .map(m => parseInt(m.id.replace('UK_', '')))
+        .filter(n => !isNaN(n))
+        .sort((a, b) => a - b);
+      
+      nextNumber = numbers.length > 0 ? Math.max(...numbers) + 1 : 1;
+    }
+    
+    // Format as UK_XXXX (4 digits with leading zeros)
+    return `UK_${nextNumber.toString().padStart(4, '0')}`;
+  }
+
   async createTeaMachine(machine: InsertTeaMachine): Promise<TeaMachine> {
     // Validate that businessUnitId is provided (machines must be assigned)
     if (!machine.businessUnitId) {
@@ -825,6 +850,11 @@ export class DatabaseStorage implements IStorage {
     const businessUnit = await this.getBusinessUnit(machine.businessUnitId);
     if (!businessUnit) {
       throw new Error(`Business unit ${machine.businessUnitId} not found`);
+    }
+    
+    // Auto-generate machine ID if not provided
+    if (!machine.id) {
+      machine.id = await this.generateNextMachineId();
     }
     
     const [newMachine] = await db

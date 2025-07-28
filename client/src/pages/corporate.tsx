@@ -204,7 +204,7 @@ export default function CorporateDashboard() {
   const [newCardNumber, setNewCardNumber] = useState("");
   const [isCardDialogOpen, setIsCardDialogOpen] = useState(false);
   const [logsCurrentPage, setLogsCurrentPage] = useState(1);
-  const [logsItemsPerPage, setLogsItemsPerPage] = useState(20);
+  const logsItemsPerPage = 20; // Fixed at 20 per page for performance
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -269,7 +269,13 @@ export default function CorporateDashboard() {
       params.set('page', logsCurrentPage.toString());
       params.set('limit', logsItemsPerPage.toString());
       params.set('paginated', 'true');
-      params.set('cache_bust', Date.now().toString());
+      
+      console.log('Frontend: Building request with params:', {
+        businessUnitId: selectedBusinessUnitId,
+        page: logsCurrentPage,
+        limit: logsItemsPerPage,
+        paginated: 'true'
+      });
       
       const response = await fetch(`/api/corporate/dispensing-logs?${params.toString()}`, { 
         credentials: 'include',
@@ -654,19 +660,7 @@ export default function CorporateDashboard() {
                         {totalLogsPages > 1 && (
                           <div className="flex items-center justify-between pt-4 border-t">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm text-gray-600">Items per page:</span>
-                              <select 
-                                value={logsItemsPerPage} 
-                                onChange={(e) => {
-                                  setLogsItemsPerPage(Number(e.target.value));
-                                  setLogsCurrentPage(1);
-                                }}
-                                className="border rounded px-2 py-1 text-sm"
-                              >
-                                <option value={10}>10</option>
-                                <option value={20}>20</option>
-                                <option value={50}>50</option>
-                              </select>
+                              <span className="text-sm text-gray-600">20 items per page</span>
                             </div>
                             
                             <div className="flex items-center gap-2">

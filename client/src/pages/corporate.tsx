@@ -227,7 +227,9 @@ export default function CorporateDashboard() {
   // Reset pagination when business unit changes
   useEffect(() => {
     setLogsCurrentPage(1);
-  }, [selectedBusinessUnitId]);
+    // Invalidate the dispensing logs cache when business unit changes
+    queryClient.invalidateQueries({ queryKey: [`/api/corporate/dispensing-logs`] });
+  }, [selectedBusinessUnitId, queryClient]);
 
   const selectedBusinessUnit = businessUnits.find(bu => bu.id === selectedBusinessUnitId);
 
@@ -257,7 +259,7 @@ export default function CorporateDashboard() {
   });
 
   const { data: dispensingData, isLoading: dispensingLoading } = useQuery({
-    queryKey: [`/api/corporate/dispensing-logs`, selectedBusinessUnitId, logsCurrentPage, logsItemsPerPage, pseudoParam],
+    queryKey: [`/api/corporate/dispensing-logs`, selectedBusinessUnitId, logsCurrentPage, logsItemsPerPage, pseudoParam, Date.now()],
     queryFn: () => {
       const params = new URLSearchParams();
       if (selectedBusinessUnitId) params.set('businessUnitId', selectedBusinessUnitId);
@@ -265,15 +267,32 @@ export default function CorporateDashboard() {
       params.set('page', logsCurrentPage.toString());
       params.set('limit', logsItemsPerPage.toString());
       params.set('paginated', 'true');
+      params.set('_t', Date.now().toString()); // Cache buster
       
       const url = `/api/corporate/dispensing-logs?${params.toString()}`;
       console.log('Frontend: Fetching dispensing logs with URL:', url);
       console.log('Frontend: Parameters - Page:', logsCurrentPage, 'Limit:', logsItemsPerPage, 'Business Unit:', selectedBusinessUnitId);
       
-      return fetch(url, { credentials: 'include' }).then(res => res.json());
+      return fetch(url, { 
+        credentials: 'include',
+        cache: 'no-cache',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      }).then(res => {
+        console.log('Frontend: Response status:', res.status);
+        return res.json();
+      }).then(data => {
+        console.log('Frontend: Received data:', data);
+        return data;
+      });
     },
     enabled: !!selectedBusinessUnitId,
     retry: false,
+    refetchOnMount: true,
+    staleTime: 0,
+    gcTime: 0, // Don't cache in React Query
   });
 
   const dispensingLogs = dispensingData?.logs || [];

@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+// Removed Dialog import to fix aria-hidden accessibility issue
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { 
@@ -292,20 +292,21 @@ export function AdminTransferInterface() {
         </CardContent>
       </Card>
 
-      {/* Confirmation Dialog */}
-      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-orange-600" />
-              Confirm Business Unit Transfer
-            </DialogTitle>
-            <DialogDescription>
-              Please review the transfer details carefully. This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-
-          {selectedUnit && selectedUser && (
+      {/* Confirmation Modal */}
+      {showConfirmDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b">
+              <div className="flex items-center gap-2 text-lg font-semibold">
+                <AlertTriangle className="h-5 w-5 text-orange-600" />
+                Confirm Business Unit Transfer
+              </div>
+              <p className="text-gray-600 mt-1">
+                Please review the transfer details carefully. This action cannot be undone.
+              </p>
+            </div>
+            <div className="p-6">
+              {selectedUnit && selectedUser && (
             <div className="space-y-4">
               {/* Transfer Summary */}
               <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
@@ -391,23 +392,34 @@ export function AdminTransferInterface() {
                   Cancel
                 </Button>
               </div>
+              </div>
+              )}
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
 
-      {/* Transfer History Dialog */}
-      <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <History className="h-5 w-5" />
-              Business Unit Transfer History
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            {/* Filter by Business Unit */}
+      {/* Transfer History Modal */}
+      {showHistoryDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-6 border-b">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-lg font-semibold">
+                  <History className="h-5 w-5" />
+                  Business Unit Transfer History
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowHistoryDialog(false)}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              {/* Filter by Business Unit */}
             <div className="space-y-2">
               <Label>Filter by Business Unit</Label>
               <select
@@ -473,10 +485,11 @@ export function AdminTransferInterface() {
               {(selectedHistoryUnit ? unitTransfers : allTransfers).length === 0 && (
                 <p className="text-center text-gray-500 py-8">No transfer history found</p>
               )}
+              </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 }

@@ -207,41 +207,42 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllBusinessUnits(): Promise<BusinessUnit[]> {
-    const units = await db
-      .select({
-        id: businessUnits.id,
-        name: businessUnits.name,
-        code: businessUnits.code,
-        description: businessUnits.description,
-        walletBalance: businessUnits.walletBalance,
-        isActive: businessUnits.isActive,
-        createdAt: businessUnits.createdAt,
-        updatedAt: businessUnits.updatedAt,
-        ownerFirstName: users.firstName,
-        ownerLastName: users.lastName,
-        ownerEmail: users.email,
-        assignedAt: userBusinessUnits.createdAt
-      })
+    // First get all business units
+    const allUnits = await db
+      .select()
       .from(businessUnits)
-      .leftJoin(userBusinessUnits, eq(businessUnits.id, userBusinessUnits.businessUnitId))
-      .leftJoin(users, eq(userBusinessUnits.userId, users.id))
       .orderBy(asc(businessUnits.name));
-    
-    return units.map(unit => ({
-      id: unit.id,
-      name: unit.name,
-      code: unit.code,
-      description: unit.description,
-      walletBalance: unit.walletBalance,
-      isActive: unit.isActive,
-      createdAt: unit.createdAt,
-      updatedAt: unit.updatedAt,
-      ownerName: unit.ownerFirstName && unit.ownerLastName 
-        ? `${unit.ownerFirstName} ${unit.ownerLastName}` 
-        : null,
-      ownerEmail: unit.ownerEmail,
-      assignedAt: unit.assignedAt
-    }));
+
+    // Then get the owner information for each unit
+    const unitsWithOwners = await Promise.all(
+      allUnits.map(async (unit) => {
+        // Get the assigned user for this business unit
+        const assignment = await db
+          .select({
+            firstName: users.firstName,
+            lastName: users.lastName,
+            email: users.email,
+            assignedAt: userBusinessUnits.createdAt
+          })
+          .from(userBusinessUnits)
+          .innerJoin(users, eq(userBusinessUnits.userId, users.id))
+          .where(eq(userBusinessUnits.businessUnitId, unit.id))
+          .limit(1);
+
+        const owner = assignment[0];
+        
+        return {
+          ...unit,
+          ownerName: owner && owner.firstName && owner.lastName 
+            ? `${owner.firstName} ${owner.lastName}` 
+            : null,
+          ownerEmail: owner?.email || null,
+          assignedAt: owner?.assignedAt || null
+        };
+      })
+    );
+
+    return unitsWithOwners;
   }
 
   async getUserBusinessUnits(userId: string): Promise<BusinessUnit[]> {

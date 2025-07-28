@@ -1557,10 +1557,10 @@ function MachineAdministration() {
   });
 
   const handleCreateMachine = () => {
-    if (!newMachine.name.trim() || !newMachine.location.trim() || !newMachine.businessUnitId.trim()) {
+    if (!newMachine.name.trim() || !newMachine.location.trim()) {
       toast({
         title: "Error",
-        description: "Please fill in all required fields",
+        description: "Please fill in name and location",
         variant: "destructive"
       });
       return;
@@ -1675,20 +1675,21 @@ function MachineAdministration() {
                 />
               </div>
               <div>
-                <Label htmlFor="business-unit">Business Unit *</Label>
+                <Label htmlFor="business-unit">Business Unit (Optional)</Label>
                 <select
                   id="business-unit"
                   value={newMachine.businessUnitId}
                   onChange={(e) => setNewMachine(prev => ({ ...prev, businessUnitId: e.target.value }))}
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <option value="">Select Business Unit</option>
+                  <option value="">Leave Unassigned</option>
                   {businessUnits.map((unit: any) => (
                     <option key={unit.id} value={unit.id}>
                       {unit.name} ({unit.code})
                     </option>
                   ))}
                 </select>
+                <p className="text-xs text-gray-500 mt-1">Machines can be assigned to business units later</p>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch

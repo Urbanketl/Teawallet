@@ -841,15 +841,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTeaMachine(machine: InsertTeaMachine): Promise<TeaMachine> {
-    // Validate that businessUnitId is provided (machines must be assigned)
-    if (!machine.businessUnitId) {
-      throw new Error("businessUnitId is required - all machines must be assigned to a business unit");
-    }
+    // BusinessUnitId is now optional to allow unassigned machines
     
-    // Verify business unit exists
-    const businessUnit = await this.getBusinessUnit(machine.businessUnitId);
-    if (!businessUnit) {
-      throw new Error(`Business unit ${machine.businessUnitId} not found`);
+    // Verify business unit exists if provided
+    if (machine.businessUnitId) {
+      const businessUnit = await this.getBusinessUnit(machine.businessUnitId);
+      if (!businessUnit) {
+        throw new Error(`Business unit ${machine.businessUnitId} not found`);
+      }
     }
     
     // Auto-generate machine ID if not provided

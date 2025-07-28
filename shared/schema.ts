@@ -86,7 +86,7 @@ export const dispensingLogs = pgTable("dispensing_logs", {
 // Tea Machines - Linked to business units
 export const teaMachines = pgTable("tea_machines", {
   id: varchar("id").primaryKey(),
-  businessUnitId: varchar("business_unit_id").notNull().references(() => businessUnits.id), // Business unit this machine belongs to (REQUIRED)
+  businessUnitId: varchar("business_unit_id").references(() => businessUnits.id), // Business unit this machine belongs to (optional for unassigned machines)
   name: varchar("name").notNull(),
   location: varchar("location").notNull(),
   isActive: boolean("is_active").default(true),

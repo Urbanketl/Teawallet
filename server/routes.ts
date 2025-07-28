@@ -580,14 +580,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { name, location, businessUnitId, isActive = true } = req.body;
 
-      if (!name || !location || !businessUnitId) {
-        return res.status(400).json({ message: "Name, location, and business unit ID are required" });
+      if (!name || !location) {
+        return res.status(400).json({ message: "Name and location are required" });
       }
 
-      // Verify business unit exists
-      const businessUnit = await storage.getBusinessUnit(businessUnitId);
-      if (!businessUnit) {
-        return res.status(400).json({ message: "Business unit not found" });
+      // Verify business unit exists if provided
+      if (businessUnitId) {
+        const businessUnit = await storage.getBusinessUnit(businessUnitId);
+        if (!businessUnit) {
+          return res.status(400).json({ message: "Business unit not found" });
+        }
       }
 
       const machineData = {

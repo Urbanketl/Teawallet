@@ -89,6 +89,12 @@ export interface IStorage {
   // Dashboard stats operations
   getBusinessUnitDashboardStats(businessUnitId: string): Promise<any>;
   getUserDashboardStats(userId: string): Promise<any>;
+  getBusinessUnitSummary(businessUnitId: string, startDate?: string, endDate?: string): Promise<{
+    totalRecharged: string;
+    cupsDispensed: number;
+    totalSpent: string;
+    averagePerCup: string;
+  }>;
 
   // Atomic RFID Transaction - Critical for billing accuracy
   processRfidTransactionForBusinessUnit(params: {
@@ -826,6 +832,79 @@ export class DatabaseStorage implements IStorage {
     return {
       logs: logsResult,
       total: countResult.count || 0
+    };
+  }
+
+  async getBusinessUnitSummary(businessUnitId: string, startDate?: string, endDate?: string): Promise<{
+    totalRecharged: string;
+    cupsDispensed: number;
+    totalSpent: string;
+    averagePerCup: string;
+  }> {
+    // Build date conditions
+    let dateConditions = [];
+    if (startDate) {
+      dateConditions.push(gte(transactions.createdAt, new Date(startDate)));
+    }
+    if (endDate) {
+      dateConditions.push(lte(transactions.createdAt, new Date(endDate)));
+    }
+
+    // Get recharge transactions (type = 'recharge')
+    let rechargeConditions = [
+      eq(transactions.businessUnitId, businessUnitId),
+      eq(transactions.type, 'recharge')
+    ];
+    if (dateConditions.length > 0) {
+      rechargeConditions.push(...dateConditions);
+    }
+
+    const [rechargeResult] = await db
+      .select({ 
+        total: sql<string>`COALESCE(SUM(${transactions.amount}), '0')::text` 
+      })
+      .from(transactions)
+      .where(and(...rechargeConditions));
+
+    // Get dispensing logs for cups and spending calculation
+    let dispensingConditions = [eq(dispensingLogs.businessUnitId, businessUnitId)];
+    if (startDate) {
+      dispensingConditions.push(gte(dispensingLogs.createdAt, new Date(startDate)));
+    }
+    if (endDate) {
+      dispensingConditions.push(lte(dispensingLogs.createdAt, new Date(endDate)));
+    }
+
+    // Get cups dispensed (successful dispenses only)
+    const [cupsResult] = await db
+      .select({ 
+        count: sql<number>`COUNT(*)::int` 
+      })
+      .from(dispensingLogs)
+      .where(and(...dispensingConditions, eq(dispensingLogs.success, true)));
+
+    // Get total spent on tea (successful dispenses only)
+    const [spentResult] = await db
+      .select({ 
+        total: sql<string>`COALESCE(SUM(${dispensingLogs.amount}), '0')::text` 
+      })
+      .from(dispensingLogs)
+      .where(and(...dispensingConditions, eq(dispensingLogs.success, true)));
+
+    const totalRecharged = rechargeResult?.total || '0';
+    const cupsDispensed = cupsResult?.count || 0;
+    const totalSpent = spentResult?.total || '0';
+    
+    // Calculate average per cup
+    const averagePerCup = cupsDispensed > 0 
+      ? (parseFloat(totalSpent) / cupsDispensed).toFixed(2)
+      : '0.00';
+
+    return {
+      totalRecharged,
+      cupsDispensed,
+      totalSpent,
+      averagePerCup
     };
   }
 

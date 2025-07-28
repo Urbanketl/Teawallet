@@ -27,7 +27,10 @@ import {
   Wallet,
   Download,
   FileText,
-  Receipt
+  Receipt,
+  FileBarChart,
+  BarChart3,
+  TrendingDown
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -492,6 +495,14 @@ export default function CorporateDashboard() {
                 </span>
               </div>
             </div>
+
+            {/* Business Unit Summary Cards */}
+            <BusinessUnitSummaryCards
+              businessUnitId={selectedBusinessUnitId!}
+              dateFilter={dateFilter}
+              customStartDate={customStartDate}
+              customEndDate={customEndDate}
+            />
 
             {/* Overview */}
             <BusinessUnitOverview
@@ -1142,6 +1153,205 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
             </div>
           </div>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function BusinessUnitSummaryCards({ 
+  businessUnitId, 
+  dateFilter, 
+  customStartDate, 
+  customEndDate 
+}: { 
+  businessUnitId: string;
+  dateFilter: 'all' | 'week' | 'month' | 'custom';
+  customStartDate: string;
+  customEndDate: string;
+}) {
+  // Calculate date range based on filter
+  const getDateRange = () => {
+    const now = new Date();
+    
+    switch (dateFilter) {
+      case 'week':
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+        startOfWeek.setHours(0, 0, 0, 0);
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6); // Saturday
+        endOfWeek.setHours(23, 59, 59, 999);
+        return {
+          startDate: startOfWeek.toISOString(),
+          endDate: endOfWeek.toISOString()
+        };
+      
+      case 'month':
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        return {
+          startDate: startOfMonth.toISOString(),
+          endDate: endOfMonth.toISOString()
+        };
+      
+      case 'custom':
+        if (customStartDate && customEndDate) {
+          const start = new Date(customStartDate);
+          start.setHours(0, 0, 0, 0);
+          const end = new Date(customEndDate);
+          end.setHours(23, 59, 59, 999);
+          return {
+            startDate: start.toISOString(),
+            endDate: end.toISOString()
+          };
+        }
+        return {};
+      
+      default: // 'all'
+        return {};
+    }
+  };
+
+  const { startDate, endDate } = getDateRange();
+  
+  // Construct query URL properly
+  const buildQueryUrl = () => {
+    const baseUrl = `/api/corporate/business-unit-summary/${businessUnitId}`;
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);  
+    const queryString = params.toString();
+    return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+  };
+
+  const { data: summaryData, isLoading: summaryLoading } = useQuery({
+    queryKey: [`/api/corporate/business-unit-summary/${businessUnitId}`, dateFilter, startDate, endDate],
+    queryFn: () => fetch(buildQueryUrl()).then(res => res.json()),
+    enabled: !!businessUnitId,
+    retry: false,
+  });
+
+  const getDateFilterLabel = () => {
+    switch (dateFilter) {
+      case 'week': return 'This Week';
+      case 'month': return 'This Month';
+      case 'custom': 
+        if (customStartDate && customEndDate) {
+          return `${customStartDate} to ${customEndDate}`;
+        }
+        return 'Custom Range';
+      default: return 'All Time';
+    }
+  };
+
+  if (summaryLoading) {
+    return (
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileBarChart className="h-5 w-5" />
+            Business Unit Summary
+          </CardTitle>
+          <CardDescription>Loading summary data...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="p-4 border rounded-lg animate-pulse">
+                <div className="h-8 bg-gray-200 rounded mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded"></div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const summary = summaryData || {
+    totalRecharged: '0',
+    cupsDispensed: 0,
+    totalSpent: '0',
+    averagePerCup: '0.00'
+  };
+
+  return (
+    <Card className="mb-6">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <FileBarChart className="h-5 w-5" />
+          Business Unit Summary ({getDateFilterLabel()})
+        </CardTitle>
+        <CardDescription>
+          Financial and operational overview for the selected time period
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Total Recharged */}
+          <div className="p-4 border rounded-lg bg-green-50">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-2 bg-green-100 rounded-full">
+                <Wallet className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm text-green-700 font-medium">Total</p>
+                <p className="text-sm text-green-600">Recharged</p>
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-green-800">
+              ₹{parseFloat(summary.totalRecharged).toFixed(2)}
+            </p>
+          </div>
+
+          {/* Cups Dispensed */}
+          <div className="p-4 border rounded-lg bg-orange-50">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-2 bg-orange-100 rounded-full">
+                <Coffee className="h-5 w-5 text-orange-600" />
+              </div>
+              <div>
+                <p className="text-sm text-orange-700 font-medium">Cups</p>
+                <p className="text-sm text-orange-600">Dispensed</p>
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-orange-800">
+              {summary.cupsDispensed}
+            </p>
+          </div>
+
+          {/* Total Spent */}
+          <div className="p-4 border rounded-lg bg-red-50">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-2 bg-red-100 rounded-full">
+                <TrendingDown className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <p className="text-sm text-red-700 font-medium">Spent</p>
+                <p className="text-sm text-red-600">On Tea</p>
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-red-800">
+              ₹{parseFloat(summary.totalSpent).toFixed(2)}
+            </p>
+          </div>
+
+          {/* Average Per Cup */}
+          <div className="p-4 border rounded-lg bg-blue-50">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-2 bg-blue-100 rounded-full">
+                <BarChart3 className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-blue-700 font-medium">Average</p>
+                <p className="text-sm text-blue-600">Per Cup</p>
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-blue-800">
+              ₹{summary.averagePerCup}
+            </p>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

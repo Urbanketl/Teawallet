@@ -510,4 +510,42 @@ export function registerCorporateRoutes(app: Express) {
       res.status(500).json({ error: "Failed to generate invoice" });
     }
   });
+
+  // Get business unit summary with date filtering
+  app.get("/api/corporate/business-unit-summary/:businessUnitId", isAuthenticated, async (req: any, res) => {
+    const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+      const { businessUnitId } = req.params;
+      const { startDate, endDate } = req.query;
+
+      console.log(`=== BUSINESS UNIT SUMMARY API DEBUG ===`);
+      console.log(`User ID: ${userId}`);
+      console.log(`Business Unit ID: ${businessUnitId}`);
+      console.log(`Date Filter - Start: ${startDate} End: ${endDate}`);
+
+      // Verify user has access to this business unit
+      const userBusinessUnits = await storage.getUserBusinessUnits(userId);
+      const hasAccess = userBusinessUnits.some(unit => unit.id === businessUnitId);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: 'Access denied to this business unit' });
+      }
+
+      const summary = await storage.getBusinessUnitSummary(
+        businessUnitId,
+        startDate as string,
+        endDate as string
+      );
+
+      console.log(`Summary data:`, summary);
+      res.json(summary);
+    } catch (error) {
+      console.error('Error getting business unit summary:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
 }

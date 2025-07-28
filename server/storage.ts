@@ -107,6 +107,17 @@ export interface IStorage {
   getTotalRevenue(): Promise<string>;
   getDailyStats(): Promise<{ totalUsers: number; totalRevenue: string; activeMachines: number; dailyDispensing: number }>;
   
+  // Admin-only user creation (replacing auto-registration)
+  createUserAccount(userData: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    isAdmin?: boolean;
+    createdBy: string;
+  }): Promise<User>;
+  deleteUserAccount(userId: string, deletedBy: string): Promise<{ success: boolean; message: string }>;
+  
 
   
 
@@ -1884,6 +1895,91 @@ export class DatabaseStorage implements IStorage {
       machineName: row.machineName,
       machineLocation: row.machineLocation
     }));
+  }
+
+  // Admin-only user creation (replacing auto-registration)
+  async createUserAccount(userData: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    isAdmin?: boolean;
+    createdBy: string;
+  }): Promise<User> {
+    try {
+      // Check if user already exists
+      const existingUser = await this.getUser(userData.id);
+      if (existingUser) {
+        throw new Error("User account already exists");
+      }
+
+      // Check if email is already in use
+      const [existingEmail] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, userData.email));
+      
+      if (existingEmail) {
+        throw new Error("Email address already in use");
+      }
+
+      // Create the user account
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          id: userData.id,
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          isAdmin: userData.isAdmin || false,
+          isSuperAdmin: false, // Only platform can set super admin
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning();
+
+      console.log(`User account created by admin ${userData.createdBy}: ${userData.email}`);
+      return newUser;
+    } catch (error) {
+      console.error("Failed to create user account:", error);
+      throw error;
+    }
+  }
+
+  async deleteUserAccount(userId: string, deletedBy: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const user = await this.getUser(userId);
+      if (!user) {
+        return { success: false, message: "User not found" };
+      }
+
+      // Check if user has active business unit assignments
+      const assignments = await db
+        .select()
+        .from(userBusinessUnits)
+        .where(eq(userBusinessUnits.userId, userId));
+
+      if (assignments.length > 0) {
+        return { 
+          success: false, 
+          message: "Cannot delete user with active business unit assignments. Transfer ownership first." 
+        };
+      }
+
+      // Delete the user account
+      await db
+        .delete(users)
+        .where(eq(users.id, userId));
+
+      console.log(`User account deleted by admin ${deletedBy}: ${user.email}`);
+      return { success: true, message: "User account deleted successfully" };
+    } catch (error) {
+      console.error("Failed to delete user account:", error);
+      return { 
+        success: false, 
+        message: error instanceof Error ? error.message : "Failed to delete user account" 
+      };
+    }
   }
 }
 

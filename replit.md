@@ -33,6 +33,8 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Session Management**: Server-side sessions with PostgreSQL persistence
 - **Authorization**: Role-based access control (business unit admin/super admin roles)
 - **Security**: CSRF protection, secure cookies, and session validation
+- **Account Creation**: Admin-only user creation (no public registration) with credential sharing system
+- **Access Control**: Pre-authorized accounts only - prevents social media-like open registration
 
 ### B2B Corporate Model
 - **Business Unit Admins**: Each user manages multiple machines and RFID cards
@@ -62,10 +64,12 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 ## Data Flow
 
 ### User Registration & Authentication
-1. User initiates login via Replit Auth
-2. OIDC flow redirects to Replit for authentication
-3. User data synchronized with local database
-4. Session established with PostgreSQL backing
+1. Platform admin creates user account with Replit ID and email
+2. Admin shares login credentials (Replit ID/email) with business unit manager
+3. User initiates login via Replit Auth with provided credentials
+4. OIDC flow redirects to Replit for authentication
+5. System validates user exists in database (no auto-creation)
+6. Session established with PostgreSQL backing for authorized users only
 
 ### RFID Transaction Flow
 1. User taps RFID card on tea machine
@@ -118,6 +122,12 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- July 28, 2025: COMPLETED - Implemented admin-only user creation system to replace social media-like public registration
+- July 28, 2025: Enhanced authentication security by preventing automatic user account creation through Replit Auth
+- July 28, 2025: Added comprehensive admin interface for user account lifecycle management with credential sharing system
+- July 28, 2025: Modified upsertUser function to checkUserExists ensuring only pre-created accounts can authenticate
+- July 28, 2025: Built user creation form with Replit ID, email validation, and admin privilege assignment controls
+- July 28, 2025: Implemented secure user deletion with business unit assignment validation to prevent data orphaning
 - July 28, 2025: COMPLETED - Fixed duplicate business unit entries and implemented Business Owner column with proper data integrity
 - July 28, 2025: Added Business Owner column showing assigned administrator names with search functionality
 - July 28, 2025: Cleaned up multiple user assignments per business unit to enforce one-admin-per-unit model

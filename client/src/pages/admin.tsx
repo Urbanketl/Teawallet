@@ -2647,6 +2647,14 @@ function UserManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [usersPage, setUsersPage] = useState(1);
   const [selectedUserDetails, setSelectedUserDetails] = useState<any>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newUserData, setNewUserData] = useState({
+    id: '',
+    email: '',
+    firstName: '',
+    lastName: '',
+    isAdmin: false
+  });
   const usersLimit = 20;
 
   // Fetch users with pagination
@@ -2699,6 +2707,102 @@ function UserManagement() {
     }
   };
 
+  // Create user mutation
+  const createUserMutation = useMutation({
+    mutationFn: async (userData: typeof newUserData) => {
+      const response = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(userData),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create user account');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ 
+        predicate: (query) => query.queryKey[0]?.toString()?.includes('/api/admin/users') || false
+      });
+      toast({
+        title: "Success",
+        description: `User account created successfully for ${result.user.email}`,
+      });
+      setShowCreateForm(false);
+      setNewUserData({ id: '', email: '', firstName: '', lastName: '', isAdmin: false });
+      
+      // Show credential sharing information
+      toast({
+        title: "Account Created",
+        description: `Share login credentials: Replit ID '${result.credentials.replitId}' with email '${result.credentials.email}'`,
+        duration: 10000,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create user account",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete user mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete user account');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ 
+        predicate: (query) => query.queryKey[0]?.toString()?.includes('/api/admin/users') || false
+      });
+      toast({
+        title: "Success",
+        description: "User account deleted successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete user account",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCreateUser = () => {
+    if (!newUserData.id || !newUserData.email || !newUserData.firstName || !newUserData.lastName) {
+      toast({
+        title: "Error",
+        description: "All fields are required",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    createUserMutation.mutate(newUserData);
+  };
+
+  const handleDeleteUser = (user: any) => {
+    if (confirm(`Are you sure you want to delete the account for ${user.firstName} ${user.lastName}? This action cannot be undone.`)) {
+      deleteUserMutation.mutate(user.id);
+    }
+  };
+
   const filteredUsers = (usersData as any)?.users || [];
 
   return (
@@ -2707,10 +2811,17 @@ function UserManagement() {
         <div>
           <h3 className="text-lg font-semibold">User Management</h3>
           <p className="text-sm text-muted-foreground">
-            Manage user accounts and admin privileges
+            Admin-only account creation - no public registration allowed
           </p>
         </div>
         <div className="flex items-center space-x-4">
+          <Button
+            onClick={() => setShowCreateForm(!showCreateForm)}
+            className="flex items-center space-x-2"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>Create Account</span>
+          </Button>
           <input
             type="text"
             placeholder="Search users..."
@@ -2723,6 +2834,106 @@ function UserManagement() {
           </Badge>
         </div>
       </div>
+
+      {/* Create User Form */}
+      {showCreateForm && (
+        <Card className="border-2 border-tea-green/20">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <UserPlus className="w-5 h-5 text-tea-green" />
+              <span>Create New User Account</span>
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Create a new business unit admin account. Share the Replit ID and email with the user for login.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="userId">Replit User ID*</Label>
+                <Input
+                  id="userId"
+                  placeholder="e.g., BU_ADMIN_004"
+                  value={newUserData.id}
+                  onChange={(e) => setNewUserData({ ...newUserData, id: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Unique identifier for Replit Auth
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="email">Email Address*</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="admin@company.com"
+                  value={newUserData.email}
+                  onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="firstName">First Name*</Label>
+                <Input
+                  id="firstName"
+                  placeholder="John"
+                  value={newUserData.firstName}
+                  onChange={(e) => setNewUserData({ ...newUserData, firstName: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="lastName">Last Name*</Label>
+                <Input
+                  id="lastName"
+                  placeholder="Doe"
+                  value={newUserData.lastName}
+                  onChange={(e) => setNewUserData({ ...newUserData, lastName: e.target.value })}
+                />
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="isAdmin"
+                checked={newUserData.isAdmin}
+                onCheckedChange={(checked) => setNewUserData({ ...newUserData, isAdmin: checked })}
+              />
+              <Label htmlFor="isAdmin" className="flex items-center space-x-2">
+                <Shield className="w-4 h-4" />
+                <span>Grant Admin Privileges</span>
+              </Label>
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowCreateForm(false);
+                  setNewUserData({ id: '', email: '', firstName: '', lastName: '', isAdmin: false });
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCreateUser}
+                disabled={createUserMutation.isPending}
+                className="flex items-center space-x-2"
+              >
+                {createUserMutation.isPending ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Creating...</span>
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4" />
+                    <span>Create Account</span>
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {usersLoading ? (
         <Card>
@@ -2782,25 +2993,38 @@ function UserManagement() {
                   
                   <div className="flex items-center space-x-2">
                     {user.id !== currentUser?.id && (
-                      <Button
-                        variant={user.isAdmin ? "destructive" : "default"}
-                        size="sm"
-                        onClick={() => handleToggleAdmin(user)}
-                        disabled={toggleAdminMutation.isPending}
-                        className="flex items-center space-x-1"
-                      >
-                        {user.isAdmin ? (
-                          <>
-                            <UserMinus className="w-4 h-4" />
-                            <span>Revoke Admin</span>
-                          </>
-                        ) : (
-                          <>
-                            <UserPlus className="w-4 h-4" />
-                            <span>Grant Admin</span>
-                          </>
-                        )}
-                      </Button>
+                      <>
+                        <Button
+                          variant={user.isAdmin ? "destructive" : "default"}
+                          size="sm"
+                          onClick={() => handleToggleAdmin(user)}
+                          disabled={toggleAdminMutation.isPending}
+                          className="flex items-center space-x-1"
+                        >
+                          {user.isAdmin ? (
+                            <>
+                              <UserMinus className="w-4 h-4" />
+                              <span>Revoke Admin</span>
+                            </>
+                          ) : (
+                            <>
+                              <UserPlus className="w-4 h-4" />
+                              <span>Grant Admin</span>
+                            </>
+                          )}
+                        </Button>
+                        
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteUser(user)}
+                          disabled={deleteUserMutation.isPending}
+                          className="flex items-center space-x-1"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>Delete</span>
+                        </Button>
+                      </>
                     )}
                     
                     <Button 

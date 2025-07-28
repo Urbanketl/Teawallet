@@ -117,3 +117,64 @@ export async function updateUserAdminStatus(req: any, res: Response) {
     res.status(500).json({ message: 'Failed to update user admin status' });
   }
 }
+
+// Admin-only user creation
+export async function createUserAccount(req: any, res: Response) {
+  try {
+    const { id, email, firstName, lastName, isAdmin } = req.body;
+    const createdBy = req.session?.user?.id || req.user?.claims?.sub;
+
+    if (!id || !email || !firstName || !lastName) {
+      return res.status(400).json({ 
+        message: 'User ID, email, first name, and last name are required' 
+      });
+    }
+
+    const newUser = await storage.createUserAccount({
+      id,
+      email,
+      firstName,
+      lastName,
+      isAdmin: isAdmin || false,
+      createdBy
+    });
+
+    res.json({ 
+      user: newUser, 
+      message: 'User account created successfully',
+      credentials: {
+        message: 'Share these Replit Auth credentials with the user',
+        replitId: id,
+        email: email,
+        loginUrl: '/api/login'
+      }
+    });
+  } catch (error) {
+    console.error('Error creating user account:', error);
+    res.status(500).json({ 
+      message: error instanceof Error ? error.message : 'Failed to create user account' 
+    });
+  }
+}
+
+export async function deleteUserAccount(req: any, res: Response) {
+  try {
+    const { userId } = req.params;
+    const deletedBy = req.session?.user?.id || req.user?.claims?.sub;
+
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    const result = await storage.deleteUserAccount(userId, deletedBy);
+    
+    if (result.success) {
+      res.json({ message: result.message });
+    } else {
+      res.status(400).json({ message: result.message });
+    }
+  } catch (error) {
+    console.error('Error deleting user account:', error);
+    res.status(500).json({ message: 'Failed to delete user account' });
+  }
+}

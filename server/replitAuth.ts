@@ -59,16 +59,15 @@ function updateUserSession(
   user.expires_at = user.claims?.exp;
 }
 
-async function upsertUser(
+async function checkUserExists(
   claims: any,
 ) {
-  await storage.upsertUser({
-    id: claims["sub"],
-    email: claims["email"],
-    firstName: claims["first_name"],
-    lastName: claims["last_name"],
-    profileImageUrl: claims["profile_image_url"],
-  });
+  // Check if user exists in our system - only allow existing users to login
+  const user = await storage.getUser(claims["sub"]);
+  if (!user) {
+    throw new Error("User not authorized - account must be created by administrator");
+  }
+  return user;
 }
 
 export async function setupAuth(app: Express) {
@@ -86,10 +85,16 @@ export async function setupAuth(app: Express) {
       tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
       verified: passport.AuthenticateCallback
     ) => {
-      const user = {};
-      updateUserSession(user, tokens);
-      await upsertUser(tokens.claims());
-      verified(null, user);
+      try {
+        // Only allow login if user exists in our system (created by admin)
+        const existingUser = await checkUserExists(tokens.claims());
+        const user = {};
+        updateUserSession(user, tokens);
+        verified(null, user);
+      } catch (error) {
+        console.error("User authorization failed:", error);
+        verified(new Error("Account not found - please contact administrator"), null);
+      }
     };
 
     for (const domain of process.env

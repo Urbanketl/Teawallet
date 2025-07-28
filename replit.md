@@ -118,7 +118,9 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
-- July 28, 2025: COMPLETED - Fixed machine assignment data issue preventing Monthly Reports access
+- July 28, 2025: COMPLETED - Fixed user business unit assignments preventing Monthly Reports access
+- July 28, 2025: Fixed Priya Sharma (BU_ADMIN_003) assignments from wrong units (BU_test_001, WALMART) to correct units (Kulhad party, New Urban ketl)
+- July 28, 2025: Corrected frontend query parameter construction in corporate.tsx (fixed malformed &businessUnitId= to ?businessUnitId= format)
 - July 28, 2025: Corrected tea machine business unit assignments - Kulhad party (3 machines), New Urban ketl (2 machines)
 - July 28, 2025: Machines were incorrectly assigned to test business unit BU_test_001, now properly assigned to actual business units
 - July 28, 2025: Monthly Reports tab now fully accessible with proper machine counts and export functionality working

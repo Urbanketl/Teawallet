@@ -43,7 +43,13 @@ import {
   Settings2,
   MapPin,
   Power,
-  PowerOff
+  PowerOff,
+  Filter,
+  ArrowUpDown,
+  ChevronUp,
+  ChevronDown,
+  Building2,
+  Edit
 } from "lucide-react";
 import { format } from "date-fns";
 import Pagination from "@/components/Pagination";
@@ -1214,12 +1220,12 @@ function MachineManagement() {
   });
 
   // Filter and search machines
-  const filteredMachines = machines.filter((machine: any) => {
+  const filteredMachines = (machines as any[]).filter((machine: any) => {
     const matchesSearch = !searchTerm || 
-      machine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      machine.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      machine.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      getBusinessUnitName(machine.businessUnitId).toLowerCase().includes(searchTerm.toLowerCase());
+      machine.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      machine.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      machine.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      getBusinessUnitName(machine.businessUnitId)?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === "all" || getMachineStatus(machine).toLowerCase() === statusFilter.toLowerCase();
     
@@ -1236,7 +1242,7 @@ function MachineManagement() {
 
   // Helper function to get business unit name
   const getBusinessUnitName = (businessUnitId: string) => {
-    const unit = businessUnits.find((unit: any) => unit.id === businessUnitId);
+    const unit = (businessUnits as any[]).find((unit: any) => unit.id === businessUnitId);
     return unit ? unit.name : "Unassigned";
   };
 
@@ -1293,16 +1299,16 @@ function MachineManagement() {
         </div>
         <div className="flex items-center space-x-3">
           <Badge variant="secondary" className="bg-tea-green/10 text-tea-green">
-            {machines.length} Total
+            {(machines as any[]).length} Total
           </Badge>
           <Badge variant="default" className="bg-green-100 text-green-700">
-            {machines.filter(m => getMachineStatus(m) === "Online").length} Online
+            {(machines as any[]).filter((m: any) => getMachineStatus(m) === "Online").length} Online
           </Badge>
           <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">
-            {machines.filter(m => getMachineStatus(m) === "Offline").length} Offline
+            {(machines as any[]).filter((m: any) => getMachineStatus(m) === "Offline").length} Offline
           </Badge>
           <Badge variant="destructive" className="bg-red-100 text-red-700">
-            {machines.filter(m => getMachineStatus(m) === "Disabled").length} Disabled
+            {(machines as any[]).filter((m: any) => getMachineStatus(m) === "Disabled").length} Disabled
           </Badge>
         </div>
       </div>
@@ -1376,7 +1382,7 @@ function MachineManagement() {
             Loading machines...
           </CardContent>
         </Card>
-      ) : !machines || machines.length === 0 ? (
+      ) : !machines || (machines as any[]).length === 0 ? (
         <Card>
           <CardContent className="p-6 text-center">
             <Coffee className="w-12 h-12 text-gray-300 mx-auto mb-4" />

@@ -275,7 +275,7 @@ export default function CorporateDashboard() {
       return apiRequest("POST", `/api/corporate/rfid-cards${pseudoParam}`, cardData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/corporate/rfid-cards${pseudoParam}${businessUnitParam}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/corporate/rfid-cards`, selectedBusinessUnitId, pseudoParam] });
       setNewCardName("");
       setNewCardNumber("");
       setIsCardDialogOpen(false);
@@ -296,7 +296,7 @@ export default function CorporateDashboard() {
       return apiRequest("DELETE", `/api/corporate/rfid-cards/${cardId}${pseudoParam}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/corporate/rfid-cards${pseudoParam}${businessUnitParam}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/corporate/rfid-cards`, selectedBusinessUnitId, pseudoParam] });
       toast({ title: "Success", description: "RFID card deactivated successfully" });
     },
     onError: (error: any) => {
@@ -782,7 +782,7 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
             <Card>
               <CardContent className="p-4">
                 <div className="text-2xl font-bold text-green-600">
-                  {monthlyData.totalTransactions || 0}
+                  {(monthlyData as any)?.totalTransactions || 0}
                 </div>
                 <p className="text-sm text-gray-600">Total Transactions</p>
               </CardContent>
@@ -790,7 +790,7 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
             <Card>
               <CardContent className="p-4">
                 <div className="text-2xl font-bold text-blue-600">
-                  ₹{parseFloat(monthlyData.totalAmount || 0).toFixed(2)}
+                  ₹{parseFloat((monthlyData as any)?.totalAmount || 0).toFixed(2)}
                 </div>
                 <p className="text-sm text-gray-600">Total Amount</p>
               </CardContent>
@@ -798,7 +798,7 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
             <Card>
               <CardContent className="p-4">
                 <div className="text-2xl font-bold text-orange-600">
-                  {monthlyData.uniqueMachines || 0}
+                  {(monthlyData as any)?.uniqueMachines || 0}
                 </div>
                 <p className="text-sm text-gray-600">Machines Used</p>
               </CardContent>
@@ -806,7 +806,7 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
             <Card>
               <CardContent className="p-4">
                 <div className="text-2xl font-bold text-purple-600">
-                  {monthlyData.uniqueCards || 0}
+                  {(monthlyData as any)?.uniqueCards || 0}
                 </div>
                 <p className="text-sm text-gray-600">Employee Cards</p>
               </CardContent>
@@ -880,15 +880,15 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
                   <>
                     <div className="flex justify-between">
                       <span className="font-medium text-gray-700">Transactions:</span>
-                      <span className="text-gray-900">{monthlyData.totalTransactions || 0}</span>
+                      <span className="text-gray-900">{(monthlyData as any)?.totalTransactions || 0}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium text-gray-700">Total Amount:</span>
-                      <span className="text-gray-900">₹{parseFloat(monthlyData.totalAmount || 0).toFixed(2)}</span>
+                      <span className="text-gray-900">₹{parseFloat((monthlyData as any)?.totalAmount || 0).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium text-gray-700">Machines Used:</span>
-                      <span className="text-gray-900">{monthlyData.uniqueMachines || 0}</span>
+                      <span className="text-gray-900">{(monthlyData as any)?.uniqueMachines || 0}</span>
                     </div>
                   </>
                 )}

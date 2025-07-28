@@ -327,7 +327,14 @@ export function registerCorporateRoutes(app: Express) {
       const businessUnitId = req.params.businessUnitId as string;
       const month = req.params.month as string; // Format: YYYY-MM
 
+      console.log('=== CSV EXPORT DEBUG ===');
+      console.log('User ID:', userId);
+      console.log('Business Unit ID:', businessUnitId);
+      console.log('Month:', month);
+      console.log('Query params:', req.query);
+
       if (!businessUnitId || !month) {
+        console.log('ERROR: Missing businessUnitId or month');
         return res.status(400).json({ error: "businessUnitId and month are required" });
       }
 

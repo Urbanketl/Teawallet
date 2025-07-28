@@ -670,10 +670,15 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
     setIsExporting(true);
     setShowExportConfirmation(false);
     try {
+      console.log('Frontend: Starting CSV export for:', { businessUnitId, selectedMonth, businessUnitName });
+      
       const response = await fetch(`/api/corporate/monthly-export/${businessUnitId}/${selectedMonth}`, {
         method: 'GET',
         credentials: 'include',
       });
+      
+      console.log('Frontend: Export response status:', response.status);
+      console.log('Frontend: Export response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         throw new Error('Export failed');

@@ -1150,6 +1150,11 @@ export default function AdminPage() {
 function MachineManagement() {
   const [editingMachine, setEditingMachine] = useState<any>(null);
   const [machinePrice, setMachinePrice] = useState("5.00");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -1202,6 +1207,38 @@ function MachineManagement() {
     staleTime: 0, // Always fetch fresh data
     refetchOnWindowFocus: true,
   });
+
+  const { data: businessUnits = [] } = useQuery({
+    queryKey: ["/api/admin/business-units"],
+    retry: false,
+  });
+
+  // Filter and search machines
+  const filteredMachines = machines.filter((machine: any) => {
+    const matchesSearch = !searchTerm || 
+      machine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      machine.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      machine.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      getBusinessUnitName(machine.businessUnitId).toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === "all" || getMachineStatus(machine).toLowerCase() === statusFilter.toLowerCase();
+    
+    return matchesSearch && matchesStatus;
+  });
+
+  // Pagination
+  const totalPages = Math.ceil(filteredMachines.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedMachines = filteredMachines.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset pagination when filters change
+  const resetPage = () => setCurrentPage(1);
+
+  // Helper function to get business unit name
+  const getBusinessUnitName = (businessUnitId: string) => {
+    const unit = businessUnits.find((unit: any) => unit.id === businessUnitId);
+    return unit ? unit.name : "Unassigned";
+  };
 
   const updateMachinePriceMutation = useMutation({
     mutationFn: async ({ machineId, price }: { machineId: string; price: string }) => {
@@ -1270,6 +1307,69 @@ function MachineManagement() {
         </div>
       </div>
 
+      {/* Search and Filter Controls */}
+      <Card className="p-6">
+        <div className="space-y-4">
+          {/* Search Bar */}
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Search by machine name, location, ID, or business unit..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  resetPage();
+                }}
+                className="pl-10"
+              />
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setViewMode(viewMode === 'table' ? 'cards' : 'table')}
+              className="flex items-center gap-2"
+            >
+              <Eye className="w-4 h-4" />
+              {viewMode === 'table' ? 'Card View' : 'Table View'}
+            </Button>
+          </div>
+
+          {/* Filter Controls */}
+          <div className="flex flex-wrap gap-4 items-center">
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-gray-600" />
+              <span className="text-sm font-medium">Filters:</span>
+            </div>
+            
+            <select
+              value={statusFilter}
+              onChange={(e) => { setStatusFilter(e.target.value); resetPage(); }}
+              className="w-32 h-9 px-3 py-1 border border-input bg-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="all">All Status</option>
+              <option value="online">Online</option>
+              <option value="offline">Offline</option>
+              <option value="disabled">Disabled</option>
+            </select>
+
+            <select
+              value={itemsPerPage.toString()}
+              onChange={(e) => { setItemsPerPage(parseInt(e.target.value)); resetPage(); }}
+              className="w-32 h-9 px-3 py-1 border border-input bg-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="10">10 per page</option>
+              <option value="25">25 per page</option>
+              <option value="50">50 per page</option>
+            </select>
+
+            {/* Results Count */}
+            <div className="text-sm text-gray-600 ml-auto">
+              Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredMachines.length)} of {filteredMachines.length} machines
+            </div>
+          </div>
+        </div>
+      </Card>
+
       {machinesLoading ? (
         <Card>
           <CardContent className="p-6 text-center">
@@ -1283,9 +1383,136 @@ function MachineManagement() {
             <p className="text-gray-500">No tea machines found</p>
           </CardContent>
         </Card>
+      ) : viewMode === 'table' ? (
+        <Card>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left p-4 font-semibold">Machine</th>
+                  <th className="text-left p-4 font-semibold">Business Unit</th>
+                  <th className="text-left p-4 font-semibold">Location</th>
+                  <th className="text-left p-4 font-semibold">Status</th>
+                  <th className="text-left p-4 font-semibold">Price</th>
+                  <th className="text-left p-4 font-semibold">Last Ping</th>
+                  <th className="text-left p-4 font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedMachines.length > 0 ? (
+                  paginatedMachines.map((machine: any) => (
+                    <tr key={machine.id} className="border-b hover:bg-gray-50">
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-3 h-3 rounded-full ${getMachineStatusIndicator(machine)}`} />
+                          <div>
+                            <div className="font-medium">{machine.name}</div>
+                            <div className="text-xs text-gray-500">ID: {machine.id}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <span className="text-sm font-medium text-gray-900">
+                          {getBusinessUnitName(machine.businessUnitId)}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <span className="text-sm text-gray-600">{machine.location}</span>
+                      </td>
+                      <td className="p-4">
+                        <Badge variant={getMachineStatusVariant(machine)}>
+                          {getMachineStatus(machine)}
+                        </Badge>
+                      </td>
+                      <td className="p-4">
+                        <div className="text-lg font-bold text-tea-green">
+                          ₹{machine.teaTypes?.[0]?.price || "5.00"}
+                        </div>
+                        <div className="text-xs text-gray-500">per cup</div>
+                      </td>
+                      <td className="p-4">
+                        <div className="text-sm text-gray-600">
+                          {machine.lastPing ? format(new Date(machine.lastPing), 'MMM dd, h:mm a') : 'Never'}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {getTimeSinceLastPing(machine.lastPing)}
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => startPriceEdit(machine)}
+                          className="flex items-center space-x-2"
+                        >
+                          <IndianRupee className="w-4 h-4" />
+                          <span>Edit Price</span>
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-gray-500">
+                      {filteredMachines.length === 0 ? "No machines match your search criteria." : "No machines found."}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between p-4 border-t">
+              <div className="text-sm text-gray-600">
+                Page {currentPage} of {totalPages}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </Button>
+                
+                {/* Page Numbers */}
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={pageNum === currentPage ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="w-8 h-8 p-0"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </Card>
       ) : (
         <div className="grid gap-4">
-          {machines.map((machine: any) => (
+          {paginatedMachines.map((machine: any) => (
             <Card key={machine.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -1295,6 +1522,7 @@ function MachineManagement() {
                       <h4 className="font-semibold text-lg">{machine.name}</h4>
                       <p className="text-gray-600 text-sm">{machine.location}</p>
                       <p className="text-xs text-gray-500">ID: {machine.id}</p>
+                      <p className="text-xs text-gray-500">Business Unit: {getBusinessUnitName(machine.businessUnitId)}</p>
                     </div>
                   </div>
                   
@@ -1333,6 +1561,36 @@ function MachineManagement() {
               </CardContent>
             </Card>
           ))}
+          
+          {/* Pagination for cards view */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between p-4">
+              <div className="text-sm text-gray-600">
+                Page {currentPage} of {totalPages}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

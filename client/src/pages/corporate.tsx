@@ -672,85 +672,92 @@ export default function CorporateDashboard() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
+                    {/* Date Filter Controls - Always Visible */}
+                    <div className="mb-4 p-4 border rounded-lg bg-gray-50">
+                      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-gray-600" />
+                          <Label className="text-sm font-medium">Filter by date:</Label>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => setDateFilter('all')}
+                            className={`px-3 py-1 rounded text-sm ${
+                              dateFilter === 'all' 
+                                ? 'bg-blue-500 text-white' 
+                                : 'bg-white border hover:bg-gray-50'
+                            }`}
+                          >
+                            All Time
+                          </button>
+                          <button
+                            onClick={() => setDateFilter('week')}
+                            className={`px-3 py-1 rounded text-sm ${
+                              dateFilter === 'week' 
+                                ? 'bg-blue-500 text-white' 
+                                : 'bg-white border hover:bg-gray-50'
+                            }`}
+                          >
+                            This Week
+                          </button>
+                          <button
+                            onClick={() => setDateFilter('month')}
+                            className={`px-3 py-1 rounded text-sm ${
+                              dateFilter === 'month' 
+                                ? 'bg-blue-500 text-white' 
+                                : 'bg-white border hover:bg-gray-50'
+                            }`}
+                          >
+                            This Month
+                          </button>
+                          <button
+                            onClick={() => setDateFilter('custom')}
+                            className={`px-3 py-1 rounded text-sm ${
+                              dateFilter === 'custom' 
+                                ? 'bg-blue-500 text-white' 
+                                : 'bg-white border hover:bg-gray-50'
+                            }`}
+                          >
+                            Custom Range
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Custom Date Range Inputs */}
+                      {dateFilter === 'custom' && (
+                        <div className="mt-3 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                          <Label className="text-sm">From:</Label>
+                          <Input
+                            type="date"
+                            value={customStartDate}
+                            onChange={(e) => setCustomStartDate(e.target.value)}
+                            className="w-auto"
+                          />
+                          <Label className="text-sm">To:</Label>
+                          <Input
+                            type="date"
+                            value={customEndDate}
+                            onChange={(e) => setCustomEndDate(e.target.value)}
+                            className="w-auto"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Results Display */}
                     {dispensingLoading ? (
                       <div className="text-center py-4">Loading usage logs...</div>
                     ) : totalLogsCount === 0 ? (
-                      <p className="text-center text-gray-500 py-4">No usage logs for this business unit yet.</p>
+                      <div className="text-center text-gray-500 py-4">
+                        {dateFilter === 'all' ? (
+                          <p>No usage logs for this business unit yet.</p>
+                        ) : (
+                          <p>No usage logs found for the selected date range. Try a different filter or date range.</p>
+                        )}
+                      </div>
                     ) : (
                       <>
-                        {/* Date Filter Controls */}
-                        <div className="mb-4 p-4 border rounded-lg bg-gray-50">
-                          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4 text-gray-600" />
-                              <Label className="text-sm font-medium">Filter by date:</Label>
-                            </div>
-                            
-                            <div className="flex flex-wrap gap-2">
-                              <button
-                                onClick={() => setDateFilter('all')}
-                                className={`px-3 py-1 rounded text-sm ${
-                                  dateFilter === 'all' 
-                                    ? 'bg-blue-500 text-white' 
-                                    : 'bg-white border hover:bg-gray-50'
-                                }`}
-                              >
-                                All Time
-                              </button>
-                              <button
-                                onClick={() => setDateFilter('week')}
-                                className={`px-3 py-1 rounded text-sm ${
-                                  dateFilter === 'week' 
-                                    ? 'bg-blue-500 text-white' 
-                                    : 'bg-white border hover:bg-gray-50'
-                                }`}
-                              >
-                                This Week
-                              </button>
-                              <button
-                                onClick={() => setDateFilter('month')}
-                                className={`px-3 py-1 rounded text-sm ${
-                                  dateFilter === 'month' 
-                                    ? 'bg-blue-500 text-white' 
-                                    : 'bg-white border hover:bg-gray-50'
-                                }`}
-                              >
-                                This Month
-                              </button>
-                              <button
-                                onClick={() => setDateFilter('custom')}
-                                className={`px-3 py-1 rounded text-sm ${
-                                  dateFilter === 'custom' 
-                                    ? 'bg-blue-500 text-white' 
-                                    : 'bg-white border hover:bg-gray-50'
-                                }`}
-                              >
-                                Custom Range
-                              </button>
-                            </div>
-                          </div>
-                          
-                          {/* Custom Date Range Inputs */}
-                          {dateFilter === 'custom' && (
-                            <div className="mt-3 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                              <Label className="text-sm">From:</Label>
-                              <Input
-                                type="date"
-                                value={customStartDate}
-                                onChange={(e) => setCustomStartDate(e.target.value)}
-                                className="w-auto"
-                              />
-                              <Label className="text-sm">To:</Label>
-                              <Input
-                                type="date"
-                                value={customEndDate}
-                                onChange={(e) => setCustomEndDate(e.target.value)}
-                                className="w-auto"
-                              />
-                            </div>
-                          )}
-                        </div>
-
                         {/* Pagination Controls at Top */}
                         {totalLogsPages > 1 && (
                           <div className="flex items-center justify-between mb-4 pb-4 border-b">

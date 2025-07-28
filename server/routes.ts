@@ -1185,17 +1185,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin Transfer Interface Routes
   app.post('/api/admin/business-units/:id/transfer', isAuthenticated, async (req: any, res) => {
     try {
+      console.log('=== TRANSFER DEBUG ===');
+      console.log('Request params:', req.params);
+      console.log('Request body:', req.body);
+      console.log('User:', req.user?.claims?.sub);
+      
       const adminId = req.user.claims.sub;
       const admin = await storage.getUser(adminId);
       
+      console.log('Admin user:', admin);
+      
       if (!admin?.isAdmin) {
+        console.log('Admin check failed:', { admin: !!admin, isAdmin: admin?.isAdmin });
         return res.status(403).json({ message: "Access denied. Admin privileges required." });
       }
 
       const { id: businessUnitId } = req.params;
       const { newAdminId, reason } = req.body;
 
+      console.log('Transfer parameters:', { businessUnitId, newAdminId, reason });
+
       if (!newAdminId || !reason) {
+        console.log('Missing parameters:', { newAdminId: !!newAdminId, reason: !!reason });
         return res.status(400).json({ message: "New admin ID and reason are required" });
       }
 
@@ -1205,6 +1216,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transferredBy: adminId,
         reason
       });
+
+      console.log('Transfer result:', result);
 
       if (result.success) {
         res.json(result);

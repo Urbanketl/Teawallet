@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+// Removed Select import - using native HTML selects for better compatibility
 import { 
   Building2, 
   Plus, 
@@ -217,39 +217,36 @@ export function BusinessUnitsTab() {
                   <span className="text-sm font-medium">Filters:</span>
                 </div>
                 
-                <Select value={statusFilter} onValueChange={(value: any) => { setStatusFilter(value); resetPage(); }}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => { setStatusFilter(e.target.value as any); resetPage(); }}
+                  className="w-32 h-9 px-3 py-1 border border-input bg-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
 
-                <Select value={balanceFilter} onValueChange={(value: any) => { setBalanceFilter(value); resetPage(); }}>
-                  <SelectTrigger className="w-36">
-                    <SelectValue placeholder="Balance" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Balances</SelectItem>
-                    <SelectItem value="low">Low (&lt; ₹500)</SelectItem>
-                    <SelectItem value="medium">Medium (₹500-2000)</SelectItem>
-                    <SelectItem value="high">High (&gt; ₹2000)</SelectItem>
-                  </SelectContent>
-                </Select>
+                <select
+                  value={balanceFilter}
+                  onChange={(e) => { setBalanceFilter(e.target.value as any); resetPage(); }}
+                  className="w-36 h-9 px-3 py-1 border border-input bg-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="all">All Balances</option>
+                  <option value="low">Low (&lt; ₹500)</option>
+                  <option value="medium">Medium (₹500-2000)</option>
+                  <option value="high">High (&gt; ₹2000)</option>
+                </select>
 
-                <Select value={itemsPerPage.toString()} onValueChange={(value) => { setItemsPerPage(parseInt(value)); resetPage(); }}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="10">10 per page</SelectItem>
-                    <SelectItem value="25">25 per page</SelectItem>
-                    <SelectItem value="50">50 per page</SelectItem>
-                  </SelectContent>
-                </Select>
+                <select
+                  value={itemsPerPage.toString()}
+                  onChange={(e) => { setItemsPerPage(parseInt(e.target.value)); resetPage(); }}
+                  className="w-32 h-9 px-3 py-1 border border-input bg-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="10">10 per page</option>
+                  <option value="25">25 per page</option>
+                  <option value="50">50 per page</option>
+                </select>
 
                 {/* Results Count */}
                 <div className="text-sm text-gray-600 ml-auto">

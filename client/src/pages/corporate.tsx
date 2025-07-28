@@ -288,8 +288,9 @@ export default function CorporateDashboard() {
     cacheTime: 0,
   });
 
-  const dispensingLogs = dispensingData?.logs || [];
-  const totalLogsCount = dispensingData?.total || 0;
+  // Handle both paginated and non-paginated response formats
+  const dispensingLogs = Array.isArray(dispensingData) ? dispensingData : (dispensingData?.logs || []);
+  const totalLogsCount = Array.isArray(dispensingData) ? dispensingData.length : (dispensingData?.total || 0);
   const totalLogsPages = Math.ceil(totalLogsCount / logsItemsPerPage);
 
   // Get user info for the testing banner

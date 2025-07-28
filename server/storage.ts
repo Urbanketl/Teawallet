@@ -12,7 +12,7 @@ import {
   type TicketStatusHistory, type InsertTicketStatusHistory, type SystemSetting,
   type BusinessUnitTransfer, type InsertBusinessUnitTransfer
 } from "@shared/schema";
-import { eq, and, desc, asc, sql, gte, or, ilike, inArray } from "drizzle-orm";
+import { eq, and, desc, asc, sql, gte, lte, or, ilike, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 export interface IStorage {
@@ -80,11 +80,11 @@ export interface IStorage {
   
   // Dispensing operations
   createDispensingLog(log: InsertDispensingLog): Promise<DispensingLog>;
-  getBusinessUnitDispensingLogs(businessUnitId: string, limit?: number): Promise<DispensingLog[]>;
+  getBusinessUnitDispensingLogs(businessUnitId: string, limit?: number, startDate?: string, endDate?: string): Promise<DispensingLog[]>;
   getUserDispensingLogs(userId: string, limit?: number): Promise<DispensingLog[]>;
-  getManagedDispensingLogs(userId: string, limit?: number): Promise<DispensingLog[]>;
-  getUserDispensingLogsPaginated(userId: string, page: number, limit: number): Promise<{ logs: DispensingLog[], total: number }>;
-  getBusinessUnitDispensingLogsPaginated(businessUnitId: string, page: number, limit: number): Promise<{ logs: DispensingLog[], total: number }>;
+  getManagedDispensingLogs(userId: string, limit?: number, startDate?: string, endDate?: string): Promise<DispensingLog[]>;
+  getUserDispensingLogsPaginated(userId: string, page: number, limit: number, startDate?: string, endDate?: string): Promise<{ logs: DispensingLog[], total: number }>;
+  getBusinessUnitDispensingLogsPaginated(businessUnitId: string, page: number, limit: number, startDate?: string, endDate?: string): Promise<{ logs: DispensingLog[], total: number }>;
   
   // Dashboard stats operations
   getBusinessUnitDashboardStats(businessUnitId: string): Promise<any>;
@@ -703,11 +703,20 @@ export class DatabaseStorage implements IStorage {
     return dispensingLog;
   }
 
-  async getBusinessUnitDispensingLogs(businessUnitId: string, limit = 50): Promise<DispensingLog[]> {
+  async getBusinessUnitDispensingLogs(businessUnitId: string, limit = 50, startDate?: string, endDate?: string): Promise<DispensingLog[]> {
+    let whereConditions = [eq(dispensingLogs.businessUnitId, businessUnitId)];
+    
+    if (startDate) {
+      whereConditions.push(gte(dispensingLogs.createdAt, new Date(startDate)));
+    }
+    if (endDate) {
+      whereConditions.push(lte(dispensingLogs.createdAt, new Date(endDate)));
+    }
+    
     return await db
       .select()
       .from(dispensingLogs)
-      .where(eq(dispensingLogs.businessUnitId, businessUnitId))
+      .where(and(...whereConditions))
       .orderBy(desc(dispensingLogs.createdAt))
       .limit(limit);
   }
@@ -726,21 +735,31 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
   }
 
-  async getManagedDispensingLogs(userId: string, limit = 50): Promise<DispensingLog[]> {
+  async getManagedDispensingLogs(userId: string, limit = 50, startDate?: string, endDate?: string): Promise<DispensingLog[]> {
     // Get user's business units first
     const userUnits = await this.getUserBusinessUnits(userId);
     if (userUnits.length === 0) return [];
     
     const unitIds = userUnits.map(unit => unit.id);
+    
+    let whereConditions = [inArray(dispensingLogs.businessUnitId, unitIds)];
+    
+    if (startDate) {
+      whereConditions.push(gte(dispensingLogs.createdAt, new Date(startDate)));
+    }
+    if (endDate) {
+      whereConditions.push(lte(dispensingLogs.createdAt, new Date(endDate)));
+    }
+    
     return await db
       .select()
       .from(dispensingLogs)
-      .where(inArray(dispensingLogs.businessUnitId, unitIds))
+      .where(and(...whereConditions))
       .orderBy(desc(dispensingLogs.createdAt))
       .limit(limit);
   }
 
-  async getUserDispensingLogsPaginated(userId: string, page: number, limit: number): Promise<{ logs: DispensingLog[], total: number }> {
+  async getUserDispensingLogsPaginated(userId: string, page: number, limit: number, startDate?: string, endDate?: string): Promise<{ logs: DispensingLog[], total: number }> {
     const offset = (page - 1) * limit;
     
     // Get user's business units first
@@ -751,15 +770,24 @@ export class DatabaseStorage implements IStorage {
       return { logs: [], total: 0 };
     }
     
+    let whereConditions = [inArray(dispensingLogs.businessUnitId, unitIds)];
+    
+    if (startDate) {
+      whereConditions.push(gte(dispensingLogs.createdAt, new Date(startDate)));
+    }
+    if (endDate) {
+      whereConditions.push(lte(dispensingLogs.createdAt, new Date(endDate)));
+    }
+    
     const [countResult] = await db
       .select({ count: sql<number>`COUNT(*)::int` })
       .from(dispensingLogs)
-      .where(inArray(dispensingLogs.businessUnitId, unitIds));
+      .where(and(...whereConditions));
     
     const logsResult = await db
       .select()
       .from(dispensingLogs)
-      .where(inArray(dispensingLogs.businessUnitId, unitIds))
+      .where(and(...whereConditions))
       .orderBy(desc(dispensingLogs.createdAt))
       .limit(limit)
       .offset(offset);
@@ -770,18 +798,27 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async getBusinessUnitDispensingLogsPaginated(businessUnitId: string, page: number, limit: number): Promise<{ logs: DispensingLog[], total: number }> {
+  async getBusinessUnitDispensingLogsPaginated(businessUnitId: string, page: number, limit: number, startDate?: string, endDate?: string): Promise<{ logs: DispensingLog[], total: number }> {
     const offset = (page - 1) * limit;
+    
+    let whereConditions = [eq(dispensingLogs.businessUnitId, businessUnitId)];
+    
+    if (startDate) {
+      whereConditions.push(gte(dispensingLogs.createdAt, new Date(startDate)));
+    }
+    if (endDate) {
+      whereConditions.push(lte(dispensingLogs.createdAt, new Date(endDate)));
+    }
     
     const [countResult] = await db
       .select({ count: sql<number>`COUNT(*)::int` })
       .from(dispensingLogs)
-      .where(eq(dispensingLogs.businessUnitId, businessUnitId));
+      .where(and(...whereConditions));
     
     const logsResult = await db
       .select()
       .from(dispensingLogs)
-      .where(eq(dispensingLogs.businessUnitId, businessUnitId))
+      .where(and(...whereConditions))
       .orderBy(desc(dispensingLogs.createdAt))
       .limit(limit)
       .offset(offset);

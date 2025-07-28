@@ -206,6 +206,11 @@ export default function CorporateDashboard() {
   const [logsCurrentPage, setLogsCurrentPage] = useState(1);
   const logsItemsPerPage = 20; // Fixed at 20 per page for performance
   
+  // Date filtering state
+  const [dateFilter, setDateFilter] = useState<'all' | 'week' | 'month' | 'custom'>('all');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -223,6 +228,43 @@ export default function CorporateDashboard() {
   if (businessUnits.length > 0 && !selectedBusinessUnitId) {
     setSelectedBusinessUnitId(businessUnits[0].id);
   }
+
+  // Helper function to get date range based on filter type
+  const getDateRange = () => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    switch (dateFilter) {
+      case 'week': {
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6); // End of week (Saturday)
+        weekEnd.setHours(23, 59, 59, 999);
+        return { startDate: weekStart.toISOString(), endDate: weekEnd.toISOString() };
+      }
+      case 'month': {
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        monthEnd.setHours(23, 59, 59, 999);
+        return { startDate: monthStart.toISOString(), endDate: monthEnd.toISOString() };
+      }
+      case 'custom': {
+        if (!customStartDate || !customEndDate) return null;
+        const startDate = new Date(customStartDate);
+        const endDate = new Date(customEndDate);
+        endDate.setHours(23, 59, 59, 999);
+        return { startDate: startDate.toISOString(), endDate: endDate.toISOString() };
+      }
+      default:
+        return null; // 'all' - no date filtering
+    }
+  };
+
+  // Reset page when date filter changes
+  useEffect(() => {
+    setLogsCurrentPage(1);
+  }, [dateFilter, customStartDate, customEndDate]);
   
   // Reset pagination when business unit changes
   useEffect(() => {
@@ -259,7 +301,7 @@ export default function CorporateDashboard() {
   });
 
   const { data: dispensingData, isLoading: dispensingLoading } = useQuery({
-    queryKey: [`/api/corporate/dispensing-logs-paginated`, selectedBusinessUnitId, logsCurrentPage, logsItemsPerPage, pseudoParam],
+    queryKey: [`/api/corporate/dispensing-logs-paginated`, selectedBusinessUnitId, logsCurrentPage, logsItemsPerPage, dateFilter, customStartDate, customEndDate, pseudoParam],
     queryFn: async () => {
       if (!selectedBusinessUnitId) return { logs: [], total: 0 };
       
@@ -270,11 +312,20 @@ export default function CorporateDashboard() {
       params.set('limit', logsItemsPerPage.toString());
       params.set('paginated', 'true');
       
+      // Add date filtering parameters
+      const dateRange = getDateRange();
+      if (dateRange) {
+        params.set('startDate', dateRange.startDate);
+        params.set('endDate', dateRange.endDate);
+      }
+      
       console.log('Frontend: Building request with params:', {
         businessUnitId: selectedBusinessUnitId,
         page: logsCurrentPage,
         limit: logsItemsPerPage,
-        paginated: 'true'
+        paginated: 'true',
+        dateFilter,
+        dateRange
       });
       
       const response = await fetch(`/api/corporate/dispensing-logs?${params.toString()}`, { 
@@ -627,6 +678,79 @@ export default function CorporateDashboard() {
                       <p className="text-center text-gray-500 py-4">No usage logs for this business unit yet.</p>
                     ) : (
                       <>
+                        {/* Date Filter Controls */}
+                        <div className="mb-4 p-4 border rounded-lg bg-gray-50">
+                          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-gray-600" />
+                              <Label className="text-sm font-medium">Filter by date:</Label>
+                            </div>
+                            
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                onClick={() => setDateFilter('all')}
+                                className={`px-3 py-1 rounded text-sm ${
+                                  dateFilter === 'all' 
+                                    ? 'bg-blue-500 text-white' 
+                                    : 'bg-white border hover:bg-gray-50'
+                                }`}
+                              >
+                                All Time
+                              </button>
+                              <button
+                                onClick={() => setDateFilter('week')}
+                                className={`px-3 py-1 rounded text-sm ${
+                                  dateFilter === 'week' 
+                                    ? 'bg-blue-500 text-white' 
+                                    : 'bg-white border hover:bg-gray-50'
+                                }`}
+                              >
+                                This Week
+                              </button>
+                              <button
+                                onClick={() => setDateFilter('month')}
+                                className={`px-3 py-1 rounded text-sm ${
+                                  dateFilter === 'month' 
+                                    ? 'bg-blue-500 text-white' 
+                                    : 'bg-white border hover:bg-gray-50'
+                                }`}
+                              >
+                                This Month
+                              </button>
+                              <button
+                                onClick={() => setDateFilter('custom')}
+                                className={`px-3 py-1 rounded text-sm ${
+                                  dateFilter === 'custom' 
+                                    ? 'bg-blue-500 text-white' 
+                                    : 'bg-white border hover:bg-gray-50'
+                                }`}
+                              >
+                                Custom Range
+                              </button>
+                            </div>
+                          </div>
+                          
+                          {/* Custom Date Range Inputs */}
+                          {dateFilter === 'custom' && (
+                            <div className="mt-3 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                              <Label className="text-sm">From:</Label>
+                              <Input
+                                type="date"
+                                value={customStartDate}
+                                onChange={(e) => setCustomStartDate(e.target.value)}
+                                className="w-auto"
+                              />
+                              <Label className="text-sm">To:</Label>
+                              <Input
+                                type="date"
+                                value={customEndDate}
+                                onChange={(e) => setCustomEndDate(e.target.value)}
+                                className="w-auto"
+                              />
+                            </div>
+                          )}
+                        </div>
+
                         {/* Pagination Controls at Top */}
                         {totalLogsPages > 1 && (
                           <div className="flex items-center justify-between mb-4 pb-4 border-b">

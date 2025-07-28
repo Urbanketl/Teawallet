@@ -261,7 +261,7 @@ export function registerCorporateRoutes(app: Express) {
     }
   });
 
-  // Get dispensing logs for specific business unit (with pseudo login support and pagination)
+  // Get dispensing logs for specific business unit (with pseudo login support, pagination, and date filtering)
   app.get("/api/corporate/dispensing-logs", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
@@ -269,11 +269,14 @@ export function registerCorporateRoutes(app: Express) {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
       const page = req.query.page ? parseInt(req.query.page as string) : 1;
       const paginated = req.query.paginated === 'true';
+      const startDate = req.query.startDate as string;
+      const endDate = req.query.endDate as string;
       
       console.log('=== DISPENSING LOGS API DEBUG ===');
       console.log('User ID:', userId);
       console.log('Business Unit ID:', businessUnitId);
       console.log('Page:', page, 'Limit:', limit, 'Paginated:', paginated);
+      console.log('Date Filter - Start:', startDate, 'End:', endDate);
       console.log('Full Query params:', req.query);
       console.log('Raw URL:', req.url);
       console.log('Business Unit ID exists:', !!businessUnitId);
@@ -284,11 +287,11 @@ export function registerCorporateRoutes(app: Express) {
         console.log(`Getting dispensing logs for business unit: ${businessUnitId}`);
         
         if (paginated) {
-          const result = await storage.getBusinessUnitDispensingLogsPaginated(businessUnitId, page, limit);
+          const result = await storage.getBusinessUnitDispensingLogsPaginated(businessUnitId, page, limit, startDate, endDate);
           console.log(`Found ${result.logs.length} dispensing logs (page ${page}) for business unit ${businessUnitId}, total: ${result.total}`);
           res.json(result);
         } else {
-          const logs = await storage.getBusinessUnitDispensingLogs(businessUnitId, limit);
+          const logs = await storage.getBusinessUnitDispensingLogs(businessUnitId, limit, startDate, endDate);
           console.log(`Found ${logs.length} dispensing logs for business unit ${businessUnitId}`);
           res.json(logs);
         }
@@ -297,11 +300,11 @@ export function registerCorporateRoutes(app: Express) {
         console.log(`Getting all managed dispensing logs for user: ${userId}`);
         
         if (paginated) {
-          const result = await storage.getUserDispensingLogsPaginated(userId, page, limit);
+          const result = await storage.getUserDispensingLogsPaginated(userId, page, limit, startDate, endDate);
           console.log(`Found ${result.logs.length} managed dispensing logs (page ${page}) for user ${userId}, total: ${result.total}`);
           res.json(result);
         } else {
-          const logs = await storage.getManagedDispensingLogs(userId, limit);
+          const logs = await storage.getManagedDispensingLogs(userId, limit, startDate, endDate);
           console.log(`Found ${logs.length} managed dispensing logs for user ${userId}`);
           res.json(logs);
         }

@@ -278,13 +278,22 @@ export function registerCorporateRoutes(app: Express) {
       const businessUnitId = req.query.businessUnitId as string;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
       
+      console.log('=== DISPENSING LOGS API DEBUG ===');
+      console.log('User ID:', userId);
+      console.log('Business Unit ID:', businessUnitId);
+      console.log('Query params:', req.query);
+      
       if (businessUnitId) {
         // Get logs for specific business unit
+        console.log(`Getting dispensing logs for business unit: ${businessUnitId}`);
         const logs = await storage.getBusinessUnitDispensingLogs(businessUnitId, limit);
+        console.log(`Found ${logs.length} dispensing logs for business unit ${businessUnitId}`);
         res.json(logs);
       } else {
         // Get all managed logs (for backward compatibility)
+        console.log(`Getting all managed dispensing logs for user: ${userId}`);
         const logs = await storage.getManagedDispensingLogs(userId, limit);
+        console.log(`Found ${logs.length} managed dispensing logs for user ${userId}`);
         res.json(logs);
       }
     } catch (error) {

@@ -1608,16 +1608,15 @@ function MachineAdministration() {
       <div>
         <h3 className="text-lg font-semibold">Machine Administration</h3>
         <p className="text-sm text-muted-foreground">
-          Create, edit, and assign tea machines to business units
+          Create, edit, control, and assign tea machines to business units
         </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="create">Create Machine</TabsTrigger>
           <TabsTrigger value="edit">Edit Machines</TabsTrigger>
           <TabsTrigger value="assign">Assign Machines</TabsTrigger>
-          <TabsTrigger value="control">Machine Control</TabsTrigger>
         </TabsList>
 
         <TabsContent value="create" className="space-y-4">
@@ -1702,6 +1701,12 @@ function MachineAdministration() {
                           <h4 className="font-semibold">{machine.name}</h4>
                           <p className="text-sm text-gray-600">{machine.location}</p>
                           <p className="text-xs text-gray-500">ID: {machine.id}</p>
+                          <p className="text-xs text-gray-500">
+                            {machine.businessUnitId ? 
+                              `Assigned to: ${businessUnits.find((unit: any) => unit.id === machine.businessUnitId)?.name || 'Unknown Business Unit'}` :
+                              'Unassigned'
+                            }
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -1711,7 +1716,20 @@ function MachineAdministration() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => toggleMachineStatusMutation.mutate({
+                            machineId: machine.id,
+                            isActive: !machine.isActive
+                          })}
+                          disabled={toggleMachineStatusMutation.isPending}
+                          title={machine.isActive ? "Disable Machine" : "Enable Machine"}
+                        >
+                          {machine.isActive ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => handleEditMachine(machine)}
+                          title="Edit Machine Details"
                         >
                           <Edit3 className="w-4 h-4" />
                         </Button>
@@ -1928,47 +1946,7 @@ function MachineAdministration() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="control" className="space-y-4">
-          <div className="grid gap-4">
-            {machines.map((machine: any) => (
-              <Card key={machine.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-4 h-4 rounded-full ${getMachineStatusIndicator(machine)}`} />
-                      <div>
-                        <h4 className="font-semibold">{machine.name}</h4>
-                        <p className="text-sm text-gray-600">{machine.location}</p>
-                        <p className="text-xs text-gray-500">
-                          {machine.businessUnitId ? 
-                            `Assigned to: ${businessUnits.find((unit: any) => unit.id === machine.businessUnitId)?.name || 'Unknown Business Unit'}` :
-                            'Unassigned'
-                          }
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant={getMachineStatusVariant(machine)}>
-                        {getMachineStatus(machine)}
-                      </Badge>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => toggleMachineStatusMutation.mutate({
-                          machineId: machine.id,
-                          isActive: !machine.isActive
-                        })}
-                        disabled={toggleMachineStatusMutation.isPending}
-                      >
-                        {machine.isActive ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
+
       </Tabs>
     </div>
   );

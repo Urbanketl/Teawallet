@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Plus, DollarSign } from "lucide-react";
+import { Building2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { BusinessUnit } from "@shared/schema";
@@ -24,8 +24,7 @@ export function BusinessUnitsTab() {
   const [newUnitForm, setNewUnitForm] = useState({
     name: "",
     code: "",
-    description: "",
-    walletBalance: "0.00"
+    description: ""
   });
 
   // Fetch business units
@@ -41,7 +40,7 @@ export function BusinessUnitsTab() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/business-units"] });
-      setNewUnitForm({ name: "", code: "", description: "", walletBalance: "0.00" });
+      setNewUnitForm({ name: "", code: "", description: "" });
       toast({ title: "Success", description: "Business unit created successfully" });
     },
     onError: (error: any) => {
@@ -172,23 +171,6 @@ export function BusinessUnitsTab() {
                     placeholder="Brief description of this business unit..."
                     rows={3}
                   />
-                </div>
-                
-                <div>
-                  <Label htmlFor="walletBalance">Initial Wallet Balance</Label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input
-                      id="walletBalance"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={newUnitForm.walletBalance}
-                      onChange={(e) => setNewUnitForm(prev => ({ ...prev, walletBalance: e.target.value }))}
-                      className="pl-10"
-                      placeholder="0.00"
-                    />
-                  </div>
                 </div>
                 
                 <Button 

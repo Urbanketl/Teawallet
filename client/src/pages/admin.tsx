@@ -1421,8 +1421,11 @@ function MachineAdministration() {
   });
   const [assignForm, setAssignForm] = useState({
     machineId: "",
-    businessUnitAdminId: ""
+    businessUnitId: ""
   });
+  const [assignmentsPage, setAssignmentsPage] = useState(1);
+  const [assignmentFilter, setAssignmentFilter] = useState("all"); // "all", "assigned", "unassigned"
+  const assignmentsPerPage = 10;
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -1432,9 +1435,9 @@ function MachineAdministration() {
     retry: false,
   });
 
-  // Fetch all users for assignment
-  const { data: allUsers = [], isLoading: usersLoading } = useQuery({
-    queryKey: ["/api/admin/users"],
+  // Fetch business units for assignment
+  const { data: businessUnits = [], isLoading: businessUnitsLoading } = useQuery({
+    queryKey: ["/api/admin/business-units"],
     retry: false,
   });
 
@@ -1522,12 +1525,12 @@ function MachineAdministration() {
   const assignMachineMutation = useMutation({
     mutationFn: (data: typeof assignForm) =>
       apiRequest("PATCH", `/api/admin/machines/${data.machineId}/assign`, { 
-        businessUnitAdminId: data.businessUnitAdminId 
+        businessUnitId: data.businessUnitId 
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/machines"] });
       toast({ title: "Success", description: "Machine assigned successfully!" });
-      setAssignForm({ machineId: "", businessUnitAdminId: "" });
+      setAssignForm({ machineId: "", businessUnitId: "" });
     },
     onError: (error: any) => {
       toast({ 
@@ -1575,7 +1578,7 @@ function MachineAdministration() {
   };
 
   const handleAssignMachine = () => {
-    if (!assignForm.machineId || !assignForm.businessUnitAdminId) {
+    if (!assignForm.machineId || !assignForm.businessUnitId) {
       toast({
         title: "Error",
         description: "Please select both machine and business unit",
@@ -1585,6 +1588,20 @@ function MachineAdministration() {
     }
     assignMachineMutation.mutate(assignForm);
   };
+
+  // Filter and paginate assignments
+  const filteredMachines = machines.filter((machine: any) => {
+    if (assignmentFilter === "assigned") return machine.businessUnitId;
+    if (assignmentFilter === "unassigned") return !machine.businessUnitId;
+    return true; // "all"
+  });
+
+  const paginatedAssignments = filteredMachines.slice(
+    (assignmentsPage - 1) * assignmentsPerPage,
+    assignmentsPage * assignmentsPerPage
+  );
+
+  const totalAssignmentPages = Math.ceil(filteredMachines.length / assignmentsPerPage);
 
   return (
     <div className="space-y-6">
@@ -1787,17 +1804,17 @@ function MachineAdministration() {
                   </select>
                 </div>
                 <div>
-                  <Label htmlFor="assign-user">Business Unit Admin</Label>
+                  <Label htmlFor="assign-business-unit">Business Unit</Label>
                   <select
-                    id="assign-user"
-                    value={assignForm.businessUnitAdminId}
-                    onChange={(e) => setAssignForm(prev => ({ ...prev, businessUnitAdminId: e.target.value }))}
+                    id="assign-business-unit"
+                    value={assignForm.businessUnitId}
+                    onChange={(e) => setAssignForm(prev => ({ ...prev, businessUnitId: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="">Choose a business unit admin</option>
-                    {allUsers.filter((user: any) => user.isAdmin && !user.isSuperAdmin).map((user: any) => (
-                      <option key={user.id} value={user.id}>
-                        {user.firstName} {user.lastName} ({user.email})
+                    <option value="">Choose a business unit</option>
+                    {businessUnits.map((unit: any) => (
+                      <option key={unit.id} value={unit.id}>
+                        {unit.name} ({unit.code})
                       </option>
                     ))}
                   </select>
@@ -1816,12 +1833,30 @@ function MachineAdministration() {
           {/* Current Assignments */}
           <Card>
             <CardHeader>
-              <CardTitle>Current Machine Assignments</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Current Machine Assignments</CardTitle>
+                <div className="flex items-center space-x-2">
+                  <Label htmlFor="assignment-filter" className="text-sm">Filter:</Label>
+                  <select
+                    id="assignment-filter"
+                    value={assignmentFilter}
+                    onChange={(e) => {
+                      setAssignmentFilter(e.target.value);
+                      setAssignmentsPage(1);
+                    }}
+                    className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="all">All Machines ({machines.length})</option>
+                    <option value="assigned">Assigned ({machines.filter((m: any) => m.businessUnitId).length})</option>
+                    <option value="unassigned">Unassigned ({machines.filter((m: any) => !m.businessUnitId).length})</option>
+                  </select>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {machines.filter((m: any) => m.businessUnitAdminId).map((machine: any) => {
-                  const assignedUser = allUsers.find((u: any) => u.id === machine.businessUnitAdminId);
+                {paginatedAssignments.map((machine: any) => {
+                  const assignedUnit = businessUnits.find((unit: any) => unit.id === machine.businessUnitId);
                   return (
                     <div key={machine.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex items-center space-x-3">
@@ -1829,19 +1864,66 @@ function MachineAdministration() {
                         <div>
                           <p className="font-medium">{machine.name}</p>
                           <p className="text-sm text-gray-600">{machine.location}</p>
+                          <p className="text-xs text-gray-500">ID: {machine.id}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">{assignedUser?.firstName} {assignedUser?.lastName}</p>
-                        <p className="text-sm text-gray-600">{assignedUser?.email}</p>
+                        {assignedUnit ? (
+                          <>
+                            <p className="font-medium">{assignedUnit.name}</p>
+                            <p className="text-sm text-gray-600">{assignedUnit.code}</p>
+                            <Badge variant="default" className="text-xs mt-1">Assigned</Badge>
+                          </>
+                        ) : (
+                          <>
+                            <p className="font-medium text-gray-400">Unassigned</p>
+                            <Badge variant="secondary" className="text-xs mt-1">Available</Badge>
+                          </>
+                        )}
                       </div>
                     </div>
                   );
                 })}
-                {machines.filter((m: any) => m.businessUnitAdminId).length === 0 && (
-                  <p className="text-center text-gray-500 py-4">No machines assigned yet</p>
+                {filteredMachines.length === 0 && (
+                  <p className="text-center text-gray-500 py-4">
+                    {assignmentFilter === "assigned" && "No machines assigned yet"}
+                    {assignmentFilter === "unassigned" && "All machines are assigned"}
+                    {assignmentFilter === "all" && "No machines found"}
+                  </p>
                 )}
               </div>
+              
+              {/* Pagination */}
+              {totalAssignmentPages > 1 && (
+                <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                  <p className="text-sm text-gray-600">
+                    Showing {Math.min((assignmentsPage - 1) * assignmentsPerPage + 1, filteredMachines.length)} to{' '}
+                    {Math.min(assignmentsPage * assignmentsPerPage, filteredMachines.length)} of{' '}
+                    {filteredMachines.length} machines
+                  </p>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAssignmentsPage(prev => Math.max(1, prev - 1))}
+                      disabled={assignmentsPage === 1}
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-sm">
+                      Page {assignmentsPage} of {totalAssignmentPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAssignmentsPage(prev => Math.min(totalAssignmentPages, prev + 1))}
+                      disabled={assignmentsPage === totalAssignmentPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -1858,8 +1940,8 @@ function MachineAdministration() {
                         <h4 className="font-semibold">{machine.name}</h4>
                         <p className="text-sm text-gray-600">{machine.location}</p>
                         <p className="text-xs text-gray-500">
-                          {machine.businessUnitAdminId ? 
-                            `Assigned to: ${allUsers.find((u: any) => u.id === machine.businessUnitAdminId)?.email || 'Unknown'}` :
+                          {machine.businessUnitId ? 
+                            `Assigned to: ${businessUnits.find((unit: any) => unit.id === machine.businessUnitId)?.name || 'Unknown Business Unit'}` :
                             'Unassigned'
                           }
                         </p>

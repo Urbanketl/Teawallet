@@ -110,7 +110,7 @@ export function AdminTransferInterface() {
       newAdminId: string; 
       reason: string;
     }) => {
-      return await apiRequest(`/api/admin/business-units/${businessUnitId}/transfer`, 'POST', {
+      return await apiRequest('POST', `/api/admin/business-units/${businessUnitId}/transfer`, {
         newAdminId,
         reason
       });

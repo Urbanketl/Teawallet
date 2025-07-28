@@ -284,7 +284,8 @@ export function registerCorporateRoutes(app: Express) {
       console.log('User ID:', userId);
       console.log('Business Unit ID:', businessUnitId);
       console.log('Page:', page, 'Limit:', limit, 'Paginated:', paginated);
-      console.log('Query params:', req.query);
+      console.log('Full Query params:', req.query);
+      console.log('Raw URL:', req.url);
       
       if (businessUnitId) {
         // Get logs for specific business unit

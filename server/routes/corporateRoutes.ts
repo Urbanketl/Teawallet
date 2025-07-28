@@ -271,30 +271,47 @@ export function registerCorporateRoutes(app: Express) {
     }
   });
 
-  // Get dispensing logs for specific business unit (with pseudo login support)
+  // Get dispensing logs for specific business unit (with pseudo login support and pagination)
   app.get("/api/corporate/dispensing-logs", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
       const businessUnitId = req.query.businessUnitId as string;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const paginated = req.query.paginated === 'true';
       
       console.log('=== DISPENSING LOGS API DEBUG ===');
       console.log('User ID:', userId);
       console.log('Business Unit ID:', businessUnitId);
+      console.log('Page:', page, 'Limit:', limit, 'Paginated:', paginated);
       console.log('Query params:', req.query);
       
       if (businessUnitId) {
         // Get logs for specific business unit
         console.log(`Getting dispensing logs for business unit: ${businessUnitId}`);
-        const logs = await storage.getBusinessUnitDispensingLogs(businessUnitId, limit);
-        console.log(`Found ${logs.length} dispensing logs for business unit ${businessUnitId}`);
-        res.json(logs);
+        
+        if (paginated) {
+          const result = await storage.getBusinessUnitDispensingLogsPaginated(businessUnitId, page, limit);
+          console.log(`Found ${result.logs.length} dispensing logs (page ${page}) for business unit ${businessUnitId}, total: ${result.total}`);
+          res.json(result);
+        } else {
+          const logs = await storage.getBusinessUnitDispensingLogs(businessUnitId, limit);
+          console.log(`Found ${logs.length} dispensing logs for business unit ${businessUnitId}`);
+          res.json(logs);
+        }
       } else {
         // Get all managed logs (for backward compatibility)
         console.log(`Getting all managed dispensing logs for user: ${userId}`);
-        const logs = await storage.getManagedDispensingLogs(userId, limit);
-        console.log(`Found ${logs.length} managed dispensing logs for user ${userId}`);
-        res.json(logs);
+        
+        if (paginated) {
+          const result = await storage.getUserDispensingLogsPaginated(userId, page, limit);
+          console.log(`Found ${result.logs.length} managed dispensing logs (page ${page}) for user ${userId}, total: ${result.total}`);
+          res.json(result);
+        } else {
+          const logs = await storage.getManagedDispensingLogs(userId, limit);
+          console.log(`Found ${logs.length} managed dispensing logs for user ${userId}`);
+          res.json(logs);
+        }
       }
     } catch (error) {
       console.error("Error fetching dispensing logs:", error);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -203,6 +203,8 @@ export default function CorporateDashboard() {
   const [newCardName, setNewCardName] = useState("");
   const [newCardNumber, setNewCardNumber] = useState("");
   const [isCardDialogOpen, setIsCardDialogOpen] = useState(false);
+  const [logsCurrentPage, setLogsCurrentPage] = useState(1);
+  const [logsItemsPerPage, setLogsItemsPerPage] = useState(20);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -221,6 +223,11 @@ export default function CorporateDashboard() {
   if (businessUnits.length > 0 && !selectedBusinessUnitId) {
     setSelectedBusinessUnitId(businessUnits[0].id);
   }
+  
+  // Reset pagination when business unit changes
+  useEffect(() => {
+    setLogsCurrentPage(1);
+  }, [selectedBusinessUnitId]);
 
   const selectedBusinessUnit = businessUnits.find(bu => bu.id === selectedBusinessUnitId);
 
@@ -249,17 +256,24 @@ export default function CorporateDashboard() {
     retry: false,
   });
 
-  const { data: dispensingLogs = [] } = useQuery({
-    queryKey: [`/api/corporate/dispensing-logs`, selectedBusinessUnitId, pseudoParam],
+  const { data: dispensingData, isLoading: dispensingLoading } = useQuery({
+    queryKey: [`/api/corporate/dispensing-logs`, selectedBusinessUnitId, logsCurrentPage, logsItemsPerPage, pseudoParam],
     queryFn: () => {
       const params = new URLSearchParams();
       if (selectedBusinessUnitId) params.set('businessUnitId', selectedBusinessUnitId);
       if (pseudoParam) params.set('pseudo', pseudoParam.replace('?pseudo=', ''));
+      params.set('page', logsCurrentPage.toString());
+      params.set('limit', logsItemsPerPage.toString());
+      params.set('paginated', 'true');
       return fetch(`/api/corporate/dispensing-logs?${params.toString()}`, { credentials: 'include' }).then(res => res.json());
     },
     enabled: !!selectedBusinessUnitId,
     retry: false,
   });
+
+  const dispensingLogs = dispensingData?.logs || [];
+  const totalLogsCount = dispensingData?.total || 0;
+  const totalLogsPages = Math.ceil(totalLogsCount / logsItemsPerPage);
 
   // Get user info for the testing banner
   const userId = urlParams.get('pseudo');
@@ -576,44 +590,91 @@ export default function CorporateDashboard() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Activity className="h-5 w-5" />
-                      Employee Usage Logs ({dispensingLogs.length})
+                      Employee Usage Logs ({totalLogsCount} total, showing {dispensingLogs.length})
                     </CardTitle>
                     <CardDescription>
                       Recent tea dispensing activity for {selectedBusinessUnit.name}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {dispensingLogs.length === 0 ? (
+                    {dispensingLoading ? (
+                      <div className="text-center py-4">Loading usage logs...</div>
+                    ) : totalLogsCount === 0 ? (
                       <p className="text-center text-gray-500 py-4">No usage logs for this business unit yet.</p>
                     ) : (
-                      <div className="space-y-4">
-                        {dispensingLogs.slice(0, 10).map((log) => (
-                          <div key={log.id} className="flex items-center justify-between p-4 border rounded-lg">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-3 h-3 rounded-full ${log.success ? 'bg-green-500' : 'bg-red-500'}`} />
-                              <div>
-                                <h3 className="font-medium">
-                                  {log.teaType} - ₹{log.amount}
-                                </h3>
-                                <p className="text-sm text-gray-500">
-                                  Card ID: {log.rfidCardId} • Machine: {log.machineId}
+                      <>
+                        <div className="space-y-4 mb-4">
+                          {dispensingLogs.map((log) => (
+                            <div key={log.id} className="flex items-center justify-between p-4 border rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-3 h-3 rounded-full ${log.success ? 'bg-green-500' : 'bg-red-500'}`} />
+                                <div>
+                                  <h3 className="font-medium">
+                                    {log.teaType} - ₹{log.amount}
+                                  </h3>
+                                  <p className="text-sm text-gray-500">
+                                    Card ID: {log.rfidCardId} • Machine: {log.machineId}
+                                  </p>
+                                  {log.errorMessage && (
+                                    <p className="text-xs text-red-500">{log.errorMessage}</p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <Badge variant={log.success ? "default" : "destructive"}>
+                                  {log.success ? "Success" : "Failed"}
+                                </Badge>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {format(new Date(log.createdAt), "MMM d, HH:mm")}
                                 </p>
-                                {log.errorMessage && (
-                                  <p className="text-xs text-red-500">{log.errorMessage}</p>
-                                )}
                               </div>
                             </div>
-                            <div className="text-right">
-                              <Badge variant={log.success ? "default" : "destructive"}>
-                                {log.success ? "Success" : "Failed"}
-                              </Badge>
-                              <p className="text-xs text-gray-500 mt-1">
-                                {format(new Date(log.createdAt), "MMM d, HH:mm")}
-                              </p>
+                          ))}
+                        </div>
+                        
+                        {/* Pagination Controls */}
+                        {totalLogsPages > 1 && (
+                          <div className="flex items-center justify-between pt-4 border-t">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-gray-600">Items per page:</span>
+                              <select 
+                                value={logsItemsPerPage} 
+                                onChange={(e) => {
+                                  setLogsItemsPerPage(Number(e.target.value));
+                                  setLogsCurrentPage(1);
+                                }}
+                                className="border rounded px-2 py-1 text-sm"
+                              >
+                                <option value={10}>10</option>
+                                <option value={20}>20</option>
+                                <option value={50}>50</option>
+                              </select>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setLogsCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={logsCurrentPage === 1}
+                                className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                Previous
+                              </button>
+                              
+                              <span className="text-sm text-gray-600">
+                                Page {logsCurrentPage} of {totalLogsPages}
+                              </span>
+                              
+                              <button
+                                onClick={() => setLogsCurrentPage(prev => Math.min(totalLogsPages, prev + 1))}
+                                disabled={logsCurrentPage === totalLogsPages}
+                                className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                Next
+                              </button>
                             </div>
                           </div>
-                        ))}
-                      </div>
+                        )}
+                      </>
                     )}
                   </CardContent>
                 </Card>

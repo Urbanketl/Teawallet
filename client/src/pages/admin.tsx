@@ -367,7 +367,7 @@ export default function AdminPage() {
   };
 
   // Additional debug logging after function definition
-  console.log('Filtered tickets count:', supportTickets ? filterTicketsByDate(supportTickets).length : 0);
+  console.log('Filtered tickets count:', supportTickets ? filterTicketsByDate(supportTickets as any[]).length : 0);
   console.log('Date filter:', dateFilter);
 
   const getPriorityColor = (priority: string) => {
@@ -539,7 +539,7 @@ export default function AdminPage() {
                           console.error('Settings save error:', error);
                           toast({
                             title: "Update Failed",
-                            description: `Failed to save system settings: ${error.message}`,
+                            description: `Failed to save system settings: ${(error as any).message}`,
                             variant: "destructive",
                           });
                         }
@@ -567,7 +567,7 @@ export default function AdminPage() {
                 <span className="text-blue-600 text-sm font-medium">+12%</span>
               </div>
               <div className="text-3xl font-bold text-gray-900 mb-1">
-                {statsLoading ? "..." : adminStats?.totalUsers || 0}
+                {statsLoading ? "..." : (adminStats as any)?.totalUsers || 0}
               </div>
               <div className="text-gray-600">Total Business Units</div>
             </CardContent>
@@ -583,7 +583,7 @@ export default function AdminPage() {
                 <span className="text-green-600 text-sm font-medium">+8%</span>
               </div>
               <div className="text-3xl font-bold text-gray-900 mb-1">
-                ₹{statsLoading ? "..." : parseFloat(adminStats?.totalRevenue || "0").toFixed(2)}
+                ₹{statsLoading ? "..." : parseFloat((adminStats as any)?.totalRevenue || "0").toFixed(2)}
               </div>
               <div className="text-gray-600">Total Revenue</div>
             </CardContent>
@@ -599,7 +599,7 @@ export default function AdminPage() {
                 <span className="text-purple-600 text-sm font-medium">98%</span>
               </div>
               <div className="text-3xl font-bold text-gray-900 mb-1">
-                {statsLoading ? "..." : `${adminStats?.activeMachines || 0}/${machines?.length || 0}`}
+                {statsLoading ? "..." : `${(adminStats as any)?.activeMachines || 0}/${(machines as any[])?.length || 0}`}
               </div>
               <div className="text-gray-600">Active Machines</div>
             </CardContent>
@@ -615,7 +615,7 @@ export default function AdminPage() {
                 <span className="text-orange-600 text-sm font-medium">+15%</span>
               </div>
               <div className="text-3xl font-bold text-gray-900 mb-1">
-                {statsLoading ? "..." : adminStats?.dailyDispensing || 0}
+                {statsLoading ? "..." : (adminStats as any)?.dailyDispensing || 0}
               </div>
               <div className="text-gray-600">Cups Today</div>
             </CardContent>
@@ -635,11 +635,11 @@ export default function AdminPage() {
             <CardContent>
               {usersLoading ? (
                 <div className="text-center py-8">Loading users...</div>
-              ) : !allUsers || allUsers.length === 0 ? (
+              ) : !allUsers || (allUsers as any[]).length === 0 ? (
                 <div className="text-center py-8 text-gray-500">No users found</div>
               ) : (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {allUsers.slice(0, 10).map((user: any) => (
+                  {(allUsers as any[]).slice(0, 10).map((user: any) => (
                     <div key={user.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
@@ -826,7 +826,7 @@ export default function AdminPage() {
                   </SelectContent>
                 </Select>
                 <Badge variant="secondary" className="bg-tea-green/10 text-tea-green">
-                  {ticketsData?.tickets?.length || 0} / {ticketsData?.total || 0} Tickets (Page {ticketsPage})
+                  {(ticketsData as any)?.tickets?.length || 0} / {(ticketsData as any)?.total || 0} Tickets (Page {ticketsPage})
                 </Badge>
               </div>
             </div>
@@ -863,7 +863,7 @@ export default function AdminPage() {
                     Loading support tickets...
                   </CardContent>
                 </Card>
-              ) : !ticketsData?.tickets || ticketsData.tickets.length === 0 ? (
+              ) : !(ticketsData as any)?.tickets || (ticketsData as any).tickets.length === 0 ? (
                 <Card>
                   <CardContent className="p-6 text-center">
                     <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -871,7 +871,7 @@ export default function AdminPage() {
                   </CardContent>
                 </Card>
               ) : (
-                (ticketsData?.tickets || []).map((ticket: any) => {
+                ((ticketsData as any)?.tickets || []).map((ticket: any) => {
                   console.log('Rendering ticket:', ticket.id, 'with status:', ticket.status);
                   return (
                     <Card key={ticket.id} className="hover:shadow-md transition-shadow">
@@ -1055,13 +1055,13 @@ export default function AdminPage() {
                         <h4 className="font-semibold mb-4">Conversation</h4>
                         <Card className="h-96 flex flex-col">
                           <div className="flex-1 p-4 overflow-y-auto space-y-4">
-                            {ticketMessages.length === 0 ? (
+                            {(ticketMessages as any[]).length === 0 ? (
                               <div className="text-center text-gray-500 py-8">
                                 <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                                 <p>No messages yet. Start the conversation!</p>
                               </div>
                             ) : (
-                              ticketMessages.map((message: any) => (
+                              (ticketMessages as any[]).map((message: any) => (
                                 <div 
                                   key={message.id}
                                   className={`flex ${message.isFromSupport ? 'justify-start' : 'justify-end'}`}
@@ -1127,13 +1127,13 @@ export default function AdminPage() {
               </div>
 
               {/* Pagination for Support Tickets */}
-              {ticketsData && ticketsData.total > ticketsPerPage && (
+              {(ticketsData as any) && (ticketsData as any).total > ticketsPerPage && (
                 <div className="mt-6">
                   <Pagination
                     currentPage={ticketsPage}
-                    totalPages={Math.ceil(ticketsData.total / ticketsPerPage)}
+                    totalPages={Math.ceil((ticketsData as any).total / ticketsPerPage)}
                     onPageChange={setTicketsPage}
-                    totalItems={ticketsData.total}
+                    totalItems={(ticketsData as any).total}
                     itemsPerPage={ticketsPerPage}
                   />
                 </div>
@@ -1688,8 +1688,8 @@ function MachineAdministration() {
 
   // Update machine ID when next ID is fetched
   useEffect(() => {
-    if (nextIdData?.nextId && !newMachine.id) {
-      setNewMachine(prev => ({ ...prev, id: nextIdData.nextId }));
+    if ((nextIdData as any)?.nextId && !newMachine.id) {
+      setNewMachine(prev => ({ ...prev, id: (nextIdData as any).nextId }));
     }
   }, [nextIdData, newMachine.id]);
   const [editForm, setEditForm] = useState({
@@ -1869,7 +1869,7 @@ function MachineAdministration() {
   };
 
   // Filter and paginate assignments
-  const filteredMachines = machines.filter((machine: any) => {
+  const filteredMachines = (machines as any[]).filter((machine: any) => {
     if (assignmentFilter === "assigned") return machine.businessUnitId;
     if (assignmentFilter === "unassigned") return !machine.businessUnitId;
     return true; // "all"
@@ -1947,7 +1947,7 @@ function MachineAdministration() {
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <option value="">Leave Unassigned</option>
-                  {businessUnits.map((unit: any) => (
+                  {(businessUnits as any[]).map((unit: any) => (
                     <option key={unit.id} value={unit.id}>
                       {unit.name} ({unit.code})
                     </option>
@@ -1981,7 +1981,7 @@ function MachineAdministration() {
                   Loading machines...
                 </CardContent>
               </Card>
-            ) : machines.length === 0 ? (
+            ) : (machines as any[]).length === 0 ? (
               <Card>
                 <CardContent className="p-6 text-center">
                   <Coffee className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -1989,7 +1989,7 @@ function MachineAdministration() {
                 </CardContent>
               </Card>
             ) : (
-              machines.map((machine: any) => (
+              (machines as any[]).map((machine: any) => (
                 <Card key={machine.id}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
@@ -2001,7 +2001,7 @@ function MachineAdministration() {
                           <p className="text-xs text-gray-500">ID: {machine.id}</p>
                           <p className="text-xs text-gray-500">
                             {machine.businessUnitId ? 
-                              `Assigned to: ${businessUnits.find((unit: any) => unit.id === machine.businessUnitId)?.name || 'Unknown Business Unit'}` :
+                              `Assigned to: ${(businessUnits as any[]).find((unit: any) => unit.id === machine.businessUnitId)?.name || 'Unknown Business Unit'}` :
                               'Unassigned'
                             }
                           </p>
@@ -2112,7 +2112,7 @@ function MachineAdministration() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Choose a machine</option>
-                    {machines.map((machine: any) => (
+                    {(machines as any[]).map((machine: any) => (
                       <option key={machine.id} value={machine.id}>
                         {machine.name} ({machine.id})
                       </option>
@@ -2128,7 +2128,7 @@ function MachineAdministration() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Choose a business unit</option>
-                    {businessUnits.map((unit: any) => (
+                    {(businessUnits as any[]).map((unit: any) => (
                       <option key={unit.id} value={unit.id}>
                         {unit.name} ({unit.code})
                       </option>
@@ -2162,9 +2162,9 @@ function MachineAdministration() {
                     }}
                     className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="all">All Machines ({machines.length})</option>
-                    <option value="assigned">Assigned ({machines.filter((m: any) => m.businessUnitId).length})</option>
-                    <option value="unassigned">Unassigned ({machines.filter((m: any) => !m.businessUnitId).length})</option>
+                    <option value="all">All Machines ({(machines as any[]).length})</option>
+                    <option value="assigned">Assigned ({(machines as any[]).filter((m: any) => m.businessUnitId).length})</option>
+                    <option value="unassigned">Unassigned ({(machines as any[]).filter((m: any) => !m.businessUnitId).length})</option>
                   </select>
                 </div>
               </div>
@@ -2172,7 +2172,7 @@ function MachineAdministration() {
             <CardContent>
               <div className="space-y-3">
                 {paginatedAssignments.map((machine: any) => {
-                  const assignedUnit = businessUnits.find((unit: any) => unit.id === machine.businessUnitId);
+                  const assignedUnit = (businessUnits as any[]).find((unit: any) => unit.id === machine.businessUnitId);
                   return (
                     <div key={machine.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex items-center space-x-3">
@@ -2931,7 +2931,7 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
     }
   };
 
-  const selectedUserData = users?.find((u: any) => u.id === selectedUser);
+  const selectedUserData = (users as any[])?.find((u: any) => u.id === selectedUser);
 
   return (
     <div className="space-y-6">
@@ -2966,7 +2966,7 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
                   className="w-full p-2 border rounded-md"
                 >
                   <option value="">Choose a user...</option>
-                  {users?.map((user: any) => (
+                  {(users as any[])?.map((user: any) => (
                     <option key={user.id} value={user.id}>
                       {user.firstName} {user.lastName} ({user.email})
                     </option>
@@ -3112,7 +3112,7 @@ function SystemSettingsManagement() {
 
   useEffect(() => {
     if (systemSettings) {
-      const maxBalance = systemSettings.find((s: any) => s.key === 'max_wallet_balance');
+      const maxBalance = (systemSettings as any[]).find((s: any) => s.key === 'max_wallet_balance');
       if (maxBalance) {
         setMaxWalletBalance(maxBalance.value);
       }
@@ -3208,7 +3208,7 @@ function SystemSettingsManagement() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {systemSettings?.map((setting: any) => (
+            {(systemSettings as any[])?.map((setting: any) => (
               <div key={setting.key} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <div>
                   <div className="font-medium">{setting.key.replace(/_/g, ' ').toUpperCase()}</div>

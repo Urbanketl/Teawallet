@@ -850,10 +850,10 @@ export class DatabaseStorage implements IStorage {
       dateConditions.push(lte(transactions.createdAt, new Date(endDate)));
     }
 
-    // Get recharge transactions (type = 'recharge')
+    // Get recharge transactions (type = 'credit')
     let rechargeConditions = [
       eq(transactions.businessUnitId, businessUnitId),
-      eq(transactions.type, 'recharge')
+      eq(transactions.type, 'credit')
     ];
     if (dateConditions.length > 0) {
       rechargeConditions.push(...dateConditions);

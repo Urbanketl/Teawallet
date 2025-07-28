@@ -122,6 +122,10 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- July 28, 2025: COMPLETED - Implemented comprehensive business unit summary cards showing recharges, cups dispensed, revenue, and average cup price with full date filter integration
+- July 28, 2025: Fixed business unit summary query to use correct transaction type ('credit' instead of 'recharge') for accurate recharge amount calculation
+- July 28, 2025: Added BusinessUnitSummaryCards component with colorful design matching provided screenshot, including responsive grid layout and loading states
+- July 28, 2025: Created /api/corporate/business-unit-summary/:businessUnitId endpoint with date filtering support for summary metrics calculation
 - July 28, 2025: COMPLETED - Fixed employee usage logs pagination (20 per page) by removing duplicate API route that was preventing business unit filtering and pagination from working
 - July 28, 2025: Enhanced Business Unit Usage Logs with pagination controls moved to top of logs display and total entries count shown
 - July 28, 2025: COMPLETED - Added CSV export confirmation dialog with transaction summary to prevent duplicate file downloads

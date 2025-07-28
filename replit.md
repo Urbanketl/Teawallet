@@ -123,6 +123,7 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 
 ## Recent Changes
 - July 28, 2025: COMPLETED - Fixed employee usage logs pagination (20 per page) by removing duplicate API route that was preventing business unit filtering and pagination from working
+- July 28, 2025: Enhanced Business Unit Usage Logs with pagination controls moved to top of logs display and total entries count shown
 - July 28, 2025: COMPLETED - Added CSV export confirmation dialog with transaction summary to prevent duplicate file downloads
 - July 28, 2025: Enhanced Business Unit Management monthly reports with confirmation step showing business unit, month, transaction count, total amount, and machines used
 - July 28, 2025: Added warning message to discourage multiple CSV exports and reduce unnecessary file generation

@@ -614,7 +614,7 @@ export default function CorporateDashboard() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Activity className="h-5 w-5" />
-                      Employee Usage Logs ({totalLogsCount} total, showing {dispensingLogs.length})
+                      Employee Usage Logs ({totalLogsCount} total entries)
                     </CardTitle>
                     <CardDescription>
                       Recent tea dispensing activity for {selectedBusinessUnit.name}
@@ -627,6 +627,37 @@ export default function CorporateDashboard() {
                       <p className="text-center text-gray-500 py-4">No usage logs for this business unit yet.</p>
                     ) : (
                       <>
+                        {/* Pagination Controls at Top */}
+                        {totalLogsPages > 1 && (
+                          <div className="flex items-center justify-between mb-4 pb-4 border-b">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-gray-600">20 items per page</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setLogsCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={logsCurrentPage === 1}
+                                className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                Previous
+                              </button>
+                              
+                              <span className="text-sm text-gray-600">
+                                Page {logsCurrentPage} of {totalLogsPages}
+                              </span>
+                              
+                              <button
+                                onClick={() => setLogsCurrentPage(prev => Math.min(totalLogsPages, prev + 1))}
+                                disabled={logsCurrentPage === totalLogsPages}
+                                className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                Next
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
                         <div className="space-y-4 mb-4">
                           {dispensingLogs.map((log) => (
                             <div key={log.id} className="flex items-center justify-between p-4 border rounded-lg">
@@ -656,36 +687,7 @@ export default function CorporateDashboard() {
                           ))}
                         </div>
                         
-                        {/* Pagination Controls */}
-                        {totalLogsPages > 1 && (
-                          <div className="flex items-center justify-between pt-4 border-t">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm text-gray-600">20 items per page</span>
-                            </div>
-                            
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => setLogsCurrentPage(prev => Math.max(1, prev - 1))}
-                                disabled={logsCurrentPage === 1}
-                                className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                Previous
-                              </button>
-                              
-                              <span className="text-sm text-gray-600">
-                                Page {logsCurrentPage} of {totalLogsPages}
-                              </span>
-                              
-                              <button
-                                onClick={() => setLogsCurrentPage(prev => Math.min(totalLogsPages, prev + 1))}
-                                disabled={logsCurrentPage === totalLogsPages}
-                                className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                Next
-                              </button>
-                            </div>
-                          </div>
-                        )}
+                        {/* Pagination controls moved to top */}
                       </>
                     )}
                   </CardContent>

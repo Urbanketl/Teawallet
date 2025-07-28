@@ -856,85 +856,86 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
           </ul>
         </div>
 
-        {/* Export Confirmation Dialog */}
-        <Dialog open={showExportConfirmation} onOpenChange={setShowExportConfirmation}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Download className="h-5 w-5 text-blue-600" />
-                Confirm CSV Export
-              </DialogTitle>
-              <DialogDescription>
-                Please review the export summary before proceeding
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                <div className="flex justify-between">
-                  <span className="font-medium text-gray-700">Business Unit:</span>
-                  <span className="text-gray-900">{businessUnitName}</span>
+        {/* Export Confirmation Modal */}
+        {showExportConfirmation && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+              <div className="p-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <Download className="h-5 w-5 text-blue-600" />
+                  <h3 className="text-lg font-semibold">Confirm CSV Export</h3>
                 </div>
-                <div className="flex justify-between">
-                  <span className="font-medium text-gray-700">Month:</span>
-                  <span className="text-gray-900">
-                    {new Date(selectedMonth + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
-                  </span>
+                <p className="text-gray-600 mb-4">Please review the export summary before proceeding</p>
+                
+                <div className="space-y-4">
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                    <div className="flex justify-between">
+                      <span className="font-medium text-gray-700">Business Unit:</span>
+                      <span className="text-gray-900">{businessUnitName}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium text-gray-700">Month:</span>
+                      <span className="text-gray-900">
+                        {new Date(selectedMonth + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
+                      </span>
+                    </div>
+                    {monthlyData && (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-700">Transactions:</span>
+                          <span className="text-gray-900">{(monthlyData as any)?.totalTransactions || 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-700">Total Amount:</span>
+                          <span className="text-gray-900">₹{parseFloat((monthlyData as any)?.totalAmount || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-700">Machines Used:</span>
+                          <span className="text-gray-900">{(monthlyData as any)?.uniqueMachines || 0}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <p className="text-sm text-yellow-800">
+                      <strong>Note:</strong> This will download a CSV file containing all transaction records for the selected month. 
+                      Avoid creating multiple exports to prevent unnecessary file duplicates.
+                    </p>
+                  </div>
                 </div>
-                {monthlyData && (
-                  <>
-                    <div className="flex justify-between">
-                      <span className="font-medium text-gray-700">Transactions:</span>
-                      <span className="text-gray-900">{(monthlyData as any)?.totalTransactions || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium text-gray-700">Total Amount:</span>
-                      <span className="text-gray-900">₹{parseFloat((monthlyData as any)?.totalAmount || 0).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium text-gray-700">Machines Used:</span>
-                      <span className="text-gray-900">{(monthlyData as any)?.uniqueMachines || 0}</span>
-                    </div>
-                  </>
-                )}
-              </div>
-              
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                <p className="text-sm text-yellow-800">
-                  <strong>Note:</strong> This will download a CSV file containing all transaction records for the selected month. 
-                  Avoid creating multiple exports to prevent unnecessary file duplicates.
-                </p>
+
+                <div className="flex gap-2 mt-6">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowExportConfirmation(false)}
+                    disabled={isExporting}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleExportCSV}
+                    disabled={isExporting}
+                    className="flex items-center gap-2 flex-1"
+                  >
+                    {isExporting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Exporting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4" />
+                        <span>Confirm Export</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
-
-            <DialogFooter className="flex gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowExportConfirmation(false)}
-                disabled={isExporting}
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleExportCSV}
-                disabled={isExporting}
-                className="flex items-center gap-2"
-              >
-                {isExporting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Exporting...</span>
-                  </>
-                ) : (
-                  <>
-                    <Download className="h-4 w-4" />
-                    <span>Confirm Export</span>
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

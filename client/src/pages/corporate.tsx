@@ -265,7 +265,12 @@ export default function CorporateDashboard() {
       params.set('page', logsCurrentPage.toString());
       params.set('limit', logsItemsPerPage.toString());
       params.set('paginated', 'true');
-      return fetch(`/api/corporate/dispensing-logs?${params.toString()}`, { credentials: 'include' }).then(res => res.json());
+      
+      const url = `/api/corporate/dispensing-logs?${params.toString()}`;
+      console.log('Frontend: Fetching dispensing logs with URL:', url);
+      console.log('Frontend: Parameters - Page:', logsCurrentPage, 'Limit:', logsItemsPerPage, 'Business Unit:', selectedBusinessUnitId);
+      
+      return fetch(url, { credentials: 'include' }).then(res => res.json());
     },
     enabled: !!selectedBusinessUnitId,
     retry: false,

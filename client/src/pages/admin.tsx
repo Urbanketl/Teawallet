@@ -1219,6 +1219,12 @@ function MachineManagement() {
     retry: false,
   });
 
+  // Helper function to get business unit name
+  const getBusinessUnitName = (businessUnitId: string) => {
+    const unit = (businessUnits as any[]).find((unit: any) => unit.id === businessUnitId);
+    return unit ? unit.name : "Unassigned";
+  };
+
   // Filter and search machines
   const filteredMachines = (machines as any[]).filter((machine: any) => {
     const matchesSearch = !searchTerm || 
@@ -1239,12 +1245,6 @@ function MachineManagement() {
 
   // Reset pagination when filters change
   const resetPage = () => setCurrentPage(1);
-
-  // Helper function to get business unit name
-  const getBusinessUnitName = (businessUnitId: string) => {
-    const unit = (businessUnits as any[]).find((unit: any) => unit.id === businessUnitId);
-    return unit ? unit.name : "Unassigned";
-  };
 
   const updateMachinePriceMutation = useMutation({
     mutationFn: async ({ machineId, price }: { machineId: string; price: string }) => {

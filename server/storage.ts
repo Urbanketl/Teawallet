@@ -333,12 +333,9 @@ export class DatabaseStorage implements IStorage {
         .select({
           userId: userBusinessUnits.userId,
           role: userBusinessUnits.role,
-          user: {
-            id: users.id,
-            firstName: users.firstName,
-            lastName: users.lastName,
-            email: users.email
-          }
+          firstName: users.firstName,
+          lastName: users.lastName,
+          email: users.email
         })
         .from(userBusinessUnits)
         .innerJoin(users, eq(userBusinessUnits.userId, users.id))

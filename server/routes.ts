@@ -1103,6 +1103,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Assign user to business unit
+  app.post('/api/admin/business-units/:unitId/assign-user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { unitId } = req.params;
+      const { userId: targetUserId, role } = req.body;
+
+      if (!targetUserId || !role) {
+        return res.status(400).json({ message: "User ID and role are required" });
+      }
+
+      // Verify business unit exists
+      const businessUnit = await storage.getBusinessUnit(unitId);
+      if (!businessUnit) {
+        return res.status(400).json({ message: "Business unit not found" });
+      }
+
+      // Verify user exists
+      const targetUser = await storage.getUser(targetUserId);
+      if (!targetUser) {
+        return res.status(400).json({ message: "User not found" });
+      }
+
+      await storage.assignUserToBusinessUnit(targetUserId, unitId, role);
+      res.json({ message: "User assigned successfully" });
+    } catch (error) {
+      console.error("Error assigning user to business unit:", error);
+      res.status(500).json({ message: "Failed to assign user to business unit" });
+    }
+  });
+
+  // Unassign user from business unit
+  app.post('/api/admin/business-units/:unitId/unassign-user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { unitId } = req.params;
+      const { userId: targetUserId } = req.body;
+
+      if (!targetUserId) {
+        return res.status(400).json({ message: "User ID is required" });
+      }
+
+      await storage.removeUserFromBusinessUnit(targetUserId, unitId);
+      res.json({ message: "User unassigned successfully" });
+    } catch (error) {
+      console.error("Error unassigning user from business unit:", error);
+      res.status(500).json({ message: "Failed to unassign user from business unit" });
+    }
+  });
+
   // Get all users with their business unit assignments for pseudo login
   app.get('/api/admin/users-with-business-units', isAuthenticated, async (req: any, res) => {
     try {

@@ -134,6 +134,10 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - July 29, 2025: COMPLETED - Removed demo access section from landing page to eliminate authentication conflicts and security risks in B2B system
 - July 29, 2025: COMPLETED - Implemented simplified role structure with dropdown selection in user creation form (Platform Admin, Business Unit Admin, Viewer)
 - July 29, 2025: Updated backend to handle role-based user creation with proper isAdmin/isSuperAdmin flag conversion from role selection
+- July 29, 2025: COMPLETED - Implemented user assignment interface allowing admins to assign viewers (and other roles) to specific business units
+- July 29, 2025: Added User Assignments tab in Business Units interface with business unit selection, user selection, and role assignment (viewer/admin/manager)
+- July 29, 2025: Added backend API routes for user assignments: POST /assign-user and POST /unassign-user with proper validation and access control
+- July 29, 2025: Fixed data structure in getBusinessUnitUsers to return flattened user details for frontend compatibility
 - July 28, 2025: COMPLETED - Implemented comprehensive business unit summary cards showing recharges, cups dispensed, revenue, and average cup price with full date filter integration
 - July 28, 2025: Fixed business unit summary query to use correct transaction type ('credit' instead of 'recharge') for accurate recharge amount calculation
 - July 28, 2025: Added BusinessUnitSummaryCards component with colorful design matching provided screenshot, including responsive grid layout and loading states

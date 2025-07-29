@@ -25,6 +25,215 @@ import { apiRequest } from "@/lib/queryClient";
 import type { BusinessUnit } from "@shared/schema";
 import { AdminTransferInterface } from "./AdminTransferInterface";
 
+// User Assignment Interface Component
+function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUnit[] }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [selectedBusinessUnit, setSelectedBusinessUnit] = useState("");
+  const [selectedUser, setSelectedUser] = useState("");
+  const [selectedRole, setSelectedRole] = useState("viewer");
+
+  // Fetch all users for assignment
+  const { data: allUsers, isLoading: usersLoading } = useQuery({
+    queryKey: ["/api/admin/users"],
+    retry: false,
+  });
+
+  // Fetch current assignments for selected business unit
+  const { data: currentAssignments, isLoading: assignmentsLoading } = useQuery({
+    queryKey: ["/api/admin/business-units", selectedBusinessUnit, "users"],
+    enabled: !!selectedBusinessUnit,
+    retry: false,
+  });
+
+  // Assignment mutation
+  const assignUserMutation = useMutation({
+    mutationFn: async ({ userId, businessUnitId, role }: { userId: string; businessUnitId: string; role: string }) => {
+      return apiRequest(`/api/admin/business-units/${businessUnitId}/assign-user`, {
+        method: "POST",
+        body: { userId, role }
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "Success", description: "User assigned successfully!" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/business-units"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/business-units", selectedBusinessUnit, "users"] });
+      setSelectedUser("");
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Assignment Failed", 
+        description: error.message || "Failed to assign user",
+        variant: "destructive" 
+      });
+    }
+  });
+
+  // Unassignment mutation  
+  const unassignUserMutation = useMutation({
+    mutationFn: async ({ userId, businessUnitId }: { userId: string; businessUnitId: string }) => {
+      return apiRequest(`/api/admin/business-units/${businessUnitId}/unassign-user`, {
+        method: "POST", 
+        body: { userId }
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "Success", description: "User unassigned successfully!" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/business-units"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/business-units", selectedBusinessUnit, "users"] });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Unassignment Failed", 
+        description: error.message || "Failed to unassign user",
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const handleAssignUser = () => {
+    if (!selectedBusinessUnit || !selectedUser) {
+      toast({
+        title: "Missing Information",
+        description: "Please select both business unit and user",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    assignUserMutation.mutate({
+      userId: selectedUser,
+      businessUnitId: selectedBusinessUnit,
+      role: selectedRole
+    });
+  };
+
+  const handleUnassignUser = (userId: string) => {
+    unassignUserMutation.mutate({
+      userId,
+      businessUnitId: selectedBusinessUnit
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="w-5 h-5" />
+            User Assignments
+          </CardTitle>
+          <p className="text-sm text-gray-600">
+            Assign users to business units with specific roles: Platform Admin (full access), Business Unit Admin (manage tea programs), or Viewer (read-only reports).
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Business Unit Selection */}
+          <div>
+            <Label htmlFor="business-unit-select">Select Business Unit</Label>
+            <select
+              id="business-unit-select"
+              value={selectedBusinessUnit}
+              onChange={(e) => setSelectedBusinessUnit(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md bg-white"
+            >
+              <option value="">Choose a business unit...</option>
+              {businessUnits.map((unit) => (
+                <option key={unit.id} value={unit.id}>
+                  {unit.name} ({unit.code})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Assignment Form */}
+          {selectedBusinessUnit && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+              <div>
+                <Label htmlFor="user-select">Select User</Label>
+                <select
+                  id="user-select"
+                  value={selectedUser}
+                  onChange={(e) => setSelectedUser(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md bg-white"
+                  disabled={usersLoading}
+                >
+                  <option value="">Choose a user...</option>
+                  {allUsers?.users?.map((user: any) => (
+                    <option key={user.id} value={user.id}>
+                      {user.firstName} {user.lastName} ({user.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <Label htmlFor="role-select">Role</Label>
+                <select
+                  id="role-select"
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md bg-white"
+                >
+                  <option value="viewer">Viewer (Read-only reports)</option>
+                  <option value="admin">Business Unit Admin (Manage tea programs)</option>
+                  <option value="manager">Manager (Full business unit control)</option>
+                </select>
+              </div>
+
+              <div className="flex items-end">
+                <Button 
+                  onClick={handleAssignUser}
+                  disabled={!selectedUser || assignUserMutation.isPending}
+                  className="w-full bg-tea-green hover:bg-tea-dark"
+                >
+                  {assignUserMutation.isPending ? "Assigning..." : "Assign User"}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Current Assignments */}
+          {selectedBusinessUnit && (
+            <div>
+              <h3 className="font-semibold mb-3">Current Assignments</h3>
+              {assignmentsLoading ? (
+                <p className="text-gray-500">Loading assignments...</p>
+              ) : currentAssignments && currentAssignments.length > 0 ? (
+                <div className="space-y-2">
+                  {currentAssignments.map((assignment: any) => (
+                    <div key={assignment.userId} className="flex items-center justify-between p-3 bg-white border rounded-lg">
+                      <div>
+                        <span className="font-medium">{assignment.firstName} {assignment.lastName}</span>
+                        <span className="text-gray-500 ml-2">({assignment.email})</span>
+                        <Badge variant="outline" className="ml-2">
+                          {assignment.role === 'viewer' ? 'Viewer' : 
+                           assignment.role === 'admin' ? 'Business Unit Admin' : 
+                           assignment.role === 'manager' ? 'Manager' : assignment.role}
+                        </Badge>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleUnassignUser(assignment.userId)}
+                        disabled={unassignUserMutation.isPending}
+                      >
+                        {unassignUserMutation.isPending ? "Removing..." : "Remove"}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 italic">No users assigned to this business unit.</p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 interface BusinessUnitWithDetails extends BusinessUnit {
   userCount?: number;
   machineCount?: number;
@@ -186,9 +395,10 @@ export function BusinessUnitsTab() {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Business Units</TabsTrigger>
           <TabsTrigger value="create">Create Unit</TabsTrigger>
+          <TabsTrigger value="assignments">User Assignments</TabsTrigger>
           <TabsTrigger value="business-ownership">Business Ownership</TabsTrigger>
         </TabsList>
 
@@ -607,6 +817,10 @@ export function BusinessUnitsTab() {
               </form>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="assignments" className="space-y-6">
+          <UserAssignmentInterface businessUnits={businessUnits || []} />
         </TabsContent>
 
         <TabsContent value="business-ownership" className="space-y-6">

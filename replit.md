@@ -124,6 +124,9 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- July 29, 2025: COMPLETED - Updated all tea machine pricing from ₹5.00 to ₹25.00 per cup across entire system (10 machines affected)
+- July 29, 2025: COMPLETED - Fixed database schema issues with missing price column, all APIs now working correctly
+- July 29, 2025: COMPLETED - Tea machine simulator fully functional at /tea-machine-simulator route with auto-detection
 - July 29, 2025: COMPLETED - Fully implemented simplified tea pricing system with single price field per machine
 - July 29, 2025: Updated database schema to use simple `price` field instead of complex `teaTypes` JSONB array
 - July 29, 2025: Created `/api/admin/machines/:machineId/pricing` PATCH endpoint for price updates with simplified format

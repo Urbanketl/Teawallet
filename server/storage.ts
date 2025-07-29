@@ -489,7 +489,7 @@ export class DatabaseStorage implements IStorage {
       .values({
         cardNumber: cardNumber,
         cardName: `Card for ${userId}`,
-        businessUnitId: null, // Cards should be unassigned by default
+        businessUnitId: '', // Use empty string instead of null for unassigned
         isActive: true,
       })
       .returning();
@@ -702,7 +702,7 @@ export class DatabaseStorage implements IStorage {
           .values({
             cardNumber,
             cardName,
-            businessUnitId: businessUnitId || undefined,
+            businessUnitId: businessUnitId || '',
             isActive: true,
           })
           .returning();
@@ -720,7 +720,7 @@ export class DatabaseStorage implements IStorage {
             .values({
               cardNumber: autoCardNumber,
               cardName: cardName ? `${cardName} #${i + 1}` : `Corporate Card #${i + 1}`,
-              businessUnitId: businessUnitId || null,
+              businessUnitId: businessUnitId || '',
               isActive: true,
             })
             .returning();

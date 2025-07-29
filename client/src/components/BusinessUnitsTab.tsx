@@ -39,12 +39,21 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
     retry: false,
   });
 
+  // Debug logging
+  console.log("All users data:", allUsers);
+  console.log("Users loading:", usersLoading);
+
   // Fetch current assignments for selected business unit
   const { data: currentAssignments, isLoading: assignmentsLoading } = useQuery({
     queryKey: ["/api/admin/business-units", selectedBusinessUnit, "users"],
     enabled: !!selectedBusinessUnit,
     retry: false,
   });
+
+  // Debug logging
+  console.log("Current assignments data:", currentAssignments);
+  console.log("Selected business unit:", selectedBusinessUnit);
+  console.log("Assignments loading:", assignmentsLoading);
 
   // Assignment mutation
   const assignUserMutation = useMutation({
@@ -159,11 +168,20 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
                   disabled={usersLoading}
                 >
                   <option value="">Choose a user...</option>
-                  {allUsers?.users?.map((user: any) => (
-                    <option key={user.id} value={user.id}>
-                      {user.firstName} {user.lastName} ({user.email})
-                    </option>
-                  ))}
+                  {Array.isArray(allUsers?.users) 
+                    ? allUsers.users.map((user: any) => (
+                        <option key={user.id} value={user.id}>
+                          {user.firstName} {user.lastName} ({user.email})
+                        </option>
+                      ))
+                    : Array.isArray(allUsers) 
+                      ? allUsers.map((user: any) => (
+                          <option key={user.id} value={user.id}>
+                            {user.firstName} {user.lastName} ({user.email})
+                          </option>
+                        ))
+                      : null
+                  }
                 </select>
               </div>
 

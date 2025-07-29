@@ -462,6 +462,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(rfidCards.id, cardId));
   }
 
+  async activateRfidCard(cardId: number): Promise<void> {
+    await db
+      .update(rfidCards)
+      .set({ isActive: true })
+      .where(eq(rfidCards.id, cardId));
+  }
+
   // Legacy Admin RFID operations (for super admin) - DEPRECATED
   async createRfidCardForUser(userId: string, cardNumber: string): Promise<RfidCard> {
     // This method is deprecated - use createRfidCardBatch instead

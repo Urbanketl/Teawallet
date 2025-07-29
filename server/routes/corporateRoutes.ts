@@ -189,6 +189,28 @@ export function registerCorporateRoutes(app: Express) {
     }
   });
 
+  // Activate RFID card
+  app.put("/api/corporate/rfid-cards/:cardId/activate", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user?.claims?.sub;
+      const cardId = parseInt(req.params.cardId);
+      
+      // Verify the card belongs to this business unit admin
+      const cards = await storage.getManagedRfidCards(userId);
+      const card = cards.find(c => c.id === cardId);
+      
+      if (!card) {
+        return res.status(404).json({ error: "RFID card not found or not owned by your business unit" });
+      }
+      
+      await storage.activateRfidCard(cardId);
+      res.json({ message: "RFID card activated successfully" });
+    } catch (error) {
+      console.error("Error activating RFID card:", error);
+      res.status(500).json({ error: "Failed to activate RFID card" });
+    }
+  });
+
   // Get machines for specific business unit (with pseudo login support)
   app.get("/api/corporate/machines", isAuthenticated, async (req: any, res) => {
     try {

@@ -57,7 +57,7 @@ function Router() {
       {pseudoParam && (
         <PseudoLoginBanner 
           pseudoUserId={pseudoParam} 
-          userName={pseudoUser ? `${pseudoUser.firstName} ${pseudoUser.lastName}` : undefined}
+          userName={pseudoUser ? `${(pseudoUser as any).firstName} ${(pseudoUser as any).lastName}` : undefined}
         />
       )}
       

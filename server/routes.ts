@@ -600,6 +600,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const machineData = {
+        id: `MACHINE_${Date.now().toString(36)}_${Math.random().toString(36).substring(2)}`,
         name,
         location,
         businessUnitId,
@@ -1024,7 +1025,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(businessUnit);
     } catch (error) {
       console.error("Error creating business unit:", error);
-      res.status(500).json({ message: "Failed to create business unit", error: error.message });
+      res.status(500).json({ message: "Failed to create business unit", error: (error as Error).message });
     }
   });
 

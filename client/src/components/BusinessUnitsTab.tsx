@@ -26,7 +26,7 @@ import type { BusinessUnit } from "@shared/schema";
 import { AdminTransferInterface } from "./AdminTransferInterface";
 
 // User Assignment Interface Component
-function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUnit[] }) {
+function UserAssignmentInterface({ businessUnits, setActiveTab }: { businessUnits: BusinessUnit[]; setActiveTab: (tab: string) => void; }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedBusinessUnit, setSelectedBusinessUnit] = useState("");
@@ -34,17 +34,19 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
   const [selectedRole, setSelectedRole] = useState("Viewer");
 
   // Fetch all users for assignment
-  const { data: allUsers, isLoading: usersLoading } = useQuery({
+  const { data: allUsersResponse, isLoading: usersLoading } = useQuery({
     queryKey: ["/api/admin/users"],
     retry: false,
   });
+
+  const allUsers = Array.isArray(allUsersResponse) ? allUsersResponse : (allUsersResponse?.users || []);
 
   // Debug logging
   console.log("All users data:", allUsers);
   console.log("Users loading:", usersLoading);
 
   // Fetch current assignments for selected business unit
-  const { data: currentAssignments, isLoading: assignmentsLoading } = useQuery({
+  const { data: currentAssignments = [], isLoading: assignmentsLoading } = useQuery({
     queryKey: [`/api/admin/business-units/${selectedBusinessUnit}/users`],
     enabled: !!selectedBusinessUnit,
     retry: false,
@@ -54,10 +56,10 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
   console.log("Current assignments data:", currentAssignments);
   console.log("Selected business unit:", selectedBusinessUnit);
   console.log("Assignments loading:", assignmentsLoading);
-  console.log("Has Business Unit Admin:", currentAssignments?.some((a: any) => a.role === 'Business Unit Admin'));
+  console.log("Has Business Unit Admin:", Array.isArray(currentAssignments) && currentAssignments.some((a: any) => a.role === 'Business Unit Admin'));
   
   // Check if business unit already has a Business Unit Admin
-  const hasBusinessUnitAdmin = currentAssignments?.some((assignment: any) => 
+  const hasBusinessUnitAdmin = Array.isArray(currentAssignments) && currentAssignments.some((assignment: any) => 
     assignment.role === 'Business Unit Admin'
   );
 
@@ -72,6 +74,8 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
       queryClient.invalidateQueries({ queryKey: ["/api/admin/business-units"] });
       queryClient.invalidateQueries({ queryKey: [`/api/admin/business-units/${selectedBusinessUnit}/users`] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      // Force refetch to ensure immediate update
+      queryClient.refetchQueries({ queryKey: ["/api/admin/business-units"] });
       setSelectedUser("");
     },
     onError: (error: any) => {
@@ -94,6 +98,8 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
       queryClient.invalidateQueries({ queryKey: ["/api/admin/business-units"] });
       queryClient.invalidateQueries({ queryKey: [`/api/admin/business-units/${selectedBusinessUnit}/users`] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      // Force refetch to ensure immediate update
+      queryClient.refetchQueries({ queryKey: ["/api/admin/business-units"] });
     },
     onError: (error: any) => {
       toast({ 
@@ -131,11 +137,13 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
     });
   };
 
-  const handleUnassignUser = (userId: string) => {
-    unassignUserMutation.mutate({
-      userId,
-      businessUnitId: selectedBusinessUnit
-    });
+  const handleUnassignUser = (userId: string, userName: string, userRole: string) => {
+    if (confirm(`Are you sure you want to remove ${userName} (${userRole}) from this business unit? This action cannot be undone.`)) {
+      unassignUserMutation.mutate({
+        userId,
+        businessUnitId: selectedBusinessUnit
+      });
+    }
   };
 
   return (
@@ -234,7 +242,7 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
                 {selectedRole === 'Business Unit Admin' && hasBusinessUnitAdmin && (
                   <div className="ml-2">
                     <Button 
-                      onClick={() => setActiveTab("ownership")}
+                      onClick={() => setActiveTab("business-ownership")}
                       variant="outline"
                       className="whitespace-nowrap"
                     >
@@ -252,9 +260,9 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
               <h3 className="font-semibold mb-3">Current Assignments</h3>
               {assignmentsLoading ? (
                 <p className="text-gray-500">Loading assignments...</p>
-              ) : currentAssignments && currentAssignments.length > 0 ? (
+              ) : Array.isArray(currentAssignments) && currentAssignments.length > 0 ? (
                 <div className="space-y-2">
-                  {currentAssignments.map((assignment: any) => (
+                  {Array.isArray(currentAssignments) && currentAssignments.map((assignment: any) => (
                     <div key={assignment.userId} className="flex items-center justify-between p-3 bg-white border rounded-lg">
                       <div>
                         <span className="font-medium">
@@ -266,7 +274,11 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
                         </span>
                       </div>
                       <Button
-                        onClick={() => handleUnassignUser(assignment.userId)}
+                        onClick={() => handleUnassignUser(
+                          assignment.userId, 
+                          `${assignment.firstName} ${assignment.lastName}`, 
+                          assignment.role
+                        )}
                         variant="outline"
                         size="sm"
                         className="text-red-600 hover:text-red-700"
@@ -304,6 +316,7 @@ type SortDirection = 'asc' | 'desc';
 export function BusinessUnitsTab() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState("overview");
   const [newUnitForm, setNewUnitForm] = useState({
     name: "",
     code: "",
@@ -447,7 +460,7 @@ export function BusinessUnitsTab() {
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs defaultValue="overview" className="space-y-6" onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Business Units</TabsTrigger>
           <TabsTrigger value="create">Create Unit</TabsTrigger>
@@ -873,7 +886,7 @@ export function BusinessUnitsTab() {
         </TabsContent>
 
         <TabsContent value="assignments" className="space-y-6">
-          <UserAssignmentInterface businessUnits={businessUnits || []} />
+          <UserAssignmentInterface businessUnits={businessUnits || []} setActiveTab={setActiveTab} />
         </TabsContent>
 
         <TabsContent value="business-ownership" className="space-y-6">

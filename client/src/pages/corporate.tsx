@@ -1084,7 +1084,7 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
                         {new Date(selectedMonth + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
                       </span>
                     </div>
-                    {monthlyData && typeof monthlyData === 'object' && (
+                    {(monthlyData && typeof monthlyData === 'object') ? (
                       <>
                         <div className="flex justify-between">
                           <span className="font-medium text-gray-700">Transactions:</span>
@@ -1099,7 +1099,7 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
                           <span className="text-gray-900">{(monthlyData as any)?.uniqueMachines || 0}</span>
                         </div>
                       </>
-                    )}
+                    ) : null}
                   </div>
                   
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">

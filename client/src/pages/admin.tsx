@@ -55,9 +55,11 @@ import { format } from "date-fns";
 import Pagination from "@/components/Pagination";
 import { BusinessUnitsTab } from "@/components/BusinessUnitsTab";
 import { PseudoLogin } from "@/components/PseudoLogin";
+import type { User } from "@shared/schema";
 
 export default function AdminPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
+  const typedUser = user as User;
   const { toast } = useToast();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pseudoUserId, setPseudoUserId] = useState<string | null>(null);
@@ -84,21 +86,21 @@ export default function AdminPage() {
   // Load system settings from database
   const { data: systemSettings } = useQuery({
     queryKey: ["/api/admin/settings"],
-    enabled: isAuthenticated && user?.isAdmin,
+    enabled: Boolean(isAuthenticated && typedUser?.isAdmin),
     retry: false,
   });
 
   // Paginated users query
   const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ["/api/admin/users", { paginated: true, page: usersPage, limit: usersPerPage, search: usersSearch }],
-    enabled: isAuthenticated && user?.isAdmin,
+    enabled: Boolean(isAuthenticated && typedUser?.isAdmin),
     retry: false,
   });
 
   // Paginated support tickets query
   const { data: ticketsData, isLoading: ticketsLoading } = useQuery({
     queryKey: [`/api/admin/support/tickets?paginated=true&page=${ticketsPage}&limit=${ticketsPerPage}${ticketsStatus ? `&status=${ticketsStatus}` : ''}`],
-    enabled: isAuthenticated && user?.isAdmin,
+    enabled: Boolean(isAuthenticated && typedUser?.isAdmin),
     retry: false,
   });
 
@@ -132,7 +134,7 @@ export default function AdminPage() {
 
   // Check if user is admin
   useEffect(() => {
-    if (user && !user.isAdmin) {
+    if (typedUser && !typedUser.isAdmin) {
       toast({
         title: "Access Denied",
         description: "You don't have admin privileges",
@@ -142,23 +144,23 @@ export default function AdminPage() {
         window.location.href = "/";
       }, 1000);
     }
-  }, [user, toast]);
+  }, [typedUser, toast]);
 
   const { data: adminStats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/admin/stats"],
-    enabled: isAuthenticated && user?.isAdmin,
+    enabled: Boolean(isAuthenticated && typedUser?.isAdmin),
     retry: false,
   });
 
   const { data: allUsers, isLoading: allUsersLoading } = useQuery({
     queryKey: ["/api/admin/users"],
-    enabled: isAuthenticated && user?.isAdmin,
+    enabled: Boolean(isAuthenticated && typedUser?.isAdmin),
     retry: false,
   });
 
   const { data: machines, isLoading: machinesLoading } = useQuery({
     queryKey: ["/api/admin/machines"],
-    enabled: isAuthenticated && user?.isAdmin,
+    enabled: Boolean(isAuthenticated && typedUser?.isAdmin),
     retry: false,
     staleTime: 0, // Always fetch fresh data
     refetchOnWindowFocus: true,
@@ -179,7 +181,7 @@ export default function AdminPage() {
 
   const { data: supportTickets = [], isLoading: allTicketsLoading, refetch: refetchTickets } = useQuery({
     queryKey: ["/api/admin/support/tickets"],
-    enabled: isAuthenticated && user?.isAdmin,
+    enabled: Boolean(isAuthenticated && typedUser?.isAdmin),
     retry: false,
     refetchInterval: 5000,
   });
@@ -387,7 +389,7 @@ export default function AdminPage() {
     return <div className="min-h-screen bg-neutral-warm flex items-center justify-center">Loading...</div>;
   }
 
-  if (!isAuthenticated || !user || !user.isAdmin) {
+  if (!isAuthenticated || !typedUser || !typedUser.isAdmin) {
     return null;
   }
 
@@ -781,7 +783,7 @@ export default function AdminPage() {
               ) : (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {(allUsers as any[]).slice(0, 10).map((user: any) => (
-                    <div key={user.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div key={typedUser?.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
                           <span className="text-xs font-medium">
@@ -819,11 +821,11 @@ export default function AdminPage() {
             <CardContent>
               {machinesLoading ? (
                 <div className="text-center py-8">Loading machines...</div>
-              ) : !machines || machines.length === 0 ? (
+              ) : !machines || (machines as any[]).length === 0 ? (
                 <div className="text-center py-8 text-gray-500">No machines found</div>
               ) : (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {machines.map((machine: any) => (
+                  {(machines as any[]).map((machine: any) => (
                     <div key={machine.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <div className={`w-3 h-3 rounded-full ${machine.isActive ? 'bg-green-400' : 'bg-red-400'}`} />
@@ -2787,11 +2789,11 @@ function UserManagement() {
   });
 
   const handleToggleAdmin = (user: any) => {
-    const newAdminStatus = !user.isAdmin;
+    const newAdminStatus = !typedUser?.isAdmin;
     const action = newAdminStatus ? 'grant' : 'revoke';
     
     if (confirm(`Are you sure you want to ${action} admin privileges for ${user.firstName} ${user.lastName}?`)) {
-      toggleAdminMutation.mutate({ userId: user.id, isAdmin: newAdminStatus });
+      toggleAdminMutation.mutate({ userId: typedUser?.id, isAdmin: newAdminStatus });
     }
   };
 
@@ -2887,7 +2889,7 @@ function UserManagement() {
 
   const handleDeleteUser = (user: any) => {
     if (confirm(`Are you sure you want to delete the account for ${user.firstName} ${user.lastName}? This action cannot be undone.`)) {
-      deleteUserMutation.mutate(user.id);
+      deleteUserMutation.mutate(typedUser?.id);
     }
   };
 
@@ -3046,7 +3048,7 @@ function UserManagement() {
       ) : (
         <div className="grid gap-4">
           {filteredUsers.map((user: any) => (
-            <Card key={user.id} className="hover:shadow-md transition-shadow">
+            <Card key={typedUser?.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
@@ -3060,13 +3062,13 @@ function UserManagement() {
                         <h4 className="font-semibold text-lg">
                           {user.firstName} {user.lastName}
                         </h4>
-                        {user.isAdmin && (
+                        {typedUser?.isAdmin && (
                           <Badge className="bg-purple-100 text-purple-800 border-purple-200">
                             <Shield className="w-3 h-3 mr-1" />
                             Admin
                           </Badge>
                         )}
-                        {user.id === currentUser?.id && (
+                        {typedUser?.id === currentUser?.id && (
                           <Badge variant="outline" className="text-blue-600 border-blue-200">
                             You
                           </Badge>
@@ -3087,16 +3089,16 @@ function UserManagement() {
                   </div>
                   
                   <div className="flex items-center space-x-2">
-                    {user.id !== currentUser?.id && (
+                    {typedUser?.id !== currentUser?.id && (
                       <>
                         <Button
-                          variant={user.isAdmin ? "destructive" : "default"}
+                          variant={typedUser?.isAdmin ? "destructive" : "default"}
                           size="sm"
                           onClick={() => handleToggleAdmin(user)}
                           disabled={toggleAdminMutation.isPending}
                           className="flex items-center space-x-1"
                         >
-                          {user.isAdmin ? (
+                          {typedUser?.isAdmin ? (
                             <>
                               <UserMinus className="w-4 h-4" />
                               <span>Revoke Admin</span>

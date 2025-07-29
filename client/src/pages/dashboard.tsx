@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import WalletCard from "@/components/WalletCard";
 import TransactionHistory from "@/components/TransactionHistory";
-import RFIDCard from "@/components/RFIDCard";
+
 import BusinessUnitSelector from "@/components/BusinessUnitSelector";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -132,10 +132,8 @@ export default function Dashboard() {
             <TransactionHistory businessUnitId={selectedBusinessUnitId} />
           </div>
 
-          {/* Right Column - RFID & Stats */}
+          {/* Right Column - Stats */}
           <div className="space-y-6">
-            <RFIDCard />
-
             {/* Usage Statistics */}
             <Card className="shadow-material">
               <CardContent className="p-6">

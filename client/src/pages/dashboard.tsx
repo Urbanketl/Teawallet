@@ -270,13 +270,7 @@ export default function Dashboard() {
             <Plus className="w-5 h-5" />
             <span className="text-xs font-medium">Wallet</span>
           </button>
-          <button 
-            className="flex flex-col items-center space-y-1 p-2 text-gray-400"
-            onClick={() => window.location.href = '/history'}
-          >
-            <History className="w-5 h-5" />
-            <span className="text-xs font-medium">History</span>
-          </button>
+
           <button 
             className="flex flex-col items-center space-y-1 p-2 text-gray-400"
             onClick={() => window.location.href = '/profile'}

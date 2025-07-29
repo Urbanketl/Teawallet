@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { 
   LayoutDashboard, 
   Wallet, 
-  History, 
+
   User, 
   LogOut,
   Shield,
@@ -33,7 +33,7 @@ export default function Navigation() {
     { href: "/", icon: LayoutDashboard, label: "Dashboard" },
     { href: "/corporate", icon: Coffee, label: "Business Unit" },
     { href: "/wallet", icon: Wallet, label: "Business Wallet" },
-    { href: "/history", icon: History, label: "History" },
+
     { href: "/support", icon: MessageCircle, label: "Business Support" },
     { href: "/profile", icon: User, label: "Profile" },
   ];

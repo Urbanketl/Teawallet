@@ -15,7 +15,7 @@ const NotFound = lazy(() => import("@/pages/not-found"));
 const Landing = lazy(() => import("@/pages/landing"));
 const Dashboard = lazy(() => import("@/pages/dashboard"));
 const Wallet = lazy(() => import("@/pages/wallet"));
-const History = lazy(() => import("@/pages/history"));
+
 const Admin = lazy(() => import("@/pages/admin"));
 const Profile = lazy(() => import("@/pages/profile"));
 const Support = lazy(() => import("@/pages/support"));
@@ -65,7 +65,7 @@ function Router() {
         <Switch>
           <Route path="/" component={Dashboard} />
           <Route path="/wallet" component={Wallet} />
-          <Route path="/history" component={History} />
+
           <Route path="/profile" component={Profile} />
           <Route path="/admin" component={Admin} />
           <Route path="/support" component={Support} />

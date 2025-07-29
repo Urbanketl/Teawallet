@@ -210,17 +210,6 @@ export default function Dashboard() {
                   <Button 
                     variant="ghost"
                     className="w-full justify-between"
-                    onClick={() => window.location.href = '/history'}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <History className="w-4 h-4" />
-                      <span className="font-medium">View Full History</span>
-                    </div>
-                  </Button>
-                  
-                  <Button 
-                    variant="ghost"
-                    className="w-full justify-between"
                     onClick={() => window.location.href = '/profile'}
                   >
                     <div className="flex items-center space-x-3">

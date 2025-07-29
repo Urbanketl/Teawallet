@@ -365,9 +365,19 @@
         
         // Auto-fetch tea price on page load
         window.onload = function() {
-            // Set default server URL to current domain if running locally
-            if (window.location.hostname !== 'localhost') {
-                document.getElementById('serverUrl').value = window.location.origin;
+            // Auto-detect server URL when served from the same domain
+            const currentOrigin = window.location.origin;
+            if (currentOrigin.includes('replit.dev')) {
+                document.getElementById('serverUrl').value = currentOrigin;
+                // Auto-refresh price to test connection
+                setTimeout(fetchTeaPrice, 1000);
+            }
+            
+            // Show current URL for reference
+            if (currentOrigin.includes('replit.dev')) {
+                console.log('Auto-detected Replit URL:', currentOrigin);
+                document.querySelector('.server-config-title').textContent = 
+                    `Server Configuration (Auto-detected: ${currentOrigin})`;
             }
         };
         

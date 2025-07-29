@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import path from "path";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { initializeRazorpay, createOrder, verifyPayment } from "./razorpay";
 import { storage } from "./storage";

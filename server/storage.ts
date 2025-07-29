@@ -301,16 +301,37 @@ export class DatabaseStorage implements IStorage {
     return unit;
   }
 
-  // User-Business Unit assignments (only one user per business unit allowed)
+  // User-Business Unit assignments (allows multiple users per business unit with different roles)
   async assignUserToBusinessUnit(userId: string, businessUnitId: string, role: string): Promise<void> {
     try {
       // Use a transaction to ensure atomicity
       await db.transaction(async (tx) => {
-        // First, remove any existing user assignment for this business unit
-        await tx.delete(userBusinessUnits).where(eq(userBusinessUnits.businessUnitId, businessUnitId));
-        
-        // Then assign the new user
-        await tx.insert(userBusinessUnits).values({ userId, businessUnitId, role });
+        // Check if user is already assigned to this business unit
+        const existing = await tx
+          .select()
+          .from(userBusinessUnits)
+          .where(
+            and(
+              eq(userBusinessUnits.userId, userId),
+              eq(userBusinessUnits.businessUnitId, businessUnitId)
+            )
+          );
+
+        if (existing.length > 0) {
+          // Update existing assignment role
+          await tx
+            .update(userBusinessUnits)
+            .set({ role })
+            .where(
+              and(
+                eq(userBusinessUnits.userId, userId),
+                eq(userBusinessUnits.businessUnitId, businessUnitId)
+              )
+            );
+        } else {
+          // Insert new assignment
+          await tx.insert(userBusinessUnits).values({ userId, businessUnitId, role });
+        }
       });
     } catch (error) {
       console.error('Error in assignUserToBusinessUnit:', error);

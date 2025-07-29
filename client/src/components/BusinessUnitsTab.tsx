@@ -54,10 +54,11 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
   console.log("Current assignments data:", currentAssignments);
   console.log("Selected business unit:", selectedBusinessUnit);
   console.log("Assignments loading:", assignmentsLoading);
+  console.log("Has Business Unit Admin:", currentAssignments?.some((a: any) => a.role === 'Business Unit Admin'));
   
   // Check if business unit already has a Business Unit Admin
   const hasBusinessUnitAdmin = currentAssignments?.some((assignment: any) => 
-    assignment.role === 'Business Unit Admin' || assignment.role === 'Platform Admin'
+    assignment.role === 'Business Unit Admin'
   );
 
   // Assignment mutation
@@ -116,7 +117,7 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
     }
 
     // Check business rule for Business Unit Admin assignment
-    if ((selectedRole === 'Business Unit Admin' || selectedRole === 'Platform Admin') && hasBusinessUnitAdmin) {
+    if (selectedRole === 'Business Unit Admin' && hasBusinessUnitAdmin) {
       toast({
         title: "Business Unit Admin Already Exists",
         description: "This business unit already has an admin. Use the Business Ownership tab to transfer ownership.",
@@ -210,13 +211,10 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
                 >
                   <option value="Viewer">Viewer (Read-only reports)</option>
                   {!hasBusinessUnitAdmin && (
-                    <>
-                      <option value="Business Unit Admin">Business Unit Admin (Manage tea programs)</option>
-                      <option value="Platform Admin">Platform Admin (Full access)</option>
-                    </>
+                    <option value="Business Unit Admin">Business Unit Admin (Manage tea programs)</option>
                   )}
                 </select>
-                {hasBusinessUnitAdmin && (selectedRole === 'Business Unit Admin' || selectedRole === 'Platform Admin') && (
+                {hasBusinessUnitAdmin && selectedRole === 'Business Unit Admin' && (
                   <p className="text-sm text-amber-600 mt-1">
                     This business unit already has an admin. Use the Business Ownership tab to transfer ownership.
                   </p>
@@ -229,13 +227,13 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
                   disabled={
                     !selectedUser || 
                     assignUserMutation.isPending ||
-                    (hasBusinessUnitAdmin && (selectedRole === 'Business Unit Admin' || selectedRole === 'Platform Admin'))
+                    (hasBusinessUnitAdmin && selectedRole === 'Business Unit Admin')
                   }
                   className="w-full bg-tea-green hover:bg-tea-dark disabled:bg-gray-400"
                 >
                   {assignUserMutation.isPending ? "Assigning..." : "Assign User"}
                 </Button>
-                {hasBusinessUnitAdmin && (selectedRole === 'Business Unit Admin' || selectedRole === 'Platform Admin') && (
+                {hasBusinessUnitAdmin && selectedRole === 'Business Unit Admin' && (
                   <div className="ml-2">
                     <Button 
                       onClick={() => setActiveTab("ownership")}

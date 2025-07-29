@@ -120,6 +120,8 @@ export function AdminTransferInterface() {
       // Find the Business Unit Admin from the user assignments
       const adminAssignment = data.find(assignment => {
         console.log('Checking assignment:', assignment);
+        console.log('Assignment role:', assignment.role);
+        console.log('Role comparison result:', assignment.role === 'Business Unit Admin');
         return assignment.role === 'Business Unit Admin';
       });
       

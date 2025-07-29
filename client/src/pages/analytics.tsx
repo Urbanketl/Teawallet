@@ -443,52 +443,7 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
 
-        {/* Top Tea Types Distribution */}
-        {popularTeas && popularTeas.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Tea Type Distribution</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={popularTeas.map((tea: any) => ({
-                        name: tea.teaType,
-                        value: Number(tea.count),
-                      }))}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {popularTeas.map((entry: any, index: number) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="space-y-3">
-                  <h4 className="font-semibold">Top Preferences</h4>
-                  {popularTeas.slice(0, 5).map((tea: any, index: number) => (
-                    <div key={tea.teaType} className="flex items-center space-x-3">
-                      <div 
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                      />
-                      <span className="text-sm">{tea.teaType}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+
       </div>
     </div>
   );

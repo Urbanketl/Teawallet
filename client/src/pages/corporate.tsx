@@ -33,6 +33,7 @@ import {
   TrendingDown
 } from "lucide-react";
 import { format } from "date-fns";
+import type { User } from "@shared/schema";
 
 interface BusinessUnit {
   id: string;
@@ -223,13 +224,13 @@ export default function CorporateDashboard() {
   const defaultTab = urlParams.get('tab') || 'machines';
 
   // Get user's business units
-  const { data: businessUnits = [], isLoading: businessUnitsLoading } = useQuery({
+  const { data: businessUnits = [], isLoading: businessUnitsLoading } = useQuery<BusinessUnit[]>({
     queryKey: [`/api/corporate/business-units${pseudoParam}`],
     retry: false,
   });
 
   // Auto-select first business unit if none selected
-  if (businessUnits.length > 0 && !selectedBusinessUnitId) {
+  if (businessUnits && businessUnits.length > 0 && !selectedBusinessUnitId) {
     setSelectedBusinessUnitId(businessUnits[0].id);
   }
 
@@ -346,7 +347,7 @@ export default function CorporateDashboard() {
     enabled: !!selectedBusinessUnitId,
     retry: false,
     staleTime: 0,
-    cacheTime: 0,
+    gcTime: 0,
   });
 
   // Handle both paginated and non-paginated response formats
@@ -356,7 +357,7 @@ export default function CorporateDashboard() {
 
   // Get user info for the testing banner
   const userId = urlParams.get('pseudo');
-  const { data: testUser } = useQuery({
+  const { data: testUser } = useQuery<User>({
     queryKey: [`/api/admin/user/${userId}`],
     enabled: !!userId,
     retry: false,
@@ -556,7 +557,7 @@ export default function CorporateDashboard() {
                       <p className="text-center text-gray-500 py-4">No machines assigned to this business unit.</p>
                     ) : (
                       <div className="space-y-4">
-                        {machines.map((machine) => {
+                        {machines.map((machine: TeaMachine) => {
                           const status = getMachineStatus(machine);
                           return (
                             <div key={machine.id} className="flex items-center justify-between p-4 border rounded-lg">
@@ -612,7 +613,7 @@ export default function CorporateDashboard() {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {rfidCards.map((card) => (
+                        {rfidCards.map((card: RfidCard) => (
                           <div key={card.id} className="flex items-center justify-between p-4 border rounded-lg">
                             <div className="flex items-center gap-3">
                               <CreditCard className={`h-5 w-5 ${card.isActive ? 'text-green-600' : 'text-gray-400'}`} />
@@ -788,7 +789,7 @@ export default function CorporateDashboard() {
                         )}
 
                         <div className="space-y-4 mb-4">
-                          {dispensingLogs.map((log) => (
+                          {dispensingLogs.map((log: DispensingLog) => (
                             <div key={log.id} className="flex items-center justify-between p-4 border rounded-lg">
                               <div className="flex items-center gap-3">
                                 <div className={`w-3 h-3 rounded-full ${log.success ? 'bg-green-500' : 'bg-red-500'}`} />
@@ -1083,7 +1084,7 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
                         {new Date(selectedMonth + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
                       </span>
                     </div>
-                    {monthlyData && (
+                    {monthlyData && typeof monthlyData === 'object' && (
                       <>
                         <div className="flex justify-between">
                           <span className="font-medium text-gray-700">Transactions:</span>

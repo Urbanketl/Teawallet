@@ -9,6 +9,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { TrendingUp, Clock, Coffee, Activity, Users, DollarSign, Calendar, Download, Building2 } from "lucide-react";
 import { useState } from "react";
 import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
+import type { User } from "@shared/schema";
 
 // Type definitions for API responses
 interface PeakHour {
@@ -50,6 +51,7 @@ interface RevenueTrend {
 
 export default function AnalyticsPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
+  const typedUser = user as User;
   const [dateRange, setDateRange] = useState('7days');
   const [selectedMachine, setSelectedMachine] = useState('all');
 
@@ -78,45 +80,45 @@ export default function AnalyticsPage() {
   const { data: peakHours = [] } = useQuery<PeakHour[]>({
     queryKey: ['/api/analytics/peak-hours', dateRange, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
     queryFn: () => fetch(`/api/analytics/peak-hours?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`).then(res => res.json()),
-    enabled: user?.isAdmin,
+    enabled: typedUser?.isAdmin,
   });
 
   const { data: machinePerformance = [] } = useQuery<MachinePerformance[]>({
     queryKey: ['/api/analytics/machine-performance', dateRange, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
     queryFn: () => fetch(`/api/analytics/machine-performance?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`).then(res => res.json()),
-    enabled: user?.isAdmin,
+    enabled: typedUser?.isAdmin,
   });
 
   const { data: userBehavior } = useQuery<UserBehavior>({
     queryKey: ['/api/analytics/user-behavior', dateRange, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
     queryFn: () => fetch(`/api/analytics/user-behavior?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`).then(res => res.json()),
-    enabled: user?.isAdmin,
+    enabled: typedUser?.isAdmin,
   });
 
   // Enhanced Analytics Queries
   const { data: businessUnitComparison = [] } = useQuery<BusinessUnitComparison[]>({
     queryKey: ['/api/analytics/business-unit-comparison', dateRange, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
     queryFn: () => fetch(`/api/analytics/business-unit-comparison?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`).then(res => res.json()),
-    enabled: user?.isAdmin && user?.isSuperAdmin,
+    enabled: typedUser?.isAdmin && typedUser?.isSuperAdmin,
   });
 
   const { data: revenueTrends = [] } = useQuery<RevenueTrend[]>({
     queryKey: ['/api/analytics/revenue-trends', dateRange, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
     queryFn: () => fetch(`/api/analytics/revenue-trends?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`).then(res => res.json()),
-    enabled: user?.isAdmin,
+    enabled: typedUser?.isAdmin,
   });
 
   // New query for machine dispensing data
   const { data: machineDispensing = [] } = useQuery<MachineDispensing[]>({
     queryKey: ['/api/analytics/machine-dispensing', dateRange, selectedMachine, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
     queryFn: () => fetch(`/api/analytics/machine-dispensing?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}${selectedMachine !== 'all' ? `&machineId=${selectedMachine}` : ''}`).then(res => res.json()),
-    enabled: user?.isAdmin,
+    enabled: typedUser?.isAdmin,
   });
 
   // Get available machines for the filter
   const { data: allMachines = [] } = useQuery<any[]>({
-    queryKey: user?.isSuperAdmin ? ['/api/admin/machines'] : ['/api/corporate/machines'],
-    enabled: user?.isAdmin,
+    queryKey: typedUser?.isSuperAdmin ? ['/api/admin/machines'] : ['/api/corporate/machines'],
+    enabled: typedUser?.isAdmin,
   });
 
   if (isLoading) {
@@ -134,7 +136,7 @@ export default function AnalyticsPage() {
     );
   }
 
-  if (!isAuthenticated || !user?.isAdmin) {
+  if (!isAuthenticated || !typedUser?.isAdmin) {
     return (
       <div className="min-h-screen bg-neutral-warm">
         <Navigation />
@@ -209,7 +211,7 @@ export default function AnalyticsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {userBehavior?.preferredTimes?.length > 0 ? userBehavior.preferredTimes.slice(0, 2).join('h, ') + 'h' : 'N/A'}
+                {userBehavior?.preferredTimes && userBehavior.preferredTimes.length > 0 ? userBehavior.preferredTimes.slice(0, 2).join('h, ') + 'h' : 'N/A'}
               </div>
               <p className="text-xs text-muted-foreground">most active hours</p>
             </CardContent>

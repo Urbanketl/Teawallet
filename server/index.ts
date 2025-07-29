@@ -1,8 +1,35 @@
 import express, { type Request, Response, NextFunction } from "express";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
+
+// Serve tea machine simulator FIRST (no middleware, public access)
+app.get('/tea-machine-simulator', (req, res) => {
+  try {
+    const htmlPath = path.join(__dirname, '../tea-machine-simulator.html');
+    console.log('Tea machine simulator path:', htmlPath);
+    console.log('File exists:', fs.existsSync(htmlPath));
+    
+    if (fs.existsSync(htmlPath)) {
+      res.setHeader('Content-Type', 'text/html');
+      const htmlContent = fs.readFileSync(htmlPath, 'utf8');
+      res.send(htmlContent);
+    } else {
+      res.status(404).send('Tea machine simulator not found');
+    }
+  } catch (error) {
+    console.error('Error serving tea machine simulator:', error);
+    res.status(500).send('Error loading tea machine simulator');
+  }
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 

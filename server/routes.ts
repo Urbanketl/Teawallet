@@ -812,28 +812,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Analytics routes for admin
-  app.get('/api/analytics/popular-teas', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.session?.user?.id || req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      
-      if (!user?.isAdmin) {
-        return res.status(403).json({ message: "Admin access required" });
-      }
-
-      const { start, end } = req.query;
-      
-      // Super admins see all data, regular admins see only their business unit data
-      const businessUnitAdminId = user.isSuperAdmin ? undefined : userId;
-      
-      const popularTeas = await storage.getPopularTeaTypes(start as string, end as string, businessUnitAdminId);
-      res.json(popularTeas);
-    } catch (error) {
-      console.error("Error fetching popular tea types:", error);
-      res.status(500).json({ message: "Failed to fetch popular tea types" });
-    }
-  });
+  // Analytics routes for admin (removed popular tea types - only serve Regular Tea)
 
   app.get('/api/analytics/peak-hours', isAuthenticated, async (req: any, res) => {
     try {

@@ -11,11 +11,6 @@ import { useState } from "react";
 import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 
 // Type definitions for API responses
-interface PopularTea {
-  teaType: string;
-  count: number;
-}
-
 interface PeakHour {
   hour: number;
   count: number;
@@ -30,7 +25,6 @@ interface MachinePerformance {
 interface UserBehavior {
   avgTeaPerDay: string;
   preferredTimes: string[];
-  topTeaTypes: string[];
 }
 
 interface MachineDispensing {

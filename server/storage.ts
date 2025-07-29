@@ -1745,32 +1745,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(faqArticles.id, articleId));
   }
 
-  // Analytics operations
-  async getPopularTeaTypes(startDate?: string, endDate?: string, businessUnitId?: string): Promise<{ teaType: string; count: number }[]> {
-    let whereClause = sql`1=1`;
-    
-    if (startDate && endDate) {
-      whereClause = sql`${dispensingLogs.createdAt} >= ${startDate} AND ${dispensingLogs.createdAt} <= ${endDate}`;
-    } else {
-      whereClause = sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`;
-    }
-    
-    // Filter by business unit admin if specified (for regular admins)
-    if (businessUnitId) {
-      whereClause = sql`${whereClause} AND ${dispensingLogs.businessUnitId} = ${businessUnitId}`;
-    }
-    
-    return await db
-      .select({
-        teaType: dispensingLogs.teaType,
-        count: sql<number>`count(*)`,
-      })
-      .from(dispensingLogs)
-      .where(whereClause)
-      .groupBy(dispensingLogs.teaType)
-      .orderBy(desc(sql`count(*)`))
-      .limit(10);
-  }
+  // Analytics operations (removed getPopularTeaTypes - only serves Regular Tea)
 
   async getPeakHours(startDate?: string, endDate?: string, businessUnitId?: string): Promise<{ hour: number; count: number }[]> {
     let whereClause = sql`1=1`;
@@ -1827,7 +1802,7 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async getUserBehaviorInsights(startDate?: string, endDate?: string, businessUnitId?: string): Promise<{ avgTeaPerDay: number; preferredTimes: number[]; topTeaTypes: string[] }> {
+  async getUserBehaviorInsights(startDate?: string, endDate?: string, businessUnitId?: string): Promise<{ avgTeaPerDay: number; preferredTimes: number[]; }> {
     let whereClause = sql`1=1`;
     let daysDiff = 30;
     
@@ -1861,20 +1836,10 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(sql`count(*)`))
       .limit(3);
 
-    const topTeaTypes = await db
-      .select({
-        teaType: dispensingLogs.teaType,
-      })
-      .from(dispensingLogs)
-      .where(whereClause)
-      .groupBy(dispensingLogs.teaType)
-      .orderBy(desc(sql`count(*)`))
-      .limit(5);
-
+    // Removed topTeaTypes - only serve Regular Tea variety
     return {
       avgTeaPerDay: avgResult?.avgTeaPerDay || 0,
       preferredTimes: preferredTimes.map(pt => pt.hour),
-      topTeaTypes: topTeaTypes.map(tt => tt.teaType),
     };
   }
 

@@ -21,8 +21,7 @@ export const API_ENDPOINTS = {
   ADMIN_RFID_CARDS: '/api/admin/rfid/cards',
   ADMIN_RFID_SUGGEST: '/api/admin/rfid/suggest-card-number',
   
-  // Analytics
-  ANALYTICS_POPULAR_TEAS: '/api/analytics/popular-teas',
+  // Analytics (removed popular teas - only serve Regular Tea)
   ANALYTICS_PEAK_HOURS: '/api/analytics/peak-hours',
   ANALYTICS_MACHINE_PERFORMANCE: '/api/analytics/machine-performance',
   ANALYTICS_USER_BEHAVIOR: '/api/analytics/user-behavior',

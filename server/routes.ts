@@ -45,10 +45,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const page = parseInt(req.query.page as string);
       const limit = parseInt(req.query.limit as string) || 20;
       const paginated = req.query.paginated === 'true';
+      
+      // New filter and sort parameters
+      const search = req.query.search as string;
+      const status = req.query.status as string; // all, active, inactive
+      const assignment = req.query.assignment as string; // all, assigned, unassigned
+      const businessUnitId = req.query.businessUnitId as string;
+      const sortBy = req.query.sortBy as string || 'createdAt';
+      const sortOrder = req.query.sortOrder as string || 'desc';
 
       if (paginated && page && page > 0) {
-        // Paginated response
-        const result = await storage.getAllRfidCardsPaginated(page, limit);
+        // Paginated response with filters
+        const result = await storage.getAllRfidCardsPaginatedWithFilters({
+          page,
+          limit,
+          search,
+          status,
+          assignment,
+          businessUnitId,
+          sortBy,
+          sortOrder
+        });
         res.json(result);
       } else {
         // Legacy non-paginated response

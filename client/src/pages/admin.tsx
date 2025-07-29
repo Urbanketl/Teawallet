@@ -3213,18 +3213,46 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
   const [batchSize, setBatchSize] = useState(1);
   const [selectedCardToAssign, setSelectedCardToAssign] = useState<string>("");
   const [assignToBusinessUnit, setAssignToBusinessUnit] = useState<string>("");
+  
+  // New state for enhanced features
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all"); // all, active, inactive
+  const [assignmentFilter, setAssignmentFilter] = useState("all"); // all, assigned, unassigned
+  const [businessUnitFilter, setBusinessUnitFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("createdAt"); // createdAt, cardNumber, businessUnit
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [itemsPerPage, setItemsPerPage] = useState(rfidCardsPerPage);
+  
   const { toast } = useToast();
 
   const { data: businessUnits } = useQuery({
     queryKey: ["/api/admin/business-units"],
   });
 
+  // Build query string with filters and sorting
+  const queryString = new URLSearchParams({
+    paginated: "true",
+    page: rfidCardsPage.toString(),
+    limit: itemsPerPage.toString(),
+    ...(searchTerm && { search: searchTerm }),
+    ...(statusFilter !== "all" && { status: statusFilter }),
+    ...(assignmentFilter !== "all" && { assignment: assignmentFilter }),
+    ...(businessUnitFilter !== "all" && { businessUnitId: businessUnitFilter }),
+    sortBy,
+    sortOrder,
+  }).toString();
+
   const { data: rfidCardsData, refetch: refetchCards } = useQuery({
-    queryKey: [`/api/admin/rfid/cards?paginated=true&page=${rfidCardsPage}&limit=${rfidCardsPerPage}`],
+    queryKey: [`/api/admin/rfid/cards?${queryString}`],
   });
 
   const rfidCards = (rfidCardsData as any)?.cards || [];
   const rfidCardsTotal = (rfidCardsData as any)?.total || 0;
+
+  // Reset page when filters change
+  useEffect(() => {
+    setRfidCardsPage(1);
+  }, [searchTerm, statusFilter, assignmentFilter, businessUnitFilter, sortBy, sortOrder, itemsPerPage]);
 
 
 
@@ -3570,6 +3598,116 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Filters and Search */}
+          <div className="space-y-4 mb-6">
+            {/* Search and Filters Row */}
+            <div className="flex flex-col md:flex-row gap-4">
+              {/* Search */}
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Search by card number or name..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              {/* Status Filter */}
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-3 py-2 border rounded-lg text-sm"
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+
+              {/* Assignment Filter */}
+              <select
+                value={assignmentFilter}
+                onChange={(e) => setAssignmentFilter(e.target.value)}
+                className="px-3 py-2 border rounded-lg text-sm"
+              >
+                <option value="all">All Cards</option>
+                <option value="assigned">Assigned</option>
+                <option value="unassigned">Unassigned</option>
+              </select>
+
+              {/* Business Unit Filter */}
+              <select
+                value={businessUnitFilter}
+                onChange={(e) => setBusinessUnitFilter(e.target.value)}
+                className="px-3 py-2 border rounded-lg text-sm"
+              >
+                <option value="all">All Business Units</option>
+                {(businessUnits as any[])?.map((unit: any) => (
+                  <option key={unit.id} value={unit.id}>
+                    {unit.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Sort and Items Per Page Row */}
+            <div className="flex flex-col md:flex-row justify-between gap-4">
+              {/* Sort Controls */}
+              <div className="flex items-center gap-2">
+                <Label htmlFor="sort-by" className="text-sm font-medium">Sort by:</Label>
+                <select
+                  id="sort-by"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-3 py-2 border rounded-lg text-sm"
+                >
+                  <option value="createdAt">Created Date</option>
+                  <option value="cardNumber">Card Number</option>
+                  <option value="businessUnit">Business Unit</option>
+                  <option value="lastUsed">Last Used</option>
+                </select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                  className="px-2"
+                >
+                  {sortOrder === "asc" ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+
+              {/* Items Per Page */}
+              <div className="flex items-center gap-2">
+                <Label htmlFor="items-per-page" className="text-sm font-medium">Show:</Label>
+                <select
+                  id="items-per-page"
+                  value={itemsPerPage}
+                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                  className="px-3 py-2 border rounded-lg text-sm"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <span className="text-sm text-gray-500">per page</span>
+              </div>
+            </div>
+
+            {/* Results Summary */}
+            <div className="text-sm text-gray-600">
+              Showing {rfidCards.length} of {rfidCardsTotal} cards
+              {searchTerm && ` matching "${searchTerm}"`}
+            </div>
+          </div>
+
+          {/* Card List */}
           <div className="space-y-4">
             {rfidCards?.map((card: any) => (
               <div key={card.id} className="flex items-center justify-between p-4 border rounded-lg">
@@ -3613,19 +3751,104 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
                 No RFID cards found
               </div>
             )}
-            
-            {rfidCardsTotal > 0 && (
-              <div className="mt-6">
-                <Pagination
-                  currentPage={rfidCardsPage}
-                  totalPages={Math.ceil(rfidCardsTotal / rfidCardsPerPage)}
-                  totalItems={rfidCardsTotal}
-                  itemsPerPage={rfidCardsPerPage}
-                  onPageChange={setRfidCardsPage}
-                />
-              </div>
-            )}
           </div>
+          
+          {/* Pagination */}
+          {rfidCardsTotal > itemsPerPage && (
+            <div className="mt-6 border-t pt-4">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  Page {rfidCardsPage} of {Math.ceil(rfidCardsTotal / itemsPerPage)}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setRfidCardsPage(p => Math.max(1, p - 1))}
+                    disabled={rfidCardsPage === 1}
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-1" />
+                    Previous
+                  </Button>
+                  
+                  {/* Page Numbers */}
+                  <div className="flex items-center gap-1">
+                    {(() => {
+                      const totalPages = Math.ceil(rfidCardsTotal / itemsPerPage);
+                      const pages = [];
+                      const showPages = 5;
+                      let startPage = Math.max(1, rfidCardsPage - Math.floor(showPages / 2));
+                      let endPage = Math.min(totalPages, startPage + showPages - 1);
+                      
+                      if (endPage - startPage + 1 < showPages) {
+                        startPage = Math.max(1, endPage - showPages + 1);
+                      }
+                      
+                      if (startPage > 1) {
+                        pages.push(
+                          <Button
+                            key={1}
+                            variant={1 === rfidCardsPage ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setRfidCardsPage(1)}
+                            className="w-8 h-8 p-0"
+                          >
+                            1
+                          </Button>
+                        );
+                        if (startPage > 2) {
+                          pages.push(<span key="dots1" className="px-2">...</span>);
+                        }
+                      }
+                      
+                      for (let i = startPage; i <= endPage; i++) {
+                        pages.push(
+                          <Button
+                            key={i}
+                            variant={i === rfidCardsPage ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setRfidCardsPage(i)}
+                            className="w-8 h-8 p-0"
+                          >
+                            {i}
+                          </Button>
+                        );
+                      }
+                      
+                      if (endPage < totalPages) {
+                        if (endPage < totalPages - 1) {
+                          pages.push(<span key="dots2" className="px-2">...</span>);
+                        }
+                        pages.push(
+                          <Button
+                            key={totalPages}
+                            variant={totalPages === rfidCardsPage ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setRfidCardsPage(totalPages)}
+                            className="w-8 h-8 p-0"
+                          >
+                            {totalPages}
+                          </Button>
+                        );
+                      }
+                      
+                      return pages;
+                    })()}
+                  </div>
+                  
+                  <Button 
+                    variant="outline"
+                    size="sm" 
+                    onClick={() => setRfidCardsPage(p => p + 1)}
+                    disabled={rfidCardsPage >= Math.ceil(rfidCardsTotal / itemsPerPage)}
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -12,7 +12,7 @@ import {
   type TicketStatusHistory, type InsertTicketStatusHistory, type SystemSetting,
   type BusinessUnitTransfer, type InsertBusinessUnitTransfer
 } from "@shared/schema";
-import { eq, and, desc, asc, sql, gte, lte, or, ilike, inArray } from "drizzle-orm";
+import { eq, and, desc, asc, sql, gte, lte, or, ilike, inArray, isNotNull, isNull } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 export interface IStorage {
@@ -65,6 +65,16 @@ export interface IStorage {
   // Legacy Admin RFID operations (for super admin)
   getAllRfidCards(): Promise<(RfidCard & { businessUnit: BusinessUnit })[]>;
   getAllRfidCardsPaginated(page: number, limit: number): Promise<{ cards: (RfidCard & { businessUnit: BusinessUnit })[], total: number }>;
+  getAllRfidCardsPaginatedWithFilters(params: {
+    page: number;
+    limit: number;
+    search?: string;
+    status?: string;
+    assignment?: string;
+    businessUnitId?: string;
+    sortBy?: string;
+    sortOrder?: string;
+  }): Promise<{ cards: (RfidCard & { businessUnit: BusinessUnit })[], total: number }>;
   
   // NEW: Centralized RFID Card Creation & Assignment (Platform Admin Only)
   createRfidCardBatch(params: {
@@ -526,6 +536,120 @@ export class DatabaseStorage implements IStorage {
       .from(rfidCards)
       .leftJoin(businessUnits, eq(rfidCards.businessUnitId, businessUnits.id))
       .orderBy(desc(rfidCards.createdAt))
+      .limit(limit)
+      .offset(offset);
+    
+    const cards = results.map(row => ({
+      ...row.card,
+      businessUnit: row.businessUnit || { 
+        id: '', 
+        name: 'Unassigned', 
+        code: '', 
+        walletBalance: '0', 
+        createdAt: null, 
+        updatedAt: null 
+      } as BusinessUnit
+    })) as (RfidCard & { businessUnit: BusinessUnit })[];
+    
+    return {
+      cards,
+      total: countResult.count || 0
+    };
+  }
+
+  async getAllRfidCardsPaginatedWithFilters(params: {
+    page: number;
+    limit: number;
+    search?: string;
+    status?: string;
+    assignment?: string;
+    businessUnitId?: string;
+    sortBy?: string;
+    sortOrder?: string;
+  }): Promise<{ cards: (RfidCard & { businessUnit: BusinessUnit })[], total: number }> {
+    const { page, limit, search, status, assignment, businessUnitId, sortBy = 'createdAt', sortOrder = 'desc' } = params;
+    const offset = (page - 1) * limit;
+    
+    // Build where conditions
+    const whereConditions = [];
+    
+    // Search filter (card number or card name)
+    if (search) {
+      whereConditions.push(
+        or(
+          sql`${rfidCards.cardNumber} ILIKE ${`%${search}%`}`,
+          sql`${rfidCards.cardName} ILIKE ${`%${search}%`}`
+        )
+      );
+    }
+    
+    // Status filter
+    if (status && status !== 'all') {
+      whereConditions.push(eq(rfidCards.isActive, status === 'active'));
+    }
+    
+    // Assignment filter
+    if (assignment && assignment !== 'all') {
+      if (assignment === 'assigned') {
+        whereConditions.push(isNotNull(rfidCards.businessUnitId));
+      } else if (assignment === 'unassigned') {
+        whereConditions.push(isNull(rfidCards.businessUnitId));
+      }
+    }
+    
+    // Business unit filter
+    if (businessUnitId && businessUnitId !== 'all') {
+      whereConditions.push(eq(rfidCards.businessUnitId, businessUnitId));
+    }
+    
+    const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
+    
+    // Get total count with filters
+    const countQuery = db
+      .select({ count: sql<number>`COUNT(*)::int` })
+      .from(rfidCards);
+    
+    if (whereClause) {
+      countQuery.where(whereClause);
+    }
+    
+    const [countResult] = await countQuery;
+    
+    // Build sort order
+    let orderByClause;
+    const sortDirection = sortOrder === 'asc' ? asc : desc;
+    
+    switch (sortBy) {
+      case 'cardNumber':
+        orderByClause = sortDirection(rfidCards.cardNumber);
+        break;
+      case 'businessUnit':
+        orderByClause = sortDirection(businessUnits.name);
+        break;
+      case 'lastUsed':
+        orderByClause = sortDirection(rfidCards.lastUsed);
+        break;
+      case 'createdAt':
+      default:
+        orderByClause = sortDirection(rfidCards.createdAt);
+        break;
+    }
+    
+    // Get paginated cards with business units
+    const query = db
+      .select({
+        card: rfidCards,
+        businessUnit: businessUnits
+      })
+      .from(rfidCards)
+      .leftJoin(businessUnits, eq(rfidCards.businessUnitId, businessUnits.id));
+    
+    if (whereClause) {
+      query.where(whereClause);
+    }
+    
+    const results = await query
+      .orderBy(orderByClause)
       .limit(limit)
       .offset(offset);
     

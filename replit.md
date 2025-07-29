@@ -124,6 +124,7 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- July 29, 2025: COMPLETED - Removed Recent Users and Machine Status sections from platform admin dashboard as requested by user
 - July 29, 2025: COMPLETED - Moved platform admin submenu navigation to top of admin page for improved accessibility and user experience
 - July 29, 2025: COMPLETED - Removed "Add Card" option from Employee Cards section - card creation now exclusively managed by platform admins as part of centralized RFID management system
 - July 29, 2025: COMPLETED - Added complete RFID card activation functionality: backend API endpoint, storage methods, frontend activate mutation, and activate buttons for inactive cards

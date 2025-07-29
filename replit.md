@@ -124,6 +124,11 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- July 29, 2025: COMPLETED - Simplified tea pricing system to only serve "Regular Tea" with machine-specific pricing
+- July 29, 2025: Updated RFID validation endpoint to automatically use machine's configured price without requiring tea type or amount parameters
+- July 29, 2025: Modified /api/rfid/validate to only require cardNumber and machineId, system now gets price from machine configuration
+- July 29, 2025: Changed /api/machines/:machineId/tea-prices to /api/machines/:machineId/tea-price returning single Regular Tea price
+- July 29, 2025: Updated TEA_PRICING_CONTROL_GUIDE.md and API_Testing_Guide.md to reflect simplified pricing system
 - July 29, 2025: COMPLETED - Removed Recent Users and Machine Status sections from platform admin dashboard as requested by user
 - July 29, 2025: COMPLETED - Moved platform admin submenu navigation to top of admin page for improved accessibility and user experience
 - July 29, 2025: COMPLETED - Removed "Add Card" option from Employee Cards section - card creation now exclusively managed by platform admins as part of centralized RFID management system

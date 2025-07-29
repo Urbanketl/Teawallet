@@ -1,123 +1,93 @@
 # Tea Pricing Control Guide
 
 ## Overview
-Tea pricing in UrbanKetl is now **dynamically controlled per machine** through the database configuration. The ₹5.00 you were seeing was from hardcoded test commands, not the actual system pricing.
+Tea pricing in UrbanKetl is now **simplified to only Regular Tea** with pricing dynamically controlled per machine through the platform admin interface. Each machine has its own configured price for Regular Tea.
 
-## ✅ Current Pricing Structure (Updated)
+## ✅ Current Pricing Structure (Simplified)
 
-### Machine-Specific Tea Prices
+### Machine-Specific Regular Tea Price
 
-**MACHINE_001 (Tea Station Alpha)**
-- Earl Grey: ₹8.00
-- Green Tea: ₹7.00  
-- Masala Chai: ₹6.00
-- Black Tea: ₹5.00
-- Herbal Tea: ₹9.00
+The system now only serves **Regular Tea** with machine-specific pricing:
 
-**MACHINE_002 (Tea Station Beta)**
-- Earl Grey: ₹8.00
-- Green Tea: ₹7.00
-- Masala Chai: ₹6.00
-
-**MACHINE_003 (Tea Station Gamma)** 
-- Earl Grey: ₹8.00
-- Green Tea: ₹7.00
-- Masala Chai: ₹6.00
-- Black Tea: ₹5.00
-- Herbal Tea: ₹9.00
+- Each machine has its own configured price for Regular Tea
+- Prices are set and updated through the Admin Dashboard > Machines > Edit tab
+- Default price is ₹5.00 if not configured
+- Price updates take effect immediately
 
 ## 🎛️ How to Control Tea Pricing
 
-### 1. **Database Level (Direct SQL)**
+### 1. **Admin Dashboard (Recommended)**
+Platform admins can update tea prices through:
+- Navigate to **Admin Dashboard > Machines > Edit tab**
+- Select a machine from the dropdown
+- Update the price for Regular Tea
+- Click "Update Price" to save changes
+
+### 2. **Database Level (Direct SQL)**
 Update the `tea_types` field in the `tea_machines` table:
 
 ```sql
 UPDATE tea_machines 
 SET tea_types = '[
-  {"name": "Earl Grey", "price": "8.00"},
-  {"name": "Green Tea", "price": "7.00"},
-  {"name": "Masala Chai", "price": "6.00"},
-  {"name": "Black Tea", "price": "5.00"},
-  {"name": "Herbal Tea", "price": "9.00"}
+  {"name": "Regular Tea", "price": "6.00"}
 ]'::jsonb
-WHERE id = 'MACHINE_001';
+WHERE id = 'UK_0010';
 ```
 
-### 2. **API Level (Get Current Prices)**
+### 3. **API Level (Get Current Price)**
 ```bash
-curl -X GET "http://localhost:5000/api/machines/MACHINE_001/tea-prices"
+curl -X GET "http://localhost:5000/api/machines/UK_0010/tea-price"
 ```
 
 Response:
 ```json
 {
   "success": true,
-  "machineId": "MACHINE_001",
-  "location": "Office Floor 1 - Cafeteria",
-  "teaTypes": [
-    {"name": "Earl Grey", "price": "8.00"},
-    {"name": "Green Tea", "price": "7.00"},
-    {"name": "Masala Chai", "price": "6.00"},
-    {"name": "Black Tea", "price": "5.00"},
-    {"name": "Herbal Tea", "price": "9.00"}
-  ]
+  "machineId": "UK_0010",
+  "teaType": "Regular Tea",
+  "price": "5.00",
+  "location": "Ikea Hitech City"
 }
 ```
 
-### 3. **Machine Integration (RFID Validation)**
-The tea machines now automatically use the correct price:
+### 4. **RFID Validation (Simplified)**
+The machines now automatically use the configured price:
 
 ```bash
-# Old way (manual amount) - Still supported as fallback
+# New simplified API - no need to specify tea type or amount
 curl -X POST "http://localhost:5000/api/rfid/validate" \
   -H "Content-Type: application/json" \
   -d '{
     "cardNumber": "RFID_44064328_001",
-    "machineId": "MACHINE_001", 
-    "teaType": "Green Tea",
-    "amount": "7.00"
-  }'
-
-# New way (automatic pricing) - Machine determines price
-curl -X POST "http://localhost:5000/api/rfid/validate" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "cardNumber": "RFID_44064328_001",
-    "machineId": "MACHINE_001",
-    "teaType": "Green Tea"
+    "machineId": "UK_0010"
   }'
 ```
 
-## 🔄 How the New System Works
+## 🔄 How the Simplified System Works
 
 ### RFID Validation Flow:
 1. **Card Tapped**: Employee taps RFID card on machine
-2. **Tea Selection**: Machine detects tea type selected 
-3. **Price Lookup**: System queries machine's tea_types configuration
-4. **Validation**: Verifies tea type is available on that machine
-5. **Charging**: Uses correct price from machine configuration
-6. **Dispensing**: Dispenses tea if wallet has sufficient balance
+2. **Price Lookup**: System gets the Regular Tea price from machine configuration
+3. **Charging**: Deducts the configured price from business unit wallet
+4. **Dispensing**: Dispenses Regular Tea if wallet has sufficient balance
 
-### Error Handling:
-- **Invalid Tea Type**: "Tea type 'XYZ' not available on this machine"
-- **Machine Not Found**: "Machine not found"
-- **Insufficient Balance**: "Insufficient wallet balance"
+### Key Changes:
+- No need to specify tea type (always "Regular Tea")
+- No need to pass amount (uses machine's configured price)
+- Price is centrally managed per machine
+- Fallback to ₹5.00 if price not configured
 
-## 📊 Testing the New Pricing
+## 📊 Testing the Simplified System
 
-### Test Different Tea Types:
+### Test RFID Validation:
 ```bash
-# Earl Grey (₹8.00)
+# Simple validation - machine determines price automatically
 curl -X POST "http://localhost:5000/api/rfid/validate" \
-  -d '{"cardNumber": "RFID_44064328_001", "machineId": "MACHINE_001", "teaType": "Earl Grey"}'
-
-# Green Tea (₹7.00)  
-curl -X POST "http://localhost:5000/api/rfid/validate" \
-  -d '{"cardNumber": "RFID_44064328_001", "machineId": "MACHINE_001", "teaType": "Green Tea"}'
-
-# Black Tea (₹5.00)
-curl -X POST "http://localhost:5000/api/rfid/validate" \
-  -d '{"cardNumber": "RFID_44064328_001", "machineId": "MACHINE_001", "teaType": "Black Tea"}'
+  -H "Content-Type: application/json" \
+  -d '{
+    "cardNumber": "IKEA0001",
+    "machineId": "UK_0010"
+  }'
 ```
 
 ### Success Response Example:
@@ -125,7 +95,7 @@ curl -X POST "http://localhost:5000/api/rfid/validate" \
 {
   "success": true,
   "message": "Tea dispensed successfully",
-  "remainingBalance": "1478.00"
+  "remainingBalance": "994.00"
 }
 ```
 

@@ -31,14 +31,12 @@ curl -X POST "http://localhost:5000/api/rfid/validate" \
 ```bash
 # Try these URLs in order until one works:
 
-# Option 1: Direct Replit dev domain
+# Option 1: Direct Replit dev domain (Simplified - no tea type or amount needed)
 curl -X POST "https://workspace-prasadthirtha.replit.dev/api/rfid/validate" \
   -H "Content-Type: application/json" \
   -d '{
     "cardNumber": "RFID_44064328_001",
-    "machineId": "MACHINE_001",
-    "teaType": "Regular tea",
-    "amount": "5.00"
+    "machineId": "UK_0010"
   }'
 
 # Option 2: Alternative Replit URL format
@@ -46,9 +44,7 @@ curl -X POST "https://workspace.prasadthirtha.repl.co/api/rfid/validate" \
   -H "Content-Type: application/json" \
   -d '{
     "cardNumber": "RFID_44064328_001",
-    "machineId": "MACHINE_001",
-    "teaType": "Regular tea",
-    "amount": "5.00"
+    "machineId": "UK_0010"
   }'
 ```
 
@@ -58,17 +54,18 @@ curl -X POST "http://localhost:5000/api/rfid/validate" \
   -H "Content-Type: application/json" \
   -d '{
     "cardNumber": "RFID_44064328_001",
-    "machineId": "MACHINE_001",
-    "teaType": "Regular tea",
-    "amount": "5.00"
+    "machineId": "UK_0010"
   }'
 ```
 
-**Parameters:**
-- `cardNumber`: Any valid RFID card (e.g., RFID_44064328_001)
-- `machineId`: Machine identifier (e.g., MACHINE_001, MACHINE_002)
-- `teaType`: Type of tea being dispensed
-- `amount`: Cost in rupees (string format)
+**Parameters (Simplified):**
+- `cardNumber`: Any valid RFID card (e.g., RFID_44064328_001, IKEA0001)
+- `machineId`: Machine identifier (e.g., UK_0010, UK_0020, UK_0024)
+
+**Note:** The system now automatically:
+- Uses "Regular Tea" as the tea type
+- Gets the price from the machine's configuration
+- No need to specify `teaType` or `amount` anymore
 
 **Success Response:**
 ```json

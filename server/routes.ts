@@ -371,8 +371,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get tea prices for a specific machine
-  app.get('/api/machines/:machineId/tea-prices', async (req, res) => {
+  // Get tea price for a specific machine
+  app.get('/api/machines/:machineId/tea-price', async (req, res) => {
     try {
       const { machineId } = req.params;
       const machine = await storage.getTeaMachine(machineId);
@@ -384,17 +384,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Get the price of Regular Tea from machine configuration
+      let price = "5.00"; // Default price
+      if (machine.teaTypes && Array.isArray(machine.teaTypes) && machine.teaTypes.length > 0) {
+        const regularTea = machine.teaTypes.find((tea: any) => tea.name === "Regular Tea");
+        if (regularTea) {
+          price = regularTea.price;
+        } else if (machine.teaTypes[0]) {
+          // Fallback to first tea type if "Regular Tea" not found
+          price = machine.teaTypes[0].price;
+        }
+      }
+
       res.json({ 
         success: true, 
         machineId: machine.id,
-        teaTypes: machine.teaTypes || [],
+        teaType: "Regular Tea",
+        price: price,
         location: machine.location
       });
     } catch (error) {
-      console.error("Error fetching tea prices:", error);
+      console.error("Error fetching tea price:", error);
       res.status(500).json({ 
         success: false, 
-        message: "Failed to fetch tea prices" 
+        message: "Failed to fetch tea price" 
       });
     }
   });
@@ -402,16 +415,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // RFID validation endpoint for tea machines
   app.post('/api/rfid/validate', async (req, res) => {
     try {
-      const { cardNumber, machineId, teaType, amount } = req.body;
+      const { cardNumber, machineId } = req.body;
 
-      if (!cardNumber || !machineId || !teaType) {
+      if (!cardNumber || !machineId) {
         return res.status(400).json({ 
           success: false, 
           message: "Missing required parameters" 
         });
       }
 
-      // Get machine details to validate tea type and price
+      // Get machine details to validate and get price
       const machine = await storage.getTeaMachine(machineId);
       if (!machine) {
         return res.status(404).json({ 
@@ -420,26 +433,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Validate tea type and get correct price from machine configuration
-      let teaAmount = 0;
-      if (machine.teaTypes && Array.isArray(machine.teaTypes)) {
-        const teaConfig = machine.teaTypes.find((tea: any) => tea.name === teaType);
-        if (!teaConfig) {
-          return res.status(400).json({ 
-            success: false, 
-            message: `Tea type '${teaType}' not available on this machine` 
-          });
+      // Get price from machine configuration
+      // Since we only have "Regular Tea", we get the first tea type or default to 5.00
+      let teaAmount = 5.00; // Default price
+      if (machine.teaTypes && Array.isArray(machine.teaTypes) && machine.teaTypes.length > 0) {
+        // Get the price of "Regular Tea" from machine configuration
+        const regularTea = machine.teaTypes.find((tea: any) => tea.name === "Regular Tea");
+        if (regularTea) {
+          teaAmount = parseFloat(regularTea.price);
+        } else if (machine.teaTypes[0]) {
+          // Fallback to first tea type if "Regular Tea" not found
+          teaAmount = parseFloat(machine.teaTypes[0].price);
         }
-        teaAmount = parseFloat(teaConfig.price);
-      } else {
-        // Fallback to provided amount if machine doesn't have price configuration
-        if (!amount) {
-          return res.status(400).json({ 
-            success: false, 
-            message: "Amount required when machine has no price configuration" 
-          });
-        }
-        teaAmount = parseFloat(amount);
       }
 
       // Get RFID card
@@ -467,7 +472,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         businessUnitId: businessUnit.id,
         cardId: card.id,
         machineId,
-        teaType,
+        teaType: "Regular Tea", // Always use "Regular Tea" as the tea type
         amount: teaAmount.toString()
       });
 

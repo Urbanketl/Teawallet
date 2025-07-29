@@ -68,8 +68,10 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
     },
     onSuccess: () => {
       toast({ title: "Success", description: "User assigned successfully!" });
+      // Invalidate all related queries to ensure synchronization
       queryClient.invalidateQueries({ queryKey: ["/api/admin/business-units"] });
       queryClient.invalidateQueries({ queryKey: [`/api/admin/business-units/${selectedBusinessUnit}/users`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       setSelectedUser("");
     },
     onError: (error: any) => {
@@ -88,8 +90,10 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
     },
     onSuccess: () => {
       toast({ title: "Success", description: "User unassigned successfully!" });
+      // Invalidate all related queries to ensure synchronization  
       queryClient.invalidateQueries({ queryKey: ["/api/admin/business-units"] });
       queryClient.invalidateQueries({ queryKey: [`/api/admin/business-units/${selectedBusinessUnit}/users`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
     },
     onError: (error: any) => {
       toast({ 

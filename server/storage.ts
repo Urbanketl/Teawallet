@@ -233,17 +233,23 @@ export class DatabaseStorage implements IStorage {
     // Then get the owner information and machines for each unit
     const unitsWithOwners = await Promise.all(
       allUnits.map(async (unit) => {
-        // Get the assigned user for this business unit
+        // Get the Business Unit Admin assignment for this business unit (prioritize admin over viewers)
         const assignment = await db
           .select({
             firstName: users.firstName,
             lastName: users.lastName,
             email: users.email,
+            role: userBusinessUnits.role,
             assignedAt: userBusinessUnits.createdAt
           })
           .from(userBusinessUnits)
           .innerJoin(users, eq(userBusinessUnits.userId, users.id))
-          .where(eq(userBusinessUnits.businessUnitId, unit.id))
+          .where(
+            and(
+              eq(userBusinessUnits.businessUnitId, unit.id),
+              eq(userBusinessUnits.role, 'Business Unit Admin')
+            )
+          )
           .limit(1);
 
         // Get machines assigned to this business unit

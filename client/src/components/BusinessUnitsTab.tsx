@@ -31,7 +31,7 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
   const queryClient = useQueryClient();
   const [selectedBusinessUnit, setSelectedBusinessUnit] = useState("");
   const [selectedUser, setSelectedUser] = useState("");
-  const [selectedRole, setSelectedRole] = useState("viewer");
+  const [selectedRole, setSelectedRole] = useState("Viewer");
 
   // Fetch all users for assignment
   const { data: allUsers, isLoading: usersLoading } = useQuery({
@@ -57,7 +57,7 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
   
   // Check if business unit already has a Business Unit Admin
   const hasBusinessUnitAdmin = currentAssignments?.some((assignment: any) => 
-    assignment.role === 'admin' || assignment.role === 'manager'
+    assignment.role === 'Business Unit Admin' || assignment.role === 'Platform Admin'
   );
 
   // Assignment mutation
@@ -116,7 +116,7 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
     }
 
     // Check business rule for Business Unit Admin assignment
-    if ((selectedRole === 'admin' || selectedRole === 'manager') && hasBusinessUnitAdmin) {
+    if ((selectedRole === 'Business Unit Admin' || selectedRole === 'Platform Admin') && hasBusinessUnitAdmin) {
       toast({
         title: "Business Unit Admin Already Exists",
         description: "This business unit already has an admin. Use the Business Ownership tab to transfer ownership.",
@@ -208,15 +208,15 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
                   onChange={(e) => setSelectedRole(e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded-md bg-white"
                 >
-                  <option value="viewer">Viewer (Read-only reports)</option>
+                  <option value="Viewer">Viewer (Read-only reports)</option>
                   {!hasBusinessUnitAdmin && (
                     <>
-                      <option value="admin">Business Unit Admin (Manage tea programs)</option>
-                      <option value="manager">Manager (Full business unit control)</option>
+                      <option value="Business Unit Admin">Business Unit Admin (Manage tea programs)</option>
+                      <option value="Platform Admin">Platform Admin (Full access)</option>
                     </>
                   )}
                 </select>
-                {hasBusinessUnitAdmin && (selectedRole === 'admin' || selectedRole === 'manager') && (
+                {hasBusinessUnitAdmin && (selectedRole === 'Business Unit Admin' || selectedRole === 'Platform Admin') && (
                   <p className="text-sm text-amber-600 mt-1">
                     This business unit already has an admin. Use the Business Ownership tab to transfer ownership.
                   </p>
@@ -229,13 +229,13 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
                   disabled={
                     !selectedUser || 
                     assignUserMutation.isPending ||
-                    (hasBusinessUnitAdmin && (selectedRole === 'admin' || selectedRole === 'manager'))
+                    (hasBusinessUnitAdmin && (selectedRole === 'Business Unit Admin' || selectedRole === 'Platform Admin'))
                   }
                   className="w-full bg-tea-green hover:bg-tea-dark disabled:bg-gray-400"
                 >
                   {assignUserMutation.isPending ? "Assigning..." : "Assign User"}
                 </Button>
-                {hasBusinessUnitAdmin && (selectedRole === 'admin' || selectedRole === 'manager') && (
+                {hasBusinessUnitAdmin && (selectedRole === 'Business Unit Admin' || selectedRole === 'Platform Admin') && (
                   <div className="ml-2">
                     <Button 
                       onClick={() => setActiveTab("ownership")}
@@ -266,8 +266,7 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
                         </span>
                         <span className="text-gray-500 ml-2">({assignment.email})</span>
                         <span className="ml-3 px-2 py-1 text-xs rounded bg-blue-100 text-blue-800">
-                          {assignment.role === 'admin' ? 'Business Unit Admin' : 
-                           assignment.role === 'manager' ? 'Manager' : 'Viewer'}
+                          {assignment.role || 'Viewer'}
                         </span>
                       </div>
                       <Button

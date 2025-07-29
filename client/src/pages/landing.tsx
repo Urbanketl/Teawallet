@@ -42,7 +42,7 @@ export default function Landing() {
             onClick={() => window.location.href = '/api/login'}
             className="bg-tea-green hover:bg-tea-dark text-lg px-8 py-3"
           >
-            Get Started Today
+            Sign In to Dashboard
           </Button>
         </div>
 
@@ -131,14 +131,14 @@ export default function Landing() {
             Ready to Transform Your Tea Experience?
           </h3>
           <p className="text-white/90 text-lg mb-6">
-            Join thousands of tea lovers who have made the switch to UrbanKetl
+            Access your corporate tea management dashboard
           </p>
           <Button 
             size="lg"
             onClick={() => window.location.href = '/api/login'}
             className="bg-white text-tea-green hover:bg-gray-100 text-lg px-8 py-3"
           >
-            Start Your Journey
+            Access Dashboard
           </Button>
         </div>
       </main>

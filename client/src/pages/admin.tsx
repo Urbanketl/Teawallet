@@ -3283,7 +3283,14 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
 
 
   const handleCreateCard = () => {
-    if (batchSize === 1 && !cardNumber) return;
+    if (batchSize === 1 && (!cardNumber || cardNumber.length < 6)) {
+      toast({
+        title: "Validation Error",
+        description: "Card number must be 6-20 characters long",
+        variant: "destructive",
+      });
+      return;
+    }
     
     createCardMutation.mutate({
       businessUnitId: selectedBusinessUnit || undefined,
@@ -3412,11 +3419,23 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
                     <input
                       type="text"
                       value={cardNumber}
-                      onChange={(e) => setCardNumber(e.target.value)}
+                      onChange={(e) => {
+                        const value = e.target.value.toUpperCase();
+                        // Allow only alphanumeric, underscores, and hyphens, max 20 chars
+                        if (/^[A-Z0-9_-]*$/.test(value) && value.length <= 20) {
+                          setCardNumber(value);
+                        }
+                      }}
                       placeholder="e.g., RFID_CORP_001"
                       className="w-full p-2 border rounded-md"
+                      maxLength={20}
                     />
-                    <p className="text-xs text-gray-500 mt-1">Unique identifier for the card</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      6-20 characters: letters, numbers, underscore, hyphen only
+                    </p>
+                    {cardNumber.length > 0 && cardNumber.length < 6 && (
+                      <p className="text-xs text-red-500 mt-1">Minimum 6 characters required</p>
+                    )}
                   </div>
 
                   <div>

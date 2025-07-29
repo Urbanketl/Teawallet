@@ -189,6 +189,22 @@ export async function createRfidCardBatch(req: any, res: Response) {
   try {
     const { businessUnitId, cardNumber, cardName, batchSize } = req.body;
     
+    // Validate card number format for single card creation
+    if (batchSize === 1) {
+      if (!cardNumber || cardNumber.length < 6 || cardNumber.length > 20) {
+        return res.status(400).json({ 
+          message: 'Card number must be 6-20 characters long' 
+        });
+      }
+      
+      // Check format: only letters, numbers, underscore, hyphen
+      if (!/^[A-Z0-9_-]+$/.test(cardNumber)) {
+        return res.status(400).json({ 
+          message: 'Card number can only contain letters, numbers, underscore, and hyphen' 
+        });
+      }
+    }
+    
     const result = await storage.createRfidCardBatch({
       businessUnitId,
       cardNumber,

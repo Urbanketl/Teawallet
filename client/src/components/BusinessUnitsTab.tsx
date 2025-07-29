@@ -71,6 +71,11 @@ function UserAssignmentInterface({ businessUnits, setActiveTab }: { businessUnit
     assignment.role === 'Business Unit Admin'
   );
 
+  // Debug role checking
+  console.log("Current assignments for role checking:", currentAssignments);
+  console.log("Roles found:", currentAssignments.map((a: any) => a.role));
+  console.log("Has Business Unit Admin result:", hasBusinessUnitAdmin);
+
   // Assignment mutation
   const assignUserMutation = useMutation({
     mutationFn: async ({ userId, businessUnitId, role }: { userId: string; businessUnitId: string; role: string }) => {
@@ -128,15 +133,24 @@ function UserAssignmentInterface({ businessUnits, setActiveTab }: { businessUnit
       return;
     }
 
-    // Check business rule for Business Unit Admin assignment (only block admin, not viewers)
+    // Only block Business Unit Admin assignment if there's already an admin
+    // Allow Viewer assignments regardless of existing admin
     if (selectedRole === 'Business Unit Admin' && hasBusinessUnitAdmin) {
       toast({
         title: "Business Unit Admin Already Exists",
-        description: "This business unit already has an admin. Use the Business Ownership tab to transfer ownership.",
+        description: "This business unit already has an admin. Only one Business Unit Admin is allowed per unit.",
         variant: "destructive",
       });
       return;
     }
+
+    // Debug logging for assignment attempt
+    console.log("Attempting assignment:", {
+      userId: selectedUser,
+      businessUnitId: selectedBusinessUnit,
+      role: selectedRole,
+      hasExistingAdmin: hasBusinessUnitAdmin
+    });
 
     assignUserMutation.mutate({
       userId: selectedUser,

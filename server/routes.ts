@@ -1044,25 +1044,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/business-units/:unitId/users', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.session?.user?.id || req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      
-      if (!user?.isAdmin) {
-        return res.status(403).json({ message: "Admin access required" });
-      }
 
-      const { unitId } = req.params;
-      const { userId: targetUserId, role = "manager" } = req.body;
-      
-      await storage.assignUserToBusinessUnit(targetUserId, unitId, role);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error assigning user to business unit:", error);
-      res.status(500).json({ message: "Failed to assign user to business unit" });
-    }
-  });
 
   app.post('/api/admin/business-units/:unitId/machines', isAuthenticated, async (req: any, res) => {
     try {
@@ -1130,6 +1112,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const targetUser = await storage.getUser(targetUserId);
       if (!targetUser) {
         return res.status(400).json({ message: "User not found" });
+      }
+
+      // CRITICAL: Check for existing Business Unit Admin if trying to assign admin role
+      if (role === 'Business Unit Admin') {
+        const existingAssignments = await storage.getBusinessUnitUsers(unitId);
+        const hasExistingAdmin = existingAssignments.some((assignment: any) => 
+          assignment.role === 'Business Unit Admin' && assignment.userId !== targetUserId
+        );
+        
+        if (hasExistingAdmin) {
+          return res.status(400).json({ 
+            message: "This business unit already has a Business Unit Admin. Only one admin is allowed per unit." 
+          });
+        }
       }
 
       await storage.assignUserToBusinessUnit(targetUserId, unitId, role);

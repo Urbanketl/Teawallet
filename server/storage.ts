@@ -702,7 +702,7 @@ export class DatabaseStorage implements IStorage {
           .values({
             cardNumber,
             cardName,
-            businessUnitId: businessUnitId || null,
+            businessUnitId: businessUnitId || undefined,
             isActive: true,
           })
           .returning();
@@ -1404,6 +1404,25 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(teaMachines)
       .orderBy(desc(teaMachines.createdAt));
+  }
+
+  async updateMachinePrice(machineId: string, price: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const result = await db
+        .update(teaMachines)
+        .set({ price })
+        .where(eq(teaMachines.id, machineId))
+        .returning();
+
+      if (result.length === 0) {
+        return { success: false, message: "Machine not found" };
+      }
+
+      return { success: true, message: "Machine price updated successfully" };
+    } catch (error) {
+      console.error('Error updating machine price:', error);
+      return { success: false, message: "Failed to update machine price" };
+    }
   }
 
   async generateNextMachineId(): Promise<string> {

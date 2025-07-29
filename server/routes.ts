@@ -384,17 +384,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Get the price of Regular Tea from machine configuration
-      let price = "5.00"; // Default price
-      if (machine.teaTypes && Array.isArray(machine.teaTypes) && machine.teaTypes.length > 0) {
-        const regularTea = machine.teaTypes.find((tea: any) => tea.name === "Regular Tea");
-        if (regularTea) {
-          price = regularTea.price;
-        } else if (machine.teaTypes[0]) {
-          // Fallback to first tea type if "Regular Tea" not found
-          price = machine.teaTypes[0].price;
-        }
-      }
+      // Get the price from machine's single price field (simplified pricing system)
+      const price = machine.price || "5.00";
 
       res.json({ 
         success: true, 
@@ -433,19 +424,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Get price from machine configuration
-      // Since we only have "Regular Tea", we get the first tea type or default to 5.00
-      let teaAmount = 5.00; // Default price
-      if (machine.teaTypes && Array.isArray(machine.teaTypes) && machine.teaTypes.length > 0) {
-        // Get the price of "Regular Tea" from machine configuration
-        const regularTea = machine.teaTypes.find((tea: any) => tea.name === "Regular Tea");
-        if (regularTea) {
-          teaAmount = parseFloat(regularTea.price);
-        } else if (machine.teaTypes[0]) {
-          // Fallback to first tea type if "Regular Tea" not found
-          teaAmount = parseFloat(machine.teaTypes[0].price);
-        }
-      }
+      // Get price from machine's single price field (simplified pricing system)
+      const teaAmount = parseFloat(machine.price || "5.00");
 
       // Get RFID card
       const card = await storage.getRfidCardByNumber(cardNumber);
@@ -1232,6 +1212,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching unassigned machines:", error);
       res.status(500).json({ message: "Failed to fetch unassigned machines" });
+    }
+  });
+
+  // Update machine pricing (simplified single price field)
+  app.patch('/api/admin/machines/:machineId/pricing', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { machineId } = req.params;
+      const { price } = req.body;
+
+      if (!price || isNaN(parseFloat(price)) || parseFloat(price) <= 0) {
+        return res.status(400).json({ message: "Valid price is required" });
+      }
+
+      // Update machine price using simplified pricing system
+      const result = await storage.updateMachinePrice(machineId, parseFloat(price).toFixed(2));
+      
+      if (!result.success) {
+        return res.status(404).json({ message: result.message || "Machine not found" });
+      }
+
+      res.json({ 
+        success: true, 
+        message: "Machine price updated successfully",
+        machineId,
+        price: parseFloat(price).toFixed(2) 
+      });
+    } catch (error) {
+      console.error("Error updating machine price:", error);
+      res.status(500).json({ message: "Failed to update machine price" });
     }
   });
 

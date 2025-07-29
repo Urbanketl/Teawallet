@@ -91,7 +91,8 @@ export const teaMachines = pgTable("tea_machines", {
   location: varchar("location").notNull(),
   isActive: boolean("is_active").default(true),
   lastPing: timestamp("last_ping"),
-  teaTypes: jsonb("tea_types"), // Array of available tea types with prices
+  teaTypes: jsonb("tea_types"), // Legacy field - keeping for backward compatibility
+  price: decimal("price", { precision: 10, scale: 2 }).default("5.00"), // Single price per cup for Regular Tea
   serialNumber: varchar("serial_number"),
   installationDate: timestamp("installation_date"),
   maintenanceContact: varchar("maintenance_contact"),

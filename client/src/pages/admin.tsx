@@ -1315,7 +1315,7 @@ function MachineManagement() {
   const updateMachinePriceMutation = useMutation({
     mutationFn: async ({ machineId, price }: { machineId: string; price: string }) => {
       return apiRequest('PATCH', `/api/admin/machines/${machineId}/pricing`, {
-        teaTypes: [{ name: "Regular Tea", price: price }]
+        price: price
       });
     },
     onSuccess: () => {
@@ -1334,8 +1334,8 @@ function MachineManagement() {
 
   const startPriceEdit = (machine: any) => {
     setEditingMachine(machine);
-    // Extract current price from tea_types if available
-    const currentPrice = machine.teaTypes?.[0]?.price || "5.00";
+    // Extract current price from machine's price field (simplified pricing system)
+    const currentPrice = machine.price || "5.00";
     setMachinePrice(currentPrice);
   };
 
@@ -1582,7 +1582,7 @@ function MachineManagement() {
                       </td>
                       <td className="p-4">
                         <div className="text-lg font-bold text-tea-green">
-                          ₹{machine.teaTypes?.[0]?.price || "5.00"}
+                          ₹{machine.price || "5.00"}
                         </div>
                         <div className="text-xs text-gray-500">per cup</div>
                       </td>
@@ -1697,7 +1697,7 @@ function MachineManagement() {
                     
                     <div className="text-center border-l pl-6">
                       <div className="text-lg font-bold text-tea-green">
-                        ₹{machine.teaTypes?.[0]?.price || "5.00"}
+                        ₹{machine.price || "5.00"}
                       </div>
                       <p className="text-xs text-gray-500">per cup</p>
                       <p className="text-xs text-gray-600 font-medium">Regular Tea</p>
@@ -3764,7 +3764,7 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => setRfidCardsPage(p => Math.max(1, p - 1))}
+                    onClick={() => setRfidCardsPage(Math.max(1, rfidCardsPage - 1))}
                     disabled={rfidCardsPage === 1}
                   >
                     <ChevronLeft className="w-4 h-4 mr-1" />
@@ -3839,7 +3839,7 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
                   <Button 
                     variant="outline"
                     size="sm" 
-                    onClick={() => setRfidCardsPage(p => p + 1)}
+                    onClick={() => setRfidCardsPage(rfidCardsPage + 1)}
                     disabled={rfidCardsPage >= Math.ceil(rfidCardsTotal / itemsPerPage)}
                   >
                     Next

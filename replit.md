@@ -122,6 +122,10 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- July 29, 2025: COMPLETED - Fixed ownership transfer display issues by standardizing all roles to "Business Unit Admin" instead of "manager"
+- July 29, 2025: Updated transfer function to correctly assign "Business Unit Admin" role during ownership transfers
+- July 29, 2025: Cleaned up database role inconsistencies - all admin assignments now use standardized "Business Unit Admin" role
+- July 29, 2025: Transfer Business Unit Ownership page and Business Units tab now display current administrators correctly
 - July 29, 2025: COMPLETED - Enhanced Analytics page with graphical business insights and removed redundant tea variety analytics
 - July 29, 2025: Added comprehensive business unit comparison dashboard (super admin only) showing performance metrics across all business units
 - July 29, 2025: Implemented revenue trends visualization with dual-axis charts showing daily revenue and cups dispensed correlation

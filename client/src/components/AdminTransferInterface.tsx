@@ -161,6 +161,8 @@ export function AdminTransferInterface() {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/business-units'] });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/transfers'] });
+      // Invalidate the specific business unit users query
+      queryClient.invalidateQueries({ queryKey: [`/api/admin/business-units/${selectedBusinessUnit}/users`] });
       setSelectedBusinessUnit("");
       setSelectedNewAdmin("");
       setTransferReason("");

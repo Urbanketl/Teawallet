@@ -2013,7 +2013,7 @@ export class DatabaseStorage implements IStorage {
         await tx.insert(userBusinessUnits).values({
           userId: newAdminId,
           businessUnitId,
-          role: 'manager'
+          role: 'Business Unit Admin'
         });
 
         // Log the transfer

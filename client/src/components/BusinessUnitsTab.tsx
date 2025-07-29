@@ -110,7 +110,7 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
       return;
     }
 
-    // Check business rule for Business Unit Admin assignment
+    // Check business rule for Business Unit Admin assignment (only block admin, not viewers)
     if (selectedRole === 'Business Unit Admin' && hasBusinessUnitAdmin) {
       toast({
         title: "Business Unit Admin Already Exists",
@@ -208,7 +208,7 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
                     <option value="Business Unit Admin">Business Unit Admin (Manage tea programs)</option>
                   )}
                 </select>
-                {hasBusinessUnitAdmin && selectedRole === 'Business Unit Admin' && (
+                {selectedRole === 'Business Unit Admin' && hasBusinessUnitAdmin && (
                   <p className="text-sm text-amber-600 mt-1">
                     This business unit already has an admin. Use the Business Ownership tab to transfer ownership.
                   </p>
@@ -221,13 +221,13 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
                   disabled={
                     !selectedUser || 
                     assignUserMutation.isPending ||
-                    (hasBusinessUnitAdmin && selectedRole === 'Business Unit Admin')
+                    (selectedRole === 'Business Unit Admin' && hasBusinessUnitAdmin)
                   }
                   className="w-full bg-tea-green hover:bg-tea-dark disabled:bg-gray-400"
                 >
                   {assignUserMutation.isPending ? "Assigning..." : "Assign User"}
                 </Button>
-                {hasBusinessUnitAdmin && selectedRole === 'Business Unit Admin' && (
+                {selectedRole === 'Business Unit Admin' && hasBusinessUnitAdmin && (
                   <div className="ml-2">
                     <Button 
                       onClick={() => setActiveTab("ownership")}

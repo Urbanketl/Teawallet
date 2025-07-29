@@ -123,8 +123,22 @@ export async function createPaymentOrder(req: any, res: Response) {
       });
     }
 
-    const order = await createOrder(amount * 100); // Convert to paise
-    res.json({ success: true, order });
+    try {
+      const order = await createOrder(amount); // Amount is already in rupees
+      res.json({ success: true, order, keyId: process.env.RAZORPAY_KEY_ID });
+    } catch (razorpayError: any) {
+      console.error('Razorpay order creation error:', razorpayError);
+      
+      // Handle specific Razorpay errors
+      if (razorpayError.statusCode === 400 && razorpayError.error?.description?.includes('Amount exceeds maximum')) {
+        return res.status(400).json({ 
+          message: `Payment amount ₹${amount} exceeds Razorpay's maximum limit. Please try a smaller amount (maximum ₹5000 for demo accounts).`,
+          maxSuggestedAmount: 5000
+        });
+      }
+      
+      throw razorpayError; // Re-throw other errors
+    }
   } catch (error) {
     console.error("Error creating payment order:", error);
     res.status(500).json({ message: "Failed to create payment order" });

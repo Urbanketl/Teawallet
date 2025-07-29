@@ -1897,6 +1897,8 @@ function MachineManagement() {
           </div>
         </div>
       )}
+        </div>
+      </main>
     </div>
   );
 }
@@ -2750,7 +2752,7 @@ function UserManagement() {
   // Fetch users with pagination
   const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: [`/api/admin/users?paginated=true&page=${usersPage}&limit=${usersLimit}${searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : ''}`],
-    enabled: !!currentUser?.isAdmin,
+    enabled: !!(currentUser as any)?.isAdmin,
   });
 
   // Admin status toggle mutation
@@ -2789,11 +2791,11 @@ function UserManagement() {
   });
 
   const handleToggleAdmin = (user: any) => {
-    const newAdminStatus = !typedUser?.isAdmin;
+    const newAdminStatus = !user.isAdmin;
     const action = newAdminStatus ? 'grant' : 'revoke';
     
     if (confirm(`Are you sure you want to ${action} admin privileges for ${user.firstName} ${user.lastName}?`)) {
-      toggleAdminMutation.mutate({ userId: typedUser?.id, isAdmin: newAdminStatus });
+      toggleAdminMutation.mutate({ userId: user.id, isAdmin: newAdminStatus });
     }
   };
 
@@ -2889,7 +2891,7 @@ function UserManagement() {
 
   const handleDeleteUser = (user: any) => {
     if (confirm(`Are you sure you want to delete the account for ${user.firstName} ${user.lastName}? This action cannot be undone.`)) {
-      deleteUserMutation.mutate(typedUser?.id);
+      deleteUserMutation.mutate(user.id);
     }
   };
 
@@ -3048,7 +3050,7 @@ function UserManagement() {
       ) : (
         <div className="grid gap-4">
           {filteredUsers.map((user: any) => (
-            <Card key={typedUser?.id} className="hover:shadow-md transition-shadow">
+            <Card key={user.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
@@ -3062,13 +3064,13 @@ function UserManagement() {
                         <h4 className="font-semibold text-lg">
                           {user.firstName} {user.lastName}
                         </h4>
-                        {typedUser?.isAdmin && (
+                        {user.isAdmin && (
                           <Badge className="bg-purple-100 text-purple-800 border-purple-200">
                             <Shield className="w-3 h-3 mr-1" />
                             Admin
                           </Badge>
                         )}
-                        {typedUser?.id === currentUser?.id && (
+                        {user.id === (currentUser as any)?.id && (
                           <Badge variant="outline" className="text-blue-600 border-blue-200">
                             You
                           </Badge>
@@ -3089,16 +3091,16 @@ function UserManagement() {
                   </div>
                   
                   <div className="flex items-center space-x-2">
-                    {typedUser?.id !== currentUser?.id && (
+                    {user.id !== (currentUser as any)?.id && (
                       <>
                         <Button
-                          variant={typedUser?.isAdmin ? "destructive" : "default"}
+                          variant={user.isAdmin ? "destructive" : "default"}
                           size="sm"
                           onClick={() => handleToggleAdmin(user)}
                           disabled={toggleAdminMutation.isPending}
                           className="flex items-center space-x-1"
                         >
-                          {typedUser?.isAdmin ? (
+                          {user.isAdmin ? (
                             <>
                               <UserMinus className="w-4 h-4" />
                               <span>Revoke Admin</span>

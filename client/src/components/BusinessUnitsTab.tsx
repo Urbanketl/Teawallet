@@ -222,7 +222,7 @@ function UserAssignmentInterface({ businessUnits, setActiveTab }: { businessUnit
                 </select>
                 {selectedRole === 'Business Unit Admin' && hasBusinessUnitAdmin && (
                   <p className="text-sm text-amber-600 mt-1">
-                    This business unit already has an admin. Use the Business Ownership tab to transfer ownership.
+                    This business unit already has an admin. Only one Business Unit Admin is allowed per unit.
                   </p>
                 )}
               </div>
@@ -239,17 +239,6 @@ function UserAssignmentInterface({ businessUnits, setActiveTab }: { businessUnit
                 >
                   {assignUserMutation.isPending ? "Assigning..." : "Assign User"}
                 </Button>
-                {selectedRole === 'Business Unit Admin' && hasBusinessUnitAdmin && (
-                  <div className="ml-2">
-                    <Button 
-                      onClick={() => setActiveTab("business-ownership")}
-                      variant="outline"
-                      className="whitespace-nowrap"
-                    >
-                      Transfer Ownership →
-                    </Button>
-                  </div>
-                )}
               </div>
             </div>
           )}

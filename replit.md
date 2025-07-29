@@ -124,6 +124,7 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- July 29, 2025: COMPLETED - Removed "Most Popular" tea section from dashboard showing "Earl Grey" since system only serves "Regular Tea"
 - July 29, 2025: COMPLETED - Removed all tea variety/popularity analytics since system only serves "Regular Tea" - streamlined analytics to focus on usage patterns
 - July 29, 2025: Cleaned up analytics system by removing PopularTea interface, getPopularTeaTypes method, /api/analytics/popular-teas route, and topTeaTypes from user behavior
 - July 29, 2025: Updated getUserBehaviorInsights to only return avgTeaPerDay and preferredTimes, removing obsolete tea variety statistics

@@ -186,18 +186,7 @@ export default function Dashboard() {
                     </div>
                     <div className="text-xs text-gray-500 mt-1">Average: 60 cups/month</div>
                   </div>
-                  
-                  {/* Favorite Tea */}
-                  <div className="pt-4 border-t border-gray-100">
-                    <div className="text-gray-600 mb-2">Most Popular</div>
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full" />
-                      <div>
-                        <div className="font-medium text-gray-900">Earl Grey</div>
-                        <div className="text-xs text-gray-500">{Math.floor(cupsThisMonth * 0.4)} times this month</div>
-                      </div>
-                    </div>
-                  </div>
+
                 </div>
               </CardContent>
             </Card>

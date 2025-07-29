@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UrbanKetl Tea Machine Simulator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .machine-container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            color: #333;
+        }
+        
+        .machine-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .machine-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2d5a27;
+            margin-bottom: 10px;
+        }
+        
+        .machine-subtitle {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .status-display {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            border: 2px solid #e9ecef;
+        }
+        
+        .tea-info {
+            margin-bottom: 15px;
+        }
+        
+        .tea-type {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2d5a27;
+        }
+        
+        .tea-price {
+            font-size: 24px;
+            font-weight: bold;
+            color: #28a745;
+            margin-top: 5px;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #495057;
+        }
+        
+        .input-field {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: #2d5a27;
+        }
+        
+        .simulate-button {
+            width: 100%;
+            padding: 15px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: background 0.3s;
+        }
+        
+        .simulate-button:hover {
+            background: #218838;
+        }
+        
+        .simulate-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .price-button {
+            width: 100%;
+            padding: 12px;
+            background: #17a2b8;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        
+        .price-button:hover {
+            background: #138496;
+        }
+        
+        .response-display {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 4px solid #17a2b8;
+        }
+        
+        .response-display.success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        
+        .response-display.error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        
+        .response-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .response-content {
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+        
+        .quick-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .quick-card {
+            padding: 8px 12px;
+            background: #e9ecef;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            text-align: center;
+            transition: background 0.2s;
+        }
+        
+        .quick-card:hover {
+            background: #dee2e6;
+        }
+        
+        .server-config {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .server-config-title {
+            font-weight: bold;
+            color: #856404;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="machine-container">
+        <div class="machine-header">
+            <div class="machine-title">☕ UrbanKetl Tea Machine</div>
+            <div class="machine-subtitle">iPad Simulator</div>
+        </div>
+        
+        <div class="server-config">
+            <div class="server-config-title">Server Configuration</div>
+            <div class="input-group">
+                <label class="input-label">Server URL:</label>
+                <input type="text" id="serverUrl" class="input-field" value="https://your-replit-url.replit.dev">
+            </div>
+        </div>
+        
+        <div class="status-display">
+            <div class="tea-info">
+                <div class="tea-type">Regular Tea</div>
+                <div class="tea-price" id="teaPrice">₹5.00 per cup</div>
+            </div>
+            <div style="font-size: 14px; color: #666; margin-top: 10px;">
+                Machine Status: <span id="machineStatus" style="color: #28a745; font-weight: bold;">Online</span>
+            </div>
+        </div>
+        
+        <button class="price-button" onclick="fetchTeaPrice()">🔄 Refresh Tea Price</button>
+        
+        <div class="input-group">
+            <label class="input-label">Machine ID:</label>
+            <input type="text" id="machineId" class="input-field" value="UK_001" placeholder="e.g., UK_001">
+        </div>
+        
+        <div class="input-group">
+            <label class="input-label">RFID Card Number:</label>
+            <input type="text" id="cardNumber" class="input-field" placeholder="Tap card or enter manually">
+        </div>
+        
+        <div class="quick-cards">
+            <div class="quick-card" onclick="setQuickCard('RFID_BU_ADMIN_001')">Admin Card 1</div>
+            <div class="quick-card" onclick="setQuickCard('RFID_BU_ADMIN_002')">Admin Card 2</div>
+            <div class="quick-card" onclick="setQuickCard('RFID_BU_ADMIN_003')">Admin Card 3</div>
+            <div class="quick-card" onclick="setQuickCard('RFID_001')">Employee Card</div>
+        </div>
+        
+        <button class="simulate-button" onclick="simulateRfidTap()" id="tapButton">
+            📱 Simulate RFID Tap
+        </button>
+        
+        <div id="responseDisplay" class="response-display" style="display: none;">
+            <div class="response-title" id="responseTitle">Response:</div>
+            <div class="response-content" id="responseContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentServerUrl = '';
+        
+        function getServerUrl() {
+            const serverInput = document.getElementById('serverUrl');
+            currentServerUrl = serverInput.value.trim();
+            if (!currentServerUrl.startsWith('http')) {
+                currentServerUrl = 'https://' + currentServerUrl;
+            }
+            return currentServerUrl;
+        }
+        
+        function setQuickCard(cardNumber) {
+            document.getElementById('cardNumber').value = cardNumber;
+        }
+        
+        async function fetchTeaPrice() {
+            const machineId = document.getElementById('machineId').value.trim();
+            const serverUrl = getServerUrl();
+            
+            if (!machineId) {
+                showResponse('Error', 'Please enter a Machine ID', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${serverUrl}/api/machines/${machineId}/tea-price`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('teaPrice').textContent = `₹${data.price} per cup`;
+                    document.getElementById('machineStatus').textContent = 'Online';
+                    document.getElementById('machineStatus').style.color = '#28a745';
+                    showResponse('Tea Price Updated', JSON.stringify(data, null, 2), 'success');
+                } else {
+                    showResponse('Error', data.message || 'Failed to fetch tea price', 'error');
+                }
+            } catch (error) {
+                showResponse('Network Error', `Failed to connect to server: ${error.message}`, 'error');
+                document.getElementById('machineStatus').textContent = 'Offline';
+                document.getElementById('machineStatus').style.color = '#dc3545';
+            }
+        }
+        
+        async function simulateRfidTap() {
+            const machineId = document.getElementById('machineId').value.trim();
+            const cardNumber = document.getElementById('cardNumber').value.trim();
+            const serverUrl = getServerUrl();
+            const tapButton = document.getElementById('tapButton');
+            
+            if (!machineId || !cardNumber) {
+                showResponse('Error', 'Please enter both Machine ID and Card Number', 'error');
+                return;
+            }
+            
+            // Disable button and show loading
+            tapButton.disabled = true;
+            tapButton.textContent = '⏳ Processing RFID Tap...';
+            
+            try {
+                const response = await fetch(`${serverUrl}/api/rfid/validate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        cardNumber: cardNumber,
+                        machineId: machineId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showResponse('✅ Tea Dispensed Successfully!', 
+                        `Message: ${data.message}\nRemaining Balance: ₹${data.remainingBalance}`, 
+                        'success');
+                    
+                    // Simulate dispensing animation
+                    setTimeout(() => {
+                        tapButton.textContent = '☕ Tea Ready!';
+                        setTimeout(() => {
+                            tapButton.textContent = '📱 Simulate RFID Tap';
+                            tapButton.disabled = false;
+                        }, 2000);
+                    }, 1000);
+                } else {
+                    showResponse('❌ Transaction Failed', data.message || 'Unknown error', 'error');
+                    tapButton.textContent = '📱 Simulate RFID Tap';
+                    tapButton.disabled = false;
+                }
+            } catch (error) {
+                showResponse('Network Error', `Failed to connect to server: ${error.message}`, 'error');
+                tapButton.textContent = '📱 Simulate RFID Tap';
+                tapButton.disabled = false;
+            }
+        }
+        
+        function showResponse(title, content, type = 'info') {
+            const responseDisplay = document.getElementById('responseDisplay');
+            const responseTitle = document.getElementById('responseTitle');
+            const responseContent = document.getElementById('responseContent');
+            
+            responseTitle.textContent = title;
+            responseContent.textContent = content;
+            responseDisplay.className = `response-display ${type}`;
+            responseDisplay.style.display = 'block';
+            
+            // Scroll to response
+            responseDisplay.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Auto-fetch tea price on page load
+        window.onload = function() {
+            // Set default server URL to current domain if running locally
+            if (window.location.hostname !== 'localhost') {
+                document.getElementById('serverUrl').value = window.location.origin;
+            }
+        };
+        
+        // Allow Enter key to submit
+        document.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                simulateRfidTap();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -151,6 +151,9 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - July 29, 2025: COMPLETED - Fixed business unit assignment validation to properly allow unlimited Viewer assignments
 - July 29, 2025: Removed "Transfer Ownership" navigation button and simplified warning message for Business Unit Admin role conflicts
 - July 29, 2025: Corrected validation logic - only blocks duplicate Business Unit Admin assignments, Viewers can be assigned freely regardless of existing admin
+- July 29, 2025: COMPLETED - Reordered Business Units management tabs as requested: Create Unit, Business Units, User Assignments, Business Ownership Transfer
+- July 29, 2025: Renamed "Business Ownership" tab to "Business Ownership Transfer" for clarity
+- July 29, 2025: Set "Create Unit" as default active tab for improved user workflow
 - July 28, 2025: COMPLETED - Implemented comprehensive business unit summary cards showing recharges, cups dispensed, revenue, and average cup price with full date filter integration
 - July 28, 2025: Fixed business unit summary query to use correct transaction type ('credit' instead of 'recharge') for accurate recharge amount calculation
 - July 28, 2025: Added BusinessUnitSummaryCards component with colorful design matching provided screenshot, including responsive grid layout and loading states

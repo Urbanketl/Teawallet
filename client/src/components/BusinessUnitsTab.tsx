@@ -457,13 +457,69 @@ export function BusinessUnitsTab() {
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6" onValueChange={setActiveTab}>
+      <Tabs defaultValue="create" className="space-y-6" onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Business Units</TabsTrigger>
           <TabsTrigger value="create">Create Unit</TabsTrigger>
+          <TabsTrigger value="overview">Business Units</TabsTrigger>
           <TabsTrigger value="assignments">User Assignments</TabsTrigger>
-          <TabsTrigger value="business-ownership">Business Ownership</TabsTrigger>
+          <TabsTrigger value="business-ownership">Business Ownership Transfer</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="create" className="space-y-6">
+          <Card className="max-w-2xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Plus className="w-5 h-5" />
+                Create New Business Unit
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleCreateUnit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="name">Business Unit Name *</Label>
+                    <Input
+                      id="name"
+                      value={newUnitForm.name}
+                      onChange={(e) => setNewUnitForm(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="e.g., Tech Division"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="code">Unit Code *</Label>
+                    <Input
+                      id="code"
+                      value={newUnitForm.code}
+                      onChange={(e) => setNewUnitForm(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
+                      placeholder="e.g., TECH01"
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={newUnitForm.description}
+                    onChange={(e) => setNewUnitForm(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Brief description of this business unit..."
+                    rows={3}
+                  />
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full bg-tea-green hover:bg-tea-dark"
+                  disabled={createUnitMutation.isPending}
+                >
+                  {createUnitMutation.isPending ? "Creating..." : "Create Business Unit"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="overview" className="space-y-6">
           {/* Search and Filter Controls */}
@@ -824,62 +880,6 @@ export function BusinessUnitsTab() {
               )}
             </div>
           )}
-        </TabsContent>
-
-        <TabsContent value="create" className="space-y-6">
-          <Card className="max-w-2xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Plus className="w-5 h-5" />
-                Create New Business Unit
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleCreateUnit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="name">Business Unit Name *</Label>
-                    <Input
-                      id="name"
-                      value={newUnitForm.name}
-                      onChange={(e) => setNewUnitForm(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="e.g., Tech Division"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="code">Unit Code *</Label>
-                    <Input
-                      id="code"
-                      value={newUnitForm.code}
-                      onChange={(e) => setNewUnitForm(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
-                      placeholder="e.g., TECH01"
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={newUnitForm.description}
-                    onChange={(e) => setNewUnitForm(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Brief description of this business unit..."
-                    rows={3}
-                  />
-                </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full bg-tea-green hover:bg-tea-dark"
-                  disabled={createUnitMutation.isPending}
-                >
-                  {createUnitMutation.isPending ? "Creating..." : "Create Business Unit"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="assignments" className="space-y-6">

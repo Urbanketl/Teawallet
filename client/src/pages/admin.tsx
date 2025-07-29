@@ -1238,10 +1238,11 @@ export default function AdminPage() {
               <p className="text-gray-600">Configure system settings using the button above</p>
             </div>
           )}
-        </main>
-      </div>
-    );
-  }
+        </div>
+      </main>
+    </div>
+  );
+}
 
 function MachineManagement() {
   const [editingMachine, setEditingMachine] = useState<any>(null);
@@ -1897,8 +1898,6 @@ function MachineManagement() {
           </div>
         </div>
       )}
-        </div>
-      </main>
     </div>
   );
 }

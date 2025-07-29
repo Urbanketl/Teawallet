@@ -2358,12 +2358,12 @@ export class DatabaseStorage implements IStorage {
     const startDate = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
     const endDate = new Date(parseInt(year), parseInt(monthNum), 0, 23, 59, 59, 999);
 
+    // Get basic transaction stats
     const result = await db
       .select({
         totalTransactions: sql<number>`COUNT(*)`,
         totalAmount: sql<string>`SUM(CAST(${dispensingLogs.amount} AS DECIMAL))`,
-        uniqueMachines: sql<number>`COUNT(DISTINCT ${dispensingLogs.machineId})`,
-        uniqueCards: sql<number>`COUNT(DISTINCT ${dispensingLogs.rfidCardId})`
+        uniqueMachines: sql<number>`COUNT(DISTINCT ${dispensingLogs.machineId})`
       })
       .from(dispensingLogs)
       .where(
@@ -2375,11 +2375,29 @@ export class DatabaseStorage implements IStorage {
         )
       );
 
+    // Get count of currently assigned cards that were used in the month
+    // Only count cards that are currently assigned to this business unit
+    const cardResult = await db
+      .select({
+        uniqueCards: sql<number>`COUNT(DISTINCT ${dispensingLogs.rfidCardId})`
+      })
+      .from(dispensingLogs)
+      .innerJoin(rfidCards, eq(dispensingLogs.rfidCardId, rfidCards.id))
+      .where(
+        and(
+          eq(dispensingLogs.businessUnitId, businessUnitId),
+          eq(dispensingLogs.success, true),
+          eq(rfidCards.businessUnitId, businessUnitId), // Only count currently assigned cards
+          gte(dispensingLogs.createdAt, startDate),
+          sql`${dispensingLogs.createdAt} <= ${endDate}`
+        )
+      );
+
     return {
       totalTransactions: result[0]?.totalTransactions || 0,
       totalAmount: result[0]?.totalAmount || '0',
       uniqueMachines: result[0]?.uniqueMachines || 0,
-      uniqueCards: result[0]?.uniqueCards || 0
+      uniqueCards: cardResult[0]?.uniqueCards || 0
     };
   }
 

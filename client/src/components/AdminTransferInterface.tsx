@@ -104,19 +104,39 @@ export function AdminTransferInterface() {
   });
 
   // Fetch current admin for selected business unit
-  const { data: currentAdmin, isLoading: currentAdminLoading } = useQuery<User>({
+  const { data: currentAdmin, isLoading: currentAdminLoading } = useQuery<User | null>({
     queryKey: ['/api/admin/business-units', selectedBusinessUnit, 'users'],
     enabled: !!selectedBusinessUnit,
     select: (data: any[]) => {
+      console.log('=== Current Admin Query Debug ===');
+      console.log('Raw API data:', data);
+      console.log('Selected business unit:', selectedBusinessUnit);
+      
+      if (!Array.isArray(data)) {
+        console.log('Data is not an array:', typeof data);
+        return null;
+      }
+      
       // Find the Business Unit Admin from the user assignments
-      const adminAssignment = data.find(assignment => assignment.role === 'Business Unit Admin');
-      return adminAssignment ? {
+      const adminAssignment = data.find(assignment => {
+        console.log('Checking assignment:', assignment);
+        return assignment.role === 'Business Unit Admin';
+      });
+      
+      console.log('Found admin assignment:', adminAssignment);
+      
+      const result = adminAssignment ? {
         id: adminAssignment.userId,
         firstName: adminAssignment.firstName,
         lastName: adminAssignment.lastName,
         email: adminAssignment.email
       } : null;
-    }
+      
+      console.log('Final admin result:', result);
+      return result;
+    },
+    refetchOnMount: true,
+    staleTime: 0 // Disable caching for debugging
   });
 
   // Transfer mutation

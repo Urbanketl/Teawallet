@@ -64,10 +64,7 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
   // Assignment mutation
   const assignUserMutation = useMutation({
     mutationFn: async ({ userId, businessUnitId, role }: { userId: string; businessUnitId: string; role: string }) => {
-      return apiRequest(`/api/admin/business-units/${businessUnitId}/assign-user`, {
-        method: "POST",
-        body: { userId, role }
-      });
+      return apiRequest("POST", `/api/admin/business-units/${businessUnitId}/assign-user`, { userId, role });
     },
     onSuccess: () => {
       toast({ title: "Success", description: "User assigned successfully!" });
@@ -87,10 +84,7 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
   // Unassignment mutation  
   const unassignUserMutation = useMutation({
     mutationFn: async ({ userId, businessUnitId }: { userId: string; businessUnitId: string }) => {
-      return apiRequest(`/api/admin/business-units/${businessUnitId}/unassign-user`, {
-        method: "POST", 
-        body: { userId }
-      });
+      return apiRequest("POST", `/api/admin/business-units/${businessUnitId}/unassign-user`, { userId });
     },
     onSuccess: () => {
       toast({ title: "Success", description: "User unassigned successfully!" });

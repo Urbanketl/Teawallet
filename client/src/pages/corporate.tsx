@@ -401,6 +401,24 @@ export default function CorporateDashboard() {
     },
   });
 
+  // Activate card mutation
+  const activateCardMutation = useMutation({
+    mutationFn: async (cardId: number) => {
+      return apiRequest("PUT", `/api/corporate/rfid-cards/${cardId}/activate${pseudoParam}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/corporate/rfid-cards`, selectedBusinessUnitId, pseudoParam] });
+      toast({ title: "Success", description: "RFID card activated successfully" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to activate RFID card",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCreateCard = () => {
     if (!selectedBusinessUnitId) {
       toast({
@@ -653,7 +671,7 @@ export default function CorporateDashboard() {
                               <Badge variant={card.isActive ? "default" : "secondary"}>
                                 {card.isActive ? "Active" : "Inactive"}
                               </Badge>
-                              {card.isActive && (
+                              {card.isActive ? (
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -661,6 +679,15 @@ export default function CorporateDashboard() {
                                   disabled={deactivateCardMutation.isPending}
                                 >
                                   <Trash2 className="h-4 w-4" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  onClick={() => activateCardMutation.mutate(card.id)}
+                                  disabled={activateCardMutation.isPending}
+                                >
+                                  <Power className="h-4 w-4" />
                                 </Button>
                               )}
                             </div>

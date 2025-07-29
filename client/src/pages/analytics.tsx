@@ -80,45 +80,45 @@ export default function AnalyticsPage() {
   const { data: peakHours = [] } = useQuery<PeakHour[]>({
     queryKey: ['/api/analytics/peak-hours', dateRange, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
     queryFn: () => fetch(`/api/analytics/peak-hours?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`).then(res => res.json()),
-    enabled: typedUser?.isAdmin,
+    enabled: Boolean(typedUser?.isAdmin),
   });
 
   const { data: machinePerformance = [] } = useQuery<MachinePerformance[]>({
     queryKey: ['/api/analytics/machine-performance', dateRange, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
     queryFn: () => fetch(`/api/analytics/machine-performance?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`).then(res => res.json()),
-    enabled: typedUser?.isAdmin,
+    enabled: Boolean(typedUser?.isAdmin),
   });
 
   const { data: userBehavior } = useQuery<UserBehavior>({
     queryKey: ['/api/analytics/user-behavior', dateRange, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
     queryFn: () => fetch(`/api/analytics/user-behavior?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`).then(res => res.json()),
-    enabled: typedUser?.isAdmin,
+    enabled: Boolean(typedUser?.isAdmin),
   });
 
   // Enhanced Analytics Queries
   const { data: businessUnitComparison = [] } = useQuery<BusinessUnitComparison[]>({
     queryKey: ['/api/analytics/business-unit-comparison', dateRange, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
     queryFn: () => fetch(`/api/analytics/business-unit-comparison?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`).then(res => res.json()),
-    enabled: typedUser?.isAdmin && typedUser?.isSuperAdmin,
+    enabled: Boolean(typedUser?.isAdmin && typedUser?.isSuperAdmin),
   });
 
   const { data: revenueTrends = [] } = useQuery<RevenueTrend[]>({
     queryKey: ['/api/analytics/revenue-trends', dateRange, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
     queryFn: () => fetch(`/api/analytics/revenue-trends?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`).then(res => res.json()),
-    enabled: typedUser?.isAdmin,
+    enabled: Boolean(typedUser?.isAdmin),
   });
 
   // New query for machine dispensing data
   const { data: machineDispensing = [] } = useQuery<MachineDispensing[]>({
     queryKey: ['/api/analytics/machine-dispensing', dateRange, selectedMachine, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
     queryFn: () => fetch(`/api/analytics/machine-dispensing?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}${selectedMachine !== 'all' ? `&machineId=${selectedMachine}` : ''}`).then(res => res.json()),
-    enabled: typedUser?.isAdmin,
+    enabled: Boolean(typedUser?.isAdmin),
   });
 
   // Get available machines for the filter
   const { data: allMachines = [] } = useQuery<any[]>({
     queryKey: typedUser?.isSuperAdmin ? ['/api/admin/machines'] : ['/api/corporate/machines'],
-    enabled: typedUser?.isAdmin,
+    enabled: Boolean(typedUser?.isAdmin),
   });
 
   if (isLoading) {
@@ -311,7 +311,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Business Unit Comparison (Super Admin Only) */}
-        {user?.isSuperAdmin && businessUnitComparison.length > 0 && (
+        {typedUser?.isSuperAdmin && businessUnitComparison.length > 0 && (
           <Card className="mb-8">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

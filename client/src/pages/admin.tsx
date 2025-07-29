@@ -2653,7 +2653,7 @@ function UserManagement() {
     email: '',
     firstName: '',
     lastName: '',
-    isAdmin: false
+    role: 'business_unit_admin' as 'platform_admin' | 'business_unit_admin' | 'viewer'
   });
   const usersLimit = 20;
 
@@ -2733,7 +2733,7 @@ function UserManagement() {
         description: `User account created successfully for ${result.user.email}`,
       });
       setShowCreateForm(false);
-      setNewUserData({ id: '', email: '', firstName: '', lastName: '', isAdmin: false });
+      setNewUserData({ id: '', email: '', firstName: '', lastName: '', role: 'business_unit_admin' });
       
       // Show credential sharing information
       toast({
@@ -2891,16 +2891,23 @@ function UserManagement() {
               </div>
             </div>
             
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="isAdmin"
-                checked={newUserData.isAdmin}
-                onCheckedChange={(checked) => setNewUserData({ ...newUserData, isAdmin: checked })}
-              />
-              <Label htmlFor="isAdmin" className="flex items-center space-x-2">
-                <Shield className="w-4 h-4" />
-                <span>Grant Admin Privileges</span>
-              </Label>
+            <div>
+              <Label htmlFor="role">User Role*</Label>
+              <select
+                id="role"
+                value={newUserData.role}
+                onChange={(e) => setNewUserData({ ...newUserData, role: e.target.value as typeof newUserData.role })}
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-tea-green focus:border-tea-green"
+              >
+                <option value="platform_admin">Platform Admin - Full system access</option>
+                <option value="business_unit_admin">Business Unit Admin - Manage tea programs</option>
+                <option value="viewer">Viewer - Read-only access to reports</option>
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">
+                {newUserData.role === 'platform_admin' && 'Can create accounts, manage all business units, and access system settings'}
+                {newUserData.role === 'business_unit_admin' && 'Can manage assigned business units, wallets, and RFID cards'}
+                {newUserData.role === 'viewer' && 'Can view analytics and reports for assigned business units only'}
+              </p>
             </div>
 
             <div className="flex items-center justify-between pt-4 border-t">
@@ -2908,7 +2915,7 @@ function UserManagement() {
                 variant="outline"
                 onClick={() => {
                   setShowCreateForm(false);
-                  setNewUserData({ id: '', email: '', firstName: '', lastName: '', isAdmin: false });
+                  setNewUserData({ id: '', email: '', firstName: '', lastName: '', role: 'business_unit_admin' });
                 }}
               >
                 Cancel

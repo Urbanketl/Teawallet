@@ -121,21 +121,26 @@ export async function updateUserAdminStatus(req: any, res: Response) {
 // Admin-only user creation
 export async function createUserAccount(req: any, res: Response) {
   try {
-    const { id, email, firstName, lastName, isAdmin } = req.body;
+    const { id, email, firstName, lastName, role } = req.body;
     const createdBy = req.session?.user?.id || req.user?.claims?.sub;
 
-    if (!id || !email || !firstName || !lastName) {
+    if (!id || !email || !firstName || !lastName || !role) {
       return res.status(400).json({ 
-        message: 'User ID, email, first name, and last name are required' 
+        message: 'User ID, email, first name, last name, and role are required' 
       });
     }
+
+    // Convert role to boolean flags
+    const isAdmin = role === 'platform_admin' || role === 'business_unit_admin';
+    const isSuperAdmin = role === 'platform_admin';
 
     const newUser = await storage.createUserAccount({
       id,
       email,
       firstName,
       lastName,
-      isAdmin: isAdmin || false,
+      isAdmin,
+      isSuperAdmin,
       createdBy
     });
 

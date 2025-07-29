@@ -2134,6 +2134,7 @@ export class DatabaseStorage implements IStorage {
     firstName: string;
     lastName: string;
     isAdmin?: boolean;
+    isSuperAdmin?: boolean;
     createdBy: string;
   }): Promise<User> {
     try {
@@ -2162,7 +2163,7 @@ export class DatabaseStorage implements IStorage {
           firstName: userData.firstName,
           lastName: userData.lastName,
           isAdmin: userData.isAdmin || false,
-          isSuperAdmin: false, // Only platform can set super admin
+          isSuperAdmin: userData.isSuperAdmin || false,
           createdAt: new Date(),
           updatedAt: new Date()
         })

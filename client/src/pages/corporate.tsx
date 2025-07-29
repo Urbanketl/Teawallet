@@ -592,65 +592,24 @@ export default function CorporateDashboard() {
               <TabsContent value="cards" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="flex items-center gap-2">
-                          <CreditCard className="h-5 w-5" />
-                          Employee RFID Cards ({rfidCards.length})
-                        </CardTitle>
-                        <CardDescription>
-                          RFID cards for {selectedBusinessUnit.name} employees
-                        </CardDescription>
-                      </div>
-                      <Dialog open={isCardDialogOpen} onOpenChange={setIsCardDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Card
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Create New RFID Card</DialogTitle>
-                            <DialogDescription>
-                              Add a new RFID card for {selectedBusinessUnit.name} employees
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div>
-                              <Label htmlFor="cardNumber">Card Number</Label>
-                              <Input
-                                id="cardNumber"
-                                value={newCardNumber}
-                                onChange={(e) => setNewCardNumber(e.target.value)}
-                                placeholder="Enter card number"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="cardName">Card Name/Description</Label>
-                              <Input
-                                id="cardName"
-                                value={newCardName}
-                                onChange={(e) => setNewCardName(e.target.value)}
-                                placeholder="e.g., Employee Card 1"
-                              />
-                            </div>
-                          </div>
-                          <DialogFooter>
-                            <Button
-                              onClick={handleCreateCard}
-                              disabled={!newCardNumber || !newCardName || createCardMutation.isPending}
-                            >
-                              {createCardMutation.isPending ? "Creating..." : "Create Card"}
-                            </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <CreditCard className="h-5 w-5" />
+                        Employee RFID Cards ({rfidCards.length})
+                      </CardTitle>
+                      <CardDescription>
+                        RFID cards for {selectedBusinessUnit.name} employees (managed by platform admin)
+                      </CardDescription>
                     </div>
                   </CardHeader>
                   <CardContent>
                     {rfidCards.length === 0 ? (
-                      <p className="text-center text-gray-500 py-4">No RFID cards created for this business unit.</p>
+                      <div className="text-center text-gray-500 py-8">
+                        <CreditCard className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium mb-2">No RFID cards assigned</p>
+                        <p className="text-sm">RFID cards are created and assigned by platform administrators.</p>
+                        <p className="text-sm">Contact your admin to request new cards for this business unit.</p>
+                      </div>
                     ) : (
                       <div className="space-y-4">
                         {rfidCards.map((card) => (

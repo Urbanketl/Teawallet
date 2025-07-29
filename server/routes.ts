@@ -64,6 +64,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/admin/rfid/cards/:cardId', requireAuth, requireAdmin, adminController.deleteRfidCard);
   app.get('/api/admin/rfid/suggest-card-number', requireAuth, requireAdmin, adminController.getSuggestedCardNumber);
   
+  // NEW: Centralized RFID Card Creation & Assignment (Platform Admin Only)
+  app.post('/api/admin/rfid/cards/create-batch', requireAuth, requireAdmin, adminController.createRfidCardBatch);
+  app.post('/api/admin/rfid/cards/assign', requireAuth, requireAdmin, adminController.assignRfidCard);
+  app.get('/api/admin/business-units', requireAuth, requireAdmin, adminController.getBusinessUnits);
+  
   // Admin support routes
   app.get('/api/admin/support/tickets', requireAuth, requireAdmin, adminController.getSupportTicketsPaginated);
 

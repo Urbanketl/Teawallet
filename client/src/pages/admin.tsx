@@ -3198,14 +3198,17 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
   rfidCardsPerPage: number;
 }) {
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<string>("");
-  const [companyInitials, setCompanyInitials] = useState("");
-  const [userInitials, setUserInitials] = useState("");
-  const [suggestedCardNumber, setSuggestedCardNumber] = useState("");
+  const [showAssignForm, setShowAssignForm] = useState(false);
+  const [selectedBusinessUnit, setSelectedBusinessUnit] = useState<string>("");
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardName, setCardName] = useState("");
+  const [batchSize, setBatchSize] = useState(1);
+  const [selectedCardToAssign, setSelectedCardToAssign] = useState<string>("");
+  const [assignToBusinessUnit, setAssignToBusinessUnit] = useState<string>("");
   const { toast } = useToast();
 
-  const { data: users } = useQuery({
-    queryKey: ["/api/admin/users"],
+  const { data: businessUnits } = useQuery({
+    queryKey: ["/api/admin/business-units"],
   });
 
   const { data: rfidCardsData, refetch: refetchCards } = useQuery({
@@ -3215,42 +3218,28 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
   const rfidCards = (rfidCardsData as any)?.cards || [];
   const rfidCardsTotal = (rfidCardsData as any)?.total || 0;
 
-  const { data: suggestion } = useQuery({
-    queryKey: ["/api/admin/rfid/suggest-card-number", selectedUser, companyInitials, userInitials],
-    queryFn: async () => {
-      if (!selectedUser || !companyInitials || !userInitials) return null;
-      const params = new URLSearchParams({
-        userId: selectedUser,
-        companyInitials: companyInitials,
-        userInitials: userInitials
-      });
-      const response = await fetch(`/api/admin/rfid/suggest-card-number?${params}`);
-      if (!response.ok) throw new Error('Failed to get suggestion');
-      return response.json();
-    },
-    enabled: !!(selectedUser && companyInitials && userInitials),
-  });
+
 
   const createCardMutation = useMutation({
-    mutationFn: async (data: { userId: string; cardNumber: string }) => {
-      const response = await fetch('/api/admin/rfid/cards', {
+    mutationFn: async (data: { businessUnitId?: string; cardNumber: string; cardName?: string; batchSize?: number }) => {
+      const response = await fetch('/api/admin/rfid/cards/create-batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      if (!response.ok) throw new Error('Failed to create card');
+      if (!response.ok) throw new Error('Failed to create card(s)');
       return response.json();
     },
     onSuccess: () => {
       refetchCards();
       setShowCreateForm(false);
-      setSelectedUser("");
-      setCompanyInitials("");
-      setUserInitials("");
-      setSuggestedCardNumber("");
+      setSelectedBusinessUnit("");
+      setCardNumber("");
+      setCardName("");
+      setBatchSize(1);
       toast({
         title: "Success",
-        description: "RFID card created successfully",
+        description: "RFID card(s) created successfully",
       });
     },
     onError: (error: any) => {
@@ -3262,18 +3251,54 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
     },
   });
 
-  useEffect(() => {
-    if (suggestion?.suggestedCardNumber) {
-      setSuggestedCardNumber(suggestion.suggestedCardNumber);
-    }
-  }, [suggestion]);
+  const assignCardMutation = useMutation({
+    mutationFn: async (data: { cardId: string; businessUnitId: string }) => {
+      const response = await fetch('/api/admin/rfid/cards/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Failed to assign card');
+      return response.json();
+    },
+    onSuccess: () => {
+      refetchCards();
+      setShowAssignForm(false);
+      setSelectedCardToAssign("");
+      setAssignToBusinessUnit("");
+      toast({
+        title: "Success",
+        description: "RFID card assigned to business unit successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to assign RFID card",
+        variant: "destructive",
+      });
+    },
+  });
+
+
 
   const handleCreateCard = () => {
-    if (!selectedUser || !suggestedCardNumber) return;
+    if (batchSize === 1 && !cardNumber) return;
     
     createCardMutation.mutate({
-      userId: selectedUser,
-      cardNumber: suggestedCardNumber,
+      businessUnitId: selectedBusinessUnit || undefined,
+      cardNumber: cardNumber,
+      cardName: cardName || undefined,
+      batchSize: batchSize,
+    });
+  };
+
+  const handleAssignCard = () => {
+    if (!selectedCardToAssign || !assignToBusinessUnit) return;
+    
+    assignCardMutation.mutate({
+      cardId: selectedCardToAssign,
+      businessUnitId: assignToBusinessUnit,
     });
   };
 
@@ -3304,102 +3329,206 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
     }
   };
 
-  const selectedUserData = (users as any[])?.find((u: any) => u.id === selectedUser);
+
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="text-lg font-semibold">RFID Card Management</h3>
+          <h3 className="text-lg font-semibold">RFID Card Creation & Assignment</h3>
           <p className="text-sm text-muted-foreground">
-            Create and manage RFID cards for users
+            Platform admins create RFID cards and assign them to business units
           </p>
         </div>
-        <Button 
-          onClick={() => setShowCreateForm(!showCreateForm)}
-          className="flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Create New Card
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline"
+            onClick={() => setShowAssignForm(!showAssignForm)}
+            className="flex items-center gap-2"
+          >
+            <Building2 className="h-4 w-4" />
+            Assign Cards
+          </Button>
+          <Button 
+            onClick={() => setShowCreateForm(!showCreateForm)}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Create Cards
+          </Button>
+        </div>
       </div>
 
       {showCreateForm && (
         <Card>
           <CardHeader>
-            <CardTitle>Create New RFID Card</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Create RFID Cards (Platform Admin)
+            </CardTitle>
+            <CardDescription>
+              Create RFID cards for business distribution. Cards can be assigned immediately or kept unassigned for later assignment.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium">Select User</label>
+                <label className="text-sm font-medium">Assign to Business Unit (Optional)</label>
                 <select 
-                  value={selectedUser} 
-                  onChange={(e) => setSelectedUser(e.target.value)}
+                  value={selectedBusinessUnit} 
+                  onChange={(e) => setSelectedBusinessUnit(e.target.value)}
                   className="w-full p-2 border rounded-md"
                 >
-                  <option value="">Choose a user...</option>
-                  {(users as any[])?.map((user: any) => (
-                    <option key={user.id} value={user.id}>
-                      {user.firstName} {user.lastName} ({user.email})
+                  <option value="">Keep Unassigned</option>
+                  {(businessUnits as any[])?.map((unit: any) => (
+                    <option key={unit.id} value={unit.id}>
+                      {unit.name} ({unit.code})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">Cards can be assigned later if needed</p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Batch Size</label>
+                <select 
+                  value={batchSize} 
+                  onChange={(e) => setBatchSize(parseInt(e.target.value))}
+                  className="w-full p-2 border rounded-md"
+                >
+                  <option value={1}>Single Card</option>
+                  <option value={5}>5 Cards</option>
+                  <option value={10}>10 Cards</option>
+                  <option value={25}>25 Cards</option>
+                  <option value={50}>50 Cards</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">Create multiple cards at once</p>
+              </div>
+
+              {batchSize === 1 && (
+                <>
+                  <div>
+                    <label className="text-sm font-medium">Card Number</label>
+                    <input
+                      type="text"
+                      value={cardNumber}
+                      onChange={(e) => setCardNumber(e.target.value)}
+                      placeholder="e.g., RFID_CORP_001"
+                      className="w-full p-2 border rounded-md"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Unique identifier for the card</p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Card Name (Optional)</label>
+                    <input
+                      type="text"
+                      value={cardName}
+                      onChange={(e) => setCardName(e.target.value)}
+                      placeholder="e.g., Employee Card #1"
+                      className="w-full p-2 border rounded-md"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Friendly name for the card</p>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {selectedBusinessUnit && (
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <h4 className="font-medium text-green-900 mb-2">Assignment Preview:</h4>
+                <p className="text-green-800">
+                  {batchSize} card(s) will be assigned to: {(businessUnits as any[])?.find(u => u.id === selectedBusinessUnit)?.name}
+                </p>
+                <p className="text-green-700 text-sm mt-1">
+                  Business unit admin will receive these cards for employee distribution
+                </p>
+              </div>
+            )}
+
+            {!selectedBusinessUnit && (
+              <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <h4 className="font-medium text-yellow-900 mb-2">Unassigned Cards:</h4>
+                <p className="text-yellow-800">
+                  {batchSize} card(s) will be created without business unit assignment
+                </p>
+                <p className="text-yellow-700 text-sm mt-1">
+                  Use "Assign Cards" to distribute them to business units later
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowCreateForm(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleCreateCard}
+                disabled={(batchSize === 1 && !cardNumber) || createCardMutation.isPending}
+              >
+                {createCardMutation.isPending ? "Creating..." : `Create ${batchSize} Card${batchSize > 1 ? 's' : ''}`}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {showAssignForm && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Assign Cards to Business Units
+            </CardTitle>
+            <CardDescription>
+              Assign unassigned RFID cards to business units for employee distribution
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Select Unassigned Card</label>
+                <select 
+                  value={selectedCardToAssign} 
+                  onChange={(e) => setSelectedCardToAssign(e.target.value)}
+                  className="w-full p-2 border rounded-md"
+                >
+                  <option value="">Choose a card...</option>
+                  {rfidCards?.filter((card: any) => !card.businessUnitId).map((card: any) => (
+                    <option key={card.id} value={card.id}>
+                      {card.cardNumber} {card.cardName ? `(${card.cardName})` : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">Only unassigned cards are shown</p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Assign to Business Unit</label>
+                <select 
+                  value={assignToBusinessUnit} 
+                  onChange={(e) => setAssignToBusinessUnit(e.target.value)}
+                  className="w-full p-2 border rounded-md"
+                >
+                  <option value="">Choose business unit...</option>
+                  {(businessUnits as any[])?.map((unit: any) => (
+                    <option key={unit.id} value={unit.id}>
+                      {unit.name} ({unit.code})
                     </option>
                   ))}
                 </select>
               </div>
-
-              <div>
-                <label className="text-sm font-medium">Company Initials (2 letters)</label>
-                <input
-                  type="text"
-                  value={companyInitials}
-                  onChange={(e) => setCompanyInitials(e.target.value.slice(0, 2).toUpperCase())}
-                  placeholder="e.g., UK"
-                  className="w-full p-2 border rounded-md"
-                  maxLength={2}
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium">User Initials (2 letters)</label>
-                <input
-                  type="text"
-                  value={userInitials}
-                  onChange={(e) => setUserInitials(e.target.value.slice(0, 2).toUpperCase())}
-                  placeholder="e.g., TP"
-                  className="w-full p-2 border rounded-md"
-                  maxLength={2}
-                />
-                {selectedUserData && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Suggestion: {selectedUserData.firstName?.[0]}{selectedUserData.lastName?.[0]}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="text-sm font-medium">Generated Card Number</label>
-                <input
-                  type="text"
-                  value={suggestedCardNumber}
-                  onChange={(e) => setSuggestedCardNumber(e.target.value)}
-                  className="w-full p-2 border rounded-md"
-                  placeholder="Will be generated automatically"
-                />
-              </div>
             </div>
 
-            <div className="flex gap-2">
-              <Button 
-                onClick={handleCreateCard}
-                disabled={!selectedUser || !suggestedCardNumber || createCardMutation.isPending}
-              >
-                {createCardMutation.isPending ? "Creating..." : "Create Card"}
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowAssignForm(false)}>
+                Cancel
               </Button>
               <Button 
-                variant="outline" 
-                onClick={() => setShowCreateForm(false)}
+                onClick={handleAssignCard}
+                disabled={!selectedCardToAssign || !assignToBusinessUnit || assignCardMutation.isPending}
               >
-                Cancel
+                {assignCardMutation.isPending ? "Assigning..." : "Assign Card"}
               </Button>
             </div>
           </CardContent>
@@ -3421,7 +3550,12 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
                   <div className="flex-1">
                     <div className="font-medium">{card.cardNumber}</div>
                     <div className="text-sm text-muted-foreground">
-                      {card.user?.firstName} {card.user?.lastName} ({card.user?.email})
+                      {card.cardName && <span className="font-medium">{card.cardName} • </span>}
+                      {card.businessUnit?.name ? (
+                        <span className="text-tea-green font-medium">Assigned to: {card.businessUnit.name}</span>
+                      ) : (
+                        <span className="text-orange-600 font-medium">Unassigned</span>
+                      )}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       Created: {new Date(card.createdAt).toLocaleDateString()}

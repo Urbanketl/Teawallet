@@ -183,3 +183,57 @@ export async function deleteUserAccount(req: any, res: Response) {
     res.status(500).json({ message: 'Failed to delete user account' });
   }
 }
+
+// NEW: Centralized RFID Card Creation & Assignment
+export async function createRfidCardBatch(req: any, res: Response) {
+  try {
+    const { businessUnitId, cardNumber, cardName, batchSize } = req.body;
+    
+    const result = await storage.createRfidCardBatch({
+      businessUnitId,
+      cardNumber,
+      cardName,
+      batchSize
+    });
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    console.error('Error creating RFID card batch:', error);
+    res.status(500).json({ message: 'Failed to create RFID cards' });
+  }
+}
+
+export async function assignRfidCard(req: any, res: Response) {
+  try {
+    const { cardId, businessUnitId } = req.body;
+    
+    if (!cardId || !businessUnitId) {
+      return res.status(400).json({ message: 'Card ID and Business Unit ID are required' });
+    }
+    
+    const result = await storage.assignRfidCardToBusinessUnit(cardId, businessUnitId);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    console.error('Error assigning RFID card:', error);
+    res.status(500).json({ message: 'Failed to assign RFID card' });
+  }
+}
+
+export async function getBusinessUnits(req: any, res: Response) {
+  try {
+    const businessUnits = await storage.getAllBusinessUnits();
+    res.json(businessUnits);
+  } catch (error) {
+    console.error('Error fetching business units:', error);
+    res.status(500).json({ message: 'Failed to fetch business units' });
+  }
+}

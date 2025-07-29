@@ -66,6 +66,15 @@ export interface IStorage {
   getAllRfidCards(): Promise<(RfidCard & { businessUnit: BusinessUnit })[]>;
   getAllRfidCardsPaginated(page: number, limit: number): Promise<{ cards: (RfidCard & { businessUnit: BusinessUnit })[], total: number }>;
   
+  // NEW: Centralized RFID Card Creation & Assignment (Platform Admin Only)
+  createRfidCardBatch(params: {
+    businessUnitId?: string;
+    cardNumber?: string;
+    cardName?: string;
+    batchSize?: number;
+  }): Promise<{ success: boolean; cards: RfidCard[]; message: string }>;
+  assignRfidCardToBusinessUnit(cardId: string, businessUnitId: string): Promise<{ success: boolean; message: string }>;
+  
   // User machine operations (corporate dashboard)
   getManagedMachines(businessUnitId: string): Promise<TeaMachine[]>;
   getManagedRfidCards(businessUnitId: string): Promise<RfidCard[]>;
@@ -453,32 +462,43 @@ export class DatabaseStorage implements IStorage {
       .where(eq(rfidCards.id, cardId));
   }
 
-  // Legacy Admin RFID operations (for super admin)
+  // Legacy Admin RFID operations (for super admin) - DEPRECATED
   async createRfidCardForUser(userId: string, cardNumber: string): Promise<RfidCard> {
+    // This method is deprecated - use createRfidCardBatch instead
+    console.warn('createRfidCardForUser is deprecated - use createRfidCardBatch instead');
+    
     const [newCard] = await db
       .insert(rfidCards)
       .values({
-        businessUnitId: userId,
         cardNumber: cardNumber,
+        cardName: `Card for ${userId}`,
+        businessUnitId: null, // Cards should be unassigned by default
         isActive: true,
       })
       .returning();
     return newCard;
   }
 
-  async getAllRfidCards(): Promise<(RfidCard & { businessUnitAdmin: User })[]> {
+  async getAllRfidCards(): Promise<(RfidCard & { businessUnit: BusinessUnit })[]> {
     const results = await db
       .select({
         card: rfidCards,
-        user: users
+        businessUnit: businessUnits
       })
       .from(rfidCards)
-      .leftJoin(users, eq(rfidCards.businessUnitId, users.id))
+      .leftJoin(businessUnits, eq(rfidCards.businessUnitId, businessUnits.id))
       .orderBy(desc(rfidCards.createdAt));
     
     return results.map(row => ({
       ...row.card,
-      businessUnit: row.user || {} as User
+      businessUnit: row.businessUnit || { 
+        id: '', 
+        name: 'Unassigned', 
+        code: '', 
+        walletBalance: '0', 
+        createdAt: null, 
+        updatedAt: null 
+      } as BusinessUnit
     }));
   }
 
@@ -518,6 +538,128 @@ export class DatabaseStorage implements IStorage {
       cards,
       total: countResult.count || 0
     };
+  }
+
+  // NEW: Centralized RFID Card Creation & Assignment (Platform Admin Only)
+  async createRfidCardBatch(params: {
+    businessUnitId?: string;
+    cardNumber?: string;
+    cardName?: string;
+    batchSize?: number;
+  }): Promise<{ success: boolean; cards: RfidCard[]; message: string }> {
+    try {
+      const { businessUnitId, cardNumber, cardName, batchSize = 1 } = params;
+      const cards: RfidCard[] = [];
+
+      if (batchSize === 1 && cardNumber) {
+        // Single card with specific number
+        const [existingCard] = await db
+          .select()
+          .from(rfidCards)
+          .where(eq(rfidCards.cardNumber, cardNumber));
+
+        if (existingCard) {
+          return { 
+            success: false, 
+            cards: [], 
+            message: `Card number ${cardNumber} already exists` 
+          };
+        }
+
+        const [newCard] = await db
+          .insert(rfidCards)
+          .values({
+            cardNumber,
+            cardName,
+            businessUnitId: businessUnitId || null,
+            isActive: true,
+          })
+          .returning();
+        
+        cards.push(newCard);
+      } else {
+        // Batch creation with auto-generated numbers
+        for (let i = 0; i < batchSize; i++) {
+          const timestamp = Date.now();
+          const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+          const autoCardNumber = `RFID_${timestamp}_${randomNum}`;
+          
+          const [newCard] = await db
+            .insert(rfidCards)
+            .values({
+              cardNumber: autoCardNumber,
+              cardName: cardName ? `${cardName} #${i + 1}` : `Corporate Card #${i + 1}`,
+              businessUnitId: businessUnitId || null,
+              isActive: true,
+            })
+            .returning();
+          
+          cards.push(newCard);
+        }
+      }
+
+      const assignmentMessage = businessUnitId 
+        ? `and assigned to business unit ${businessUnitId}` 
+        : 'as unassigned (can be assigned later)';
+
+      return {
+        success: true,
+        cards,
+        message: `Successfully created ${cards.length} card(s) ${assignmentMessage}`
+      };
+    } catch (error) {
+      console.error('Error creating RFID card batch:', error);
+      return { 
+        success: false, 
+        cards: [], 
+        message: 'Failed to create RFID cards' 
+      };
+    }
+  }
+
+  async assignRfidCardToBusinessUnit(cardId: string, businessUnitId: string): Promise<{ success: boolean; message: string }> {
+    try {
+      // Verify business unit exists
+      const [businessUnit] = await db
+        .select()
+        .from(businessUnits)
+        .where(eq(businessUnits.id, businessUnitId));
+
+      if (!businessUnit) {
+        return { success: false, message: 'Business unit not found' };
+      }
+
+      // Verify card exists and is unassigned
+      const [card] = await db
+        .select()
+        .from(rfidCards)
+        .where(eq(rfidCards.id, parseInt(cardId)));
+
+      if (!card) {
+        return { success: false, message: 'RFID card not found' };
+      }
+
+      if (card.businessUnitId) {
+        return { success: false, message: 'Card is already assigned to a business unit' };
+      }
+
+      // Assign the card
+      await db
+        .update(rfidCards)
+        .set({ 
+          businessUnitId,
+          updatedAt: new Date()
+        })
+        .where(eq(rfidCards.id, parseInt(cardId)));
+
+      return { 
+        success: true, 
+        message: `Card ${card.cardNumber} successfully assigned to ${businessUnit.name}` 
+      };
+    } catch (error) {
+      console.error('Error assigning RFID card:', error);
+      return { success: false, message: 'Failed to assign RFID card' };
+    }
   }
 
   // Transaction operations

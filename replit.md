@@ -43,7 +43,9 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Corporate Billing**: All usage charged to business unit admin's wallet regardless of which employee uses the card
 
 ### RFID Integration
-- **Card Management**: Business unit admins issue generic RFID cards for employee use
+- **Centralized Card Creation**: Platform admins create RFID cards in batches and assign to business units (similar to corporate credit card model)
+- **Card Assignment**: Business unit assignment system allowing platform admins to assign unassigned cards to specific business units
+- **Card Management**: Business unit admins manage assigned RFID cards for employee use but cannot create new cards
 - **Validation System**: Machine-facing API endpoints for card validation
 - **Transaction Processing**: Automatic wallet deduction from business unit admin on card usage
 - **History Tracking**: Complete audit trail of RFID transactions with business unit context
@@ -122,6 +124,14 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- July 29, 2025: COMPLETED - Implemented comprehensive centralized RFID card management system with platform admin batch creation and business unit assignment model
+- July 29, 2025: Redesigned RFID workflow from business unit self-creation to centralized platform admin creation and assignment (like corporate credit cards)
+- July 29, 2025: Added new storage methods: createRfidCardBatch() for batch card creation with optional business unit assignment, assignRfidCardToBusinessUnit() for card assignment
+- July 29, 2025: Enhanced admin controller with createRfidCardBatch, assignRfidCard, and getBusinessUnits functions for complete centralized management
+- July 29, 2025: Added new API routes: POST /api/admin/rfid/cards/create-batch, POST /api/admin/rfid/cards/assign, GET /api/admin/business-units
+- July 29, 2025: Fixed broken storage methods (createRfidCardForUser using wrong businessUnitId mapping, getAllRfidCards joining wrong tables)
+- July 29, 2025: Successfully assigned 12 RFID cards to business units using new centralized system: 3 to Ikea, 3 to Kulhad party, 3 to New Urban ketl, 3 to Test BU
+- July 29, 2025: Updated admin interface to support new workflow: platform admin creates cards → assigns to business units → ships physical cards → business unit manages assigned cards
 - July 29, 2025: COMPLETED - Fixed Analytics page filters and enhanced chart readability with proper axis labels
 - July 29, 2025: Improved filter system with proper React Query dependencies for date range and machine selection filters
 - July 29, 2025: Added comprehensive axis labels to all charts: Revenue Trends, Peak Hours, Business Unit Comparison, Daily Dispensing Trends

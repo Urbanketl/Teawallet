@@ -372,6 +372,13 @@ export class DatabaseStorage implements IStorage {
         .where(eq(userBusinessUnits.businessUnitId, businessUnitId));
       
       console.log(`Raw assignments query result:`, assignments);
+      console.log(`Assignment fields:`, assignments.map(a => ({ 
+        userId: a.userId, 
+        role: a.role, 
+        roleType: typeof a.role,
+        firstName: a.firstName 
+      })));
+      
       return assignments;
     } catch (error) {
       console.error('Error in getBusinessUnitUsers:', error);

@@ -1433,6 +1433,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Serve tea machine simulator directly from server
+  app.get('/tea-machine-simulator', (req, res) => {
+    res.sendFile(path.join(__dirname, '../tea-machine-simulator.html'));
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

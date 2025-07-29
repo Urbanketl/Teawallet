@@ -161,6 +161,9 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - July 29, 2025: COMPLETED - Enhanced Transfer Business Unit Ownership page to display current administrator when business unit is selected
 - July 29, 2025: Fixed data structure mismatch in current admin query - now correctly shows admin name, email, and role when business unit selected
 - July 29, 2025: Added visual current admin section with loading states and proper error handling for unassigned units
+- July 29, 2025: COMPLETED - Fixed database role inconsistencies across ALL business units causing ownership display issues
+- July 29, 2025: Standardized all admin roles to "Business Unit Admin" (fixed Ikea "manager" role and previous New Urban ketl "admin" role)
+- July 29, 2025: Resolved both Business Units tab "Unassigned" display and Transfer page "No administrator assigned" issues with complete role normalization
 - July 28, 2025: COMPLETED - Implemented comprehensive business unit summary cards showing recharges, cups dispensed, revenue, and average cup price with full date filter integration
 - July 28, 2025: Fixed business unit summary query to use correct transaction type ('credit' instead of 'recharge') for accurate recharge amount calculation
 - July 28, 2025: Added BusinessUnitSummaryCards component with colorful design matching provided screenshot, including responsive grid layout and loading states

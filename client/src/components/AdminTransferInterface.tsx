@@ -105,7 +105,7 @@ export function AdminTransferInterface() {
 
   // Fetch current admin for selected business unit
   const { data: currentAdmin, isLoading: currentAdminLoading } = useQuery<User | null>({
-    queryKey: ['/api/admin/business-units', selectedBusinessUnit, 'users'],
+    queryKey: [`/api/admin/business-units/${selectedBusinessUnit}/users`],
     enabled: !!selectedBusinessUnit,
     select: (data: any[]) => {
       console.log('=== Current Admin Query Debug ===');

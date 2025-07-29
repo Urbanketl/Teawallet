@@ -45,7 +45,7 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
 
   // Fetch current assignments for selected business unit
   const { data: currentAssignments, isLoading: assignmentsLoading } = useQuery({
-    queryKey: ["/api/admin/business-units", selectedBusinessUnit, "users"],
+    queryKey: [`/api/admin/business-units/${selectedBusinessUnit}/users`],
     enabled: !!selectedBusinessUnit,
     retry: false,
   });
@@ -54,6 +54,11 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
   console.log("Current assignments data:", currentAssignments);
   console.log("Selected business unit:", selectedBusinessUnit);
   console.log("Assignments loading:", assignmentsLoading);
+  
+  // Check if business unit already has a Business Unit Admin
+  const hasBusinessUnitAdmin = currentAssignments?.some((assignment: any) => 
+    assignment.role === 'admin' || assignment.role === 'manager'
+  );
 
   // Assignment mutation
   const assignUserMutation = useMutation({
@@ -66,7 +71,7 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
     onSuccess: () => {
       toast({ title: "Success", description: "User assigned successfully!" });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/business-units"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/business-units", selectedBusinessUnit, "users"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/admin/business-units/${selectedBusinessUnit}/users`] });
       setSelectedUser("");
     },
     onError: (error: any) => {
@@ -89,7 +94,7 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
     onSuccess: () => {
       toast({ title: "Success", description: "User unassigned successfully!" });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/business-units"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/business-units", selectedBusinessUnit, "users"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/admin/business-units/${selectedBusinessUnit}/users`] });
     },
     onError: (error: any) => {
       toast({ 
@@ -106,6 +111,16 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
         title: "Missing Information",
         description: "Please select both business unit and user",
         variant: "destructive"
+      });
+      return;
+    }
+
+    // Check business rule for Business Unit Admin assignment
+    if ((selectedRole === 'admin' || selectedRole === 'manager') && hasBusinessUnitAdmin) {
+      toast({
+        title: "Business Unit Admin Already Exists",
+        description: "This business unit already has an admin. Use the Business Ownership tab to transfer ownership.",
+        variant: "destructive",
       });
       return;
     }
@@ -194,19 +209,43 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
                   className="w-full p-2 border border-gray-300 rounded-md bg-white"
                 >
                   <option value="viewer">Viewer (Read-only reports)</option>
-                  <option value="admin">Business Unit Admin (Manage tea programs)</option>
-                  <option value="manager">Manager (Full business unit control)</option>
+                  {!hasBusinessUnitAdmin && (
+                    <>
+                      <option value="admin">Business Unit Admin (Manage tea programs)</option>
+                      <option value="manager">Manager (Full business unit control)</option>
+                    </>
+                  )}
                 </select>
+                {hasBusinessUnitAdmin && (selectedRole === 'admin' || selectedRole === 'manager') && (
+                  <p className="text-sm text-amber-600 mt-1">
+                    This business unit already has an admin. Use the Business Ownership tab to transfer ownership.
+                  </p>
+                )}
               </div>
 
               <div className="flex items-end">
                 <Button 
                   onClick={handleAssignUser}
-                  disabled={!selectedUser || assignUserMutation.isPending}
-                  className="w-full bg-tea-green hover:bg-tea-dark"
+                  disabled={
+                    !selectedUser || 
+                    assignUserMutation.isPending ||
+                    (hasBusinessUnitAdmin && (selectedRole === 'admin' || selectedRole === 'manager'))
+                  }
+                  className="w-full bg-tea-green hover:bg-tea-dark disabled:bg-gray-400"
                 >
                   {assignUserMutation.isPending ? "Assigning..." : "Assign User"}
                 </Button>
+                {hasBusinessUnitAdmin && (selectedRole === 'admin' || selectedRole === 'manager') && (
+                  <div className="ml-2">
+                    <Button 
+                      onClick={() => setActiveTab("ownership")}
+                      variant="outline"
+                      className="whitespace-nowrap"
+                    >
+                      Transfer Ownership →
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -222,21 +261,22 @@ function UserAssignmentInterface({ businessUnits }: { businessUnits: BusinessUni
                   {currentAssignments.map((assignment: any) => (
                     <div key={assignment.userId} className="flex items-center justify-between p-3 bg-white border rounded-lg">
                       <div>
-                        <span className="font-medium">{assignment.firstName} {assignment.lastName}</span>
+                        <span className="font-medium">
+                          {assignment.firstName} {assignment.lastName}
+                        </span>
                         <span className="text-gray-500 ml-2">({assignment.email})</span>
-                        <Badge variant="outline" className="ml-2">
-                          {assignment.role === 'viewer' ? 'Viewer' : 
-                           assignment.role === 'admin' ? 'Business Unit Admin' : 
-                           assignment.role === 'manager' ? 'Manager' : assignment.role}
-                        </Badge>
+                        <span className="ml-3 px-2 py-1 text-xs rounded bg-blue-100 text-blue-800">
+                          {assignment.role === 'admin' ? 'Business Unit Admin' : 
+                           assignment.role === 'manager' ? 'Manager' : 'Viewer'}
+                        </span>
                       </div>
                       <Button
+                        onClick={() => handleUnassignUser(assignment.userId)}
                         variant="outline"
                         size="sm"
-                        onClick={() => handleUnassignUser(assignment.userId)}
-                        disabled={unassignUserMutation.isPending}
+                        className="text-red-600 hover:text-red-700"
                       >
-                        {unassignUserMutation.isPending ? "Removing..." : "Remove"}
+                        Remove
                       </Button>
                     </div>
                   ))}

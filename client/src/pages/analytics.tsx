@@ -6,9 +6,53 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { TrendingUp, Clock, Coffee, Activity, Users, DollarSign, Calendar, Download } from "lucide-react";
+import { TrendingUp, Clock, Coffee, Activity, Users, DollarSign, Calendar, Download, Building2 } from "lucide-react";
 import { useState } from "react";
 import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
+
+// Type definitions for API responses
+interface PopularTea {
+  teaType: string;
+  count: number;
+}
+
+interface PeakHour {
+  hour: number;
+  count: number;
+}
+
+interface MachinePerformance {
+  machineId: string;
+  uptime: number;
+  totalDispensed: number;
+}
+
+interface UserBehavior {
+  avgTeaPerDay: string;
+  preferredTimes: string[];
+  topTeaTypes: string[];
+}
+
+interface MachineDispensing {
+  date: string;
+  [key: string]: string | number;
+}
+
+interface BusinessUnitComparison {
+  id: string;
+  name: string;
+  cupsDispensed: number;
+  revenue: string;
+  activeMachines: number;
+  averagePerCup: string;
+}
+
+interface RevenueTrend {
+  date: string;
+  revenue: string;
+  cups: number;
+  avgPerCup: string;
+}
 
 export default function AnalyticsPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -36,34 +80,40 @@ export default function AnalyticsPage() {
 
   const { start: startDate, end: endDate } = getDateRange();
 
-  const { data: popularTeas = [] } = useQuery({
-    queryKey: [`/api/analytics/popular-teas?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`],
-    enabled: user?.isAdmin,
-  });
-
-  const { data: peakHours = [] } = useQuery({
+  const { data: peakHours = [] } = useQuery<PeakHour[]>({
     queryKey: [`/api/analytics/peak-hours?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`],
     enabled: user?.isAdmin,
   });
 
-  const { data: machinePerformance = [] } = useQuery({
+  const { data: machinePerformance = [] } = useQuery<MachinePerformance[]>({
     queryKey: [`/api/analytics/machine-performance?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`],
     enabled: user?.isAdmin,
   });
 
-  const { data: userBehavior } = useQuery({
+  const { data: userBehavior } = useQuery<UserBehavior>({
     queryKey: [`/api/analytics/user-behavior?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`],
     enabled: user?.isAdmin,
   });
 
+  // Enhanced Analytics Queries
+  const { data: businessUnitComparison = [] } = useQuery<BusinessUnitComparison[]>({
+    queryKey: [`/api/analytics/business-unit-comparison?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`],
+    enabled: user?.isAdmin && user?.isSuperAdmin,
+  });
+
+  const { data: revenueTrends = [] } = useQuery<RevenueTrend[]>({
+    queryKey: [`/api/analytics/revenue-trends?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`],
+    enabled: user?.isAdmin,
+  });
+
   // New query for machine dispensing data
-  const { data: machineDispensing = [] } = useQuery({
+  const { data: machineDispensing = [] } = useQuery<MachineDispensing[]>({
     queryKey: [`/api/analytics/machine-dispensing?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}${selectedMachine !== 'all' ? `&machineId=${selectedMachine}` : ''}`],
     enabled: user?.isAdmin,
   });
 
   // Get available machines for the filter
-  const { data: allMachines = [] } = useQuery({
+  const { data: allMachines = [] } = useQuery<any[]>({
     queryKey: user?.isSuperAdmin ? ['/api/admin/machines'] : ['/api/corporate/machines'],
     enabled: user?.isAdmin,
   });
@@ -166,12 +216,14 @@ export default function AnalyticsPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Top Tea Types</CardTitle>
-              <TrendingUp className="h-4 w-4 text-tea-green" />
+              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+              <DollarSign className="h-4 w-4 text-tea-green" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{userBehavior?.topTeaTypes?.length || 0}</div>
-              <p className="text-xs text-muted-foreground">varieties consumed</p>
+              <div className="text-2xl font-bold">
+                ₹{revenueTrends.reduce((sum, day) => sum + parseFloat(day.revenue), 0).toFixed(2)}
+              </div>
+              <p className="text-xs text-muted-foreground">period revenue</p>
             </CardContent>
           </Card>
 
@@ -187,22 +239,29 @@ export default function AnalyticsPage() {
           </Card>
         </div>
 
-        {/* Charts */}
+        {/* Enhanced Analytics Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Popular Tea Types */}
+          {/* Revenue Trends */}
           <Card>
             <CardHeader>
-              <CardTitle>Employee Tea Preferences (Last 30 Days)</CardTitle>
+              <CardTitle>Revenue Trends Over Time</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={popularTeas.map((item: any) => ({ teaType: item.teaType, count: Number(item.count) }))}>
+                <LineChart data={revenueTrends}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="teaType" angle={-45} textAnchor="end" height={80} />
+                  <XAxis dataKey="date" angle={-45} textAnchor="end" height={80} />
                   <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#22c55e" />
-                </BarChart>
+                  <Tooltip 
+                    formatter={(value, name) => [
+                      name === 'revenue' ? `₹${value}` : value,
+                      name === 'revenue' ? 'Revenue' : 'Cups'
+                    ]}
+                  />
+                  <Legend />
+                  <Line type="monotone" dataKey="revenue" stroke="#22c55e" strokeWidth={2} name="Daily Revenue (₹)" />
+                  <Line type="monotone" dataKey="cups" stroke="#3b82f6" strokeWidth={2} name="Cups Dispensed" />
+                </LineChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
@@ -210,11 +269,11 @@ export default function AnalyticsPage() {
           {/* Peak Hours */}
           <Card>
             <CardHeader>
-              <CardTitle>Employee Tea Consumption by Hour</CardTitle>
+              <CardTitle>Peak Usage Hours</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={peakHours.map((item: any) => ({ hour: `${item.hour}:00`, count: Number(item.count) }))}>
+                <LineChart data={peakHours.map(item => ({ hour: `${item.hour}:00`, count: item.count }))}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="hour" />
                   <YAxis />
@@ -225,6 +284,39 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Business Unit Comparison (Super Admin Only) */}
+        {user?.isSuperAdmin && businessUnitComparison.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                Business Unit Performance Comparison
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={businessUnitComparison} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
+                  <YAxis yAxisId="left" />
+                  <YAxis yAxisId="right" orientation="right" />
+                  <Tooltip 
+                    formatter={(value, name) => [
+                      name === 'revenue' ? `₹${value}` : value,
+                      name === 'revenue' ? 'Revenue' : 
+                      name === 'cupsDispensed' ? 'Cups Dispensed' : 
+                      name === 'activeMachines' ? 'Active Machines' : name
+                    ]}
+                  />
+                  <Legend />
+                  <Bar yAxisId="left" dataKey="cupsDispensed" fill="#22c55e" name="Cups Dispensed" />
+                  <Bar yAxisId="right" dataKey="revenue" fill="#3b82f6" name="Revenue (₹)" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Machine Dispensing Analytics */}
         <Card className="mb-8">

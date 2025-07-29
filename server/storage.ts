@@ -894,6 +894,134 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  // Enhanced Analytics Methods
+  async getBusinessUnitComparison(startDate?: string, endDate?: string): Promise<{
+    id: string;
+    name: string;
+    cupsDispensed: number;
+    revenue: string;
+    activeMachines: number;
+    averagePerCup: string;
+  }[]> {
+    let dateConditions = [];
+    if (startDate) {
+      dateConditions.push(gte(dispensingLogs.createdAt, new Date(startDate)));
+    }
+    if (endDate) {
+      dateConditions.push(lte(dispensingLogs.createdAt, new Date(endDate)));
+    }
+
+    // Get all business units with their dispensing data
+    const businessUnitStats = await db
+      .select({
+        id: businessUnits.id,
+        name: businessUnits.name,
+        cupsDispensed: sql<number>`COALESCE(COUNT(${dispensingLogs.id}), 0)::int`,
+        revenue: sql<string>`COALESCE(SUM(${dispensingLogs.amount}), '0')::text`,
+        activeMachines: sql<number>`COALESCE(COUNT(DISTINCT ${teaMachines.id}), 0)::int`
+      })
+      .from(businessUnits)
+      .leftJoin(dispensingLogs, and(
+        eq(dispensingLogs.businessUnitId, businessUnits.id),
+        eq(dispensingLogs.success, true),
+        ...(dateConditions.length > 0 ? dateConditions : [])
+      ))
+      .leftJoin(teaMachines, and(
+        eq(teaMachines.businessUnitId, businessUnits.id),
+        eq(teaMachines.isActive, true)
+      ))
+      .groupBy(businessUnits.id, businessUnits.name);
+
+    return businessUnitStats.map(stat => ({
+      id: stat.id,
+      name: stat.name,
+      cupsDispensed: stat.cupsDispensed,
+      revenue: stat.revenue,
+      activeMachines: stat.activeMachines,
+      averagePerCup: stat.cupsDispensed > 0 
+        ? (parseFloat(stat.revenue) / stat.cupsDispensed).toFixed(2)
+        : '0.00'
+    }));
+  }
+
+  async getRevenueTrends(startDate?: string, endDate?: string, businessUnitAdminId?: string): Promise<{
+    date: string;
+    revenue: string;
+    cups: number;
+    avgPerCup: string;
+  }[]> {
+    let whereClause = [eq(dispensingLogs.success, true)];
+    
+    if (startDate && endDate) {
+      whereClause.push(gte(dispensingLogs.createdAt, new Date(startDate)));
+      whereClause.push(lte(dispensingLogs.createdAt, new Date(endDate)));
+    } else {
+      whereClause.push(sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`);
+    }
+    
+    // Filter by business unit admin for regular admins
+    if (businessUnitAdminId) {
+      const userUnits = await this.getUserBusinessUnits(businessUnitAdminId);
+      const unitIds = userUnits.map(unit => unit.id);
+      if (unitIds.length > 0) {
+        whereClause.push(inArray(dispensingLogs.businessUnitId, unitIds));
+      }
+    }
+
+    const dailyRevenue = await db
+      .select({
+        date: sql<string>`DATE(${dispensingLogs.createdAt})::text`,
+        revenue: sql<string>`COALESCE(SUM(${dispensingLogs.amount}), '0')::text`,
+        cups: sql<number>`COUNT(*)::int`
+      })
+      .from(dispensingLogs)
+      .where(and(...whereClause))
+      .groupBy(sql`DATE(${dispensingLogs.createdAt})`)
+      .orderBy(sql`DATE(${dispensingLogs.createdAt})`);
+
+    return dailyRevenue.map(day => ({
+      date: day.date,
+      revenue: day.revenue,
+      cups: day.cups,
+      avgPerCup: day.cups > 0 
+        ? (parseFloat(day.revenue) / day.cups).toFixed(2)
+        : '0.00'
+    }));
+  }
+
+  async getUsageTrendsByBusinessUnit(businessUnitId: string, startDate?: string, endDate?: string): Promise<{
+    date: string;
+    cups: number;
+    revenue: string;
+    machines: string[];
+  }[]> {
+    let whereClause = [
+      eq(dispensingLogs.businessUnitId, businessUnitId),
+      eq(dispensingLogs.success, true)
+    ];
+    
+    if (startDate) {
+      whereClause.push(gte(dispensingLogs.createdAt, new Date(startDate)));
+    }
+    if (endDate) {
+      whereClause.push(lte(dispensingLogs.createdAt, new Date(endDate)));
+    }
+
+    const dailyTrends = await db
+      .select({
+        date: sql<string>`DATE(${dispensingLogs.createdAt})::text`,
+        cups: sql<number>`COUNT(*)::int`,
+        revenue: sql<string>`COALESCE(SUM(${dispensingLogs.amount}), '0')::text`,
+        machines: sql<string[]>`ARRAY_AGG(DISTINCT ${dispensingLogs.machineId})`
+      })
+      .from(dispensingLogs)
+      .where(and(...whereClause))
+      .groupBy(sql`DATE(${dispensingLogs.createdAt})`)
+      .orderBy(sql`DATE(${dispensingLogs.createdAt})`);
+
+    return dailyTrends;
+  }
+
   // Machine operations
   async getBusinessUnitMachines(businessUnitId: string): Promise<TeaMachine[]> {
     return await db

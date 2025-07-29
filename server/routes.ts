@@ -918,6 +918,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Enhanced Analytics Routes
+  app.get('/api/analytics/business-unit-comparison', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      // Only super admins can see business unit comparisons
+      if (!user.isSuperAdmin) {
+        return res.status(403).json({ message: "Super admin access required for business unit comparisons" });
+      }
+
+      const { start, end } = req.query;
+      const comparison = await storage.getBusinessUnitComparison(start as string, end as string);
+      res.json(comparison);
+    } catch (error) {
+      console.error("Error fetching business unit comparison:", error);
+      res.status(500).json({ message: "Failed to fetch business unit comparison" });
+    }
+  });
+
+  app.get('/api/analytics/revenue-trends', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { start, end } = req.query;
+      
+      // Super admins see all data, regular admins see only their business unit data
+      const businessUnitAdminId = user.isSuperAdmin ? undefined : userId;
+
+      const trends = await storage.getRevenueTrends(start as string, end as string, businessUnitAdminId);
+      res.json(trends);
+    } catch (error) {
+      console.error("Error fetching revenue trends:", error);
+      res.status(500).json({ message: "Failed to fetch revenue trends" });
+    }
+  });
+
+  app.get('/api/analytics/usage-trends/:businessUnitId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.user?.id || req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { businessUnitId } = req.params;
+      const { start, end } = req.query;
+
+      // Regular admins can only see their own business units
+      if (!user.isSuperAdmin) {
+        const userUnits = await storage.getUserBusinessUnits(userId);
+        const canAccess = userUnits.some(unit => unit.id === businessUnitId);
+        if (!canAccess) {
+          return res.status(403).json({ message: "Access denied to this business unit" });
+        }
+      }
+
+      const trends = await storage.getUsageTrendsByBusinessUnit(businessUnitId, start as string, end as string);
+      res.json(trends);
+    } catch (error) {
+      console.error("Error fetching usage trends:", error);
+      res.status(500).json({ message: "Failed to fetch usage trends" });
+    }
+  });
+
   // Business Units routes
   app.get('/api/admin/business-units', isAuthenticated, async (req: any, res) => {
     try {

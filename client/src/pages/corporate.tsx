@@ -217,9 +217,10 @@ export default function CorporateDashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // Check for pseudo login parameter
+  // Check for pseudo login parameter and tab parameter
   const urlParams = new URLSearchParams(window.location.search);
   const pseudoParam = urlParams.get('pseudo') ? `?pseudo=${urlParams.get('pseudo')}` : '';
+  const defaultTab = urlParams.get('tab') || 'machines';
 
   // Get user's business units
   const { data: businessUnits = [], isLoading: businessUnitsLoading } = useQuery({
@@ -513,7 +514,7 @@ export default function CorporateDashboard() {
             />
 
             {/* Tabs for detailed view */}
-            <Tabs defaultValue="machines" className="w-full">
+            <Tabs defaultValue={defaultTab} className="w-full">
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="machines">Machines</TabsTrigger>
                 <TabsTrigger value="cards">Employee Cards</TabsTrigger>

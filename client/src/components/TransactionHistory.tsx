@@ -78,7 +78,7 @@ export default function TransactionHistory({ businessUnitId }: TransactionHistor
             <History className="w-5 h-5 text-tea-green" />
             <span>Recent Transactions</span>
           </CardTitle>
-          <Link href="/corporate" className="text-tea-green hover:text-tea-dark font-medium text-sm flex items-center space-x-1">
+          <Link href="/corporate?tab=logs" className="text-tea-green hover:text-tea-dark font-medium text-sm flex items-center space-x-1">
             <span>View All</span>
             <ArrowRight className="w-4 h-4" />
           </Link>

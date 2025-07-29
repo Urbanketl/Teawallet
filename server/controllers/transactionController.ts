@@ -117,34 +117,10 @@ export async function createPaymentOrder(req: any, res: Response) {
         });
       }
     } else {
-      // Original user wallet validation for backward compatibility
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      const maxWalletBalanceStr = await storage.getSystemSetting('max_wallet_balance') || '5000.00';
-      const maxWalletBalance = parseFloat(maxWalletBalanceStr);
-      const currentBalance = parseFloat(user.walletBalance || '0');
-      const newBalance = currentBalance + amount;
-
-      console.log('User Wallet validation:', {
-        amount,
-        maxWalletBalance,
-        currentBalance,
-        newBalance,
-        exceeds: newBalance > maxWalletBalance
+      // Business unit ID is required for all recharge operations
+      return res.status(400).json({ 
+        message: "businessUnitId parameter is required for wallet recharge operations" 
       });
-
-      if (newBalance > maxWalletBalance) {
-        console.log('User wallet limit exceeded, returning error');
-        return res.status(400).json({ 
-          message: `Cannot recharge. Maximum wallet balance is ₹${maxWalletBalance}. Current balance: ₹${currentBalance}. You can add up to ₹${(maxWalletBalance - currentBalance).toFixed(2)} more.`,
-          maxBalance: maxWalletBalance,
-          currentBalance: currentBalance,
-          maxAllowedRecharge: maxWalletBalance - currentBalance
-        });
-      }
     }
 
     const order = await createOrder(amount * 100); // Convert to paise
@@ -209,49 +185,11 @@ export async function verifyPaymentAndAddFunds(req: any, res: Response) {
         businessUnit: updatedBusinessUnit 
       });
     } else {
-      // Original user wallet recharge for backward compatibility
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      const maxWalletBalanceStr = await storage.getSystemSetting('max_wallet_balance') || '5000.00';
-      const maxWalletBalance = parseFloat(maxWalletBalanceStr);
-      const currentBalance = parseFloat(user.walletBalance || '0');
-      const newBalance = currentBalance + amount;
-
-      if (newBalance > maxWalletBalance) {
-        return res.status(400).json({ 
-          message: `Cannot recharge. Maximum wallet balance is ₹${maxWalletBalance}. Current balance: ₹${currentBalance}`,
-          maxBalance: maxWalletBalance,
-          currentBalance: currentBalance
-        });
-      }
-
-      // Add funds to user wallet
-      const updatedUser = await storage.updateWalletBalance(userId, amount.toString());
-      
-      // Create transaction record
-      await storage.createTransaction({
-        userId,
-        type: 'recharge',
-        amount: amount.toString(),
-        description: `Wallet recharge via Razorpay`,
-        status: 'completed',
-        razorpayOrderId: razorpay_order_id,
-        razorpayPaymentId: razorpay_payment_id,
-      });
-
-      res.json({ 
-        message: "Payment verified and funds added successfully",
-        user: updatedUser 
+      // Business unit ID is required for all payment verification operations
+      return res.status(400).json({ 
+        message: "businessUnitId parameter is required for payment verification" 
       });
     }
-
-    res.json({ 
-      message: "Payment verified and funds added successfully",
-      user: updatedUser 
-    });
   } catch (error) {
     console.error("Error verifying payment:", error);
     res.status(500).json({ message: "Failed to verify payment" });

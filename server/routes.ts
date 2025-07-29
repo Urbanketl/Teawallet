@@ -13,6 +13,7 @@ import supportRoutes from "./routes/supportRoutes";
 import analyticsRoutes from "./routes/analyticsRoutes";
 import * as adminController from "./controllers/adminController";
 import { requireAuth, requireAdmin } from "./controllers/authController";
+import * as transactionController from "./controllers/transactionController";
 import { registerCorporateRoutes } from "./routes/corporateRoutes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -234,56 +235,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Wallet routes - DEPRECATED: Use business unit wallet endpoints instead
-  app.post('/api/wallet/create-order', isAuthenticated, async (req: any, res) => {
-    try {
-      return res.status(400).json({ 
-        message: "This endpoint is deprecated. Use /api/wallet/create-order with businessUnitId parameter instead" 
-      });
-    } catch (error) {
-      console.error("Error creating Razorpay order:", error);
-      res.status(500).json({ message: "Failed to create payment order" });
-    }
-  });
+  // Wallet routes - supports both legacy user wallet and business unit wallet operations
+  app.post('/api/wallet/create-order', isAuthenticated, transactionController.createPaymentOrder);
 
-  app.post('/api/wallet/verify-payment', isAuthenticated, async (req: any, res) => {
-    try {
-      return res.status(400).json({ 
-        message: "This endpoint is deprecated. Use business unit wallet endpoints instead" 
-      });
-    } catch (error) {
-      console.error("Error verifying payment:", error);
-      res.status(500).json({ message: "Failed to verify payment" });
-    }
-  });
+  app.post('/api/wallet/verify-payment', isAuthenticated, transactionController.verifyPaymentAndAddFunds);
 
+  // Legacy recharge endpoint - use /api/wallet/create-order instead
   app.post('/api/wallet/recharge', isAuthenticated, async (req: any, res) => {
-    try {
-      return res.status(400).json({ 
-        message: "This endpoint is deprecated. Use business unit wallet endpoints instead" 
-      });
-    } catch (error) {
-      console.error("Error recharging wallet:", error);
-      res.status(500).json({ message: "Failed to recharge wallet" });
-    }
+    res.status(400).json({ 
+      message: "Use /api/wallet/create-order and /api/wallet/verify-payment instead" 
+    });
   });
 
+  // Legacy balance endpoint - use /api/corporate/business-units instead
   app.get('/api/wallet/balance', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      return res.status(400).json({ 
-        message: "This endpoint is deprecated. Use business unit wallet endpoints instead" 
-      });
-    } catch (error) {
-      console.error("Error fetching wallet balance:", error);
-      res.status(500).json({ message: "Failed to fetch wallet balance" });
-    }
+    res.status(400).json({ 
+      message: "Use /api/corporate/business-units to get business unit wallet balances" 
+    });
   });
 
   // Transaction routes are now handled in corporateRoutes.ts with enhanced business unit filtering

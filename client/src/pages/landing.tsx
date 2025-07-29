@@ -42,7 +42,7 @@ export default function Landing() {
             onClick={() => window.location.href = '/api/login'}
             className="bg-tea-green hover:bg-tea-dark text-lg px-8 py-3"
           >
-            Sign In to Dashboard
+            Access Your Dashboard
           </Button>
         </div>
 

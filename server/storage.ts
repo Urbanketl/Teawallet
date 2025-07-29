@@ -356,6 +356,9 @@ export class DatabaseStorage implements IStorage {
 
   async getBusinessUnitUsers(businessUnitId: string): Promise<any[]> {
     try {
+      console.log(`=== STORAGE getBusinessUnitUsers DEBUG ===`);
+      console.log(`Business Unit ID: ${businessUnitId}`);
+      
       const assignments = await db
         .select({
           userId: userBusinessUnits.userId,
@@ -368,6 +371,7 @@ export class DatabaseStorage implements IStorage {
         .innerJoin(users, eq(userBusinessUnits.userId, users.id))
         .where(eq(userBusinessUnits.businessUnitId, businessUnitId));
       
+      console.log(`Raw assignments query result:`, assignments);
       return assignments;
     } catch (error) {
       console.error('Error in getBusinessUnitUsers:', error);

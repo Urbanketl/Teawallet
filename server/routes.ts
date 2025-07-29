@@ -1077,7 +1077,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { unitId } = req.params;
+      console.log(`=== GET BUSINESS UNIT USERS API DEBUG ===`);
+      console.log(`Unit ID: ${unitId}`);
+      console.log(`Requesting user: ${userId}`);
+      
       const assignments = await storage.getBusinessUnitUsers(unitId);
+      console.log(`Found ${assignments.length} assignments:`, assignments);
+      
       res.json(assignments);
     } catch (error) {
       console.error("Error fetching business unit users:", error);

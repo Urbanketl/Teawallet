@@ -103,6 +103,22 @@ export function AdminTransferInterface() {
     enabled: !!selectedHistoryUnit
   });
 
+  // Fetch current admin for selected business unit
+  const { data: currentAdmin, isLoading: currentAdminLoading } = useQuery<User>({
+    queryKey: ['/api/admin/business-units', selectedBusinessUnit, 'users'],
+    enabled: !!selectedBusinessUnit,
+    select: (data: any[]) => {
+      // Find the Business Unit Admin from the user assignments
+      const adminAssignment = data.find(assignment => assignment.role === 'Business Unit Admin');
+      return adminAssignment ? {
+        id: adminAssignment.userId,
+        firstName: adminAssignment.firstName,
+        lastName: adminAssignment.lastName,
+        email: adminAssignment.email
+      } : null;
+    }
+  });
+
   // Transfer mutation
   const transferMutation = useMutation({
     mutationFn: async ({ businessUnitId, newAdminId, reason }: { 
@@ -198,6 +214,34 @@ export function AdminTransferInterface() {
               ))}
             </select>
           </div>
+
+          {/* Current Admin Display */}
+          {selectedBusinessUnit && (
+            <div className="p-4 bg-gray-50 rounded-lg border">
+              <div className="flex items-center gap-2 mb-2">
+                <UserCheck className="h-4 w-4 text-blue-600" />
+                <span className="font-medium text-gray-700">Current Administrator</span>
+              </div>
+              {currentAdminLoading ? (
+                <div className="text-gray-500">Loading current admin...</div>
+              ) : currentAdmin ? (
+                <div className="space-y-1">
+                  <div className="text-lg font-semibold text-gray-900">
+                    {currentAdmin.firstName} {currentAdmin.lastName}
+                  </div>
+                  <div className="text-gray-600">{currentAdmin.email}</div>
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                    Business Unit Admin
+                  </Badge>
+                </div>
+              ) : (
+                <div className="text-red-600 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" />
+                  No administrator assigned to this business unit
+                </div>
+              )}
+            </div>
+          )}
 
           {/* New Admin Selection */}
           <div className="space-y-2">

@@ -80,35 +80,42 @@ export default function AnalyticsPage() {
 
   const { start: startDate, end: endDate } = getDateRange();
 
+  // Ensure filters trigger query refetches with proper dependencies
   const { data: peakHours = [] } = useQuery<PeakHour[]>({
-    queryKey: [`/api/analytics/peak-hours?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`],
+    queryKey: ['/api/analytics/peak-hours', dateRange, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
+    queryFn: () => fetch(`/api/analytics/peak-hours?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`).then(res => res.json()),
     enabled: user?.isAdmin,
   });
 
   const { data: machinePerformance = [] } = useQuery<MachinePerformance[]>({
-    queryKey: [`/api/analytics/machine-performance?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`],
+    queryKey: ['/api/analytics/machine-performance', dateRange, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
+    queryFn: () => fetch(`/api/analytics/machine-performance?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`).then(res => res.json()),
     enabled: user?.isAdmin,
   });
 
   const { data: userBehavior } = useQuery<UserBehavior>({
-    queryKey: [`/api/analytics/user-behavior?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`],
+    queryKey: ['/api/analytics/user-behavior', dateRange, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
+    queryFn: () => fetch(`/api/analytics/user-behavior?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`).then(res => res.json()),
     enabled: user?.isAdmin,
   });
 
   // Enhanced Analytics Queries
   const { data: businessUnitComparison = [] } = useQuery<BusinessUnitComparison[]>({
-    queryKey: [`/api/analytics/business-unit-comparison?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`],
+    queryKey: ['/api/analytics/business-unit-comparison', dateRange, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
+    queryFn: () => fetch(`/api/analytics/business-unit-comparison?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`).then(res => res.json()),
     enabled: user?.isAdmin && user?.isSuperAdmin,
   });
 
   const { data: revenueTrends = [] } = useQuery<RevenueTrend[]>({
-    queryKey: [`/api/analytics/revenue-trends?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`],
+    queryKey: ['/api/analytics/revenue-trends', dateRange, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
+    queryFn: () => fetch(`/api/analytics/revenue-trends?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`).then(res => res.json()),
     enabled: user?.isAdmin,
   });
 
   // New query for machine dispensing data
   const { data: machineDispensing = [] } = useQuery<MachineDispensing[]>({
-    queryKey: [`/api/analytics/machine-dispensing?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}${selectedMachine !== 'all' ? `&machineId=${selectedMachine}` : ''}`],
+    queryKey: ['/api/analytics/machine-dispensing', dateRange, selectedMachine, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
+    queryFn: () => fetch(`/api/analytics/machine-dispensing?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}${selectedMachine !== 'all' ? `&machineId=${selectedMachine}` : ''}`).then(res => res.json()),
     enabled: user?.isAdmin,
   });
 
@@ -250,8 +257,22 @@ export default function AnalyticsPage() {
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={revenueTrends}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" angle={-45} textAnchor="end" height={80} />
-                  <YAxis />
+                  <XAxis 
+                    dataKey="date" 
+                    angle={-45} 
+                    textAnchor="end" 
+                    height={80}
+                    label={{ value: 'Date', position: 'insideBottom', offset: -10 }}
+                  />
+                  <YAxis 
+                    yAxisId="left"
+                    label={{ value: 'Revenue (₹)', angle: -90, position: 'insideLeft' }}
+                  />
+                  <YAxis 
+                    yAxisId="right" 
+                    orientation="right"
+                    label={{ value: 'Cups Dispensed', angle: 90, position: 'insideRight' }}
+                  />
                   <Tooltip 
                     formatter={(value, name) => [
                       name === 'revenue' ? `₹${value}` : value,
@@ -259,8 +280,8 @@ export default function AnalyticsPage() {
                     ]}
                   />
                   <Legend />
-                  <Line type="monotone" dataKey="revenue" stroke="#22c55e" strokeWidth={2} name="Daily Revenue (₹)" />
-                  <Line type="monotone" dataKey="cups" stroke="#3b82f6" strokeWidth={2} name="Cups Dispensed" />
+                  <Line yAxisId="left" type="monotone" dataKey="revenue" stroke="#22c55e" strokeWidth={2} name="Daily Revenue (₹)" />
+                  <Line yAxisId="right" type="monotone" dataKey="cups" stroke="#3b82f6" strokeWidth={2} name="Cups Dispensed" />
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
@@ -275,10 +296,18 @@ export default function AnalyticsPage() {
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={peakHours.map(item => ({ hour: `${item.hour}:00`, count: item.count }))}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="hour" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="count" stroke="#22c55e" strokeWidth={2} />
+                  <XAxis 
+                    dataKey="hour" 
+                    label={{ value: 'Time of Day', position: 'insideBottom', offset: -10 }}
+                  />
+                  <YAxis 
+                    label={{ value: 'Tea Cups Dispensed', angle: -90, position: 'insideLeft' }}
+                  />
+                  <Tooltip 
+                    labelFormatter={(label) => `Time: ${label}`}
+                    formatter={(value) => [`${value} cups`, 'Cups Dispensed']}
+                  />
+                  <Line type="monotone" dataKey="count" stroke="#22c55e" strokeWidth={2} name="Usage Count" />
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
@@ -296,11 +325,24 @@ export default function AnalyticsPage() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={businessUnitComparison} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <BarChart data={businessUnitComparison} margin={{ top: 20, right: 30, left: 40, bottom: 80 }}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
-                  <YAxis yAxisId="left" />
-                  <YAxis yAxisId="right" orientation="right" />
+                  <XAxis 
+                    dataKey="name" 
+                    angle={-45} 
+                    textAnchor="end" 
+                    height={80}
+                    label={{ value: 'Business Units', position: 'insideBottom', offset: -60 }}
+                  />
+                  <YAxis 
+                    yAxisId="left" 
+                    label={{ value: 'Cups Dispensed', angle: -90, position: 'insideLeft' }}
+                  />
+                  <YAxis 
+                    yAxisId="right" 
+                    orientation="right"
+                    label={{ value: 'Revenue (₹)', angle: 90, position: 'insideRight' }}
+                  />
                   <Tooltip 
                     formatter={(value, name) => [
                       name === 'revenue' ? `₹${value}` : value,
@@ -382,10 +424,18 @@ export default function AnalyticsPage() {
               <div className="mt-6">
                 <h4 className="text-lg font-medium mb-4">Daily Dispensing Trends</h4>
                 <ResponsiveContainer width="100%" height={350}>
-                  <BarChart data={machineDispensing as any[]}>
+                  <BarChart data={machineDispensing as any[]} margin={{ top: 20, right: 30, left: 40, bottom: 80 }}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" angle={-45} textAnchor="end" height={80} />
-                    <YAxis />
+                    <XAxis 
+                      dataKey="date" 
+                      angle={-45} 
+                      textAnchor="end" 
+                      height={80}
+                      label={{ value: 'Date', position: 'insideBottom', offset: -60 }}
+                    />
+                    <YAxis 
+                      label={{ value: 'Cups Dispensed', angle: -90, position: 'insideLeft' }}
+                    />
                     <Tooltip 
                       labelFormatter={(value) => `Date: ${value}`}
                       formatter={(value, name) => [`${value} cups`, name]}

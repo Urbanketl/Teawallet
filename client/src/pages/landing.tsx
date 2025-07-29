@@ -89,42 +89,6 @@ export default function Landing() {
           </Card>
         </div>
 
-        {/* Demo Access Section */}
-        <div className="mb-16">
-          <Card className="w-full max-w-md mx-auto shadow-material">
-            <CardContent className="p-6 text-center space-y-4">
-              <h3 className="text-xl font-bold text-gray-900">Demo Access</h3>
-              <p className="text-gray-600">Experience the platform directly</p>
-              <div className="space-y-3">
-                <Button 
-                  onClick={() => {
-                    localStorage.setItem('demo_user', JSON.stringify({
-                      id: "44064328",
-                      email: "demo@urbanketl.com",
-                      firstName: "Demo",
-                      lastName: "User",
-                      walletBalance: "100.00",
-                      isAdmin: true
-                    }));
-                    localStorage.setItem('demo_authenticated', 'true');
-                    window.location.reload();
-                  }}
-                  className="w-full bg-tea-green hover:bg-tea-dark"
-                >
-                  Access Demo Dashboard
-                </Button>
-                <Button 
-                  onClick={() => window.open(window.location.origin, '_blank')}
-                  variant="outline"
-                  className="w-full"
-                >
-                  Open in New Tab
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* CTA Section */}
         <div className="bg-gradient-to-r from-tea-green to-tea-light rounded-2xl p-8 text-white text-center shadow-material-lg">
           <h3 className="font-inter text-2xl md:text-3xl font-bold mb-4">

@@ -33,6 +33,13 @@ function UserAssignmentInterface({ businessUnits, setActiveTab }: { businessUnit
   const [selectedUser, setSelectedUser] = useState("");
   const [selectedRole, setSelectedRole] = useState("Viewer");
 
+  // Reset form when business unit changes
+  const handleBusinessUnitChange = (businessUnitId: string) => {
+    setSelectedBusinessUnit(businessUnitId);
+    setSelectedUser("");
+    setSelectedRole("Viewer"); // Always reset to Viewer when changing business units
+  };
+
   // Fetch all users for assignment
   const { data: allUsersResponse, isLoading: usersLoading } = useQuery({
     queryKey: ["/api/admin/users"],
@@ -55,6 +62,7 @@ function UserAssignmentInterface({ businessUnits, setActiveTab }: { businessUnit
   // Debug logging
   console.log("Current assignments data:", currentAssignments);
   console.log("Selected business unit:", selectedBusinessUnit);
+  console.log("Selected role:", selectedRole);
   console.log("Assignments loading:", assignmentsLoading);
   console.log("Has Business Unit Admin:", Array.isArray(currentAssignments) && currentAssignments.some((a: any) => a.role === 'Business Unit Admin'));
   
@@ -165,7 +173,7 @@ function UserAssignmentInterface({ businessUnits, setActiveTab }: { businessUnit
             <select
               id="business-unit-select"
               value={selectedBusinessUnit}
-              onChange={(e) => setSelectedBusinessUnit(e.target.value)}
+              onChange={(e) => handleBusinessUnitChange(e.target.value)}
               className="w-full p-2 border border-gray-300 rounded-md bg-white"
             >
               <option value="">Choose a business unit...</option>

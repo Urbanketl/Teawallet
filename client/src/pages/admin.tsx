@@ -555,6 +555,147 @@ export default function AdminPage() {
           </div>
         </div>
 
+        {/* Platform Admin Navigation (moved to top) */}
+        {/* Mobile Navigation Selector (visible on small screens) */}
+        <div className="sm:hidden mb-6">
+          <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <Shield className="h-5 w-5 text-orange-600" />
+                <h3 className="font-semibold text-orange-800">Platform Admin</h3>
+              </div>
+
+              {/* Native HTML Select for better mobile compatibility */}
+              <select 
+                value={currentTab}
+                onChange={(e) => setCurrentTab(e.target.value)}
+                className="w-full bg-white border border-orange-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+              >
+                <option value="overview">📊 Overview Dashboard</option>
+                <option value="users">👥 User Management</option>
+                <option value="business-units">🏢 Business Units</option>
+                <option value="machines">☕ Tea Machines</option>
+                <option value="machine-mgmt">🔧 Machine Admin</option>
+                <option value="rfid">💳 RFID Cards</option>
+                <option value="support">📞 Support Tickets</option>
+                <option value="faq">❓ FAQ Management</option>
+                <option value="pseudo-login">🔓 Test Login</option>
+                <option value="settings">⚙️ System Settings</option>
+              </select>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Desktop Tabs Interface (visible on larger screens) */}
+        <div className="hidden sm:block mb-8">
+          <Card className="bg-white shadow-sm">
+            <CardContent className="p-0">
+              <div className="flex overflow-x-auto">
+                <button 
+                  onClick={() => setCurrentTab("overview")}
+                  className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                    currentTab === "overview" 
+                      ? "border-orange-500 text-orange-600 bg-orange-50" 
+                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  📊 Overview
+                </button>
+                <button 
+                  onClick={() => setCurrentTab("users")}
+                  className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                    currentTab === "users" 
+                      ? "border-orange-500 text-orange-600 bg-orange-50" 
+                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  👥 Users
+                </button>
+                <button 
+                  onClick={() => setCurrentTab("business-units")}
+                  className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                    currentTab === "business-units" 
+                      ? "border-orange-500 text-orange-600 bg-orange-50" 
+                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  🏢 Business Units
+                </button>
+                <button 
+                  onClick={() => setCurrentTab("machines")}
+                  className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                    currentTab === "machines" 
+                      ? "border-orange-500 text-orange-600 bg-orange-50" 
+                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  ☕ Machines
+                </button>
+                <button 
+                  onClick={() => setCurrentTab("machine-mgmt")}
+                  className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                    currentTab === "machine-mgmt" 
+                      ? "border-orange-500 text-orange-600 bg-orange-50" 
+                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  🔧 Machine Mgmt
+                </button>
+                <button 
+                  onClick={() => setCurrentTab("rfid")}
+                  className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                    currentTab === "rfid" 
+                      ? "border-orange-500 text-orange-600 bg-orange-50" 
+                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  💳 RFID Cards
+                </button>
+                <button 
+                  onClick={() => setCurrentTab("support")}
+                  className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                    currentTab === "support" 
+                      ? "border-orange-500 text-orange-600 bg-orange-50" 
+                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  📞 Support
+                </button>
+                <button 
+                  onClick={() => setCurrentTab("faq")}
+                  className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                    currentTab === "faq" 
+                      ? "border-orange-500 text-orange-600 bg-orange-50" 
+                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  ❓ FAQ
+                </button>
+                <button 
+                  onClick={() => setCurrentTab("pseudo-login")}
+                  className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                    currentTab === "pseudo-login" 
+                      ? "border-orange-500 text-orange-600 bg-orange-50" 
+                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  🔓 Test
+                </button>
+                <button 
+                  onClick={() => setCurrentTab("settings")}
+                  className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                    currentTab === "settings" 
+                      ? "border-orange-500 text-orange-600 bg-orange-50" 
+                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  ⚙️ Settings
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Admin Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Total Users */}
@@ -707,98 +848,44 @@ export default function AdminPage() {
           </Card>
         </div>
 
-        {/* Mobile Navigation Selector (visible on small screens) */}
-        <div className="sm:hidden mb-6 mt-12">
-          <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <Shield className="h-5 w-5 text-orange-600" />
-                <h3 className="font-semibold text-orange-800">Platform Admin</h3>
-              </div>
-
-              {/* Native HTML Select for better mobile compatibility */}
-              <select 
-                value={currentTab}
-                onChange={(e) => setCurrentTab(e.target.value)}
-                className="w-full bg-white border border-orange-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
-              >
-                <option value="overview">📊 Overview Dashboard</option>
-                <option value="users">👥 User Management</option>
-                <option value="business-units">🏢 Business Units</option>
-                <option value="machines">☕ Tea Machines</option>
-                <option value="machine-mgmt">🔧 Machine Admin</option>
-                <option value="rfid">💳 RFID Cards</option>
-                <option value="support">📞 Support Tickets</option>
-                <option value="faq">❓ FAQ Management</option>
-                <option value="pseudo-login">🔓 Test Login</option>
-                <option value="settings">⚙️ System Settings</option>
-              </select>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Responsive Tabs Interface */}
-        <Tabs 
-          value={currentTab} 
-          onValueChange={setCurrentTab}
-          className="space-y-6 mt-12"
-        >
-          {/* Desktop horizontal tabs */}
-          <TabsList className="bg-white shadow-sm hidden sm:flex overflow-x-auto">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="business-units">Business Units</TabsTrigger>
-            <TabsTrigger value="machines">Machines</TabsTrigger>
-            <TabsTrigger value="machine-mgmt">Machine Mgmt</TabsTrigger>
-            <TabsTrigger value="rfid">RFID Cards</TabsTrigger>
-            <TabsTrigger value="support">Support</TabsTrigger>
-            <TabsTrigger value="faq">FAQ</TabsTrigger>
-            <TabsTrigger value="pseudo-login">Test</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-          </TabsList>
+        {/* Tab Content Area */}
+        <div className="space-y-6">
 
 
 
-          <TabsContent value="overview">
+          {currentTab === "overview" && (
             <div className="text-center py-8">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Overview Dashboard</h3>
               <p className="text-gray-600">System statistics and insights displayed above</p>
             </div>
-          </TabsContent>
+          )}
 
-          <TabsContent value="users">
-            <UserManagement />
-          </TabsContent>
+          {currentTab === "users" && <UserManagement />}
 
-          <TabsContent value="rfid">
+          {currentTab === "rfid" && (
             <RfidManagement 
               rfidCardsPage={rfidCardsPage}
               setRfidCardsPage={setRfidCardsPage}
               rfidCardsPerPage={rfidCardsPerPage}
             />
-          </TabsContent>
+          )}
 
-          <TabsContent value="machines">
-            <MachineManagement />
-          </TabsContent>
+          {currentTab === "machines" && <MachineManagement />}
 
-          <TabsContent value="machine-mgmt">
-            <MachineAdministration />
-          </TabsContent>
+          {currentTab === "machine-mgmt" && <MachineAdministration />}
 
-          <TabsContent value="business-units">
-            <BusinessUnitsTab />
-          </TabsContent>
+          {currentTab === "business-units" && <BusinessUnitsTab />}
 
-          <TabsContent value="pseudo-login">
+          {currentTab === "pseudo-login" && (
             <PseudoLogin onLogin={(userId) => {
               setPseudoUserId(userId);
               // Navigate to a business unit user view
               window.open(`${window.location.origin}/corporate?pseudo=${userId}`, '_blank');
             }} />
-          </TabsContent>
+          )}
 
-          <TabsContent value="support" className="space-y-6">
+          {currentTab === "support" && (
+            <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold text-gray-900">Support Tickets</h2>
               <div className="flex items-center space-x-4">
@@ -1138,16 +1225,17 @@ export default function AdminPage() {
                   />
                 </div>
               )}
-            </TabsContent>
-          <TabsContent value="faq">
-            <FaqManagement />
-          </TabsContent>
+            </div>
+          )}
 
-          <TabsContent value="settings">
-            <SystemSettingsManagement />
-          </TabsContent>
-          
-          </Tabs>
+          {currentTab === "faq" && <FaqManagement />}
+
+          {currentTab === "settings" && (
+            <div className="text-center py-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">System Settings</h3>
+              <p className="text-gray-600">Configure system settings using the button above</p>
+            </div>
+          )}
         </main>
       </div>
     );

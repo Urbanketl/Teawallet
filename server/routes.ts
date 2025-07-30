@@ -393,6 +393,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // CRITICAL: Check if machine is active/enabled
+      if (!machine.isActive) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Machine is disabled" 
+        });
+      }
+
       // Get price from machine's single price field (simplified pricing system)
       const teaAmount = parseFloat(machine.price || "5.00");
 

@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import type { User } from "@shared/schema";
+import logoImage from "../logo.jpg";
 import { 
   LayoutDashboard, 
   Wallet, 
@@ -64,7 +65,7 @@ export default function Navigation() {
             <Link href={pseudoQuery ? `/${pseudoQuery}` : "/"}>
               <div className="flex items-center space-x-3">
                 <img 
-                  src="/logo.jpg" 
+                  src={logoImage} 
                   alt="UrbanKetl Logo" 
                   className="h-8 w-auto object-contain"
                 />
@@ -154,7 +155,7 @@ export default function Navigation() {
                       <div className="flex items-center justify-between p-4 border-b">
                         <div className="flex items-center space-x-3">
                           <img 
-                            src="/logo.jpg" 
+                            src={logoImage} 
                             alt="UrbanKetl Logo" 
                             className="h-8 w-auto object-contain"
                           />

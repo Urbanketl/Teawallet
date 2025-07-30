@@ -49,7 +49,8 @@ import {
   ChevronUp,
   ChevronDown,
   Building2,
-  Edit
+  Edit,
+  X
 } from "lucide-react";
 import { format } from "date-fns";
 import Pagination from "@/components/Pagination";

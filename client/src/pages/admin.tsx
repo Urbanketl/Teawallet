@@ -1872,6 +1872,10 @@ function MachineAdministration() {
   const [assignmentsPage, setAssignmentsPage] = useState(1);
   const [assignmentFilter, setAssignmentFilter] = useState("all"); // "all", "assigned", "unassigned"
   const assignmentsPerPage = 10;
+  // Edit machines search and filter state
+  const [editSearchTerm, setEditSearchTerm] = useState("");
+  const [editStatusFilter, setEditStatusFilter] = useState("all");
+  const [editBusinessUnitFilter, setEditBusinessUnitFilter] = useState("all");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -1913,6 +1917,28 @@ function MachineAdministration() {
     if (status === "Offline") return "bg-yellow-400";
     return "bg-red-400";
   };
+
+  // Helper function to get business unit name
+  const getBusinessUnitName = (businessUnitId: string) => {
+    const unit = (businessUnits as any[]).find((unit: any) => unit.id === businessUnitId);
+    return unit ? unit.name : "Unassigned";
+  };
+
+  // Filter and search machines for edit tab
+  const filteredEditMachines = (machines as any[]).filter((machine: any) => {
+    const matchesSearch = !editSearchTerm || 
+      machine.name?.toLowerCase().includes(editSearchTerm.toLowerCase()) ||
+      machine.location?.toLowerCase().includes(editSearchTerm.toLowerCase()) ||
+      machine.id?.toLowerCase().includes(editSearchTerm.toLowerCase()) ||
+      getBusinessUnitName(machine.businessUnitId)?.toLowerCase().includes(editSearchTerm.toLowerCase());
+    
+    const matchesStatus = editStatusFilter === "all" || getMachineStatus(machine).toLowerCase() === editStatusFilter.toLowerCase();
+    
+    const matchesBusinessUnit = editBusinessUnitFilter === "all" || 
+      (editBusinessUnitFilter === "unassigned" ? !machine.businessUnitId : machine.businessUnitId === editBusinessUnitFilter);
+    
+    return matchesSearch && matchesStatus && matchesBusinessUnit;
+  });
 
   // Create machine mutation
   const createMachineMutation = useMutation({
@@ -2142,6 +2168,76 @@ function MachineAdministration() {
         </TabsContent>
 
         <TabsContent value="edit" className="space-y-4">
+          {/* Search and Filter Controls for Edit Machines */}
+          <Card className="p-6">
+            <div className="space-y-4">
+              {/* Search Bar */}
+              <div className="flex items-center gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    placeholder="Search by machine name, location, ID, or business unit..."
+                    value={editSearchTerm}
+                    onChange={(e) => setEditSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <Badge variant="secondary" className="bg-tea-green/10 text-tea-green">
+                  {filteredEditMachines.length} of {(machines as any[]).length} machines
+                </Badge>
+              </div>
+
+              {/* Filter Controls */}
+              <div className="flex flex-wrap gap-4 items-center">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-gray-600" />
+                  <span className="text-sm font-medium">Filters:</span>
+                </div>
+                
+                <select
+                  value={editStatusFilter}
+                  onChange={(e) => setEditStatusFilter(e.target.value)}
+                  className="w-32 h-9 px-3 py-1 border border-input bg-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="all">All Status</option>
+                  <option value="online">Online</option>
+                  <option value="offline">Offline</option>
+                  <option value="disabled">Disabled</option>
+                </select>
+
+                <select
+                  value={editBusinessUnitFilter}
+                  onChange={(e) => setEditBusinessUnitFilter(e.target.value)}
+                  className="w-48 h-9 px-3 py-1 border border-input bg-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="all">All Business Units</option>
+                  <option value="unassigned">Unassigned</option>
+                  {(businessUnits as any[]).map((unit: any) => (
+                    <option key={unit.id} value={unit.id}>
+                      {unit.name} ({unit.code})
+                    </option>
+                  ))}
+                </select>
+
+                {(editSearchTerm || editStatusFilter !== "all" || editBusinessUnitFilter !== "all") && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditSearchTerm("");
+                      setEditStatusFilter("all");
+                      setEditBusinessUnitFilter("all");
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <X className="w-4 h-4" />
+                    Clear Filters
+                  </Button>
+                )}
+              </div>
+            </div>
+          </Card>
+
           <div className="grid gap-4">
             {machinesLoading ? (
               <Card>
@@ -2156,8 +2252,27 @@ function MachineAdministration() {
                   <p className="text-gray-500">No machines found</p>
                 </CardContent>
               </Card>
+            ) : filteredEditMachines.length === 0 ? (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No machines match your search criteria</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditSearchTerm("");
+                      setEditStatusFilter("all");
+                      setEditBusinessUnitFilter("all");
+                    }}
+                    className="mt-2"
+                  >
+                    Clear Filters
+                  </Button>
+                </CardContent>
+              </Card>
             ) : (
-              (machines as any[]).map((machine: any) => (
+              filteredEditMachines.map((machine: any) => (
                 <Card key={machine.id}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">

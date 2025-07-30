@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import type { User } from "@shared/schema";
-import logoImage from "../logo.jpg";
+import logoImage from "./urbanketl-logo.jpg";
 import { 
   LayoutDashboard, 
   Wallet, 

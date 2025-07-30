@@ -2,11 +2,11 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import type { User } from "@shared/schema";
 import { 
   LayoutDashboard, 
   Wallet, 
-
-  User, 
+  User as UserIcon, 
   LogOut,
   Shield,
   Coffee,
@@ -21,13 +21,16 @@ export default function Navigation() {
   const [location] = useLocation();
   const { user, isLoading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // Type the user object properly
+  const typedUser = user as User | null;
 
   // Check for pseudo login parameter and preserve it across navigation
   const urlParams = new URLSearchParams(window.location.search);
   const pseudoParam = urlParams.get('pseudo');
   const pseudoQuery = pseudoParam ? `?pseudo=${pseudoParam}` : '';
 
-  if (isLoading || !user) return null;
+  if (isLoading || !typedUser) return null;
 
   const navItems = [
     { href: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -35,18 +38,18 @@ export default function Navigation() {
     { href: "/wallet", icon: Wallet, label: "Business Wallet" },
 
     { href: "/support", icon: MessageCircle, label: "Business Support" },
-    { href: "/profile", icon: User, label: "Profile" },
+    { href: "/profile", icon: UserIcon, label: "Profile" },
   ];
 
   // Analytics for all admins
-  if (user.isAdmin || user.isSuperAdmin) {
+  if (typedUser.isAdmin || typedUser.isSuperAdmin) {
     navItems.push(
       { href: "/analytics", icon: BarChart3, label: "Analytics" }
     );
   }
 
   // Admin Dashboard only for super admins
-  if (user.isSuperAdmin) {
+  if (typedUser.isSuperAdmin) {
     navItems.push(
       { href: "/admin", icon: Shield, label: "Platform Admin" }
     );
@@ -110,7 +113,7 @@ export default function Navigation() {
               )}
               
               <div className="text-sm text-gray-600">
-                Welcome, {user.firstName}
+                Welcome, {typedUser.firstName}
               </div>
               <Button
                 variant="outline"
@@ -157,12 +160,12 @@ export default function Navigation() {
                           />
                           <div>
                             <div className="flex items-center space-x-2">
-                              <p className="text-sm font-medium text-gray-900">Welcome, {user.firstName}</p>
+                              <p className="text-sm font-medium text-gray-900">Welcome, {typedUser.firstName}</p>
                               {pseudoParam && (
                                 <span className="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full">Test</span>
                               )}
                             </div>
-                            <p className="text-xs text-gray-500">{user.email}</p>
+                            <p className="text-xs text-gray-500">{typedUser.email}</p>
                           </div>
                         </div>
                         <button

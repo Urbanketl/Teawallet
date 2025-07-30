@@ -62,12 +62,20 @@ export default function Navigation() {
           {/* Logo */}
           <div className="flex items-center">
             <Link href={pseudoQuery ? `/${pseudoQuery}` : "/"}>
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-3 bg-red-100 p-2 border border-red-300">
                 <img 
                   src="/logo.jpg" 
                   alt="UrbanKetl Logo" 
-                  className="h-8 w-auto object-contain"
+                  className="h-8 w-auto object-contain bg-blue-100"
+                  onError={(e) => {
+                    console.error("Logo failed to load:", e);
+                    e.currentTarget.style.border = "2px solid red";
+                  }}
+                  onLoad={() => {
+                    console.log("Logo loaded successfully");
+                  }}
                 />
+                <span className="text-xs text-red-600">DEBUG: Logo Area</span>
               </div>
             </Link>
             
@@ -152,12 +160,19 @@ export default function Navigation() {
                     <div className="flex flex-col h-full">
                       {/* Header */}
                       <div className="flex items-center justify-between p-4 border-b">
-                        <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-3 bg-red-100 p-2">
                           <img 
                             src="/logo.jpg" 
                             alt="UrbanKetl Logo" 
-                            className="h-8 w-auto object-contain"
+                            className="h-8 w-auto object-contain bg-blue-100"
+                            onError={(e) => {
+                              console.error("Mobile logo failed to load:", e);
+                            }}
+                            onLoad={() => {
+                              console.log("Mobile logo loaded successfully");
+                            }}
                           />
+                          <span className="text-xs text-red-600">MOBILE DEBUG</span>
                           <div>
                             <div className="flex items-center space-x-2">
                               <p className="text-sm font-medium text-gray-900">Welcome, {typedUser.firstName}</p>

@@ -405,6 +405,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // CRITICAL: Validate business unit ownership BEFORE checking balance
+      // This ensures proper "Invalid card" error instead of "Insufficient balance"
+      if (card.businessUnitId !== machine.businessUnitId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid card for this machine" 
+        });
+      }
+
       // Get business unit and check balance (cards belong to business units)
       const businessUnit = await storage.getBusinessUnit(card.businessUnitId);
       if (!businessUnit) {

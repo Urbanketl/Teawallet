@@ -687,37 +687,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update machine tea pricing (Admin only)
-  app.patch('/api/admin/machines/:machineId/pricing', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      
-      if (!user?.isAdmin && !user?.isSuperAdmin) {
-        return res.status(403).json({ message: "Admin access required" });
-      }
 
-      const { machineId } = req.params;
-      const { teaTypes } = req.body;
-
-      if (!teaTypes || !Array.isArray(teaTypes)) {
-        return res.status(400).json({ message: "teaTypes array is required" });
-      }
-
-      // Validate tea types format
-      for (const tea of teaTypes) {
-        if (!tea.name || !tea.price || isNaN(parseFloat(tea.price))) {
-          return res.status(400).json({ message: "Each tea type must have name and valid price" });
-        }
-      }
-
-      await storage.updateMachineTeaTypes(machineId, teaTypes);
-      res.json({ success: true, message: "Machine pricing updated successfully" });
-    } catch (error) {
-      console.error("Error updating machine pricing:", error);
-      res.status(500).json({ message: "Failed to update machine pricing" });
-    }
-  });
 
 
   // Loyalty and badge features not implemented yet

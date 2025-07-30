@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import type { User } from "@shared/schema";
-import logoImage from "./urbanketl-logo.jpg";
+import logoImage from "@assets/URBAN KETL Logo small_1750439431697.jpg";
 import { 
   LayoutDashboard, 
   Wallet, 
@@ -68,7 +68,16 @@ export default function Navigation() {
                   src={logoImage} 
                   alt="UrbanKetl Logo" 
                   className="h-8 w-auto object-contain"
+                  style={{ minWidth: '32px', height: '32px' }}
+                  onError={(e) => {
+                    console.error('Logo failed to load:', e);
+                    console.log('Logo src:', logoImage);
+                  }}
+                  onLoad={() => {
+                    console.log('Logo loaded successfully:', logoImage);
+                  }}
                 />
+                <span className="font-bold text-lg text-tea-green">UrbanKetl</span>
               </div>
             </Link>
             

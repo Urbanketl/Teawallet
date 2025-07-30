@@ -14,7 +14,7 @@ export default function Landing() {
             <img 
               src="/logo-updated.jpg" 
               alt="UrbanKetl Logo" 
-              className="h-12 w-auto object-contain"
+              className="h-24 w-auto object-contain"
             />
           </div>
           <Button 

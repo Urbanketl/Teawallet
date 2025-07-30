@@ -59,7 +59,7 @@ export default function Navigation() {
   return (
     <nav className="bg-white shadow-sm border-b">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <div className="flex items-center">
             <Link href={pseudoQuery ? `/${pseudoQuery}` : "/"}>
@@ -67,8 +67,8 @@ export default function Navigation() {
                 <img 
                   src={logoImage} 
                   alt="UrbanKetl Logo" 
-                  className="h-8 w-auto object-contain"
-                  style={{ minWidth: '32px', height: '32px' }}
+                  className="h-16 w-auto object-contain"
+                  style={{ minWidth: '64px', height: '64px' }}
                   onError={(e) => {
                     console.error('Logo failed to load:', e);
                     console.log('Logo src:', logoImage);
@@ -165,7 +165,7 @@ export default function Navigation() {
                           <img 
                             src={logoImage} 
                             alt="UrbanKetl Logo" 
-                            className="h-8 w-auto object-contain"
+                            className="h-16 w-auto object-contain"
                           />
                           <div>
                             <div className="flex items-center space-x-2">

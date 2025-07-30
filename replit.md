@@ -164,6 +164,7 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - July 30, 2025: COMPLETED - Fixed Urban Ketl logo display issue in navigation by copying logo file to proper static assets location and updating file paths
 - July 30, 2025: Successfully resolved TypeScript errors in Navigation component that were preventing proper rendering of logo across all pages
 - July 30, 2025: Urban Ketl logo now displays consistently across all navigation tabs (Dashboard, Business Unit, Business Wallet, Platform Admin, etc.)
+- July 30, 2025: COMPLETED - Doubled logo size across all pages to match sign-in page (h-8 to h-16 in navigation, h-12 to h-24 on landing page)
 - July 29, 2025: COMPLETED - Fixed Analytics page filters and enhanced chart readability with proper axis labels
 - July 29, 2025: Improved filter system with proper React Query dependencies for date range and machine selection filters
 - July 29, 2025: Added comprehensive axis labels to all charts: Revenue Trends, Peak Hours, Business Unit Comparison, Daily Dispensing Trends

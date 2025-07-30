@@ -1166,6 +1166,7 @@ function MachineManagement() {
   const [machinePrice, setMachinePrice] = useState("5.00");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [businessUnitFilter, setBusinessUnitFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
@@ -1301,7 +1302,10 @@ function MachineManagement() {
     
     const matchesStatus = statusFilter === "all" || getMachineStatus(machine).toLowerCase() === statusFilter.toLowerCase();
     
-    return matchesSearch && matchesStatus;
+    const matchesBusinessUnit = businessUnitFilter === "all" || 
+      (businessUnitFilter === "unassigned" ? !machine.businessUnitId : machine.businessUnitId === businessUnitFilter);
+    
+    return matchesSearch && matchesStatus && matchesBusinessUnit;
   });
 
   // Pagination
@@ -1422,6 +1426,20 @@ function MachineManagement() {
               <option value="online">Online</option>
               <option value="offline">Offline</option>
               <option value="disabled">Disabled</option>
+            </select>
+
+            <select
+              value={businessUnitFilter}
+              onChange={(e) => { setBusinessUnitFilter(e.target.value); resetPage(); }}
+              className="w-48 h-9 px-3 py-1 border border-input bg-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="all">All Business Units</option>
+              <option value="unassigned">Unassigned</option>
+              {(businessUnits as any[]).map((unit: any) => (
+                <option key={unit.id} value={unit.id}>
+                  {unit.name} ({unit.code})
+                </option>
+              ))}
             </select>
 
             <select

@@ -64,7 +64,7 @@ export default function Navigation() {
             <Link href={pseudoQuery ? `/${pseudoQuery}` : "/"}>
               <div className="flex items-center space-x-3">
                 <img 
-                  src="/logo-updated.jpg" 
+                  src="/logo.jpg" 
                   alt="UrbanKetl Logo" 
                   className="h-8 w-auto object-contain"
                 />
@@ -154,7 +154,7 @@ export default function Navigation() {
                       <div className="flex items-center justify-between p-4 border-b">
                         <div className="flex items-center space-x-3">
                           <img 
-                            src="/logo-updated.jpg" 
+                            src="/logo.jpg" 
                             alt="UrbanKetl Logo" 
                             className="h-8 w-auto object-contain"
                           />

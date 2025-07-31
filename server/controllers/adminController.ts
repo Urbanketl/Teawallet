@@ -176,11 +176,30 @@ export async function getSupportTicketsPaginated(req: any, res: Response) {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const status = req.query.status as string;
+    const userId = req.query.userId as string;
+    const dateFilter = req.query.dateFilter as string;
+    const startDate = req.query.startDate as string;
+    const endDate = req.query.endDate as string;
+    const sortBy = req.query.sortBy as string || 'createdAt';
+    const sortOrder = req.query.sortOrder as 'asc' | 'desc' || 'desc';
     const paginated = req.query.paginated === 'true';
     
+    // Build filters object
+    const filters = {
+      status: status !== 'all' ? status : undefined,
+      userId: userId !== 'all' ? userId : undefined,
+      dateFilter,
+      startDate,
+      endDate,
+      sortBy,
+      sortOrder
+    };
+    
     if (paginated) {
-      const result = await storage.getSupportTicketsPaginated(page, limit, status);
-      res.json(result);
+      const result = await storage.getSupportTicketsPaginated(page, limit, filters);
+      // Also get all tickets for unique users extraction
+      const allTickets = await storage.getAllSupportTickets();
+      res.json({ ...result, allTickets });
     } else {
       const tickets = await storage.getAllSupportTickets();
       res.json(tickets);

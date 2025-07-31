@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
@@ -178,14 +178,48 @@ export default function AdminPage() {
   const [newMessage, setNewMessage] = useState('');
   const [dateFilter, setDateFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [userFilter, setUserFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
 
-  const { data: supportTickets = [], isLoading: allTicketsLoading, refetch: refetchTickets } = useQuery({
-    queryKey: ["/api/admin/support/tickets"],
+  // Build query parameters for tickets
+  const ticketsQueryParams = new URLSearchParams({
+    paginated: 'true',
+    page: ticketsPage.toString(),
+    limit: ticketsPerPage.toString(),
+    ...(statusFilter !== 'all' && { status: statusFilter }),
+    ...(dateFilter !== 'all' && { dateFilter }),
+    ...(customDateRange.start && dateFilter === 'custom' && { startDate: customDateRange.start }),
+    ...(customDateRange.end && dateFilter === 'custom' && { endDate: customDateRange.end }),
+    ...(userFilter !== 'all' && { userId: userFilter }),
+    sortBy,
+    sortOrder,
+  }).toString();
+
+  const { data: ticketsData, isLoading: allTicketsLoading, refetch: refetchTickets } = useQuery({
+    queryKey: [`/api/admin/support/tickets?${ticketsQueryParams}`],
     enabled: Boolean(isAuthenticated && typedUser?.isAdmin),
     retry: false,
     refetchInterval: 5000,
   });
+
+  // Extract users from tickets for the user filter dropdown
+  const uniqueUsers = useMemo(() => {
+    const users = new Map();
+    if (ticketsData && (ticketsData as any).allTickets) {
+      (ticketsData as any).allTickets.forEach((ticket: any) => {
+        if (ticket.user) {
+          users.set(ticket.userId, {
+            id: ticket.userId,
+            name: `${ticket.user.firstName || ''} ${ticket.user.lastName || ''}`.trim() || ticket.user.email,
+            email: ticket.user.email
+          });
+        }
+      });
+    }
+    return Array.from(users.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [ticketsData]);
 
   // Debug logging
   console.log('Support tickets data:', supportTickets);
@@ -335,43 +369,10 @@ export default function AdminPage() {
     }
   };
 
-  const filterTicketsByDate = (tickets: any[]) => {
-    if (dateFilter === 'all') return tickets;
-    
-    const now = new Date();
-    let startDate: Date;
-    
-    switch (dateFilter) {
-      case 'today':
-        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        break;
-      case 'week':
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case 'month':
-        startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-        break;
-      case 'year':
-        startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-        break;
-      case 'custom':
-        if (!customDateRange.start) return tickets;
-        startDate = new Date(customDateRange.start);
-        const endDate = customDateRange.end ? new Date(customDateRange.end) : now;
-        return tickets.filter(ticket => {
-          const ticketDate = new Date(ticket.createdAt);
-          return ticketDate >= startDate && ticketDate <= endDate;
-        });
-      default:
-        return tickets;
-    }
-    
-    return tickets.filter(ticket => new Date(ticket.createdAt) >= startDate);
-  };
-
-  // Additional debug logging after function definition
-  console.log('Filtered tickets count:', supportTickets ? filterTicketsByDate(supportTickets as any[]).length : 0);
-  console.log('Date filter:', dateFilter);
+  // Reset page when filters change
+  useEffect(() => {
+    setTicketsPage(1);
+  }, [statusFilter, dateFilter, userFilter, sortBy, sortOrder]);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -806,36 +807,73 @@ export default function AdminPage() {
 
           {currentTab === "support" && (
             <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Support Tickets</h2>
-              <div className="flex items-center space-x-4">
-                <Select value={dateFilter} onValueChange={setDateFilter}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Time</SelectItem>
-                    <SelectItem value="today">Today</SelectItem>
-                    <SelectItem value="week">This Week</SelectItem>
-                    <SelectItem value="month">This Month</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="open">Open</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="resolved">Resolved</SelectItem>
-                    <SelectItem value="closed">Closed</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Badge variant="secondary" className="bg-tea-green/10 text-tea-green">
-                  {(ticketsData as any)?.tickets?.length || 0} / {(ticketsData as any)?.total || 0} Tickets (Page {ticketsPage})
-                </Badge>
-              </div>
+              <Badge variant="secondary" className="bg-tea-green/10 text-tea-green">
+                {(ticketsData as any)?.tickets?.length || 0} / {(ticketsData as any)?.total || 0} Tickets (Page {ticketsPage})
+              </Badge>
+            </div>
+            
+            <div className="flex flex-wrap gap-3">
+              <Select value={dateFilter} onValueChange={setDateFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Time</SelectItem>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="week">This Week</SelectItem>
+                  <SelectItem value="month">This Month</SelectItem>
+                  <SelectItem value="custom">Custom Range</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="resolved">Resolved</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={userFilter} onValueChange={setUserFilter}>
+                <SelectTrigger className="w-56">
+                  <SelectValue placeholder="Filter by User" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Users</SelectItem>
+                  {uniqueUsers.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.name} ({user.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="createdAt">Sort by Date</SelectItem>
+                  <SelectItem value="status">Sort by Status</SelectItem>
+                  <SelectItem value="priority">Sort by Priority</SelectItem>
+                  <SelectItem value="userId">Sort by User</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              >
+                {sortOrder === 'asc' ? '↑ Ascending' : '↓ Descending'}
+              </Button>
             </div>
 
             {dateFilter === 'custom' && (

@@ -169,7 +169,19 @@ export interface IStorage {
   createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket>;
   getUserSupportTickets(userId: string): Promise<SupportTicket[]>;
   getAllSupportTickets(): Promise<(SupportTicket & { user: User })[]>;
-  getSupportTicketsPaginated(page: number, limit: number, status?: string): Promise<{ tickets: (SupportTicket & { user: User })[], total: number }>;
+  getSupportTicketsPaginated(
+    page: number, 
+    limit: number, 
+    filters?: {
+      status?: string;
+      userId?: string;
+      dateFilter?: string;
+      startDate?: string;
+      endDate?: string;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
+    }
+  ): Promise<{ tickets: (SupportTicket & { user: User })[], total: number }>;
   getSupportTicket(ticketId: number): Promise<SupportTicket | undefined>;
   updateSupportTicket(ticketId: number, updates: { status?: string; assignedTo?: string; comment?: string; updatedBy?: string }): Promise<SupportTicket>;
   getTicketStatusHistory(ticketId: number): Promise<(TicketStatusHistory & { updater: User })[]>;
@@ -1869,20 +1881,105 @@ export class DatabaseStorage implements IStorage {
     })) as any;
   }
 
-  async getSupportTicketsPaginated(page: number, limit: number, status?: string): Promise<{ tickets: (SupportTicket & { user: User })[], total: number }> {
+  async getSupportTicketsPaginated(
+    page: number, 
+    limit: number, 
+    filters?: {
+      status?: string;
+      userId?: string;
+      dateFilter?: string;
+      startDate?: string;
+      endDate?: string;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
+    }
+  ): Promise<{ tickets: (SupportTicket & { user: User })[], total: number }> {
     const offset = (page - 1) * limit;
     
-    // Get total count
+    // Build where conditions
+    const whereConditions = [];
+    
+    if (filters?.status) {
+      whereConditions.push(eq(supportTickets.status, filters.status));
+    }
+    
+    if (filters?.userId) {
+      whereConditions.push(eq(supportTickets.userId, filters.userId));
+    }
+    
+    // Handle date filters
+    if (filters?.dateFilter) {
+      const now = new Date();
+      let startDate: Date;
+      
+      switch (filters.dateFilter) {
+        case 'today':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          whereConditions.push(gte(supportTickets.createdAt, startDate));
+          break;
+        case 'week':
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          whereConditions.push(gte(supportTickets.createdAt, startDate));
+          break;
+        case 'month':
+          startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+          whereConditions.push(gte(supportTickets.createdAt, startDate));
+          break;
+        case 'custom':
+          if (filters.startDate) {
+            whereConditions.push(gte(supportTickets.createdAt, new Date(filters.startDate)));
+          }
+          if (filters.endDate) {
+            const endDate = new Date(filters.endDate);
+            endDate.setHours(23, 59, 59, 999);
+            whereConditions.push(lte(supportTickets.createdAt, endDate));
+          }
+          break;
+      }
+    }
+    
+    // Build where clause
+    const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
+    
+    // Get total count with filters
     const [countResult] = await db
       .select({ count: sql<number>`COUNT(*)::int` })
-      .from(supportTickets);
+      .from(supportTickets)
+      .where(whereClause);
+    
+    // Determine sort field and order
+    let orderByField: any = supportTickets.createdAt;
+    if (filters?.sortBy) {
+      switch (filters.sortBy) {
+        case 'status':
+          orderByField = supportTickets.status;
+          break;
+        case 'priority':
+          orderByField = supportTickets.priority;
+          break;
+        case 'userId':
+          orderByField = supportTickets.userId;
+          break;
+        default:
+          orderByField = supportTickets.createdAt;
+      }
+    }
     
     // Get paginated tickets with users
-    const ticketsWithUsers = await db
+    const ticketsWithUsersQuery = db
       .select()
       .from(supportTickets)
       .leftJoin(users, eq(supportTickets.userId, users.id))
-      .orderBy(desc(supportTickets.createdAt))
+      .where(whereClause);
+    
+    // Apply sorting
+    if (filters?.sortOrder === 'asc') {
+      ticketsWithUsersQuery.orderBy(asc(orderByField));
+    } else {
+      ticketsWithUsersQuery.orderBy(desc(orderByField));
+    }
+    
+    const ticketsWithUsers = await ticketsWithUsersQuery
       .limit(limit)
       .offset(offset);
 

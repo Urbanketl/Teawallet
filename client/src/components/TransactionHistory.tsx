@@ -32,13 +32,22 @@ export default function TransactionHistory({ businessUnitId }: TransactionHistor
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
-        }
+        },
+        credentials: 'include'
       }).then(res => {
         console.log(`Frontend: Response status: ${res.status}`);
+        if (!res.ok) {
+          throw new Error(`API error: ${res.status}`);
+        }
         return res.json();
       }).then(data => {
-        console.log(`Frontend: Received ${data.length} transactions, first transaction ID: ${data[0]?.id}, description: ${data[0]?.description}`);
-        return data;
+        // Ensure we always return an array
+        const transactions = Array.isArray(data) ? data : [];
+        console.log(`Frontend: Received ${transactions.length} transactions`);
+        return transactions;
+      }).catch(error => {
+        console.error('Transaction fetch error:', error);
+        return []; // Return empty array on error
       });
     },
     enabled: isAuthenticated,
@@ -87,13 +96,13 @@ export default function TransactionHistory({ businessUnitId }: TransactionHistor
       <CardContent>
         {isLoading ? (
           <div className="text-center py-8">Loading transactions...</div>
-        ) : !transactions || transactions.length === 0 ? (
+        ) : !transactions || !Array.isArray(transactions) || transactions.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             No transactions found
           </div>
         ) : (
           <div className="space-y-4">
-            {transactions.slice(0, 5).map((transaction: any) => (
+            {(Array.isArray(transactions) ? transactions : []).slice(0, 5).map((transaction: any) => (
               <div
                 key={transaction.id}
                 className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"

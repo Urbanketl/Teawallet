@@ -1,6 +1,6 @@
 import { Express, RequestHandler } from "express";
 import { storage } from "../storage";
-import { isAuthenticated } from "../replitAuth";
+import { isAuthenticated } from "../auth";
 import { insertRfidCardSchema, insertTeaMachineSchema } from "@shared/schema";
 import { z } from "zod";
 import * as csvWriter from 'csv-writer';

@@ -56,10 +56,12 @@ export function generateResetToken(): string {
 
 // Middleware functions
 export function isAuthenticated(req: any, res: any, next: any) {
-  if (req.isAuthenticated()) {
+  if (req.isAuthenticated && req.isAuthenticated()) {
     return next();
   }
-  res.status(401).json({ message: "Unauthorized" });
+  
+  console.log("Authentication failed - no valid session found");
+  return res.status(401).json({ message: "Unauthorized" });
 }
 
 export function requireAdmin(req: any, res: any, next: any) {

@@ -481,35 +481,64 @@ export default function AuthPage() {
       </div>
 
       {/* Right side - Hero Section */}
-      <div className="flex-1 bg-gradient-to-br from-tea-green to-tea-brown flex items-center justify-center p-8">
-        <div className="text-center text-white max-w-lg">
-          <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-8">
-            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
-              <span className="text-2xl font-bold text-tea-green">UK</span>
+      <div className="flex-1 bg-gradient-to-br from-tea-green to-tea-brown flex items-center justify-center p-8 relative overflow-hidden">
+        {/* Background pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 left-20 w-32 h-32 border border-white/20 rounded-full"></div>
+          <div className="absolute bottom-20 right-20 w-24 h-24 border border-white/20 rounded-full"></div>
+          <div className="absolute top-1/2 left-1/4 w-16 h-16 border border-white/20 rounded-full"></div>
+        </div>
+        
+        <div className="text-center text-white max-w-lg relative z-10">
+          {/* UrbanKetl Logo */}
+          <div className="mb-8">
+            <img 
+              src="/attached_assets/URBAN KETL Logo small_1750439431697.jpg" 
+              alt="UrbanKetl Logo" 
+              className="w-20 h-20 mx-auto rounded-xl shadow-lg bg-white p-2"
+            />
+          </div>
+          
+          <h1 className="text-4xl font-bold mb-4 leading-tight">
+            Enterprise Tea
+            <br />
+            <span className="text-tea-light">Management Platform</span>
+          </h1>
+          
+          <p className="text-xl opacity-90 mb-8 leading-relaxed">
+            Transform your workplace beverage service with intelligent RFID technology, 
+            comprehensive business unit management, and real-time analytics.
+          </p>
+          
+          <div className="grid grid-cols-1 gap-4 text-left">
+            <div className="flex items-start space-x-3 p-3 bg-white/10 rounded-lg backdrop-blur-sm">
+              <div className="w-2 h-2 bg-tea-light rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <div className="font-semibold">Smart RFID Dispensing</div>
+                <div className="text-sm opacity-80">Contactless tea service with automated billing</div>
+              </div>
+            </div>
+            
+            <div className="flex items-start space-x-3 p-3 bg-white/10 rounded-lg backdrop-blur-sm">
+              <div className="w-2 h-2 bg-tea-light rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <div className="font-semibold">Business Unit Wallets</div>
+                <div className="text-sm opacity-80">Centralized billing and expense management</div>
+              </div>
+            </div>
+            
+            <div className="flex items-start space-x-3 p-3 bg-white/10 rounded-lg backdrop-blur-sm">
+              <div className="w-2 h-2 bg-tea-light rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <div className="font-semibold">Advanced Analytics</div>
+                <div className="text-sm opacity-80">Usage insights and detailed reporting</div>
+              </div>
             </div>
           </div>
-          <h1 className="text-4xl font-bold mb-4">Smart Tea Management</h1>
-          <p className="text-xl opacity-90 mb-6">
-            Streamline your corporate tea service with RFID-enabled dispensing, 
-            business unit management, and comprehensive analytics.
-          </p>
-          <div className="space-y-2 text-left">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-white rounded-full"></div>
-              <span>RFID card-based dispensing</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-white rounded-full"></div>
-              <span>Business unit wallet management</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-white rounded-full"></div>
-              <span>Real-time analytics & reporting</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-white rounded-full"></div>
-              <span>Multi-machine network support</span>
-            </div>
+          
+          <div className="mt-8 p-4 bg-white/5 rounded-lg border border-white/20">
+            <div className="text-sm opacity-80 mb-1">Trusted by businesses for</div>
+            <div className="text-2xl font-bold">Smart Workplace Solutions</div>
           </div>
         </div>
       </div>

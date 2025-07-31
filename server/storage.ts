@@ -1810,11 +1810,10 @@ export class DatabaseStorage implements IStorage {
       .select({ count: sql<number>`COUNT(*)` })
       .from(users);
 
-    // Total revenue
+    // Total revenue from tea sales (dispensing)
     const [revenueResult] = await db
       .select({ total: sql<string>`COALESCE(SUM(amount), 0)` })
-      .from(transactions)
-      .where(eq(transactions.type, 'recharge'));
+      .from(dispensingLogs);
 
     // Active machines
     const [machineCount] = await db

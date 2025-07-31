@@ -12,7 +12,7 @@ export function registerCorporateRoutes(app: Express) {
   // Get user's assigned business units (with pseudo login support)
   app.get("/api/corporate/business-units", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
+      const userId = req.user.id;
       const businessUnits = await storage.getUserBusinessUnits(userId);
       res.json(businessUnits);
     } catch (error) {
@@ -24,7 +24,7 @@ export function registerCorporateRoutes(app: Express) {
   // Dashboard stats endpoint with business unit filtering
   app.get('/api/dashboard/stats', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
+      const userId = req.user.id;
       const businessUnitId = req.query.businessUnitId as string;
 
       if (businessUnitId) {
@@ -45,7 +45,7 @@ export function registerCorporateRoutes(app: Express) {
   // Enhanced transactions endpoint with business unit filtering
   app.get('/api/transactions', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
+      const userId = req.user.id;
       const businessUnitId = req.query.businessUnitId as string;
       const limit = parseInt(req.query.limit as string) || 50;
       const page = parseInt(req.query.page as string);
@@ -99,7 +99,7 @@ export function registerCorporateRoutes(app: Express) {
   // Enhanced dispensing history endpoint with business unit filtering
   app.get('/api/dispensing/history', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
+      const userId = req.user.id;
       const businessUnitId = req.query.businessUnitId as string;
       const limit = parseInt(req.query.limit as string) || 50;
       const page = parseInt(req.query.page as string);
@@ -132,7 +132,7 @@ export function registerCorporateRoutes(app: Express) {
   // Get RFID cards for specific business unit (with pseudo login support)
   app.get("/api/corporate/rfid-cards", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
+      const userId = req.user.id;
       const businessUnitId = req.query.businessUnitId as string;
       
       if (businessUnitId) {
@@ -153,7 +153,7 @@ export function registerCorporateRoutes(app: Express) {
   // Create new RFID card for business unit
   app.post("/api/corporate/rfid-cards", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session?.user?.id || req.user?.claims?.sub;
+      const userId = req.user.id;
       const cardData = insertRfidCardSchema.parse({
         ...req.body,
         businessUnitAdminId: userId
@@ -170,7 +170,7 @@ export function registerCorporateRoutes(app: Express) {
   // Deactivate RFID card
   app.delete("/api/corporate/rfid-cards/:cardId", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session?.user?.id || req.user?.claims?.sub;
+      const userId = req.user.id;
       const cardId = parseInt(req.params.cardId);
       
       // Verify the card belongs to this business unit admin
@@ -192,7 +192,7 @@ export function registerCorporateRoutes(app: Express) {
   // Activate RFID card
   app.put("/api/corporate/rfid-cards/:cardId/activate", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session?.user?.id || req.user?.claims?.sub;
+      const userId = req.user.id;
       const cardId = parseInt(req.params.cardId);
       
       // Verify the card belongs to this business unit admin
@@ -214,7 +214,7 @@ export function registerCorporateRoutes(app: Express) {
   // Get machines for specific business unit (with pseudo login support)
   app.get("/api/corporate/machines", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
+      const userId = req.user.id;
       const businessUnitId = req.query.businessUnitId as string;
       
       console.log(`=== MACHINES API DEBUG ===`);
@@ -246,7 +246,7 @@ export function registerCorporateRoutes(app: Express) {
   // Create new tea machine for business unit
   app.post("/api/corporate/machines", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session?.user?.id || req.user?.claims?.sub;
+      const userId = req.user.id;
       const machineData = insertTeaMachineSchema.parse({
         ...req.body,
         businessUnitAdminId: userId
@@ -263,7 +263,7 @@ export function registerCorporateRoutes(app: Express) {
   // Update machine status (activate/deactivate)
   app.patch("/api/corporate/machines/:machineId/status", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session?.user?.id || req.user?.claims?.sub;
+      const userId = req.user.id;
       const { machineId } = req.params;
       const { isActive } = req.body;
       
@@ -286,7 +286,7 @@ export function registerCorporateRoutes(app: Express) {
   // Get dispensing logs for specific business unit (with pseudo login support, pagination, and date filtering)
   app.get("/api/corporate/dispensing-logs", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
+      const userId = req.user.id;
       const businessUnitId = req.query.businessUnitId as string;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
       const page = req.query.page ? parseInt(req.query.page as string) : 1;
@@ -340,7 +340,7 @@ export function registerCorporateRoutes(app: Express) {
   // Monthly transaction summary for reporting - with path parameter support
   app.get("/api/corporate/monthly-summary/:businessUnitId/:month", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;  
+      const userId = req.user.id;  
       const businessUnitId = req.params.businessUnitId as string;
       const month = req.params.month as string; // Format: YYYY-MM
 
@@ -367,7 +367,7 @@ export function registerCorporateRoutes(app: Express) {
   // Export CSV transactions for a month - with path parameter support
   app.get("/api/corporate/monthly-export/:businessUnitId/:month", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
+      const userId = req.user.id;
       const businessUnitId = req.params.businessUnitId as string;
       const month = req.params.month as string; // Format: YYYY-MM
 
@@ -433,7 +433,7 @@ export function registerCorporateRoutes(app: Express) {
   // Generate PDF invoice for a month - with path parameter support
   app.get("/api/corporate/monthly-invoice/:businessUnitId/:month", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
+      const userId = req.user.id;
       const businessUnitId = req.params.businessUnitId as string;
       const month = req.params.month as string; // Format: YYYY-MM
 
@@ -535,7 +535,7 @@ export function registerCorporateRoutes(app: Express) {
 
   // Get business unit summary with date filtering
   app.get("/api/corporate/business-unit-summary/:businessUnitId", isAuthenticated, async (req: any, res) => {
-    const userId = req.query.pseudo || req.session?.user?.id || req.user?.claims?.sub;
+    const userId = req.user.id;
     if (!userId) {
       return res.status(401).json({ message: 'Unauthorized' });
     }

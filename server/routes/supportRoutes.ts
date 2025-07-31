@@ -7,7 +7,7 @@ import {
   getFaqArticles,
   incrementFaqViews
 } from "../controllers/supportController";
-import { isAuthenticated } from "../replitAuth";
+import { isAuthenticated } from "../auth";
 
 const router = Router();
 

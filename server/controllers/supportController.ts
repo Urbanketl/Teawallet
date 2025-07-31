@@ -5,7 +5,7 @@ import { insertSupportTicketSchema, insertSupportMessageSchema } from "@shared/s
 export async function getUserSupportTickets(req: any, res: Response) {
   try {
     // Prioritize Replit auth over demo session
-    const userId = req.user?.claims?.sub || req.session?.user?.id;
+    const userId = req.user.id;
     const tickets = await storage.getUserSupportTickets(userId);
     res.json(tickets);
   } catch (error) {
@@ -17,14 +17,9 @@ export async function getUserSupportTickets(req: any, res: Response) {
 export async function createSupportTicket(req: any, res: Response) {
   try {
     // Prioritize Replit auth over demo session
-    const userId = req.user?.claims?.sub || req.session?.user?.id;
+    const userId = req.user.id;
     console.log("Creating support ticket for userId:", userId);
     console.log("Request body:", req.body);
-    console.log("Full request user info:", { 
-      userClaims: req.user?.claims, 
-      session: req.session?.user,
-      finalUserId: userId 
-    });
     
     if (!userId) {
       return res.status(401).json({ message: "User not authenticated" });
@@ -48,7 +43,7 @@ export async function createSupportTicket(req: any, res: Response) {
 export async function getSupportTicketById(req: any, res: Response) {
   try {
     const { ticketId } = req.params;
-    const userId = req.session?.user?.id || req.user?.claims?.sub;
+    const userId = req.user.id;
     
     const ticket = await storage.getSupportTicket(Number(ticketId));
     if (!ticket) {
@@ -78,7 +73,7 @@ export async function getSupportTicketById(req: any, res: Response) {
 export async function createSupportMessage(req: any, res: Response) {
   try {
     const { ticketId } = req.params;
-    const userId = req.session?.user?.id || req.user?.claims?.sub;
+    const userId = req.user.id;
     
     const validated = insertSupportMessageSchema.parse({
       ...req.body,

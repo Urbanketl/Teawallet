@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Lock, Mail, Key, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, Key, ArrowRight, Coffee, CreditCard, BarChart3, Smartphone } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function AuthPage() {
@@ -490,55 +490,53 @@ export default function AuthPage() {
         </div>
         
         <div className="text-center text-white max-w-lg relative z-10">
-          {/* UrbanKetl Logo */}
+          {/* Logo */}
           <div className="mb-8">
-            <img 
-              src="/attached_assets/URBAN KETL Logo small_1750439431697.jpg" 
-              alt="UrbanKetl Logo" 
-              className="w-20 h-20 mx-auto rounded-xl shadow-lg bg-white p-2"
-            />
+            <div className="w-24 h-24 bg-white rounded-xl shadow-lg mx-auto flex items-center justify-center p-3">
+              <Coffee className="w-12 h-12 text-tea-green" />
+            </div>
           </div>
           
-          <h1 className="text-4xl font-bold mb-4 leading-tight">
-            Enterprise Tea
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
+            Premium Tea at Your
             <br />
-            <span className="text-tea-light">Management Platform</span>
+            <span className="text-tea-light">Fingertips</span>
           </h1>
           
           <p className="text-xl opacity-90 mb-8 leading-relaxed">
-            Transform your workplace beverage service with intelligent RFID technology, 
-            comprehensive business unit management, and real-time analytics.
+            Experience seamless tea dispensing with our digital wallet and RFID card system. 
+            Recharge once, enjoy everywhere in your corporate network.
           </p>
           
           <div className="grid grid-cols-1 gap-4 text-left">
-            <div className="flex items-start space-x-3 p-3 bg-white/10 rounded-lg backdrop-blur-sm">
-              <div className="w-2 h-2 bg-tea-light rounded-full mt-2 flex-shrink-0"></div>
+            <div className="flex items-start space-x-3 p-4 bg-white/10 rounded-lg backdrop-blur-sm">
+              <CreditCard className="w-6 h-6 text-tea-light mt-1 flex-shrink-0" />
               <div>
-                <div className="font-semibold">Smart RFID Dispensing</div>
-                <div className="text-sm opacity-80">Contactless tea service with automated billing</div>
+                <div className="font-semibold text-lg">RFID Card Technology</div>
+                <div className="text-sm opacity-80">Simply tap your card and enjoy instant tea dispensing with automatic payment</div>
               </div>
             </div>
             
-            <div className="flex items-start space-x-3 p-3 bg-white/10 rounded-lg backdrop-blur-sm">
-              <div className="w-2 h-2 bg-tea-light rounded-full mt-2 flex-shrink-0"></div>
+            <div className="flex items-start space-x-3 p-4 bg-white/10 rounded-lg backdrop-blur-sm">
+              <Smartphone className="w-6 h-6 text-tea-light mt-1 flex-shrink-0" />
               <div>
-                <div className="font-semibold">Business Unit Wallets</div>
-                <div className="text-sm opacity-80">Centralized billing and expense management</div>
+                <div className="font-semibold text-lg">Digital Wallet System</div>
+                <div className="text-sm opacity-80">Secure online recharge with Razorpay integration and real-time balance tracking</div>
               </div>
             </div>
             
-            <div className="flex items-start space-x-3 p-3 bg-white/10 rounded-lg backdrop-blur-sm">
-              <div className="w-2 h-2 bg-tea-light rounded-full mt-2 flex-shrink-0"></div>
+            <div className="flex items-start space-x-3 p-4 bg-white/10 rounded-lg backdrop-blur-sm">
+              <BarChart3 className="w-6 h-6 text-tea-light mt-1 flex-shrink-0" />
               <div>
-                <div className="font-semibold">Advanced Analytics</div>
-                <div className="text-sm opacity-80">Usage insights and detailed reporting</div>
+                <div className="font-semibold text-lg">Business Intelligence</div>
+                <div className="text-sm opacity-80">Complete usage analytics, reporting, and expense management for corporate teams</div>
               </div>
             </div>
           </div>
           
           <div className="mt-8 p-4 bg-white/5 rounded-lg border border-white/20">
-            <div className="text-sm opacity-80 mb-1">Trusted by businesses for</div>
-            <div className="text-2xl font-bold">Smart Workplace Solutions</div>
+            <div className="text-sm opacity-80 mb-1">Join thousands of companies using</div>
+            <div className="text-2xl font-bold">Smart Corporate Tea Solutions</div>
           </div>
         </div>
       </div>

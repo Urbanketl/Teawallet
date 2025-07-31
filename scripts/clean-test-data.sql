@@ -29,14 +29,14 @@ WHERE created_at < '2025-08-01'
      WHERE email LIKE '%test%'
    );
 
--- 4. Deactivate test RFID cards
-UPDATE rfid_cards 
-SET is_active = false 
+-- 4. Delete test RFID cards (no transaction history exists)
+DELETE FROM rfid_cards 
 WHERE card_number LIKE 'RFID_UK_%' 
    OR card_number LIKE 'RFID_TEST_%'
+   OR card_number LIKE 'RFID_%_00%'  -- Catches all test pattern cards
    OR business_unit_id IN (
      SELECT id FROM users 
-     WHERE business_unit_name LIKE '%Test%'
+     WHERE email LIKE '%test%'
    );
 
 -- 5. Remove test business unit assignments
@@ -54,12 +54,7 @@ WHERE business_unit_id IN (
   WHERE business_unit_name LIKE '%Test%'
 );
 
--- 7. Remove test RFID cards
-DELETE FROM rfid_cards 
-WHERE business_unit_id IN (
-  SELECT id FROM users 
-  WHERE business_unit_name LIKE '%Test%'
-);
+-- 7. (Merged with step 4 above)
 
 -- 8. Remove test users (keeping structure for reference)
 DELETE FROM users 
@@ -88,9 +83,11 @@ SELECT 'Transactions to be removed:' as info, COUNT(*) as count
 FROM transactions 
 WHERE created_at < '2025-08-01';
 
-SELECT 'RFID cards to be deactivated:' as info, COUNT(*) as count 
+SELECT 'RFID cards to be deleted:' as info, COUNT(*) as count 
 FROM rfid_cards 
-WHERE card_number LIKE 'RFID_UK_%';
+WHERE card_number LIKE 'RFID_UK_%' 
+   OR card_number LIKE 'RFID_TEST_%'
+   OR card_number LIKE 'RFID_%_00%';
 
 -- Commit or rollback based on review
 -- COMMIT;

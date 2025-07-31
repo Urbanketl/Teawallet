@@ -399,10 +399,10 @@ export default function AuthPage() {
 
   // Main login form
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="h-screen bg-white flex flex-col overflow-hidden">
       {/* Header with Logo - Top Left */}
-      <div className="flex justify-start pt-8 pl-8 pb-4">
-        <div className="w-20 h-20 bg-white rounded-xl shadow-md flex items-center justify-center p-2 border border-amber-200">
+      <div className="flex justify-start pt-4 pl-6 pb-2">
+        <div className="w-16 h-16 bg-white rounded-lg shadow-md flex items-center justify-center p-2 border border-amber-200">
           <img 
             src="/logo.jpg" 
             alt="UrbanKetl Logo" 
@@ -421,16 +421,16 @@ export default function AuthPage() {
       </div>
 
       {/* Centered Login Form */}
-      <div className="flex-1 flex items-center justify-center px-8">
-        <Card className="w-full max-w-md shadow-lg border-amber-200">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl text-gray-800">Welcome to UrbanKetl</CardTitle>
-            <CardDescription className="text-gray-600">
+      <div className="flex-1 flex items-center justify-center px-8 py-2">
+        <Card className="w-full max-w-sm shadow-lg border-amber-200">
+          <CardHeader className="text-center pb-4">
+            <CardTitle className="text-xl text-gray-800">Welcome to UrbanKetl</CardTitle>
+            <CardDescription className="text-gray-600 text-sm">
               Sign in to your business unit account
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
+          <CardContent className="pt-0">
+            <form onSubmit={handleLogin} className="space-y-3">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-gray-700">Email Address</Label>
                 <Input
@@ -480,63 +480,62 @@ export default function AuthPage() {
               </Button>
             </form>
 
-            <div className="mt-4 text-center">
+            <div className="mt-3 text-center">
               <Button
                 variant="ghost"
                 onClick={() => setShowResetPassword(true)}
-                className="text-sm hover:text-gray-800" style={{color: 'hsl(35, 95%, 54%)'}}
+                className="text-xs hover:text-gray-800 p-1" style={{color: 'hsl(35, 95%, 54%)'}}
               >
                 Forgot your password?
               </Button>
             </div>
 
-            <div className="mt-4 pt-4 border-t text-center text-xs text-gray-500">
+            <div className="mt-3 pt-3 border-t text-center text-xs text-gray-500">
               <p>Need an account? Contact your platform administrator.</p>
-              <p>Admins create and share login credentials securely.</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Feature Cards Section */}
-      <div className="px-8 pb-12 bg-amber-50">
+      <div className="px-6 pb-4 bg-amber-50">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-8 pt-8">
-            <h2 className="text-3xl font-bold text-gray-800 mb-2">Premium Tea at Your Fingertips</h2>
-            <p className="text-lg text-gray-600">Experience seamless tea dispensing with our digital wallet and RFID card system</p>
+          <div className="text-center mb-4 pt-4">
+            <h2 className="text-xl font-bold text-gray-800 mb-1">Premium Tea at Your Fingertips</h2>
+            <p className="text-sm text-gray-600">Experience seamless tea dispensing with our digital wallet and RFID card system</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white rounded-xl p-6 shadow-md border border-amber-100">
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-4" style={{backgroundColor: 'hsl(35, 95%, 54%)'}}>
-                <CreditCard className="w-6 h-6 text-white" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white rounded-lg p-4 shadow-md border border-amber-100">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{backgroundColor: 'hsl(35, 95%, 54%)'}}>
+                <CreditCard className="w-5 h-5 text-white" />
               </div>
-              <h3 className="font-semibold text-lg mb-2 text-gray-800">RFID Card Technology</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">Simply tap your card and enjoy instant tea dispensing with automatic payment</p>
+              <h3 className="font-semibold text-base mb-1 text-gray-800">RFID Card Technology</h3>
+              <p className="text-xs text-gray-600 leading-relaxed">Simply tap your card and enjoy instant tea dispensing with automatic payment</p>
             </div>
             
-            <div className="bg-white rounded-xl p-6 shadow-md border border-amber-100">
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-4" style={{backgroundColor: 'hsl(35, 95%, 54%)'}}>
-                <Smartphone className="w-6 h-6 text-white" />
+            <div className="bg-white rounded-lg p-4 shadow-md border border-amber-100">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{backgroundColor: 'hsl(35, 95%, 54%)'}}>
+                <Smartphone className="w-5 h-5 text-white" />
               </div>
-              <h3 className="font-semibold text-lg mb-2 text-gray-800">Digital Wallet System</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">Secure online recharge with Razorpay integration and real-time balance tracking</p>
+              <h3 className="font-semibold text-base mb-1 text-gray-800">Digital Wallet System</h3>
+              <p className="text-xs text-gray-600 leading-relaxed">Secure online recharge with Razorpay integration and real-time balance tracking</p>
             </div>
             
-            <div className="bg-white rounded-xl p-6 shadow-md border border-amber-100">
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-4" style={{backgroundColor: 'hsl(35, 95%, 54%)'}}>
-                <BarChart3 className="w-6 h-6 text-white" />
+            <div className="bg-white rounded-lg p-4 shadow-md border border-amber-100">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{backgroundColor: 'hsl(35, 95%, 54%)'}}>
+                <BarChart3 className="w-5 h-5 text-white" />
               </div>
-              <h3 className="font-semibold text-lg mb-2 text-gray-800">Business Intelligence</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">Complete usage analytics, reporting, and expense management for corporate teams</p>
+              <h3 className="font-semibold text-base mb-1 text-gray-800">Business Intelligence</h3>
+              <p className="text-xs text-gray-600 leading-relaxed">Complete usage analytics, reporting, and expense management for corporate teams</p>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-md border border-amber-100">
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-4" style={{backgroundColor: 'hsl(35, 95%, 54%)'}}>
-                <Coffee className="w-6 h-6 text-white" />
+            <div className="bg-white rounded-lg p-4 shadow-md border border-amber-100">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{backgroundColor: 'hsl(35, 95%, 54%)'}}>
+                <Coffee className="w-5 h-5 text-white" />
               </div>
-              <h3 className="font-semibold text-lg mb-2 text-gray-800">Corporate Solutions</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">Join thousands of companies using smart corporate tea solutions for your workforce</p>
+              <h3 className="font-semibold text-base mb-1 text-gray-800">Corporate Solutions</h3>
+              <p className="text-xs text-gray-600 leading-relaxed">Join thousands of companies using smart corporate tea solutions for your workforce</p>
             </div>
           </div>
         </div>

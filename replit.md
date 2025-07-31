@@ -125,6 +125,7 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 
 ## Recent Changes
 - July 31, 2025: COMPLETED - Brand-aligned login page redesign with centered layout, white background, logo positioned top-left, and Pantone Gold Fusion (15-1062 TCX) color applied to all bright elements (sign-in button, feature card icons)
+- July 31, 2025: OPTIMIZED - Login page layout to fit entirely within viewport height without scrolling - reduced spacing, compressed feature cards, and made all elements more compact while maintaining professional appearance
 - July 31, 2025: ENHANCED - Support ticket filters in Platform Admin with improved React Query implementation, better error handling, and streamlined parameter handling
 - July 31, 2025: FIXED - Support ticket filters in Platform Admin now working correctly after fixing React Query key structure and authentication middleware
 - July 31, 2025: FIXED - Platform Admin page crash by correcting undefined supportTickets variable references to use filteredTicketsData

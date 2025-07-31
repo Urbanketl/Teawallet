@@ -481,26 +481,31 @@ export default function AuthPage() {
       </div>
 
       {/* Right side - Hero Section */}
-      <div className="flex-1 bg-gradient-to-br from-orange-400 to-amber-700 flex items-center justify-center p-8 relative overflow-hidden">
+      <div className="flex-1 bg-gradient-to-br from-slate-700 via-blue-800 to-indigo-900 flex items-center justify-center p-8 relative overflow-hidden">
         {/* Background pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-20 w-32 h-32 border border-white/20 rounded-full"></div>
           <div className="absolute bottom-20 right-20 w-24 h-24 border border-white/20 rounded-full"></div>
           <div className="absolute top-1/2 left-1/4 w-16 h-16 border border-white/20 rounded-full"></div>
+          <div className="absolute top-1/3 right-1/4 w-20 h-20 border border-white/10 rounded-full"></div>
         </div>
         
         <div className="text-center text-white max-w-lg relative z-10">
-          {/* Logo */}
+          {/* UrbanKetl Logo */}
           <div className="mb-8">
-            <div className="w-24 h-24 bg-white rounded-xl shadow-lg mx-auto flex items-center justify-center p-3">
-              <Coffee className="w-12 h-12 text-tea-green" />
+            <div className="w-28 h-28 bg-white rounded-2xl shadow-2xl mx-auto flex items-center justify-center p-4 border-4 border-white/20">
+              <img 
+                src="/attached_assets/URBAN KETL Logo small_1750439431697.jpg" 
+                alt="UrbanKetl Logo" 
+                className="w-full h-full object-contain rounded-lg"
+              />
             </div>
           </div>
           
           <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
             Premium Tea at Your
             <br />
-            <span className="text-tea-light">Fingertips</span>
+            <span className="text-blue-200">Fingertips</span>
           </h1>
           
           <p className="text-xl opacity-90 mb-8 leading-relaxed">
@@ -509,34 +514,40 @@ export default function AuthPage() {
           </p>
           
           <div className="grid grid-cols-1 gap-4 text-left">
-            <div className="flex items-start space-x-3 p-4 bg-white/10 rounded-lg backdrop-blur-sm">
-              <CreditCard className="w-6 h-6 text-tea-light mt-1 flex-shrink-0" />
+            <div className="flex items-start space-x-4 p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
+              <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <CreditCard className="w-5 h-5 text-white" />
+              </div>
               <div>
-                <div className="font-semibold text-lg">RFID Card Technology</div>
-                <div className="text-sm opacity-80">Simply tap your card and enjoy instant tea dispensing with automatic payment</div>
+                <div className="font-semibold text-lg mb-1">RFID Card Technology</div>
+                <div className="text-sm opacity-80 leading-relaxed">Simply tap your card and enjoy instant tea dispensing with automatic payment</div>
               </div>
             </div>
             
-            <div className="flex items-start space-x-3 p-4 bg-white/10 rounded-lg backdrop-blur-sm">
-              <Smartphone className="w-6 h-6 text-tea-light mt-1 flex-shrink-0" />
+            <div className="flex items-start space-x-4 p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
+              <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Smartphone className="w-5 h-5 text-white" />
+              </div>
               <div>
-                <div className="font-semibold text-lg">Digital Wallet System</div>
-                <div className="text-sm opacity-80">Secure online recharge with Razorpay integration and real-time balance tracking</div>
+                <div className="font-semibold text-lg mb-1">Digital Wallet System</div>
+                <div className="text-sm opacity-80 leading-relaxed">Secure online recharge with Razorpay integration and real-time balance tracking</div>
               </div>
             </div>
             
-            <div className="flex items-start space-x-3 p-4 bg-white/10 rounded-lg backdrop-blur-sm">
-              <BarChart3 className="w-6 h-6 text-tea-light mt-1 flex-shrink-0" />
+            <div className="flex items-start space-x-4 p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
+              <div className="w-10 h-10 bg-indigo-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <BarChart3 className="w-5 h-5 text-white" />
+              </div>
               <div>
-                <div className="font-semibold text-lg">Business Intelligence</div>
-                <div className="text-sm opacity-80">Complete usage analytics, reporting, and expense management for corporate teams</div>
+                <div className="font-semibold text-lg mb-1">Business Intelligence</div>
+                <div className="text-sm opacity-80 leading-relaxed">Complete usage analytics, reporting, and expense management for corporate teams</div>
               </div>
             </div>
           </div>
           
-          <div className="mt-8 p-4 bg-white/5 rounded-lg border border-white/20">
+          <div className="mt-8 p-5 bg-gradient-to-r from-white/10 to-white/5 rounded-xl border border-white/20 backdrop-blur-sm">
             <div className="text-sm opacity-80 mb-1">Join thousands of companies using</div>
-            <div className="text-2xl font-bold">Smart Corporate Tea Solutions</div>
+            <div className="text-2xl font-bold text-blue-100">Smart Corporate Tea Solutions</div>
           </div>
         </div>
       </div>

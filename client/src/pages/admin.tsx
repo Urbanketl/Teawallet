@@ -198,21 +198,16 @@ export default function AdminPage() {
   }).toString();
 
   const { data: filteredTicketsData, isLoading: allTicketsLoading, refetch: refetchTickets } = useQuery({
-    queryKey: ['/api/admin/support/tickets', {
-      paginated: 'true',
-      page: ticketsPage,
-      limit: ticketsPerPage,
-      status: statusFilter !== 'all' ? statusFilter : undefined,
-      dateFilter: dateFilter !== 'all' ? dateFilter : undefined,
-      startDate: customDateRange.start && dateFilter === 'custom' ? customDateRange.start : undefined,
-      endDate: customDateRange.end && dateFilter === 'custom' ? customDateRange.end : undefined,
-      userId: userFilter !== 'all' ? userFilter : undefined,
-      sortBy,
-      sortOrder,
-    }],
+    queryKey: ['/api/admin/support/tickets', ticketsQueryParams],
     queryFn: () => {
       const url = `/api/admin/support/tickets?${ticketsQueryParams}`;
-      return fetch(url).then(res => res.json());
+      console.log('Fetching support tickets with URL:', url);
+      return fetch(url).then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      });
     },
     enabled: Boolean(isAuthenticated && typedUser?.isAdmin),
     retry: false,

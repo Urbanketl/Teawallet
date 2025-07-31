@@ -183,21 +183,22 @@ export default function AdminPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
 
-  // Build query parameters for tickets
-  const ticketsQueryParams = {
-    paginated: 'true',
-    page: ticketsPage.toString(),
-    limit: ticketsPerPage.toString(),
-    ...(statusFilter !== 'all' && { status: statusFilter }),
-    ...(dateFilter !== 'all' && { dateFilter }),
-    ...(customDateRange.start && dateFilter === 'custom' && { startDate: customDateRange.start }),
-    ...(customDateRange.end && dateFilter === 'custom' && { endDate: customDateRange.end }),
-    ...(userFilter !== 'all' && { userId: userFilter }),
-    sortBy,
-    sortOrder,
-  };
-
-  const queryString = new URLSearchParams(ticketsQueryParams).toString();
+  // Build query string dynamically in useMemo to ensure it updates with state changes
+  const queryString = useMemo(() => {
+    const params = new URLSearchParams({
+      paginated: 'true',
+      page: ticketsPage.toString(),
+      limit: ticketsPerPage.toString(),
+      ...(statusFilter !== 'all' && { status: statusFilter }),
+      ...(dateFilter !== 'all' && { dateFilter }),
+      ...(customDateRange.start && dateFilter === 'custom' && { startDate: customDateRange.start }),
+      ...(customDateRange.end && dateFilter === 'custom' && { endDate: customDateRange.end }),
+      ...(userFilter !== 'all' && { userId: userFilter }),
+      sortBy,
+      sortOrder,
+    });
+    return params.toString();
+  }, [ticketsPage, ticketsPerPage, statusFilter, dateFilter, customDateRange, userFilter, sortBy, sortOrder]);
 
   const { data: filteredTicketsData, isLoading: allTicketsLoading, refetch: refetchTickets } = useQuery({
     queryKey: ['/api/admin/support/tickets', {
@@ -211,16 +212,26 @@ export default function AdminPage() {
       sortBy,
       sortOrder
     }],
-    queryFn: () => {
+    queryFn: async () => {
       const url = `/api/admin/support/tickets?${queryString}`;
       console.log('Fetching support tickets with URL:', url);
-      console.log('Query params object:', ticketsQueryParams);
-      return fetch(url).then(res => {
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        return res.json();
+      console.log('Current filter states:', { statusFilter, dateFilter, userFilter, sortBy, sortOrder });
+      console.log('Query string:', queryString);
+      
+      const res = await fetch(url, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
+      
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      
+      const data = await res.json();
+      console.log('Received tickets data:', data);
+      return data;
     },
     enabled: Boolean(isAuthenticated && typedUser?.isAdmin),
     retry: false,
@@ -838,7 +849,10 @@ export default function AdminPage() {
             </div>
             
             <div className="flex flex-wrap gap-3">
-              <Select value={dateFilter} onValueChange={setDateFilter}>
+              <Select value={dateFilter} onValueChange={(value) => {
+                console.log('Date filter changed to:', value);
+                setDateFilter(value);
+              }}>
                 <SelectTrigger className="w-48">
                   <SelectValue />
                 </SelectTrigger>
@@ -851,7 +865,10 @@ export default function AdminPage() {
                 </SelectContent>
               </Select>
               
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={statusFilter} onValueChange={(value) => {
+                console.log('Status filter changed to:', value);
+                setStatusFilter(value);
+              }}>
                 <SelectTrigger className="w-48">
                   <SelectValue />
                 </SelectTrigger>
@@ -864,7 +881,10 @@ export default function AdminPage() {
                 </SelectContent>
               </Select>
               
-              <Select value={userFilter} onValueChange={setUserFilter}>
+              <Select value={userFilter} onValueChange={(value) => {
+                console.log('User filter changed to:', value);
+                setUserFilter(value);
+              }}>
                 <SelectTrigger className="w-56">
                   <SelectValue placeholder="Filter by User" />
                 </SelectTrigger>
@@ -878,7 +898,10 @@ export default function AdminPage() {
                 </SelectContent>
               </Select>
               
-              <Select value={sortBy} onValueChange={setSortBy}>
+              <Select value={sortBy} onValueChange={(value) => {
+                console.log('Sort by changed to:', value);
+                setSortBy(value);
+              }}>
                 <SelectTrigger className="w-48">
                   <SelectValue />
                 </SelectTrigger>
@@ -893,7 +916,11 @@ export default function AdminPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                onClick={() => {
+                  const newOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+                  console.log('Sort order changed to:', newOrder);
+                  setSortOrder(newOrder);
+                }}
               >
                 {sortOrder === 'asc' ? '↑ Ascending' : '↓ Descending'}
               </Button>

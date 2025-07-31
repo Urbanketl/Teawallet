@@ -78,7 +78,6 @@ export default function Navigation() {
                     console.log('Logo loaded successfully:', logoImage);
                   }}
                 />
-                <span className="text-xl font-bold text-tea-dark ml-2">UrbanKetl</span>
               </div>
             </Link>
             

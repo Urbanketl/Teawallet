@@ -47,8 +47,8 @@ export function requireAuth(req: any, res: Response, next: NextFunction) {
     return next();
   }
   
-  // Then check for demo session
-  const userId = req.user.id;
+  // Then check for demo session - but only if req.user exists
+  const userId = req.user?.id;
   if (!userId) {
     return res.status(401).json({ message: "Unauthorized" });
   }

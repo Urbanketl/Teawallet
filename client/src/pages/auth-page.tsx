@@ -465,7 +465,7 @@ export default function AuthPage() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700 text-white" disabled={isLoading}>
+              <Button type="submit" className="w-full text-white" style={{backgroundColor: 'hsl(35, 95%, 54%)'}} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(35, 95%, 48%)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(35, 95%, 54%)'} disabled={isLoading}>
                 {isLoading ? (
                   <div className="flex items-center space-x-2">
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -484,7 +484,7 @@ export default function AuthPage() {
               <Button
                 variant="ghost"
                 onClick={() => setShowResetPassword(true)}
-                className="text-sm text-amber-600 hover:text-amber-700"
+                className="text-sm hover:text-gray-800" style={{color: 'hsl(35, 95%, 54%)'}}
               >
                 Forgot your password?
               </Button>
@@ -508,7 +508,7 @@ export default function AuthPage() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white rounded-xl p-6 shadow-md border border-amber-100">
-              <div className="w-12 h-12 bg-amber-600 rounded-lg flex items-center justify-center mb-4">
+              <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-4" style={{backgroundColor: 'hsl(35, 95%, 54%)'}}>
                 <CreditCard className="w-6 h-6 text-white" />
               </div>
               <h3 className="font-semibold text-lg mb-2 text-gray-800">RFID Card Technology</h3>
@@ -516,7 +516,7 @@ export default function AuthPage() {
             </div>
             
             <div className="bg-white rounded-xl p-6 shadow-md border border-amber-100">
-              <div className="w-12 h-12 bg-amber-700 rounded-lg flex items-center justify-center mb-4">
+              <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-4" style={{backgroundColor: 'hsl(35, 95%, 54%)'}}>
                 <Smartphone className="w-6 h-6 text-white" />
               </div>
               <h3 className="font-semibold text-lg mb-2 text-gray-800">Digital Wallet System</h3>
@@ -524,7 +524,7 @@ export default function AuthPage() {
             </div>
             
             <div className="bg-white rounded-xl p-6 shadow-md border border-amber-100">
-              <div className="w-12 h-12 bg-yellow-700 rounded-lg flex items-center justify-center mb-4">
+              <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-4" style={{backgroundColor: 'hsl(35, 95%, 54%)'}}>
                 <BarChart3 className="w-6 h-6 text-white" />
               </div>
               <h3 className="font-semibold text-lg mb-2 text-gray-800">Business Intelligence</h3>
@@ -532,7 +532,7 @@ export default function AuthPage() {
             </div>
 
             <div className="bg-white rounded-xl p-6 shadow-md border border-amber-100">
-              <div className="w-12 h-12 bg-amber-800 rounded-lg flex items-center justify-center mb-4">
+              <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-4" style={{backgroundColor: 'hsl(35, 95%, 54%)'}}>
                 <Coffee className="w-6 h-6 text-white" />
               </div>
               <h3 className="font-semibold text-lg mb-2 text-gray-800">Corporate Solutions</h3>

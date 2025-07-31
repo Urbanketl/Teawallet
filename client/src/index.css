@@ -73,6 +73,9 @@ body {
   --tea-light: hsl(30, 100%, 76%);
   --tea-brown: hsl(25, 45%, 35%);
   --tea-dark: hsl(25, 60%, 25%);
+  
+  /* Pantone Gold Fusion 15-1062 TCX */
+  --gold-fusion: hsl(35, 95%, 54%);
   --premium-purple: hsl(267, 29%, 43%);
   --accent-amber: hsl(38, 100%, 50%);
   --neutral-warm: hsl(30, 67%, 97%);

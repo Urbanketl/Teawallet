@@ -124,6 +124,7 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- July 31, 2025: FIXED - Support ticket filters in Platform Admin now working correctly after fixing React Query key structure and authentication middleware
 - July 31, 2025: FIXED - Platform Admin page crash by correcting undefined supportTickets variable references to use filteredTicketsData
 - July 31, 2025: FIXED - 404 page error on home page by resolving duplicate variable conflict in admin.tsx and fixing lazy loading imports
 - July 31, 2025: FIXED - Logout redirect issue - added GET /api/logout route to properly redirect to auth page instead of showing JSON response

@@ -481,7 +481,7 @@ export default function AuthPage() {
       </div>
 
       {/* Right side - Hero Section */}
-      <div className="flex-1 bg-gradient-to-br from-tea-green to-tea-brown flex items-center justify-center p-8 relative overflow-hidden">
+      <div className="flex-1 bg-gradient-to-br from-orange-400 to-amber-700 flex items-center justify-center p-8 relative overflow-hidden">
         {/* Background pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-20 w-32 h-32 border border-white/20 rounded-full"></div>

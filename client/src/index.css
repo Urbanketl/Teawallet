@@ -71,7 +71,8 @@ body {
   /* UrbanKetl brand colors */
   --tea-green: hsl(30, 90%, 62%);
   --tea-light: hsl(30, 100%, 76%);
-  --tea-dark: hsl(30, 35%, 62%);
+  --tea-brown: hsl(25, 45%, 35%);
+  --tea-dark: hsl(25, 60%, 25%);
   --premium-purple: hsl(267, 29%, 43%);
   --accent-amber: hsl(38, 100%, 50%);
   --neutral-warm: hsl(30, 67%, 97%);
@@ -128,6 +129,10 @@ body {
     background-color: var(--tea-dark);
   }
   
+  .bg-tea-brown {
+    background-color: var(--tea-brown);
+  }
+  
   .text-tea-green {
     color: var(--tea-green);
   }
@@ -138,6 +143,10 @@ body {
   
   .text-tea-dark {
     color: var(--tea-dark);
+  }
+  
+  .text-tea-brown {
+    color: var(--tea-brown);
   }
   
   .border-tea-green {

@@ -399,21 +399,30 @@ export default function AuthPage() {
 
   // Main login form
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 flex flex-col">
-      {/* Header with Logo */}
-      <div className="flex justify-center pt-12 pb-8">
-        <div className="w-24 h-24 bg-white rounded-2xl shadow-lg flex items-center justify-center p-3 border-2 border-orange-200">
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* Header with Logo - Top Left */}
+      <div className="flex justify-start pt-8 pl-8 pb-4">
+        <div className="w-20 h-20 bg-white rounded-xl shadow-md flex items-center justify-center p-2 border border-amber-200">
           <img 
-            src="/attached_assets/URBAN KETL Logo small_1750439431697.jpg" 
+            src="/logo.jpg" 
             alt="UrbanKetl Logo" 
-            className="w-full h-full object-contain rounded-lg"
+            className="w-full h-full object-contain"
+            onError={(e) => {
+              console.log('Logo failed to load, showing fallback');
+              e.currentTarget.style.display = 'none';
+              const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+              if (fallback) fallback.style.display = 'flex';
+            }}
           />
+          <div className="w-full h-full bg-amber-600 rounded-lg flex items-center justify-center" style={{display: 'none'}}>
+            <Coffee className="w-8 h-8 text-white" />
+          </div>
         </div>
       </div>
 
       {/* Centered Login Form */}
       <div className="flex-1 flex items-center justify-center px-8">
-        <Card className="w-full max-w-md shadow-xl border-orange-200">
+        <Card className="w-full max-w-md shadow-lg border-amber-200">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl text-gray-800">Welcome to UrbanKetl</CardTitle>
             <CardDescription className="text-gray-600">
@@ -430,7 +439,7 @@ export default function AuthPage() {
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   placeholder="admin@company.com"
-                  className="border-orange-200 focus:border-orange-400"
+                  className="border-amber-200 focus:border-amber-400"
                   required
                 />
               </div>
@@ -443,7 +452,7 @@ export default function AuthPage() {
                     type={showPassword ? "text" : "password"}
                     value={formData.password}
                     onChange={(e) => handleInputChange("password", e.target.value)}
-                    className="pr-10 border-orange-200 focus:border-orange-400"
+                    className="pr-10 border-amber-200 focus:border-amber-400"
                     required
                   />
                   <button
@@ -456,7 +465,7 @@ export default function AuthPage() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600" disabled={isLoading}>
+              <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700 text-white" disabled={isLoading}>
                 {isLoading ? (
                   <div className="flex items-center space-x-2">
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -475,7 +484,7 @@ export default function AuthPage() {
               <Button
                 variant="ghost"
                 onClick={() => setShowResetPassword(true)}
-                className="text-sm text-gray-600 hover:text-gray-800"
+                className="text-sm text-amber-600 hover:text-amber-700"
               >
                 Forgot your password?
               </Button>
@@ -490,44 +499,44 @@ export default function AuthPage() {
       </div>
 
       {/* Feature Cards Section */}
-      <div className="px-8 pb-12">
+      <div className="px-8 pb-12 bg-amber-50">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-8">
+          <div className="text-center mb-8 pt-8">
             <h2 className="text-3xl font-bold text-gray-800 mb-2">Premium Tea at Your Fingertips</h2>
             <p className="text-lg text-gray-600">Experience seamless tea dispensing with our digital wallet and RFID card system</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white rounded-xl p-6 shadow-lg border border-orange-100">
-              <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mb-4">
+            <div className="bg-white rounded-xl p-6 shadow-md border border-amber-100">
+              <div className="w-12 h-12 bg-amber-600 rounded-lg flex items-center justify-center mb-4">
                 <CreditCard className="w-6 h-6 text-white" />
               </div>
               <h3 className="font-semibold text-lg mb-2 text-gray-800">RFID Card Technology</h3>
               <p className="text-sm text-gray-600 leading-relaxed">Simply tap your card and enjoy instant tea dispensing with automatic payment</p>
             </div>
             
-            <div className="bg-white rounded-xl p-6 shadow-lg border border-orange-100">
-              <div className="w-12 h-12 bg-amber-500 rounded-lg flex items-center justify-center mb-4">
+            <div className="bg-white rounded-xl p-6 shadow-md border border-amber-100">
+              <div className="w-12 h-12 bg-amber-700 rounded-lg flex items-center justify-center mb-4">
                 <Smartphone className="w-6 h-6 text-white" />
               </div>
               <h3 className="font-semibold text-lg mb-2 text-gray-800">Digital Wallet System</h3>
               <p className="text-sm text-gray-600 leading-relaxed">Secure online recharge with Razorpay integration and real-time balance tracking</p>
             </div>
             
-            <div className="bg-white rounded-xl p-6 shadow-lg border border-orange-100">
-              <div className="w-12 h-12 bg-yellow-600 rounded-lg flex items-center justify-center mb-4">
+            <div className="bg-white rounded-xl p-6 shadow-md border border-amber-100">
+              <div className="w-12 h-12 bg-yellow-700 rounded-lg flex items-center justify-center mb-4">
                 <BarChart3 className="w-6 h-6 text-white" />
               </div>
               <h3 className="font-semibold text-lg mb-2 text-gray-800">Business Intelligence</h3>
               <p className="text-sm text-gray-600 leading-relaxed">Complete usage analytics, reporting, and expense management for corporate teams</p>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-lg border border-orange-100">
-              <div className="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center mb-4">
+            <div className="bg-white rounded-xl p-6 shadow-md border border-amber-100">
+              <div className="w-12 h-12 bg-amber-800 rounded-lg flex items-center justify-center mb-4">
                 <Coffee className="w-6 h-6 text-white" />
               </div>
               <h3 className="font-semibold text-lg mb-2 text-gray-800">Corporate Solutions</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">Join thousands of companies using smart corporate tea solutions for their workforce</p>
+              <p className="text-sm text-gray-600 leading-relaxed">Join thousands of companies using smart corporate tea solutions for your workforce</p>
             </div>
           </div>
         </div>

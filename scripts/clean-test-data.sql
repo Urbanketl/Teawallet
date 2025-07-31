@@ -29,14 +29,26 @@ WHERE created_at < '2025-08-01'
      WHERE email LIKE '%test%'
    );
 
--- 4. Delete test RFID cards (no transaction history exists)
+-- 4. Handle RFID cards based on transaction history
+-- 4a. Delete unused test RFID cards (no transaction history)
 DELETE FROM rfid_cards 
-WHERE card_number LIKE 'RFID_UK_%' 
-   OR card_number LIKE 'RFID_TEST_%'
-   OR card_number LIKE 'RFID_%_00%'  -- Catches all test pattern cards
-   OR business_unit_id IN (
+WHERE (card_number LIKE 'RFID_UK_%' 
+   OR card_number LIKE 'RFID_TEST_%')
+   AND id NOT IN (
+     SELECT DISTINCT rfid_card_id 
+     FROM dispensing_logs
+   );
+
+-- 4b. Deactivate cards with transaction history that belong to test users
+UPDATE rfid_cards 
+SET is_active = false 
+WHERE business_unit_id IN (
      SELECT id FROM users 
      WHERE email LIKE '%test%'
+   )
+   AND id IN (
+     SELECT DISTINCT rfid_card_id 
+     FROM dispensing_logs
    );
 
 -- 5. Remove test business unit assignments

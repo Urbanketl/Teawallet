@@ -124,6 +124,12 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- July 31, 2025: COMPLETED - Fixed critical date calculation bug in admin reports causing incorrect zero values for July/Kulhad Party data
+- July 31, 2025: COMPLETED - Implemented custom date range selection feature for admin reports replacing single month limitation
+- July 31, 2025: Added UI toggle between "Single Month" and "Date Range" modes with native HTML date inputs for range selection
+- July 31, 2025: Enhanced backend with getTransactionSummaryByDateRange and getTransactionsByDateRange methods for flexible reporting periods
+- July 31, 2025: Updated all admin report API endpoints (/summary, /export, /invoice) to support both month-based and date range-based queries
+- July 31, 2025: Fixed frontend property references to match backend data structure (totalTransactions, uniqueMachines instead of transactionCount, machineCount)
 - July 31, 2025: COMPLETED - Brand-aligned login page redesign with centered layout, white background, logo positioned top-left, and Pantone Gold Fusion (15-1062 TCX) color applied to all bright elements (sign-in button, feature card icons)
 - July 31, 2025: OPTIMIZED - Login page layout to fit entirely within viewport height without scrolling - reduced spacing, compressed feature cards, and made all elements more compact while maintaining professional appearance
 - July 31, 2025: ENHANCED - Support ticket filters in Platform Admin with improved React Query implementation, better error handling, and streamlined parameter handling

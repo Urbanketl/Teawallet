@@ -208,13 +208,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/admin/business-units/:businessUnitId/summary', requireAuth, requireAdmin, async (req: any, res) => {
     try {
       const { businessUnitId } = req.params;
-      const { startDate, endDate } = req.query;
+      const { month, startDate, endDate } = req.query;
 
-      const summary = await storage.getBusinessUnitSummary(
-        businessUnitId,
-        startDate as string,
-        endDate as string
-      );
+      let summary;
+      if (month) {
+        // Single month mode (backward compatibility)
+        summary = await storage.getMonthlyTransactionSummary(businessUnitId, month as string);
+      } else if (startDate && endDate) {
+        // Date range mode
+        const start = new Date(startDate as string);
+        const end = new Date(endDate as string);
+        summary = await storage.getTransactionSummaryByDateRange(businessUnitId, start, end);
+      } else {
+        return res.status(400).json({ error: "Either month or both startDate and endDate are required" });
+      }
 
       res.json(summary);
     } catch (error) {
@@ -227,18 +234,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/admin/business-units/:businessUnitId/export', requireAuth, requireAdmin, async (req: any, res) => {
     try {
       const { businessUnitId } = req.params;
-      const { month } = req.query;
-
-      if (!month) {
-        return res.status(400).json({ error: "month parameter is required" });
-      }
+      const { month, startDate, endDate } = req.query;
 
       const businessUnit = await storage.getBusinessUnit(businessUnitId);
       if (!businessUnit) {
         return res.status(404).json({ error: "Business unit not found" });
       }
 
-      const transactions = await storage.getMonthlyTransactions(businessUnitId, month as string);
+      let transactions;
+      let periodStr;
+      
+      if (month) {
+        // Single month mode
+        transactions = await storage.getMonthlyTransactions(businessUnitId, month as string);
+        periodStr = month as string;
+      } else if (startDate && endDate) {
+        // Date range mode
+        const start = new Date(startDate as string);
+        const end = new Date(endDate as string);
+        transactions = await storage.getTransactionsByDateRange(businessUnitId, start, end);
+        periodStr = `${startDate}_to_${endDate}`;
+      } else {
+        return res.status(400).json({ error: "Either month or both startDate and endDate are required" });
+      }
 
       // Create CSV header
       const csvHeader = ['Date', 'Time', 'Card Number', 'Machine Name', 'Location', 'Tea Type', 'Amount (₹)', 'Status', 'Error'].join(',');
@@ -262,7 +280,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const csvString = [csvHeader, ...csvRows].join('\n');
 
       res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', `attachment; filename="${businessUnit.name}-transactions-${month}.csv"`);
+      res.setHeader('Content-Disposition', `attachment; filename="${businessUnit.name}-transactions-${periodStr}.csv"`);
       res.send(csvString);
     } catch (error) {
       console.error("Error exporting CSV:", error);
@@ -274,24 +292,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/admin/business-units/:businessUnitId/invoice', requireAuth, requireAdmin, async (req: any, res) => {
     try {
       const { businessUnitId } = req.params;
-      const { month } = req.query;
-
-      if (!month) {
-        return res.status(400).json({ error: "month parameter is required" });
-      }
+      const { month, startDate, endDate } = req.query;
 
       const businessUnit = await storage.getBusinessUnit(businessUnitId);
       if (!businessUnit) {
         return res.status(404).json({ error: "Business unit not found" });
       }
 
-      const summary = await storage.getMonthlyTransactionSummary(businessUnitId, month as string);
-      const transactions = await storage.getMonthlyTransactions(businessUnitId, month as string);
+      let summary, transactions, periodStr, periodDisplay;
+      
+      if (month) {
+        // Single month mode
+        summary = await storage.getMonthlyTransactionSummary(businessUnitId, month as string);
+        transactions = await storage.getMonthlyTransactions(businessUnitId, month as string);
+        periodStr = month as string;
+        const [year, monthNum] = (month as string).split('-');
+        periodDisplay = new Date(parseInt(year), parseInt(monthNum) - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      } else if (startDate && endDate) {
+        // Date range mode
+        const start = new Date(startDate as string);
+        const end = new Date(endDate as string);
+        summary = await storage.getTransactionSummaryByDateRange(businessUnitId, start, end);
+        transactions = await storage.getTransactionsByDateRange(businessUnitId, start, end);
+        periodStr = `${startDate}_to_${endDate}`;
+        periodDisplay = `${start.toLocaleDateString('en-IN')} to ${end.toLocaleDateString('en-IN')}`;
+      } else {
+        return res.status(400).json({ error: "Either month or both startDate and endDate are required" });
+      }
 
       // Create PDF
       const doc = new PDFDocument({ margin: 50 });
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${businessUnit.name}-invoice-${month}.pdf"`);
+      res.setHeader('Content-Disposition', `attachment; filename="${businessUnit.name}-invoice-${periodStr}.pdf"`);
       doc.pipe(res);
 
       // Header
@@ -299,13 +331,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       doc.moveDown();
 
       // Invoice details
-      const [year, monthNum] = (month as string).split('-');
-      const monthName = new Date(parseInt(year), parseInt(monthNum) - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-      
       doc.fontSize(14);
       doc.text(`Invoice for: ${businessUnit.name}`, { align: 'left' });
       doc.text(`Business Unit Code: ${businessUnit.code}`);
-      doc.text(`Period: ${monthName}`);
+      doc.text(`Period: ${periodDisplay}`);
       doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`);
       doc.moveDown();
 

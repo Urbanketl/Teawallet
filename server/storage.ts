@@ -2609,16 +2609,13 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  // Monthly reporting operations
-  async getMonthlyTransactionSummary(businessUnitId: string, month: string): Promise<{
+  // Reporting operations
+  async getTransactionSummaryByDateRange(businessUnitId: string, startDate: Date, endDate: Date): Promise<{
     totalTransactions: number;
     totalAmount: string;
     uniqueMachines: number;
     uniqueCards: number;
   }> {
-    const [year, monthNum] = month.split('-');
-    const startDate = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
-    const endDate = new Date(parseInt(year), parseInt(monthNum), 0, 23, 59, 59, 999);
 
     // Get basic transaction stats
     const result = await db
@@ -2663,14 +2660,26 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async getMonthlyTransactions(businessUnitId: string, month: string): Promise<(DispensingLog & {
+  // Helper method for backward compatibility - converts month to date range
+  async getMonthlyTransactionSummary(businessUnitId: string, month: string): Promise<{
+    totalTransactions: number;
+    totalAmount: string;
+    uniqueMachines: number;
+    uniqueCards: number;
+  }> {
+    const [year, monthNum] = month.split('-');
+    const startDate = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
+    const endDate = new Date(parseInt(year), parseInt(monthNum), 1);
+    endDate.setMilliseconds(-1); // Last millisecond of the previous month
+    
+    return this.getTransactionSummaryByDateRange(businessUnitId, startDate, endDate);
+  }
+
+  async getTransactionsByDateRange(businessUnitId: string, startDate: Date, endDate: Date): Promise<(DispensingLog & {
     cardNumber?: string;
     machineName?: string;
     machineLocation?: string;
   })[]> {
-    const [year, monthNum] = month.split('-');
-    const startDate = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
-    const endDate = new Date(parseInt(year), parseInt(monthNum), 0, 23, 59, 59, 999);
 
     const transactions = await db
       .select({
@@ -2697,6 +2706,20 @@ export class DatabaseStorage implements IStorage {
       machineName: row.machineName,
       machineLocation: row.machineLocation
     }));
+  }
+
+  // Helper method for backward compatibility - converts month to date range
+  async getMonthlyTransactions(businessUnitId: string, month: string): Promise<(DispensingLog & {
+    cardNumber?: string;
+    machineName?: string;
+    machineLocation?: string;
+  })[]> {
+    const [year, monthNum] = month.split('-');
+    const startDate = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
+    const endDate = new Date(parseInt(year), parseInt(monthNum), 1);
+    endDate.setMilliseconds(-1); // Last millisecond of the previous month
+    
+    return this.getTransactionsByDateRange(businessUnitId, startDate, endDate);
   }
 
   // Admin-only user creation (replacing auto-registration)

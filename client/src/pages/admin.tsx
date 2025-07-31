@@ -70,6 +70,9 @@ function AdminReports() {
   const [showExportConfirmation, setShowExportConfirmation] = useState(false);
   const [showPdfConfirmation, setShowPdfConfirmation] = useState(false);
   const [exportDetails, setExportDetails] = useState<any>(null);
+  const [dateRangeMode, setDateRangeMode] = useState<'single' | 'range'>('single');
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
 
   // Generate month options for last 12 months
   const monthOptions = useMemo(() => {
@@ -90,16 +93,20 @@ function AdminReports() {
     queryKey: ["/api/admin/business-units"],
   });
 
-  // Fetch business unit summary when business unit and month are selected
+  // Fetch business unit summary when business unit and dates are selected
   const { data: summaryData, isLoading: summaryLoading } = useQuery({
-    queryKey: [`/api/admin/business-units/${selectedBusinessUnit}/summary`, selectedMonth],
-    enabled: !!(selectedBusinessUnit && selectedMonth),
+    queryKey: [`/api/admin/business-units/${selectedBusinessUnit}/summary`, dateRangeMode, selectedMonth, startDate, endDate],
+    enabled: !!(selectedBusinessUnit && ((dateRangeMode === 'single' && selectedMonth) || (dateRangeMode === 'range' && startDate && endDate))),
     queryFn: async () => {
-      const [year, month] = selectedMonth.split('-');
-      const startDate = `${selectedMonth}-01`;
-      const endDate = format(new Date(parseInt(year), parseInt(month), 0), 'yyyy-MM-dd');
+      let url = `/api/admin/business-units/${selectedBusinessUnit}/summary?`;
       
-      const response = await fetch(`/api/admin/business-units/${selectedBusinessUnit}/summary?startDate=${startDate}&endDate=${endDate}`);
+      if (dateRangeMode === 'single') {
+        url += `month=${selectedMonth}`;
+      } else {
+        url += `startDate=${startDate}&endDate=${endDate}`;
+      }
+      
+      const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch summary');
       return response.json();
     }
@@ -118,7 +125,20 @@ function AdminReports() {
     setShowExportConfirmation(false);
     
     try {
-      const response = await fetch(`/api/admin/business-units/${selectedBusinessUnit}/export?month=${selectedMonth}`, {
+      let url = `/api/admin/business-units/${selectedBusinessUnit}/export?`;
+      let fileName = '';
+      const businessUnit = (businessUnits as any[]).find((unit: any) => unit.id === selectedBusinessUnit);
+      
+      if (dateRangeMode === 'single') {
+        url += `month=${selectedMonth}`;
+        const monthLabel = monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth;
+        fileName = `${businessUnit?.name}_${monthLabel.replace(' ', '_')}_Report.csv`;
+      } else {
+        url += `startDate=${startDate}&endDate=${endDate}`;
+        fileName = `${businessUnit?.name}_${startDate}_to_${endDate}_Report.csv`;
+      }
+      
+      const response = await fetch(url, {
         method: 'GET',
         credentials: 'include',
       });
@@ -126,15 +146,12 @@ function AdminReports() {
       if (!response.ok) throw new Error('Failed to generate CSV');
 
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const blobUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
-      
-      const businessUnit = (businessUnits as any[]).find((unit: any) => unit.id === selectedBusinessUnit);
-      const monthLabel = monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth;
-      a.download = `${businessUnit?.name}_${monthLabel.replace(' ', '_')}_Report.csv`;
+      a.href = blobUrl;
+      a.download = fileName;
       a.click();
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(blobUrl);
       
       toast({
         title: "Success",
@@ -156,7 +173,20 @@ function AdminReports() {
     setShowPdfConfirmation(false);
     
     try {
-      const response = await fetch(`/api/admin/business-units/${selectedBusinessUnit}/invoice?month=${selectedMonth}`, {
+      let url = `/api/admin/business-units/${selectedBusinessUnit}/invoice?`;
+      let fileName = '';
+      const businessUnit = (businessUnits as any[]).find((unit: any) => unit.id === selectedBusinessUnit);
+      
+      if (dateRangeMode === 'single') {
+        url += `month=${selectedMonth}`;
+        const monthLabel = monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth;
+        fileName = `${businessUnit?.name}_${monthLabel.replace(' ', '_')}_Invoice.pdf`;
+      } else {
+        url += `startDate=${startDate}&endDate=${endDate}`;
+        fileName = `${businessUnit?.name}_${startDate}_to_${endDate}_Invoice.pdf`;
+      }
+      
+      const response = await fetch(url, {
         method: 'GET',
         credentials: 'include',
       });
@@ -164,15 +194,12 @@ function AdminReports() {
       if (!response.ok) throw new Error('Failed to generate PDF');
 
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const blobUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
-      
-      const businessUnit = (businessUnits as any[]).find((unit: any) => unit.id === selectedBusinessUnit);
-      const monthLabel = monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth;
-      a.download = `${businessUnit?.name}_${monthLabel.replace(' ', '_')}_Invoice.pdf`;
+      a.href = blobUrl;
+      a.download = fileName;
       a.click();
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(blobUrl);
       
       toast({
         title: "Success",
@@ -194,7 +221,7 @@ function AdminReports() {
       <div>
         <h3 className="text-lg font-semibold text-gray-900">Business Unit Reports</h3>
         <p className="text-sm text-gray-600 mt-1">
-          Generate monthly reports for any business unit in Excel or PDF format
+          Generate reports for any business unit in Excel or PDF format - single month or custom date range
         </p>
       </div>
 
@@ -222,42 +249,92 @@ function AdminReports() {
             </div>
 
             <div>
-              <Label htmlFor="month">Month</Label>
-              <select
-                id="month"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-              >
-                <option value="">Select a month</option>
-                {monthOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <Label>Date Selection</Label>
+              <div className="mt-1 space-y-3">
+                <div className="flex space-x-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="single"
+                      checked={dateRangeMode === 'single'}
+                      onChange={(e) => setDateRangeMode('single')}
+                      className="mr-2"
+                    />
+                    Single Month
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="range"
+                      checked={dateRangeMode === 'range'}
+                      onChange={(e) => setDateRangeMode('range')}
+                      className="mr-2"
+                    />
+                    Date Range
+                  </label>
+                </div>
+                
+                {dateRangeMode === 'single' ? (
+                  <select
+                    id="month"
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="">Select a month</option>
+                    {monthOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label htmlFor="start-date" className="text-sm">Start Date</Label>
+                      <input
+                        id="start-date"
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="end-date" className="text-sm">End Date</Label>
+                      <input
+                        id="end-date"
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          {summaryData && selectedBusinessUnit && selectedMonth && (
+          {summaryData && selectedBusinessUnit && ((dateRangeMode === 'single' && selectedMonth) || (dateRangeMode === 'range' && startDate && endDate)) && (
             <div className="bg-gray-50 p-4 rounded-lg">
               <h4 className="font-medium text-gray-900 mb-2">Report Summary</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
                   <p className="text-gray-600">Total Transactions</p>
-                  <p className="font-semibold">{summaryData.transactionCount || 0}</p>
+                  <p className="font-semibold">{summaryData.totalTransactions || 0}</p>
                 </div>
                 <div>
                   <p className="text-gray-600">Total Revenue</p>
-                  <p className="font-semibold">₹{summaryData.totalAmount?.toFixed(2) || '0.00'}</p>
+                  <p className="font-semibold">₹{parseFloat(summaryData.totalAmount || '0').toFixed(2)}</p>
                 </div>
                 <div>
                   <p className="text-gray-600">Cups Dispensed</p>
-                  <p className="font-semibold">{summaryData.cupsDispensed || 0}</p>
+                  <p className="font-semibold">{summaryData.totalTransactions || 0}</p>
                 </div>
                 <div>
                   <p className="text-gray-600">Active Machines</p>
-                  <p className="font-semibold">{summaryData.machineCount || 0}</p>
+                  <p className="font-semibold">{summaryData.uniqueMachines || 0}</p>
                 </div>
               </div>
             </div>
@@ -266,7 +343,7 @@ function AdminReports() {
           <div className="flex space-x-4">
             <Button
               onClick={handleExportConfirm}
-              disabled={!selectedBusinessUnit || !selectedMonth || generating}
+              disabled={!selectedBusinessUnit || (dateRangeMode === 'single' ? !selectedMonth : (!startDate || !endDate)) || generating}
               className="bg-green-600 hover:bg-green-700"
             >
               <FileSpreadsheet className="w-4 h-4 mr-2" />
@@ -275,7 +352,7 @@ function AdminReports() {
             
             <Button
               onClick={handlePdfConfirm}
-              disabled={!selectedBusinessUnit || !selectedMonth || generating}
+              disabled={!selectedBusinessUnit || (dateRangeMode === 'single' ? !selectedMonth : (!startDate || !endDate)) || generating}
               className="bg-red-600 hover:bg-red-700"
             >
               <FileText className="w-4 h-4 mr-2" />
@@ -295,16 +372,16 @@ function AdminReports() {
               <p className="text-sm text-gray-700 mb-2">You are about to export the following data:</p>
               <div className="space-y-1 text-sm">
                 <p><span className="font-medium">Business Unit:</span> {(businessUnits as any[]).find((unit: any) => unit.id === selectedBusinessUnit)?.name}</p>
-                <p><span className="font-medium">Month:</span> {monthOptions.find(m => m.value === selectedMonth)?.label}</p>
-                <p><span className="font-medium">Transactions:</span> {summaryData.transactionCount || 0}</p>
-                <p><span className="font-medium">Total Amount:</span> ₹{summaryData.totalAmount?.toFixed(2) || '0.00'}</p>
+                <p><span className="font-medium">Period:</span> {dateRangeMode === 'single' ? monthOptions.find(m => m.value === selectedMonth)?.label : `${startDate} to ${endDate}`}</p>
+                <p><span className="font-medium">Transactions:</span> {summaryData.totalTransactions || 0}</p>
+                <p><span className="font-medium">Total Amount:</span> ₹{parseFloat(summaryData.totalAmount || '0').toFixed(2)}</p>
               </div>
             </div>
             
             <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg mb-4">
               <p className="text-sm text-amber-800 flex items-start">
                 <AlertCircle className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-                This will generate a detailed Excel report with all transactions for the selected month. Please avoid generating the same report multiple times.
+                This will generate a detailed Excel report with all transactions for the selected period. Please avoid generating the same report multiple times.
               </p>
             </div>
             
@@ -330,9 +407,9 @@ function AdminReports() {
               <p className="text-sm text-gray-700 mb-2">You are about to generate an invoice with:</p>
               <div className="space-y-1 text-sm">
                 <p><span className="font-medium">Business Unit:</span> {(businessUnits as any[]).find((unit: any) => unit.id === selectedBusinessUnit)?.name}</p>
-                <p><span className="font-medium">Month:</span> {monthOptions.find(m => m.value === selectedMonth)?.label}</p>
-                <p><span className="font-medium">Cups Dispensed:</span> {summaryData.cupsDispensed || 0}</p>
-                <p><span className="font-medium">Total Amount:</span> ₹{summaryData.totalAmount?.toFixed(2) || '0.00'}</p>
+                <p><span className="font-medium">Period:</span> {dateRangeMode === 'single' ? monthOptions.find(m => m.value === selectedMonth)?.label : `${startDate} to ${endDate}`}</p>
+                <p><span className="font-medium">Cups Dispensed:</span> {summaryData.totalTransactions || 0}</p>
+                <p><span className="font-medium">Total Amount:</span> ₹{parseFloat(summaryData.totalAmount || '0').toFixed(2)}</p>
               </div>
             </div>
             

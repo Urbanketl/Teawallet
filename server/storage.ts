@@ -1810,11 +1810,16 @@ export class DatabaseStorage implements IStorage {
       .select({ count: sql<number>`COUNT(*)` })
       .from(users);
 
-    // Total revenue from tea sales (dispensing) - only successful transactions
+    // Total revenue from tea sales (dispensing) - only successful transactions with valid business units
     const [revenueResult] = await db
       .select({ total: sql<string>`COALESCE(SUM(amount), 0)` })
       .from(dispensingLogs)
-      .where(eq(dispensingLogs.success, true));
+      .where(
+        and(
+          eq(dispensingLogs.success, true),
+          isNotNull(dispensingLogs.businessUnitId)
+        )
+      );
 
     // Active machines
     const [machineCount] = await db
@@ -1822,13 +1827,14 @@ export class DatabaseStorage implements IStorage {
       .from(teaMachines)
       .where(eq(teaMachines.isActive, true));
 
-    // Daily dispensing - only successful transactions
+    // Daily dispensing - only successful transactions with valid business units
     const [dispensingCount] = await db
       .select({ count: sql<number>`COUNT(*)` })
       .from(dispensingLogs)
       .where(
         and(
           eq(dispensingLogs.success, true),
+          isNotNull(dispensingLogs.businessUnitId),
           gte(dispensingLogs.createdAt, today)
         )
       );

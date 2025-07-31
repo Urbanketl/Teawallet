@@ -5,6 +5,8 @@ import { setupAuth, isAuthenticated } from "./auth";
 import { initializeRazorpay, createOrder, verifyPayment } from "./razorpay";
 import { storage } from "./storage";
 import { insertDispensingLogSchema } from "@shared/schema";
+import * as csvWriter from 'csv-writer';
+import PDFDocument from 'pdfkit';
 
 // Import route modules
 import authRoutes from "./routes/authRoutes";
@@ -199,6 +201,170 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error updating system setting:', error);
       res.status(500).json({ message: 'Failed to update system setting' });
+    }
+  });
+
+  // Admin report generation routes
+  app.get('/api/admin/business-units/:businessUnitId/summary', requireAuth, requireAdmin, async (req: any, res) => {
+    try {
+      const { businessUnitId } = req.params;
+      const { startDate, endDate } = req.query;
+
+      const summary = await storage.getBusinessUnitSummary(
+        businessUnitId,
+        startDate as string,
+        endDate as string
+      );
+
+      res.json(summary);
+    } catch (error) {
+      console.error('Error getting business unit summary:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Admin CSV export for any business unit
+  app.get('/api/admin/business-units/:businessUnitId/export', requireAuth, requireAdmin, async (req: any, res) => {
+    try {
+      const { businessUnitId } = req.params;
+      const { month } = req.query;
+
+      if (!month) {
+        return res.status(400).json({ error: "month parameter is required" });
+      }
+
+      const businessUnit = await storage.getBusinessUnit(businessUnitId);
+      if (!businessUnit) {
+        return res.status(404).json({ error: "Business unit not found" });
+      }
+
+      const transactions = await storage.getMonthlyTransactions(businessUnitId, month as string);
+
+      // Create CSV header
+      const csvHeader = ['Date', 'Time', 'Card Number', 'Machine Name', 'Location', 'Tea Type', 'Amount (₹)', 'Status', 'Error'].join(',');
+      
+      // Create CSV rows
+      const csvRows = transactions.map((t: any) => {
+        const row = [
+          new Date(t.createdAt).toLocaleDateString('en-IN'),
+          new Date(t.createdAt).toLocaleTimeString('en-IN'),
+          t.cardNumber || t.rfidCardId || '',
+          t.machineName || t.machineId || '',
+          t.machineLocation || '',
+          t.teaType || 'Regular Tea',
+          t.amount || 0,
+          t.success ? 'Success' : 'Failed',
+          t.errorMessage || ''
+        ];
+        return row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',');
+      });
+
+      const csvString = [csvHeader, ...csvRows].join('\n');
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="${businessUnit.name}-transactions-${month}.csv"`);
+      res.send(csvString);
+    } catch (error) {
+      console.error("Error exporting CSV:", error);
+      res.status(500).json({ error: "Failed to export CSV" });
+    }
+  });
+
+  // Admin PDF invoice for any business unit
+  app.get('/api/admin/business-units/:businessUnitId/invoice', requireAuth, requireAdmin, async (req: any, res) => {
+    try {
+      const { businessUnitId } = req.params;
+      const { month } = req.query;
+
+      if (!month) {
+        return res.status(400).json({ error: "month parameter is required" });
+      }
+
+      const businessUnit = await storage.getBusinessUnit(businessUnitId);
+      if (!businessUnit) {
+        return res.status(404).json({ error: "Business unit not found" });
+      }
+
+      const summary = await storage.getMonthlyTransactionSummary(businessUnitId, month as string);
+      const transactions = await storage.getMonthlyTransactions(businessUnitId, month as string);
+
+      // Create PDF
+      const doc = new PDFDocument({ margin: 50 });
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${businessUnit.name}-invoice-${month}.pdf"`);
+      doc.pipe(res);
+
+      // Header
+      doc.fontSize(20).text('UrbanKetl Tea Service Invoice', { align: 'center' });
+      doc.moveDown();
+
+      // Invoice details
+      const [year, monthNum] = (month as string).split('-');
+      const monthName = new Date(parseInt(year), parseInt(monthNum) - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      
+      doc.fontSize(14);
+      doc.text(`Invoice for: ${businessUnit.name}`, { align: 'left' });
+      doc.text(`Business Unit Code: ${businessUnit.code}`);
+      doc.text(`Period: ${monthName}`);
+      doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`);
+      doc.moveDown();
+
+      // Summary box
+      doc.rect(50, doc.y, doc.page.width - 100, 100).stroke();
+      const summaryY = doc.y;
+      doc.y += 10;
+      doc.x = 60;
+      
+      doc.fontSize(12);
+      doc.text(`Total Cups Dispensed: ${summary.totalTransactions || 0}`);
+      doc.text(`Total Amount: ₹${parseFloat(summary.totalAmount || '0').toFixed(2)}`);
+      doc.text(`Number of Transactions: ${summary.totalTransactions || 0}`);
+      doc.text(`Active Machines: ${summary.uniqueMachines || 0}`);
+      
+      doc.x = 50;
+      doc.y = summaryY + 110;
+
+      // Transaction details header
+      doc.moveDown();
+      doc.fontSize(16).text('Transaction Summary by Machine', { underline: true });
+      doc.moveDown();
+
+      // Group transactions by machine
+      const machineGroups = transactions.reduce((acc: any, t: any) => {
+        const machineKey = t.machineName || t.machineId;
+        if (!acc[machineKey]) {
+          acc[machineKey] = {
+            machineName: t.machineName || t.machineId,
+            location: t.machineLocation || 'N/A',
+            transactions: [],
+            totalAmount: 0,
+            cupCount: 0
+          };
+        }
+        acc[machineKey].transactions.push(t);
+        acc[machineKey].totalAmount += t.amount || 0;
+        acc[machineKey].cupCount += 1;
+        return acc;
+      }, {});
+
+      // Display machine summaries
+      doc.fontSize(10);
+      Object.values(machineGroups).forEach((machine: any) => {
+        doc.text(`${machine.machineName} (${machine.location})`);
+        doc.text(`  - Cups: ${machine.cupCount}, Amount: ₹${machine.totalAmount.toFixed(2)}`);
+        doc.moveDown(0.5);
+      });
+
+      // Footer
+      doc.y = doc.page.height - 100;
+      doc.fontSize(10).fillColor('gray');
+      doc.text('This is a computer generated invoice.', { align: 'center' });
+      doc.text('For queries, contact support@urbanketl.com', { align: 'center' });
+
+      doc.end();
+    } catch (error) {
+      console.error("Error generating invoice:", error);
+      res.status(500).json({ error: "Failed to generate invoice" });
     }
   });
 

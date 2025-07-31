@@ -50,13 +50,313 @@ import {
   ChevronDown,
   Building2,
   Edit,
-  X
+  X,
+  FileSpreadsheet,
+  FileText
 } from "lucide-react";
 import { format } from "date-fns";
 import Pagination from "@/components/Pagination";
 import { BusinessUnitsTab } from "@/components/BusinessUnitsTab";
 import { PseudoLogin } from "@/components/PseudoLogin";
 import type { User } from "@shared/schema";
+
+function AdminReports() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [selectedBusinessUnit, setSelectedBusinessUnit] = useState<string>("");
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [generating, setGenerating] = useState(false);
+  const [showExportConfirmation, setShowExportConfirmation] = useState(false);
+  const [showPdfConfirmation, setShowPdfConfirmation] = useState(false);
+  const [exportDetails, setExportDetails] = useState<any>(null);
+
+  // Generate month options for last 12 months
+  const monthOptions = useMemo(() => {
+    const options = [];
+    const now = new Date();
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      options.push({
+        value: format(date, 'yyyy-MM'),
+        label: format(date, 'MMMM yyyy')
+      });
+    }
+    return options;
+  }, []);
+
+  // Fetch all business units for admin
+  const { data: businessUnits = [], isLoading: unitsLoading } = useQuery({
+    queryKey: ["/api/admin/business-units"],
+  });
+
+  // Fetch business unit summary when business unit and month are selected
+  const { data: summaryData, isLoading: summaryLoading } = useQuery({
+    queryKey: [`/api/admin/business-units/${selectedBusinessUnit}/summary`, selectedMonth],
+    enabled: !!(selectedBusinessUnit && selectedMonth),
+    queryFn: async () => {
+      const [year, month] = selectedMonth.split('-');
+      const startDate = `${selectedMonth}-01`;
+      const endDate = format(new Date(parseInt(year), parseInt(month), 0), 'yyyy-MM-dd');
+      
+      const response = await fetch(`/api/admin/business-units/${selectedBusinessUnit}/summary?startDate=${startDate}&endDate=${endDate}`);
+      if (!response.ok) throw new Error('Failed to fetch summary');
+      return response.json();
+    }
+  });
+
+  const handleExportConfirm = () => {
+    setShowExportConfirmation(true);
+  };
+
+  const handlePdfConfirm = () => {
+    setShowPdfConfirmation(true);
+  };
+
+  const handleExportCsv = async () => {
+    setGenerating(true);
+    setShowExportConfirmation(false);
+    
+    try {
+      const response = await fetch(`/api/admin/business-units/${selectedBusinessUnit}/export?month=${selectedMonth}`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (!response.ok) throw new Error('Failed to generate CSV');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      const businessUnit = (businessUnits as any[]).find((unit: any) => unit.id === selectedBusinessUnit);
+      const monthLabel = monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth;
+      a.download = `${businessUnit?.name}_${monthLabel.replace(' ', '_')}_Report.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Success",
+        description: "CSV report generated successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate CSV report",
+        variant: "destructive",
+      });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    setGenerating(true);
+    setShowPdfConfirmation(false);
+    
+    try {
+      const response = await fetch(`/api/admin/business-units/${selectedBusinessUnit}/invoice?month=${selectedMonth}`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (!response.ok) throw new Error('Failed to generate PDF');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      const businessUnit = (businessUnits as any[]).find((unit: any) => unit.id === selectedBusinessUnit);
+      const monthLabel = monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth;
+      a.download = `${businessUnit?.name}_${monthLabel.replace(' ', '_')}_Invoice.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Success",
+        description: "PDF invoice generated successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF invoice",
+        variant: "destructive",
+      });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900">Business Unit Reports</h3>
+        <p className="text-sm text-gray-600 mt-1">
+          Generate monthly reports for any business unit in Excel or PDF format
+        </p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Report Generation</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="business-unit">Business Unit</Label>
+              <select
+                id="business-unit"
+                value={selectedBusinessUnit}
+                onChange={(e) => setSelectedBusinessUnit(e.target.value)}
+                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              >
+                <option value="">Select a business unit</option>
+                {(businessUnits as any[]).map((unit: any) => (
+                  <option key={unit.id} value={unit.id}>
+                    {unit.name} ({unit.code})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <Label htmlFor="month">Month</Label>
+              <select
+                id="month"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              >
+                <option value="">Select a month</option>
+                {monthOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {summaryData && selectedBusinessUnit && selectedMonth && (
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h4 className="font-medium text-gray-900 mb-2">Report Summary</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-600">Total Transactions</p>
+                  <p className="font-semibold">{summaryData.transactionCount || 0}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Total Revenue</p>
+                  <p className="font-semibold">₹{summaryData.totalAmount?.toFixed(2) || '0.00'}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Cups Dispensed</p>
+                  <p className="font-semibold">{summaryData.cupsDispensed || 0}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Active Machines</p>
+                  <p className="font-semibold">{summaryData.machineCount || 0}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex space-x-4">
+            <Button
+              onClick={handleExportConfirm}
+              disabled={!selectedBusinessUnit || !selectedMonth || generating}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Export to Excel
+            </Button>
+            
+            <Button
+              onClick={handlePdfConfirm}
+              disabled={!selectedBusinessUnit || !selectedMonth || generating}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Generate PDF Invoice
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Excel Export Confirmation Dialog */}
+      {showExportConfirmation && summaryData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Confirm Excel Export</h3>
+            
+            <div className="bg-blue-50 p-4 rounded-lg mb-4">
+              <p className="text-sm text-gray-700 mb-2">You are about to export the following data:</p>
+              <div className="space-y-1 text-sm">
+                <p><span className="font-medium">Business Unit:</span> {(businessUnits as any[]).find((unit: any) => unit.id === selectedBusinessUnit)?.name}</p>
+                <p><span className="font-medium">Month:</span> {monthOptions.find(m => m.value === selectedMonth)?.label}</p>
+                <p><span className="font-medium">Transactions:</span> {summaryData.transactionCount || 0}</p>
+                <p><span className="font-medium">Total Amount:</span> ₹{summaryData.totalAmount?.toFixed(2) || '0.00'}</p>
+              </div>
+            </div>
+            
+            <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg mb-4">
+              <p className="text-sm text-amber-800 flex items-start">
+                <AlertCircle className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                This will generate a detailed Excel report with all transactions for the selected month. Please avoid generating the same report multiple times.
+              </p>
+            </div>
+            
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setShowExportConfirmation(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleExportCsv} className="bg-green-600 hover:bg-green-700">
+                Confirm Export
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PDF Invoice Confirmation Dialog */}
+      {showPdfConfirmation && summaryData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Confirm PDF Invoice Generation</h3>
+            
+            <div className="bg-red-50 p-4 rounded-lg mb-4">
+              <p className="text-sm text-gray-700 mb-2">You are about to generate an invoice with:</p>
+              <div className="space-y-1 text-sm">
+                <p><span className="font-medium">Business Unit:</span> {(businessUnits as any[]).find((unit: any) => unit.id === selectedBusinessUnit)?.name}</p>
+                <p><span className="font-medium">Month:</span> {monthOptions.find(m => m.value === selectedMonth)?.label}</p>
+                <p><span className="font-medium">Cups Dispensed:</span> {summaryData.cupsDispensed || 0}</p>
+                <p><span className="font-medium">Total Amount:</span> ₹{summaryData.totalAmount?.toFixed(2) || '0.00'}</p>
+              </div>
+            </div>
+            
+            <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg mb-4">
+              <p className="text-sm text-amber-800 flex items-start">
+                <AlertCircle className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                This will generate an official invoice PDF. Ensure all details are correct before proceeding. Duplicate invoices should be avoided.
+              </p>
+            </div>
+            
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setShowPdfConfirmation(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleExportPdf} className="bg-red-600 hover:bg-red-700">
+                Generate Invoice
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function AdminPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -616,6 +916,7 @@ export default function AdminPage() {
                 <option value="machine-mgmt">🔧 Machine Admin</option>
                 <option value="rfid">💳 RFID Cards</option>
                 <option value="support">📞 Support Tickets</option>
+                <option value="reports">📊 Reports & Export</option>
                 <option value="faq">❓ FAQ Management</option>
                 <option value="pseudo-login">🔓 Test Login</option>
                 <option value="settings">⚙️ System Settings</option>
@@ -708,6 +1009,16 @@ export default function AdminPage() {
                   }`}
                 >
                   ❓ FAQ
+                </button>
+                <button 
+                  onClick={() => setCurrentTab("reports")}
+                  className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                    currentTab === "reports" 
+                      ? "border-orange-500 text-orange-600 bg-orange-50" 
+                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  📊 Reports
                 </button>
                 <button 
                   onClick={() => setCurrentTab("pseudo-login")}
@@ -830,6 +1141,8 @@ export default function AdminPage() {
           {currentTab === "machine-mgmt" && <MachineAdministration />}
 
           {currentTab === "business-units" && <BusinessUnitsTab />}
+
+          {currentTab === "reports" && <AdminReports />}
 
           {currentTab === "pseudo-login" && (
             <PseudoLogin onLogin={(userId) => {

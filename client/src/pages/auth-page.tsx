@@ -399,42 +399,51 @@ export default function AuthPage() {
 
   // Main login form
   return (
-    <div className="min-h-screen flex">
-      {/* Left side - Login Form */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-white">
-        <Card className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 flex flex-col">
+      {/* Header with Logo */}
+      <div className="flex justify-center pt-12 pb-8">
+        <div className="w-24 h-24 bg-white rounded-2xl shadow-lg flex items-center justify-center p-3 border-2 border-orange-200">
+          <img 
+            src="/attached_assets/URBAN KETL Logo small_1750439431697.jpg" 
+            alt="UrbanKetl Logo" 
+            className="w-full h-full object-contain rounded-lg"
+          />
+        </div>
+      </div>
+
+      {/* Centered Login Form */}
+      <div className="flex-1 flex items-center justify-center px-8">
+        <Card className="w-full max-w-md shadow-xl border-orange-200">
           <CardHeader className="text-center">
-            <div className="w-12 h-12 bg-tea-green rounded-full flex items-center justify-center mx-auto mb-4">
-              <Lock className="w-6 h-6 text-white" />
-            </div>
-            <CardTitle>Welcome to UrbanKetl</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-2xl text-gray-800">Welcome to UrbanKetl</CardTitle>
+            <CardDescription className="text-gray-600">
               Sign in to your business unit account
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="email" className="text-gray-700">Email Address</Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   placeholder="admin@company.com"
+                  className="border-orange-200 focus:border-orange-400"
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" className="text-gray-700">Password</Label>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     value={formData.password}
                     onChange={(e) => handleInputChange("password", e.target.value)}
-                    className="pr-10"
+                    className="pr-10 border-orange-200 focus:border-orange-400"
                     required
                   />
                   <button
@@ -447,7 +456,7 @@ export default function AuthPage() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600" disabled={isLoading}>
                 {isLoading ? (
                   <div className="flex items-center space-x-2">
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -480,74 +489,46 @@ export default function AuthPage() {
         </Card>
       </div>
 
-      {/* Right side - Hero Section */}
-      <div className="flex-1 bg-gradient-to-br from-slate-700 via-blue-800 to-indigo-900 flex items-center justify-center p-8 relative overflow-hidden">
-        {/* Background pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-20 w-32 h-32 border border-white/20 rounded-full"></div>
-          <div className="absolute bottom-20 right-20 w-24 h-24 border border-white/20 rounded-full"></div>
-          <div className="absolute top-1/2 left-1/4 w-16 h-16 border border-white/20 rounded-full"></div>
-          <div className="absolute top-1/3 right-1/4 w-20 h-20 border border-white/10 rounded-full"></div>
-        </div>
-        
-        <div className="text-center text-white max-w-lg relative z-10">
-          {/* UrbanKetl Logo */}
-          <div className="mb-8">
-            <div className="w-28 h-28 bg-white rounded-2xl shadow-2xl mx-auto flex items-center justify-center p-4 border-4 border-white/20">
-              <img 
-                src="/attached_assets/URBAN KETL Logo small_1750439431697.jpg" 
-                alt="UrbanKetl Logo" 
-                className="w-full h-full object-contain rounded-lg"
-              />
-            </div>
+      {/* Feature Cards Section */}
+      <div className="px-8 pb-12">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-800 mb-2">Premium Tea at Your Fingertips</h2>
+            <p className="text-lg text-gray-600">Experience seamless tea dispensing with our digital wallet and RFID card system</p>
           </div>
           
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
-            Premium Tea at Your
-            <br />
-            <span className="text-blue-200">Fingertips</span>
-          </h1>
-          
-          <p className="text-xl opacity-90 mb-8 leading-relaxed">
-            Experience seamless tea dispensing with our digital wallet and RFID card system. 
-            Recharge once, enjoy everywhere in your corporate network.
-          </p>
-          
-          <div className="grid grid-cols-1 gap-4 text-left">
-            <div className="flex items-start space-x-4 p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
-              <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                <CreditCard className="w-5 h-5 text-white" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-white rounded-xl p-6 shadow-lg border border-orange-100">
+              <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mb-4">
+                <CreditCard className="w-6 h-6 text-white" />
               </div>
-              <div>
-                <div className="font-semibold text-lg mb-1">RFID Card Technology</div>
-                <div className="text-sm opacity-80 leading-relaxed">Simply tap your card and enjoy instant tea dispensing with automatic payment</div>
-              </div>
+              <h3 className="font-semibold text-lg mb-2 text-gray-800">RFID Card Technology</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">Simply tap your card and enjoy instant tea dispensing with automatic payment</p>
             </div>
             
-            <div className="flex items-start space-x-4 p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
-              <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Smartphone className="w-5 h-5 text-white" />
+            <div className="bg-white rounded-xl p-6 shadow-lg border border-orange-100">
+              <div className="w-12 h-12 bg-amber-500 rounded-lg flex items-center justify-center mb-4">
+                <Smartphone className="w-6 h-6 text-white" />
               </div>
-              <div>
-                <div className="font-semibold text-lg mb-1">Digital Wallet System</div>
-                <div className="text-sm opacity-80 leading-relaxed">Secure online recharge with Razorpay integration and real-time balance tracking</div>
-              </div>
+              <h3 className="font-semibold text-lg mb-2 text-gray-800">Digital Wallet System</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">Secure online recharge with Razorpay integration and real-time balance tracking</p>
             </div>
             
-            <div className="flex items-start space-x-4 p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
-              <div className="w-10 h-10 bg-indigo-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                <BarChart3 className="w-5 h-5 text-white" />
+            <div className="bg-white rounded-xl p-6 shadow-lg border border-orange-100">
+              <div className="w-12 h-12 bg-yellow-600 rounded-lg flex items-center justify-center mb-4">
+                <BarChart3 className="w-6 h-6 text-white" />
               </div>
-              <div>
-                <div className="font-semibold text-lg mb-1">Business Intelligence</div>
-                <div className="text-sm opacity-80 leading-relaxed">Complete usage analytics, reporting, and expense management for corporate teams</div>
-              </div>
+              <h3 className="font-semibold text-lg mb-2 text-gray-800">Business Intelligence</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">Complete usage analytics, reporting, and expense management for corporate teams</p>
             </div>
-          </div>
-          
-          <div className="mt-8 p-5 bg-gradient-to-r from-white/10 to-white/5 rounded-xl border border-white/20 backdrop-blur-sm">
-            <div className="text-sm opacity-80 mb-1">Join thousands of companies using</div>
-            <div className="text-2xl font-bold text-blue-100">Smart Corporate Tea Solutions</div>
+
+            <div className="bg-white rounded-xl p-6 shadow-lg border border-orange-100">
+              <div className="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center mb-4">
+                <Coffee className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="font-semibold text-lg mb-2 text-gray-800">Corporate Solutions</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">Join thousands of companies using smart corporate tea solutions for their workforce</p>
+            </div>
           </div>
         </div>
       </div>

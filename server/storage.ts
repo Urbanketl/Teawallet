@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { db, pool } from "./db";
 import { 
   users, businessUnits, userBusinessUnits, rfidCards, transactions, dispensingLogs, teaMachines,
   referrals, supportTickets, supportMessages, ticketStatusHistory, faqArticles, systemSettings,
@@ -217,7 +217,7 @@ export class DatabaseStorage implements IStorage {
   constructor() {
     // Initialize session store with database connection
     this.sessionStore = new PostgresSessionStore({
-      pool: require("./db").pool,
+      pool,
       createTableIfMissing: true,
     });
   }

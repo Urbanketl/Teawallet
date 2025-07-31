@@ -195,10 +195,8 @@ export async function getSupportTicketsPaginated(req: any, res: Response) {
       sortOrder
     };
     
-    console.log('=== SUPPORT TICKETS FILTER DEBUG ===');
-    console.log('Query params:', req.query);
-    console.log('Parsed filters:', filters);
-    console.log('Status filter:', status, '!== all?', status !== 'all');
+    // Debug: Log filter parsing
+    console.log('Support tickets filters:', { status, userId, dateFilter, sortBy, sortOrder });
     
     if (paginated) {
       const result = await storage.getSupportTicketsPaginated(page, limit, filters);

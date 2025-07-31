@@ -184,7 +184,7 @@ export default function AdminPage() {
   const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
 
   // Build query parameters for tickets
-  const ticketsQueryParams = new URLSearchParams({
+  const ticketsQueryParams = {
     paginated: 'true',
     page: ticketsPage.toString(),
     limit: ticketsPerPage.toString(),
@@ -195,13 +195,26 @@ export default function AdminPage() {
     ...(userFilter !== 'all' && { userId: userFilter }),
     sortBy,
     sortOrder,
-  }).toString();
+  };
+
+  const queryString = new URLSearchParams(ticketsQueryParams).toString();
 
   const { data: filteredTicketsData, isLoading: allTicketsLoading, refetch: refetchTickets } = useQuery({
-    queryKey: ['/api/admin/support/tickets', ticketsQueryParams],
+    queryKey: ['/api/admin/support/tickets', {
+      page: ticketsPage,
+      limit: ticketsPerPage,
+      status: statusFilter,
+      dateFilter,
+      startDate: customDateRange.start,
+      endDate: customDateRange.end,
+      userId: userFilter,
+      sortBy,
+      sortOrder
+    }],
     queryFn: () => {
-      const url = `/api/admin/support/tickets?${ticketsQueryParams}`;
+      const url = `/api/admin/support/tickets?${queryString}`;
       console.log('Fetching support tickets with URL:', url);
+      console.log('Query params object:', ticketsQueryParams);
       return fetch(url).then(res => {
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);

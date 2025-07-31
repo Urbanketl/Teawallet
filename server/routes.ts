@@ -205,6 +205,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin report generation routes
+  // New route for multiple business units summary
+  app.get('/api/admin/business-units/summary', requireAuth, requireAdmin, async (req: any, res) => {
+    try {
+      const { businessUnitIds, month, startDate, endDate } = req.query;
+      
+      if (!businessUnitIds) {
+        return res.status(400).json({ error: "businessUnitIds parameter is required" });
+      }
+      
+      const unitIds = (businessUnitIds as string).split(',').filter(id => id);
+      
+      if (unitIds.length === 0) {
+        return res.status(400).json({ error: "At least one business unit ID is required" });
+      }
+      
+      let summary;
+      if (unitIds.length === 1) {
+        // Single business unit
+        if (month) {
+          summary = await storage.getMonthlyTransactionSummary(unitIds[0], month as string);
+        } else if (startDate && endDate) {
+          const start = new Date(startDate as string);
+          const end = new Date(endDate as string);
+          summary = await storage.getTransactionSummaryByDateRange(unitIds[0], start, end);
+        } else {
+          return res.status(400).json({ error: "Either month or both startDate and endDate are required" });
+        }
+      } else {
+        // Multiple business units - aggregate data
+        if (month) {
+          summary = await storage.getMultipleBusinessUnitsSummary(unitIds, month as string);
+        } else if (startDate && endDate) {
+          const start = new Date(startDate as string);
+          const end = new Date(endDate as string);
+          summary = await storage.getMultipleBusinessUnitsSummaryByDateRange(unitIds, start, end);
+        } else {
+          return res.status(400).json({ error: "Either month or both startDate and endDate are required" });
+        }
+      }
+      
+      res.json(summary);
+    } catch (error) {
+      console.error('Error getting business units summary:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+  
+  // Keep existing route for backward compatibility
   app.get('/api/admin/business-units/:businessUnitId/summary', requireAuth, requireAdmin, async (req: any, res) => {
     try {
       const { businessUnitId } = req.params;
@@ -230,7 +278,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin CSV export for any business unit
+  // Admin CSV export for multiple business units
+  app.get('/api/admin/business-units/export', requireAuth, requireAdmin, async (req: any, res) => {
+    try {
+      const { businessUnitIds, month, startDate, endDate } = req.query;
+      
+      if (!businessUnitIds) {
+        return res.status(400).json({ error: "businessUnitIds parameter is required" });
+      }
+      
+      const unitIds = (businessUnitIds as string).split(',').filter(id => id);
+      
+      if (unitIds.length === 0) {
+        return res.status(400).json({ error: "At least one business unit ID is required" });
+      }
+      
+      // Get business unit names for filename
+      const businessUnits = await Promise.all(unitIds.map(id => storage.getBusinessUnit(id)));
+      const validUnits = businessUnits.filter(unit => unit !== undefined);
+      
+      if (validUnits.length === 0) {
+        return res.status(404).json({ error: "No valid business units found" });
+      }
+      
+      let transactions, periodStr, periodDisplay;
+      
+      if (month) {
+        // Single month mode
+        if (unitIds.length === 1) {
+          transactions = await storage.getMonthlyTransactions(unitIds[0], month as string);
+        } else {
+          transactions = await storage.getMultipleBusinessUnitsTransactions(unitIds, month as string);
+        }
+        periodStr = month as string;
+        const [year, monthNum] = (month as string).split('-');
+        periodDisplay = new Date(parseInt(year), parseInt(monthNum) - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      } else if (startDate && endDate) {
+        // Date range mode
+        const start = new Date(startDate as string);
+        const end = new Date(endDate as string);
+        if (unitIds.length === 1) {
+          transactions = await storage.getTransactionsByDateRange(unitIds[0], start, end);
+        } else {
+          transactions = await storage.getMultipleBusinessUnitsTransactionsByDateRange(unitIds, start, end);
+        }
+        periodStr = `${startDate}_to_${endDate}`;
+        periodDisplay = `${start.toLocaleDateString('en-IN')} to ${end.toLocaleDateString('en-IN')}`;
+      } else {
+        return res.status(400).json({ error: "Either month or both startDate and endDate are required" });
+      }
+      
+      // Create filename
+      const businessUnitName = unitIds.length === 1 ? validUnits[0]?.name : 'Multiple_Units';
+      
+      // Create CSV string using simple concatenation
+      let csvString = 'Date,Business Unit,Card Number,Machine Name,Machine Location,Amount,Status\n';
+      
+      transactions.forEach((t: any) => {
+        const date = new Date(t.createdAt).toLocaleString('en-IN');
+        const businessUnit = validUnits.find(u => u?.id === t.businessUnitId)?.name || t.businessUnitId;
+        const cardNumber = t.cardNumber || 'N/A';
+        const machineName = t.machineName || 'N/A';
+        const machineLocation = t.machineLocation || 'N/A';
+        const amount = t.amount || '0';
+        const status = t.success ? 'Success' : 'Failed';
+        
+        // Escape values that might contain commas
+        const escapeCsv = (val: string) => val.includes(',') ? `"${val}"` : val;
+        
+        csvString += `${escapeCsv(date)},${escapeCsv(businessUnit)},${escapeCsv(cardNumber)},${escapeCsv(machineName)},${escapeCsv(machineLocation)},₹${amount},${status}\n`;
+      });
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="${businessUnitName}-transactions-${periodStr}.csv"`);
+      res.send(csvString);
+    } catch (error) {
+      console.error("Error exporting CSV:", error);
+      res.status(500).json({ error: "Failed to export CSV" });
+    }
+  });
+  
+  // Keep existing route for backward compatibility
   app.get('/api/admin/business-units/:businessUnitId/export', requireAuth, requireAdmin, async (req: any, res) => {
     try {
       const { businessUnitId } = req.params;
@@ -288,7 +416,156 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin PDF invoice for any business unit
+  // Admin PDF invoice for multiple business units
+  app.get('/api/admin/business-units/invoice', requireAuth, requireAdmin, async (req: any, res) => {
+    try {
+      const { businessUnitIds, month, startDate, endDate } = req.query;
+      
+      if (!businessUnitIds) {
+        return res.status(400).json({ error: "businessUnitIds parameter is required" });
+      }
+      
+      const unitIds = (businessUnitIds as string).split(',').filter(id => id);
+      
+      if (unitIds.length === 0) {
+        return res.status(400).json({ error: "At least one business unit ID is required" });
+      }
+      
+      // Get business unit details
+      const businessUnits = await Promise.all(unitIds.map(id => storage.getBusinessUnit(id)));
+      const validUnits = businessUnits.filter(unit => unit !== undefined);
+      
+      if (validUnits.length === 0) {
+        return res.status(404).json({ error: "No valid business units found" });
+      }
+      
+      let summary, transactions, periodStr, periodDisplay;
+      
+      if (month) {
+        // Single month mode
+        if (unitIds.length === 1) {
+          summary = await storage.getMonthlyTransactionSummary(unitIds[0], month as string);
+          transactions = await storage.getMonthlyTransactions(unitIds[0], month as string);
+        } else {
+          summary = await storage.getMultipleBusinessUnitsSummary(unitIds, month as string);
+          transactions = await storage.getMultipleBusinessUnitsTransactions(unitIds, month as string);
+        }
+        periodStr = month as string;
+        const [year, monthNum] = (month as string).split('-');
+        periodDisplay = new Date(parseInt(year), parseInt(monthNum) - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      } else if (startDate && endDate) {
+        // Date range mode
+        const start = new Date(startDate as string);
+        const end = new Date(endDate as string);
+        if (unitIds.length === 1) {
+          summary = await storage.getTransactionSummaryByDateRange(unitIds[0], start, end);
+          transactions = await storage.getTransactionsByDateRange(unitIds[0], start, end);
+        } else {
+          summary = await storage.getMultipleBusinessUnitsSummaryByDateRange(unitIds, start, end);
+          transactions = await storage.getMultipleBusinessUnitsTransactionsByDateRange(unitIds, start, end);
+        }
+        periodStr = `${startDate}_to_${endDate}`;
+        periodDisplay = `${start.toLocaleDateString('en-IN')} to ${end.toLocaleDateString('en-IN')}`;
+      } else {
+        return res.status(400).json({ error: "Either month or both startDate and endDate are required" });
+      }
+
+      // Create PDF
+      const doc = new PDFDocument({ margin: 50 });
+      const businessUnitName = unitIds.length === 1 ? validUnits[0]?.name : 'Multiple Business Units';
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${businessUnitName}-invoice-${periodStr}.pdf"`);
+      doc.pipe(res);
+
+      // Header
+      doc.fontSize(20).text('UrbanKetl Invoice', { align: 'center' });
+      doc.moveDown();
+      
+      // Business Unit Info
+      doc.fontSize(14).text('Invoice Details', { underline: true });
+      doc.fontSize(12);
+      doc.text(`Business Unit${unitIds.length > 1 ? 's' : ''}: ${validUnits.map(u => u?.name).join(', ')}`);
+      doc.text(`Period: ${periodDisplay}`);
+      doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`);
+      doc.moveDown();
+
+      // Summary
+      doc.fontSize(14).text('Summary', { underline: true });
+      doc.fontSize(12);
+      doc.text(`Total Cups Dispensed: ${summary.totalTransactions}`);
+      doc.text(`Total Amount: ₹${parseFloat(summary.totalAmount).toFixed(2)}`);
+      doc.text(`Unique Machines Used: ${summary.uniqueMachines}`);
+      doc.text(`Unique Cards Used: ${summary.uniqueCards}`);
+      doc.moveDown();
+
+      // Machine breakdown
+      doc.fontSize(14).text('Machine Usage Summary', { underline: true });
+      doc.moveDown(0.5);
+
+      // Group transactions by business unit and machine
+      const unitMachineGroups = transactions.reduce((acc: any, t: any) => {
+        const unitKey = t.businessUnitId;
+        if (!acc[unitKey]) {
+          const unit = validUnits.find(u => u?.id === unitKey);
+          acc[unitKey] = {
+            unitName: unit?.name || unitKey,
+            machines: {}
+          };
+        }
+        
+        const machineKey = t.machineId;
+        if (!acc[unitKey].machines[machineKey]) {
+          acc[unitKey].machines[machineKey] = {
+            machineName: t.machineName || t.machineId,
+            location: t.machineLocation || 'N/A',
+            transactions: [],
+            totalAmount: 0,
+            cupCount: 0
+          };
+        }
+        
+        acc[unitKey].machines[machineKey].transactions.push(t);
+        acc[unitKey].machines[machineKey].totalAmount += t.amount || 0;
+        acc[unitKey].machines[machineKey].cupCount += 1;
+        
+        return acc;
+      }, {});
+
+      // Display by business unit
+      doc.fontSize(10);
+      Object.values(unitMachineGroups).forEach((unit: any) => {
+        if (unitIds.length > 1) {
+          doc.fontSize(12).text(`${unit.unitName}:`, { underline: true });
+          doc.moveDown(0.5);
+        }
+        
+        Object.values(unit.machines).forEach((machine: any) => {
+          doc.fontSize(10);
+          doc.text(`${machine.machineName} (${machine.location})`);
+          doc.text(`  - Cups: ${machine.cupCount}, Amount: ₹${machine.totalAmount.toFixed(2)}`);
+          doc.moveDown(0.5);
+        });
+        
+        if (unitIds.length > 1) {
+          doc.moveDown();
+        }
+      });
+
+      // Footer
+      doc.y = doc.page.height - 100;
+      doc.fontSize(10).fillColor('gray');
+      doc.text('This is a computer generated invoice.', { align: 'center' });
+      doc.text('For queries, contact support@urbanketl.com', { align: 'center' });
+
+      doc.end();
+    } catch (error) {
+      console.error("Error generating invoice:", error);
+      res.status(500).json({ error: "Failed to generate invoice" });
+    }
+  });
+  
+  // Keep existing route for backward compatibility
   app.get('/api/admin/business-units/:businessUnitId/invoice', requireAuth, requireAdmin, async (req: any, res) => {
     try {
       const { businessUnitId } = req.params;

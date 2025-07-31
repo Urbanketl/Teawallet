@@ -1810,10 +1810,11 @@ export class DatabaseStorage implements IStorage {
       .select({ count: sql<number>`COUNT(*)` })
       .from(users);
 
-    // Total revenue from tea sales (dispensing)
+    // Total revenue from tea sales (dispensing) - only successful transactions
     const [revenueResult] = await db
       .select({ total: sql<string>`COALESCE(SUM(amount), 0)` })
-      .from(dispensingLogs);
+      .from(dispensingLogs)
+      .where(eq(dispensingLogs.success, true));
 
     // Active machines
     const [machineCount] = await db
@@ -1821,11 +1822,16 @@ export class DatabaseStorage implements IStorage {
       .from(teaMachines)
       .where(eq(teaMachines.isActive, true));
 
-    // Daily dispensing
+    // Daily dispensing - only successful transactions
     const [dispensingCount] = await db
       .select({ count: sql<number>`COUNT(*)` })
       .from(dispensingLogs)
-      .where(gte(dispensingLogs.createdAt, today));
+      .where(
+        and(
+          eq(dispensingLogs.success, true),
+          gte(dispensingLogs.createdAt, today)
+        )
+      );
 
     return {
       totalUsers: userCount.count || 0,
@@ -2674,7 +2680,120 @@ export class DatabaseStorage implements IStorage {
     
     return this.getTransactionSummaryByDateRange(businessUnitId, startDate, endDate);
   }
+  
+  // Multiple business unit summary methods
+  async getMultipleBusinessUnitsSummary(businessUnitIds: string[], month: string): Promise<{
+    totalTransactions: number;
+    totalAmount: string;
+    uniqueMachines: number;
+    uniqueCards: number;
+  }> {
+    const [year, monthNum] = month.split('-');
+    const startDate = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
+    const endDate = new Date(parseInt(year), parseInt(monthNum), 1);
+    endDate.setMilliseconds(-1); // Last millisecond of the previous month
+    
+    return this.getMultipleBusinessUnitsSummaryByDateRange(businessUnitIds, startDate, endDate);
+  }
+  
+  async getMultipleBusinessUnitsSummaryByDateRange(businessUnitIds: string[], startDate: Date, endDate: Date): Promise<{
+    totalTransactions: number;
+    totalAmount: string;
+    uniqueMachines: number;
+    uniqueCards: number;
+  }> {
+    // Get basic transaction stats across multiple business units
+    const result = await db
+      .select({
+        totalTransactions: sql<number>`COUNT(*)`,
+        totalAmount: sql<string>`SUM(CAST(${dispensingLogs.amount} AS DECIMAL))`,
+        uniqueMachines: sql<number>`COUNT(DISTINCT ${dispensingLogs.machineId})`
+      })
+      .from(dispensingLogs)
+      .where(
+        and(
+          inArray(dispensingLogs.businessUnitId, businessUnitIds),
+          eq(dispensingLogs.success, true),
+          gte(dispensingLogs.createdAt, startDate),
+          sql`${dispensingLogs.createdAt} <= ${endDate}`
+        )
+      );
 
+    // Get count of currently assigned cards that were used in the date range
+    const cardResult = await db
+      .select({
+        uniqueCards: sql<number>`COUNT(DISTINCT ${dispensingLogs.rfidCardId})`
+      })
+      .from(dispensingLogs)
+      .innerJoin(rfidCards, eq(dispensingLogs.rfidCardId, rfidCards.id))
+      .where(
+        and(
+          inArray(dispensingLogs.businessUnitId, businessUnitIds),
+          eq(dispensingLogs.success, true),
+          inArray(rfidCards.businessUnitId, businessUnitIds), // Only count cards assigned to selected business units
+          gte(dispensingLogs.createdAt, startDate),
+          sql`${dispensingLogs.createdAt} <= ${endDate}`
+        )
+      );
+
+    return {
+      totalTransactions: result[0]?.totalTransactions || 0,
+      totalAmount: result[0]?.totalAmount || '0',
+      uniqueMachines: result[0]?.uniqueMachines || 0,
+      uniqueCards: cardResult[0]?.uniqueCards || 0
+    };
+  }
+
+  async getMultipleBusinessUnitsTransactions(businessUnitIds: string[], month: string): Promise<(DispensingLog & {
+    cardNumber?: string;
+    machineName?: string;
+    machineLocation?: string;
+  })[]> {
+    const [year, monthNum] = month.split('-');
+    const startDate = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
+    const endDate = new Date(parseInt(year), parseInt(monthNum), 1);
+    endDate.setMilliseconds(-1); // Last millisecond of the previous month
+    
+    return this.getMultipleBusinessUnitsTransactionsByDateRange(businessUnitIds, startDate, endDate);
+  }
+  
+  async getMultipleBusinessUnitsTransactionsByDateRange(businessUnitIds: string[], startDate: Date, endDate: Date): Promise<(DispensingLog & {
+    cardNumber?: string;
+    machineName?: string;
+    machineLocation?: string;
+  })[]> {
+    const transactions = await db
+      .select({
+        id: dispensingLogs.id,
+        businessUnitId: dispensingLogs.businessUnitId,
+        rfidCardId: dispensingLogs.rfidCardId,
+        machineId: dispensingLogs.machineId,
+        teaType: dispensingLogs.teaType,
+        amount: dispensingLogs.amount,
+        success: dispensingLogs.success,
+        errorMessage: dispensingLogs.errorMessage,
+        createdAt: dispensingLogs.createdAt,
+        cardNumber: rfidCards.cardNumber,
+        machineName: teaMachines.name,
+        machineLocation: teaMachines.location,
+      })
+      .from(dispensingLogs)
+      .leftJoin(rfidCards, eq(dispensingLogs.rfidCardId, rfidCards.id))
+      .leftJoin(teaMachines, eq(dispensingLogs.machineId, teaMachines.id))
+      .where(
+        and(
+          inArray(dispensingLogs.businessUnitId, businessUnitIds),
+          eq(dispensingLogs.success, true),
+          gte(dispensingLogs.createdAt, startDate),
+          sql`${dispensingLogs.createdAt} <= ${endDate}`
+        )
+      )
+      .orderBy(desc(dispensingLogs.createdAt))
+      .limit(1000); // Limit to prevent too large datasets
+    
+    return transactions as any;
+  }
+  
   async getTransactionsByDateRange(businessUnitId: string, startDate: Date, endDate: Date): Promise<(DispensingLog & {
     cardNumber?: string;
     machineName?: string;

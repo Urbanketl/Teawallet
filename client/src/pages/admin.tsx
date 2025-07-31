@@ -64,7 +64,9 @@ function AdminReports() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [selectionMode, setSelectionMode] = useState<'single' | 'multiple'>('single');
   const [selectedBusinessUnit, setSelectedBusinessUnit] = useState<string>("");
+  const [selectedBusinessUnits, setSelectedBusinessUnits] = useState<string[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [generating, setGenerating] = useState(false);
   const [showExportConfirmation, setShowExportConfirmation] = useState(false);
@@ -93,13 +95,24 @@ function AdminReports() {
     queryKey: ["/api/admin/business-units"],
   });
 
-  // Fetch business unit summary when business unit and dates are selected
+  // Fetch business unit summary when business unit(s) and dates are selected
   const { data: summaryData, isLoading: summaryLoading } = useQuery({
-    queryKey: [`/api/admin/business-units/${selectedBusinessUnit}/summary`, dateRangeMode, selectedMonth, startDate, endDate],
-    enabled: !!(selectedBusinessUnit && ((dateRangeMode === 'single' && selectedMonth) || (dateRangeMode === 'range' && startDate && endDate))),
+    queryKey: [`/api/admin/business-units/summary`, selectionMode, selectedBusinessUnit, selectedBusinessUnits, dateRangeMode, selectedMonth, startDate, endDate],
+    enabled: !!(
+      ((selectionMode === 'single' && selectedBusinessUnit) || (selectionMode === 'multiple' && selectedBusinessUnits.length > 0)) &&
+      ((dateRangeMode === 'single' && selectedMonth) || (dateRangeMode === 'range' && startDate && endDate))
+    ),
     queryFn: async () => {
-      let url = `/api/admin/business-units/${selectedBusinessUnit}/summary?`;
+      let url = '/api/admin/business-units/summary?';
       
+      // Add business unit IDs
+      if (selectionMode === 'single') {
+        url += `businessUnitIds=${selectedBusinessUnit}&`;
+      } else {
+        url += `businessUnitIds=${selectedBusinessUnits.join(',')}&`;
+      }
+      
+      // Add date parameters
       if (dateRangeMode === 'single') {
         url += `month=${selectedMonth}`;
       } else {
@@ -125,17 +138,28 @@ function AdminReports() {
     setShowExportConfirmation(false);
     
     try {
-      let url = `/api/admin/business-units/${selectedBusinessUnit}/export?`;
+      let url = `/api/admin/business-units/export?`;
       let fileName = '';
-      const businessUnit = (businessUnits as any[]).find((unit: any) => unit.id === selectedBusinessUnit);
       
+      // Add business unit IDs
+      if (selectionMode === 'single') {
+        url += `businessUnitIds=${selectedBusinessUnit}&`;
+        const businessUnit = (businessUnits as any[]).find((unit: any) => unit.id === selectedBusinessUnit);
+        fileName = businessUnit?.name || 'Report';
+      } else {
+        url += `businessUnitIds=${selectedBusinessUnits.join(',')}&`;
+        fileName = selectedBusinessUnits.length > 1 ? 'Multiple_Units' : 
+          (businessUnits as any[]).find((unit: any) => unit.id === selectedBusinessUnits[0])?.name || 'Report';
+      }
+      
+      // Add date parameters
       if (dateRangeMode === 'single') {
         url += `month=${selectedMonth}`;
         const monthLabel = monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth;
-        fileName = `${businessUnit?.name}_${monthLabel.replace(' ', '_')}_Report.csv`;
+        fileName += `_${monthLabel.replace(' ', '_')}_Report.csv`;
       } else {
         url += `startDate=${startDate}&endDate=${endDate}`;
-        fileName = `${businessUnit?.name}_${startDate}_to_${endDate}_Report.csv`;
+        fileName += `_${startDate}_to_${endDate}_Report.csv`;
       }
       
       const response = await fetch(url, {
@@ -173,17 +197,28 @@ function AdminReports() {
     setShowPdfConfirmation(false);
     
     try {
-      let url = `/api/admin/business-units/${selectedBusinessUnit}/invoice?`;
+      let url = `/api/admin/business-units/invoice?`;
       let fileName = '';
-      const businessUnit = (businessUnits as any[]).find((unit: any) => unit.id === selectedBusinessUnit);
       
+      // Add business unit IDs
+      if (selectionMode === 'single') {
+        url += `businessUnitIds=${selectedBusinessUnit}&`;
+        const businessUnit = (businessUnits as any[]).find((unit: any) => unit.id === selectedBusinessUnit);
+        fileName = businessUnit?.name || 'Invoice';
+      } else {
+        url += `businessUnitIds=${selectedBusinessUnits.join(',')}&`;
+        fileName = selectedBusinessUnits.length > 1 ? 'Multiple_Units' : 
+          (businessUnits as any[]).find((unit: any) => unit.id === selectedBusinessUnits[0])?.name || 'Invoice';
+      }
+      
+      // Add date parameters
       if (dateRangeMode === 'single') {
         url += `month=${selectedMonth}`;
         const monthLabel = monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth;
-        fileName = `${businessUnit?.name}_${monthLabel.replace(' ', '_')}_Invoice.pdf`;
+        fileName += `_${monthLabel.replace(' ', '_')}_Invoice.pdf`;
       } else {
         url += `startDate=${startDate}&endDate=${endDate}`;
-        fileName = `${businessUnit?.name}_${startDate}_to_${endDate}_Invoice.pdf`;
+        fileName += `_${startDate}_to_${endDate}_Invoice.pdf`;
       }
       
       const response = await fetch(url, {
@@ -232,20 +267,77 @@ function AdminReports() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="business-unit">Business Unit</Label>
-              <select
-                id="business-unit"
-                value={selectedBusinessUnit}
-                onChange={(e) => setSelectedBusinessUnit(e.target.value)}
-                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-              >
-                <option value="">Select a business unit</option>
-                {(businessUnits as any[]).map((unit: any) => (
-                  <option key={unit.id} value={unit.id}>
-                    {unit.name} ({unit.code})
-                  </option>
-                ))}
-              </select>
+              <Label>Business Unit Selection</Label>
+              <div className="mt-1 space-y-3">
+                <div className="flex space-x-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="single"
+                      checked={selectionMode === 'single'}
+                      onChange={(e) => {
+                        setSelectionMode('single');
+                        setSelectedBusinessUnits([]);
+                      }}
+                      className="mr-2"
+                    />
+                    Single Unit
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="multiple"
+                      checked={selectionMode === 'multiple'}
+                      onChange={(e) => {
+                        setSelectionMode('multiple');
+                        setSelectedBusinessUnit('');
+                      }}
+                      className="mr-2"
+                    />
+                    Multiple Units
+                  </label>
+                </div>
+                
+                {selectionMode === 'single' ? (
+                  <select
+                    id="business-unit"
+                    value={selectedBusinessUnit}
+                    onChange={(e) => setSelectedBusinessUnit(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="">Select a business unit</option>
+                    {(businessUnits as any[]).map((unit: any) => (
+                      <option key={unit.id} value={unit.id}>
+                        {unit.name} ({unit.code})
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2">
+                    {(businessUnits as any[]).length === 0 ? (
+                      <p className="text-gray-500 text-sm">No business units available</p>
+                    ) : (
+                      (businessUnits as any[]).map((unit: any) => (
+                        <label key={unit.id} className="flex items-center p-1 hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            checked={selectedBusinessUnits.includes(unit.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedBusinessUnits([...selectedBusinessUnits, unit.id]);
+                              } else {
+                                setSelectedBusinessUnits(selectedBusinessUnits.filter(id => id !== unit.id));
+                              }
+                            }}
+                            className="mr-2"
+                          />
+                          {unit.name} ({unit.code})
+                        </label>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div>
@@ -316,7 +408,7 @@ function AdminReports() {
             </div>
           </div>
 
-          {summaryData && selectedBusinessUnit && ((dateRangeMode === 'single' && selectedMonth) || (dateRangeMode === 'range' && startDate && endDate)) && (
+          {summaryData && ((selectionMode === 'single' && selectedBusinessUnit) || (selectionMode === 'multiple' && selectedBusinessUnits.length > 0)) && ((dateRangeMode === 'single' && selectedMonth) || (dateRangeMode === 'range' && startDate && endDate)) && (
             <div className="bg-gray-50 p-4 rounded-lg">
               <h4 className="font-medium text-gray-900 mb-2">Report Summary</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -343,7 +435,7 @@ function AdminReports() {
           <div className="flex space-x-4">
             <Button
               onClick={handleExportConfirm}
-              disabled={!selectedBusinessUnit || (dateRangeMode === 'single' ? !selectedMonth : (!startDate || !endDate)) || generating}
+              disabled={((selectionMode === 'single' && !selectedBusinessUnit) || (selectionMode === 'multiple' && selectedBusinessUnits.length === 0)) || (dateRangeMode === 'single' ? !selectedMonth : (!startDate || !endDate)) || generating}
               className="bg-green-600 hover:bg-green-700"
             >
               <FileSpreadsheet className="w-4 h-4 mr-2" />
@@ -352,7 +444,7 @@ function AdminReports() {
             
             <Button
               onClick={handlePdfConfirm}
-              disabled={!selectedBusinessUnit || (dateRangeMode === 'single' ? !selectedMonth : (!startDate || !endDate)) || generating}
+              disabled={((selectionMode === 'single' && !selectedBusinessUnit) || (selectionMode === 'multiple' && selectedBusinessUnits.length === 0)) || (dateRangeMode === 'single' ? !selectedMonth : (!startDate || !endDate)) || generating}
               className="bg-red-600 hover:bg-red-700"
             >
               <FileText className="w-4 h-4 mr-2" />
@@ -371,7 +463,11 @@ function AdminReports() {
             <div className="bg-blue-50 p-4 rounded-lg mb-4">
               <p className="text-sm text-gray-700 mb-2">You are about to export the following data:</p>
               <div className="space-y-1 text-sm">
-                <p><span className="font-medium">Business Unit:</span> {(businessUnits as any[]).find((unit: any) => unit.id === selectedBusinessUnit)?.name}</p>
+                <p><span className="font-medium">Business Unit{selectionMode === 'multiple' && selectedBusinessUnits.length > 1 ? 's' : ''}:</span> {
+                  selectionMode === 'single' 
+                    ? (businessUnits as any[]).find((unit: any) => unit.id === selectedBusinessUnit)?.name
+                    : selectedBusinessUnits.map(id => (businessUnits as any[]).find((unit: any) => unit.id === id)?.name).join(', ')
+                }</p>
                 <p><span className="font-medium">Period:</span> {dateRangeMode === 'single' ? monthOptions.find(m => m.value === selectedMonth)?.label : `${startDate} to ${endDate}`}</p>
                 <p><span className="font-medium">Transactions:</span> {summaryData.totalTransactions || 0}</p>
                 <p><span className="font-medium">Total Amount:</span> ₹{parseFloat(summaryData.totalAmount || '0').toFixed(2)}</p>
@@ -406,7 +502,11 @@ function AdminReports() {
             <div className="bg-red-50 p-4 rounded-lg mb-4">
               <p className="text-sm text-gray-700 mb-2">You are about to generate an invoice with:</p>
               <div className="space-y-1 text-sm">
-                <p><span className="font-medium">Business Unit:</span> {(businessUnits as any[]).find((unit: any) => unit.id === selectedBusinessUnit)?.name}</p>
+                <p><span className="font-medium">Business Unit{selectionMode === 'multiple' && selectedBusinessUnits.length > 1 ? 's' : ''}:</span> {
+                  selectionMode === 'single' 
+                    ? (businessUnits as any[]).find((unit: any) => unit.id === selectedBusinessUnit)?.name
+                    : selectedBusinessUnits.map(id => (businessUnits as any[]).find((unit: any) => unit.id === id)?.name).join(', ')
+                }</p>
                 <p><span className="font-medium">Period:</span> {dateRangeMode === 'single' ? monthOptions.find(m => m.value === selectedMonth)?.label : `${startDate} to ${endDate}`}</p>
                 <p><span className="font-medium">Cups Dispensed:</span> {summaryData.totalTransactions || 0}</p>
                 <p><span className="font-medium">Total Amount:</span> ₹{parseFloat(summaryData.totalAmount || '0').toFixed(2)}</p>

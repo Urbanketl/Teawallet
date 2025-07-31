@@ -170,6 +170,13 @@ export function setupAuth(app: Express) {
     });
   });
 
+  app.get("/api/logout", (req, res, next) => {
+    req.logout((err) => {
+      if (err) return next(err);
+      res.redirect('/auth');
+    });
+  });
+
   // Password management routes
   app.post("/api/auth/forgot-password", async (req, res) => {
     try {

@@ -854,6 +854,7 @@ export default function AdminPage() {
                 onChange={(e) => {
                   console.log('Date filter changed to:', e.target.value);
                   setDateFilter(e.target.value);
+                  setTicketsPage(1); // Reset to first page when filter changes
                 }}
                 className="h-10 w-48 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
               >
@@ -869,6 +870,7 @@ export default function AdminPage() {
                 onChange={(e) => {
                   console.log('Status filter changed to:', e.target.value);
                   setStatusFilter(e.target.value);
+                  setTicketsPage(1); // Reset to first page when filter changes
                 }}
                 className="h-10 w-48 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
               >
@@ -884,6 +886,7 @@ export default function AdminPage() {
                 onChange={(e) => {
                   console.log('User filter changed to:', e.target.value);
                   setUserFilter(e.target.value);
+                  setTicketsPage(1); // Reset to first page when filter changes
                 }}
                 className="h-10 w-56 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
               >

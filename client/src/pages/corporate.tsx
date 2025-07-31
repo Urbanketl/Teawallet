@@ -849,6 +849,7 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
   const [isExporting, setIsExporting] = useState(false);
   const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
   const [showExportConfirmation, setShowExportConfirmation] = useState(false);
+  const [showInvoiceConfirmation, setShowInvoiceConfirmation] = useState(false);
   const { toast } = useToast();
 
   // Generate month options for the last 12 months
@@ -918,7 +919,12 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
     setShowExportConfirmation(true);
   };
 
+  const handleInvoiceConfirmation = () => {
+    setShowInvoiceConfirmation(true);
+  };
+
   const handleGenerateInvoice = async () => {
+    setShowInvoiceConfirmation(false);
     setIsGeneratingInvoice(true);
     try {
       const response = await fetch(`/api/corporate/monthly-invoice/${businessUnitId}/${selectedMonth}`, {
@@ -1040,7 +1046,7 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
           </Button>
           
           <Button
-            onClick={handleGenerateInvoice}
+            onClick={handleInvoiceConfirmation}
             disabled={isGeneratingInvoice || !monthlyData}
             variant="outline"
             className="flex items-center gap-2"
@@ -1133,6 +1139,87 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
                       <>
                         <Download className="h-4 w-4" />
                         <span>Confirm Export</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Invoice Generation Confirmation Modal */}
+        {showInvoiceConfirmation && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+              <div className="p-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="h-5 w-5 text-orange-600" />
+                  <h3 className="text-lg font-semibold">Confirm PDF Invoice Generation</h3>
+                </div>
+                <p className="text-gray-600 mb-4">Please review the invoice summary before generating PDF</p>
+                
+                <div className="space-y-4">
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                    <div className="flex justify-between">
+                      <span className="font-medium text-gray-700">Business Unit:</span>
+                      <span className="text-gray-900">{businessUnitName}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium text-gray-700">Invoice Period:</span>
+                      <span className="text-gray-900">
+                        {new Date(selectedMonth + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
+                      </span>
+                    </div>
+                    {(monthlyData && typeof monthlyData === 'object') ? (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-700">Transactions:</span>
+                          <span className="text-gray-900">{(monthlyData as any)?.totalTransactions || 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-700">Invoice Amount:</span>
+                          <span className="text-gray-900 font-semibold">₹{parseFloat((monthlyData as any)?.totalAmount || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-700">Employee Cards:</span>
+                          <span className="text-gray-900">{(monthlyData as any)?.uniqueCards || 0}</span>
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+                  
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                    <p className="text-sm text-orange-800">
+                      <strong>Warning:</strong> This will generate a formal PDF invoice with company branding. 
+                      Avoid creating multiple invoices for the same period to prevent confusion in financial records.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 mt-6">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowInvoiceConfirmation(false)}
+                    disabled={isGeneratingInvoice}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleGenerateInvoice}
+                    disabled={isGeneratingInvoice}
+                    className="flex items-center gap-2 flex-1"
+                  >
+                    {isGeneratingInvoice ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Generating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="h-4 w-4" />
+                        <span>Generate Invoice</span>
                       </>
                     )}
                   </Button>

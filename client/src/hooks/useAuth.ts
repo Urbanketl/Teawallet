@@ -52,7 +52,12 @@ export function useAuth() {
     },
     onSuccess: (data) => {
       if (!data.requiresPasswordReset) {
+        // Force refetch the user data to update authentication state
         queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+        // Navigate to dashboard after successful authentication
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 100);
       }
     },
   });

@@ -50,25 +50,14 @@ export default function AuthPage() {
     }
 
     try {
-      const response = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
+      const result = await loginMutation.mutateAsync({
+        email: formData.email,
+        password: formData.password,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Login failed");
-      }
-
-      if (data.requiresPasswordReset) {
+      if (result.requiresPasswordReset) {
         setRequiresPasswordReset(true);
-        setUserId(data.userId);
+        setUserId(result.userId);
         toast({
           title: "Password Reset Required",
           description: "You must reset your password before continuing",
@@ -78,7 +67,8 @@ export default function AuthPage() {
           title: "Login Successful",
           description: "Welcome back!",
         });
-        navigate("/");
+        // The useAuth hook will handle the navigation automatically
+        // once the authentication state is updated
       }
     } catch (error: any) {
       toast({

@@ -197,7 +197,7 @@ export default function AdminPage() {
     sortOrder,
   }).toString();
 
-  const { data: ticketsData, isLoading: allTicketsLoading, refetch: refetchTickets } = useQuery({
+  const { data: filteredTicketsData, isLoading: allTicketsLoading, refetch: refetchTickets } = useQuery({
     queryKey: [`/api/admin/support/tickets?${ticketsQueryParams}`],
     enabled: Boolean(isAuthenticated && typedUser?.isAdmin),
     retry: false,
@@ -207,8 +207,8 @@ export default function AdminPage() {
   // Extract users from tickets for the user filter dropdown
   const uniqueUsers = useMemo(() => {
     const users = new Map();
-    if (ticketsData && (ticketsData as any).allTickets) {
-      (ticketsData as any).allTickets.forEach((ticket: any) => {
+    if (filteredTicketsData && (filteredTicketsData as any).allTickets) {
+      (filteredTicketsData as any).allTickets.forEach((ticket: any) => {
         if (ticket.user) {
           users.set(ticket.userId, {
             id: ticket.userId,
@@ -219,7 +219,7 @@ export default function AdminPage() {
       });
     }
     return Array.from(users.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [ticketsData]);
+  }, [filteredTicketsData]);
 
   // Debug logging
   console.log('Support tickets data:', supportTickets);
@@ -810,7 +810,7 @@ export default function AdminPage() {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Support Tickets</h2>
               <Badge variant="secondary" className="bg-tea-green/10 text-tea-green">
-                {(ticketsData as any)?.tickets?.length || 0} / {(ticketsData as any)?.total || 0} Tickets (Page {ticketsPage})
+                {(filteredTicketsData as any)?.tickets?.length || 0} / {(filteredTicketsData as any)?.total || 0} Tickets (Page {ticketsPage})
               </Badge>
             </div>
             
@@ -908,7 +908,7 @@ export default function AdminPage() {
                     Loading support tickets...
                   </CardContent>
                 </Card>
-              ) : !(ticketsData as any)?.tickets || (ticketsData as any).tickets.length === 0 ? (
+              ) : !(filteredTicketsData as any)?.tickets || (filteredTicketsData as any).tickets.length === 0 ? (
                 <Card>
                   <CardContent className="p-6 text-center">
                     <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -916,7 +916,7 @@ export default function AdminPage() {
                   </CardContent>
                 </Card>
               ) : (
-                ((ticketsData as any)?.tickets || []).map((ticket: any) => {
+                ((filteredTicketsData as any)?.tickets || []).map((ticket: any) => {
                   console.log('Rendering ticket:', ticket.id, 'with status:', ticket.status);
                   return (
                     <Card key={ticket.id} className="hover:shadow-md transition-shadow">
@@ -1172,13 +1172,13 @@ export default function AdminPage() {
               </div>
 
               {/* Pagination for Support Tickets */}
-              {(ticketsData as any) && (ticketsData as any).total > ticketsPerPage && (
+              {(filteredTicketsData as any) && (filteredTicketsData as any).total > ticketsPerPage && (
                 <div className="mt-6">
                   <Pagination
                     currentPage={ticketsPage}
-                    totalPages={Math.ceil((ticketsData as any).total / ticketsPerPage)}
+                    totalPages={Math.ceil((filteredTicketsData as any).total / ticketsPerPage)}
                     onPageChange={setTicketsPage}
-                    totalItems={(ticketsData as any).total}
+                    totalItems={(filteredTicketsData as any).total}
                     itemsPerPage={ticketsPerPage}
                   />
                 </div>

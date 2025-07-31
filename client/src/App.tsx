@@ -8,20 +8,19 @@ import { PseudoLoginBanner } from "@/components/PseudoLoginBanner";
 import { FullPageLoader } from "@/components/ui/loading-spinner";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 
-// Lazy load pages for better performance
-import { lazy, Suspense } from "react";
+// Import pages directly to avoid lazy loading issues during debugging
+import { Suspense } from "react";
 
-const NotFound = lazy(() => import("@/pages/not-found"));
-const Landing = lazy(() => import("@/pages/landing"));
-const AuthPage = lazy(() => import("@/pages/auth-page"));
-const Dashboard = lazy(() => import("@/pages/dashboard"));
-const Wallet = lazy(() => import("@/pages/wallet"));
-
-const Admin = lazy(() => import("@/pages/admin"));
-const Profile = lazy(() => import("@/pages/profile"));
-const Support = lazy(() => import("@/pages/support"));
-const Analytics = lazy(() => import("@/pages/analytics"));
-const Corporate = lazy(() => import("@/pages/corporate"));
+import NotFound from "@/pages/not-found";
+import Landing from "@/pages/landing";
+import AuthPage from "@/pages/auth-page";
+import Dashboard from "@/pages/dashboard";
+import Wallet from "@/pages/wallet";
+import Admin from "@/pages/admin";
+import Profile from "@/pages/profile";
+import Support from "@/pages/support";
+import Analytics from "@/pages/analytics";
+import Corporate from "@/pages/corporate";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -46,12 +45,10 @@ function Router() {
   // Prevent double rendering by using single component instead of Switch
   if (!isAuthenticated) {
     return (
-      <Suspense fallback={<FullPageLoader message="Loading page..." />}>
-        <Switch>
-          <Route path="/auth" component={AuthPage} />
-          <Route path="*" component={AuthPage} />
-        </Switch>
-      </Suspense>
+      <Switch>
+        <Route path="/auth" component={AuthPage} />
+        <Route path="*" component={AuthPage} />
+      </Switch>
     );
   }
 
@@ -65,19 +62,17 @@ function Router() {
         />
       )}
       
-      <Suspense fallback={<FullPageLoader message="Loading page..." />}>
-        <Switch>
-          <Route path="/" component={Dashboard} />
-          <Route path="/wallet" component={Wallet} />
-          <Route path="/auth" component={AuthPage} />
-          <Route path="/profile" component={Profile} />
-          <Route path="/admin" component={Admin} />
-          <Route path="/support" component={Support} />
-          <Route path="/analytics" component={Analytics} />
-          <Route path="/corporate" component={Corporate} />
-          <Route path="*" component={NotFound} />
-        </Switch>
-      </Suspense>
+      <Switch>
+        <Route path="/" component={Dashboard} />
+        <Route path="/wallet" component={Wallet} />
+        <Route path="/auth" component={AuthPage} />
+        <Route path="/profile" component={Profile} />
+        <Route path="/admin" component={Admin} />
+        <Route path="/support" component={Support} />
+        <Route path="/analytics" component={Analytics} />
+        <Route path="/corporate" component={Corporate} />
+        <Route component={NotFound} />
+      </Switch>
     </>
   );
 }

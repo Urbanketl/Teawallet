@@ -1899,11 +1899,16 @@ export class DatabaseStorage implements IStorage {
     // Build where conditions
     const whereConditions = [];
     
+    console.log('=== STORAGE FILTER DEBUG ===');
+    console.log('Filters received in storage:', filters);
+    
     if (filters?.status) {
+      console.log('Adding status filter:', filters.status);
       whereConditions.push(eq(supportTickets.status, filters.status));
     }
     
     if (filters?.userId) {
+      console.log('Adding userId filter:', filters.userId);
       whereConditions.push(eq(supportTickets.userId, filters.userId));
     }
     
@@ -1987,6 +1992,12 @@ export class DatabaseStorage implements IStorage {
       ...support_tickets,
       user: user || { id: '', firstName: 'Unknown', lastName: 'User', email: '', walletBalance: '0', isAdmin: false, profileImageUrl: null, createdAt: null, updatedAt: null }
     })) as (SupportTicket & { user: User })[];
+
+    console.log('=== STORAGE RESULT DEBUG ===');
+    console.log('Total tickets found:', countResult.count);
+    console.log('Returned tickets count:', tickets.length);
+    console.log('First ticket status (if any):', tickets[0]?.status);
+    console.log('All ticket statuses:', tickets.map(t => t.status));
 
     return {
       tickets,

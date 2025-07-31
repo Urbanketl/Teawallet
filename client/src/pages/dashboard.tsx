@@ -60,7 +60,14 @@ export default function Dashboard() {
   });
 
   if (isLoading) {
-    return <div className="min-h-screen bg-neutral-warm flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-neutral-warm flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-tea-dark mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading your dashboard</p>
+        </div>
+      </div>
+    );
   }
 
   if (!isAuthenticated || !user) {

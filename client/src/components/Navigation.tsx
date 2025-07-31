@@ -67,16 +67,18 @@ export default function Navigation() {
                 <img 
                   src={logoImage} 
                   alt="UrbanKetl Logo" 
-                  className="h-16 w-auto object-contain"
-                  style={{ minWidth: '64px', height: '64px' }}
+                  className="h-16 w-auto object-contain border border-gray-200 rounded-lg p-1 bg-white shadow-sm"
+                  style={{ minWidth: '80px', height: '64px', maxWidth: '120px' }}
                   onError={(e) => {
                     console.error('Logo failed to load:', e);
                     console.log('Logo src:', logoImage);
+                    (e.target as HTMLImageElement).style.display = 'none';
                   }}
                   onLoad={() => {
                     console.log('Logo loaded successfully:', logoImage);
                   }}
                 />
+                <span className="text-xl font-bold text-tea-dark ml-2">UrbanKetl</span>
               </div>
             </Link>
             

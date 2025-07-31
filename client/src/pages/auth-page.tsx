@@ -402,7 +402,7 @@ export default function AuthPage() {
     <div className="h-screen bg-white flex flex-col overflow-hidden">
       {/* Header with Logo - Top Left */}
       <div className="flex justify-start pt-4 pl-6 pb-2">
-        <div className="w-16 h-16 bg-white rounded-lg shadow-md flex items-center justify-center p-2 border border-amber-200">
+        <div className="w-20 h-20 bg-white rounded-lg shadow-md flex items-center justify-center p-2">
           <img 
             src="/logo.jpg" 
             alt="UrbanKetl Logo" 

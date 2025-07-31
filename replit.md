@@ -124,6 +124,9 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- July 31, 2025: COMPLETED - Added "Select All" functionality to admin reports for multiple business unit selection with intelligent checkbox states and one-click selection/deselection
+- July 31, 2025: COMPLETED - Removed redundant "Export Data" button from Platform Admin page header as requested by user
+- July 31, 2025: COMPLETED - Fixed revenue calculation discrepancy between Admin Dashboard (₹1518) and Reports (₹1455) by excluding orphaned transactions with NULL business_unit_id
 - July 31, 2025: COMPLETED - Fixed critical date calculation bug in admin reports causing incorrect zero values for July/Kulhad Party data
 - July 31, 2025: COMPLETED - Implemented custom date range selection feature for admin reports replacing single month limitation
 - July 31, 2025: Added UI toggle between "Single Month" and "Date Range" modes with native HTML date inputs for range selection

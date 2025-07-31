@@ -313,28 +313,63 @@ function AdminReports() {
                     ))}
                   </select>
                 ) : (
-                  <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2">
-                    {(businessUnits as any[]).length === 0 ? (
-                      <p className="text-gray-500 text-sm">No business units available</p>
-                    ) : (
-                      (businessUnits as any[]).map((unit: any) => (
-                        <label key={unit.id} className="flex items-center p-1 hover:bg-gray-50">
+                  <div className="space-y-1">
+                    {/* Select All Option */}
+                    {(businessUnits as any[]).length > 0 && (
+                      <div className="border-b border-gray-200 pb-2 mb-2">
+                        <label className="flex items-center p-1 hover:bg-gray-50 font-medium">
                           <input
                             type="checkbox"
-                            checked={selectedBusinessUnits.includes(unit.id)}
+                            checked={selectedBusinessUnits.length === (businessUnits as any[]).length}
+                            ref={(input) => {
+                              if (input) {
+                                input.indeterminate = selectedBusinessUnits.length > 0 && selectedBusinessUnits.length < (businessUnits as any[]).length;
+                              }
+                            }}
                             onChange={(e) => {
                               if (e.target.checked) {
-                                setSelectedBusinessUnits([...selectedBusinessUnits, unit.id]);
+                                // Select all business units
+                                setSelectedBusinessUnits((businessUnits as any[]).map((unit: any) => unit.id));
                               } else {
-                                setSelectedBusinessUnits(selectedBusinessUnits.filter(id => id !== unit.id));
+                                // Deselect all business units
+                                setSelectedBusinessUnits([]);
                               }
                             }}
                             className="mr-2"
                           />
-                          {unit.name} ({unit.code})
+                          {selectedBusinessUnits.length === (businessUnits as any[]).length 
+                            ? `All Units Selected (${(businessUnits as any[]).length})` 
+                            : selectedBusinessUnits.length > 0 
+                            ? `Select All (${selectedBusinessUnits.length}/${(businessUnits as any[]).length} selected)`
+                            : `Select All (${(businessUnits as any[]).length} units)`
+                          }
                         </label>
-                      ))
+                      </div>
                     )}
+                    
+                    <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2">
+                      {(businessUnits as any[]).length === 0 ? (
+                        <p className="text-gray-500 text-sm">No business units available</p>
+                      ) : (
+                        (businessUnits as any[]).map((unit: any) => (
+                          <label key={unit.id} className="flex items-center p-1 hover:bg-gray-50">
+                            <input
+                              type="checkbox"
+                              checked={selectedBusinessUnits.includes(unit.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedBusinessUnits([...selectedBusinessUnits, unit.id]);
+                                } else {
+                                  setSelectedBusinessUnits(selectedBusinessUnits.filter(id => id !== unit.id));
+                                }
+                              }}
+                              className="mr-2"
+                            />
+                            {unit.name} ({unit.code})
+                          </label>
+                        ))
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -917,10 +952,6 @@ export default function AdminPage() {
             <p className="text-gray-600">System overview and management</p>
           </div>
           <div className="flex space-x-3">
-            <Button className="bg-tea-green hover:bg-tea-dark">
-              <Download className="w-4 h-4 mr-2" />
-              Export Data
-            </Button>
             <Button 
               variant="outline"
               onClick={() => {

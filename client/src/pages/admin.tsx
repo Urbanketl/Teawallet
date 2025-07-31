@@ -849,69 +849,65 @@ export default function AdminPage() {
             </div>
             
             <div className="flex flex-wrap gap-3">
-              <Select value={dateFilter} onValueChange={(value) => {
-                console.log('Date filter changed to:', value);
-                setDateFilter(value);
-              }}>
-                <SelectTrigger className="w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Time</SelectItem>
-                  <SelectItem value="today">Today</SelectItem>
-                  <SelectItem value="week">This Week</SelectItem>
-                  <SelectItem value="month">This Month</SelectItem>
-                  <SelectItem value="custom">Custom Range</SelectItem>
-                </SelectContent>
-              </Select>
+              <select 
+                value={dateFilter} 
+                onChange={(e) => {
+                  console.log('Date filter changed to:', e.target.value);
+                  setDateFilter(e.target.value);
+                }}
+                className="h-10 w-48 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                <option value="all">All Time</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="custom">Custom Range</option>
+              </select>
               
-              <Select value={statusFilter} onValueChange={(value) => {
-                console.log('Status filter changed to:', value);
-                setStatusFilter(value);
-              }}>
-                <SelectTrigger className="w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="open">Open</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="resolved">Resolved</SelectItem>
-                  <SelectItem value="closed">Closed</SelectItem>
-                </SelectContent>
-              </Select>
+              <select 
+                value={statusFilter} 
+                onChange={(e) => {
+                  console.log('Status filter changed to:', e.target.value);
+                  setStatusFilter(e.target.value);
+                }}
+                className="h-10 w-48 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                <option value="all">All Status</option>
+                <option value="open">Open</option>
+                <option value="in_progress">In Progress</option>
+                <option value="resolved">Resolved</option>
+                <option value="closed">Closed</option>
+              </select>
               
-              <Select value={userFilter} onValueChange={(value) => {
-                console.log('User filter changed to:', value);
-                setUserFilter(value);
-              }}>
-                <SelectTrigger className="w-56">
-                  <SelectValue placeholder="Filter by User" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Users</SelectItem>
-                  {uniqueUsers.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name} ({user.email})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <select 
+                value={userFilter} 
+                onChange={(e) => {
+                  console.log('User filter changed to:', e.target.value);
+                  setUserFilter(e.target.value);
+                }}
+                className="h-10 w-56 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                <option value="all">All Users</option>
+                {uniqueUsers.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name} ({user.email})
+                  </option>
+                ))}
+              </select>
               
-              <Select value={sortBy} onValueChange={(value) => {
-                console.log('Sort by changed to:', value);
-                setSortBy(value);
-              }}>
-                <SelectTrigger className="w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="createdAt">Sort by Date</SelectItem>
-                  <SelectItem value="status">Sort by Status</SelectItem>
-                  <SelectItem value="priority">Sort by Priority</SelectItem>
-                  <SelectItem value="userId">Sort by User</SelectItem>
-                </SelectContent>
-              </Select>
+              <select 
+                value={sortBy} 
+                onChange={(e) => {
+                  console.log('Sort by changed to:', e.target.value);
+                  setSortBy(e.target.value);
+                }}
+                className="h-10 w-48 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                <option value="createdAt">Sort by Date</option>
+                <option value="status">Sort by Status</option>
+                <option value="priority">Sort by Priority</option>
+                <option value="userId">Sort by User</option>
+              </select>
               
               <Button
                 variant="outline"

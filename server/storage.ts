@@ -16,10 +16,19 @@ import { eq, and, desc, asc, sql, gte, lte, or, ilike, inArray, isNotNull, isNul
 import { alias } from "drizzle-orm/pg-core";
 
 export interface IStorage {
-  // User operations (mandatory for Replit Auth)
+  // User operations
   getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserProfile(id: string, profileData: any): Promise<User>;
+  
+  // Password management
+  updateUserPassword(id: string, hashedPassword: string): Promise<void>;
+  setPasswordResetToken(id: string, token: string, expiresAt: Date): Promise<void>;
+  getUserByResetToken(token: string): Promise<User | undefined>;
+  clearPasswordResetToken(id: string): Promise<void>;
+  setPasswordResetStatus(id: string, requiresReset: boolean): Promise<void>;
+  deleteUser(id: string): Promise<void>;
   
   // Business Unit operations
   createBusinessUnit(businessUnit: InsertBusinessUnit): Promise<BusinessUnit>;
@@ -229,6 +238,143 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return user;
+  }
+
+  // Password management methods
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async updateUserPassword(id: string, hashedPassword: string): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        password: hashedPassword,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id));
+  }
+
+  async setPasswordResetToken(id: string, token: string, expiresAt: Date): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        passwordResetToken: token,
+        passwordResetExpires: expiresAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id));
+  }
+
+  async getUserByResetToken(token: string): Promise<User | undefined> {
+    const now = new Date();
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(
+        and(
+          eq(users.passwordResetToken, token),
+          gte(users.passwordResetExpires, now)
+        )
+      );
+    return user;
+  }
+
+  async clearPasswordResetToken(id: string): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        passwordResetToken: null,
+        passwordResetExpires: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id));
+  }
+
+  async setPasswordResetStatus(id: string, requiresReset: boolean): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        requiresPasswordReset: requiresReset,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id));
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    // Remove user-business unit assignments first
+    await db.delete(userBusinessUnits).where(eq(userBusinessUnits.userId, id));
+    
+    // Delete the user
+    await db.delete(users).where(eq(users.id, id));
+  }
+
+  async updateUserPassword(id: string, hashedPassword: string): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        password: hashedPassword,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id));
+  }
+
+  async setPasswordResetToken(id: string, token: string, expiresAt: Date): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        passwordResetToken: token,
+        passwordResetExpires: expiresAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id));
+  }
+
+  async getUserByResetToken(token: string): Promise<User | undefined> {
+    const result = await db
+      .select()
+      .from(users)
+      .where(
+        and(
+          eq(users.passwordResetToken, token),
+          gte(users.passwordResetExpires, new Date())
+        )
+      )
+      .limit(1);
+
+    return result[0];
+  }
+
+  async clearPasswordResetToken(id: string): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        passwordResetToken: null,
+        passwordResetExpires: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id));
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+
+    return result[0];
+  }
+
+  async setPasswordResetStatus(id: string, requiresReset: boolean): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        requiresPasswordReset: requiresReset,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id));
   }
 
   // Business Unit operations

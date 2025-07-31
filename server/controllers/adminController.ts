@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { storage } from "../storage";
+import { generatePassword, hashPassword } from "../auth";
+import { v4 as uuidv4 } from "uuid";
 
 export async function getAllUsers(req: any, res: Response) {
   try {
@@ -72,6 +74,100 @@ export async function getSuggestedCardNumber(req: any, res: Response) {
   } catch (error) {
     console.error('Error generating card number:', error);
     res.status(500).json({ message: 'Failed to generate card number' });
+  }
+}
+
+// Create user with password generation
+export async function createUser(req: any, res: Response) {
+  try {
+    const { email, firstName, lastName, role } = req.body;
+    
+    if (!email || !firstName || !lastName || !role) {
+      return res.status(400).json({ error: 'Email, first name, last name, and role are required' });
+    }
+
+    // Check if user already exists
+    const existingUser = await storage.getUserByEmail(email);
+    if (existingUser) {
+      return res.status(400).json({ error: 'User with this email already exists' });
+    }
+
+    // Generate secure password
+    const generatedPassword = generatePassword();
+    const hashedPassword = await hashPassword(generatedPassword);
+
+    // Generate user ID
+    const userId = uuidv4();
+
+    // Determine admin privileges based on role
+    let isAdmin = false;
+    let isSuperAdmin = false;
+    
+    switch (role) {
+      case 'platform_admin':
+        isAdmin = true;
+        isSuperAdmin = true;
+        break;
+      case 'business_unit_admin':
+        isAdmin = true;
+        isSuperAdmin = false;
+        break;
+      case 'viewer':
+        isAdmin = false;
+        isSuperAdmin = false;
+        break;
+      default:
+        return res.status(400).json({ error: 'Invalid role specified' });
+    }
+
+    // Create user
+    const user = await storage.upsertUser({
+      id: userId,
+      email,
+      password: hashedPassword,
+      firstName,
+      lastName,
+      isAdmin,
+      isSuperAdmin,
+      requiresPasswordReset: true, // User must reset password on first login
+    });
+
+    res.json({ 
+      success: true, 
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isAdmin: user.isAdmin,
+        isSuperAdmin: user.isSuperAdmin,
+      },
+      generatedPassword // Admin needs to share this with the user
+    });
+  } catch (error) {
+    console.error('Error creating user:', error);
+    res.status(500).json({ error: 'Failed to create user' });
+  }
+}
+
+// Delete user
+export async function deleteUser(req: any, res: Response) {
+  try {
+    const { userId } = req.params;
+    
+    // Check if user has business unit assignments
+    const businessUnits = await storage.getUserBusinessUnits(userId);
+    if (businessUnits.length > 0) {
+      return res.status(400).json({ 
+        error: 'Cannot delete user with business unit assignments. Please transfer ownership first.' 
+      });
+    }
+
+    await storage.deleteUser(userId);
+    res.json({ success: true, message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: 'Failed to delete user' });
   }
 }
 

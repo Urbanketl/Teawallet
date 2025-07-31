@@ -13,6 +13,7 @@ import { lazy, Suspense } from "react";
 
 const NotFound = lazy(() => import("@/pages/not-found"));
 const Landing = lazy(() => import("@/pages/landing"));
+const AuthPage = lazy(() => import("@/pages/auth-page"));
 const Dashboard = lazy(() => import("@/pages/dashboard"));
 const Wallet = lazy(() => import("@/pages/wallet"));
 
@@ -46,7 +47,10 @@ function Router() {
   if (!isAuthenticated) {
     return (
       <Suspense fallback={<FullPageLoader message="Loading page..." />}>
-        <Landing />
+        <Switch>
+          <Route path="/auth" component={AuthPage} />
+          <Route path="*" component={AuthPage} />
+        </Switch>
       </Suspense>
     );
   }
@@ -65,7 +69,7 @@ function Router() {
         <Switch>
           <Route path="/" component={Dashboard} />
           <Route path="/wallet" component={Wallet} />
-
+          <Route path="/auth" component={AuthPage} />
           <Route path="/profile" component={Profile} />
           <Route path="/admin" component={Admin} />
           <Route path="/support" component={Support} />
@@ -83,8 +87,8 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <Toaster />
           <Router />
+          <Toaster />
         </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>

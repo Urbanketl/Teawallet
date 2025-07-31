@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import path from "path";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated } from "./auth";
 import { initializeRazorpay, createOrder, verifyPayment } from "./razorpay";
 import { storage } from "./storage";
 import { insertDispensingLogSchema } from "@shared/schema";
@@ -13,6 +13,7 @@ import supportRoutes from "./routes/supportRoutes";
 import analyticsRoutes from "./routes/analyticsRoutes";
 import * as adminController from "./controllers/adminController";
 import { requireAuth, requireAdmin } from "./controllers/authController";
+import { requireAdmin as requireAdminAuth } from "./auth";
 import * as transactionController from "./controllers/transactionController";
 import { registerCorporateRoutes } from "./routes/corporateRoutes";
 
@@ -25,7 +26,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
   
   // Auth middleware
-  await setupAuth(app);
+  setupAuth(app);
 
   // Register route modules
   app.use('/api/auth', authRoutes);
@@ -35,6 +36,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register B2B Corporate routes
   registerCorporateRoutes(app);
+
+  // Admin user management
+  app.post("/api/admin/users", isAuthenticated, requireAdminAuth, adminController.createUser);
+  app.delete("/api/admin/users/:userId", isAuthenticated, requireAdminAuth, adminController.deleteUser);
 
   // Admin routes - require authentication and admin privileges
   app.get('/api/admin/users', requireAuth, requireAdmin, adminController.getAllUsers);

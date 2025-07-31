@@ -14,11 +14,15 @@ export const sessions = pgTable("sessions", {
 export const users = pgTable("users", {
   id: varchar("id").primaryKey(),
   email: varchar("email").notNull().unique(),
+  password: varchar("password").notNull(), // Hashed password
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   isAdmin: boolean("is_admin").default(false), // Platform admin vs regular user
   isSuperAdmin: boolean("is_super_admin").default(false), // UrbanKetl platform super admin
+  requiresPasswordReset: boolean("requires_password_reset").default(true), // First-time login password reset
+  passwordResetToken: varchar("password_reset_token"), // Token for password reset
+  passwordResetExpires: timestamp("password_reset_expires"), // Token expiration
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

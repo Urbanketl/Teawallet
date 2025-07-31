@@ -2791,7 +2791,6 @@ function UserManagement() {
   const [selectedUserDetails, setSelectedUserDetails] = useState<any>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newUserData, setNewUserData] = useState({
-    id: '',
     email: '',
     firstName: '',
     lastName: '',
@@ -2872,10 +2871,10 @@ function UserManagement() {
       });
       toast({
         title: "Success",
-        description: `User account created successfully for ${result.user.email}`,
+        description: `User account created successfully for ${result.user.email}. Generated password: ${result.generatedPassword}`,
       });
       setShowCreateForm(false);
-      setNewUserData({ id: '', email: '', firstName: '', lastName: '', role: 'business_unit_admin' });
+      setNewUserData({ email: '', firstName: '', lastName: '', role: 'business_unit_admin' });
       
       // Show credential sharing information
       toast({
@@ -2927,7 +2926,7 @@ function UserManagement() {
   });
 
   const handleCreateUser = () => {
-    if (!newUserData.id || !newUserData.email || !newUserData.firstName || !newUserData.lastName) {
+    if (!newUserData.email || !newUserData.firstName || !newUserData.lastName) {
       toast({
         title: "Error",
         description: "All fields are required",
@@ -2986,23 +2985,12 @@ function UserManagement() {
               <span>Create New User Account</span>
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Create a new business unit admin account. Share the Replit ID and email with the user for login.
+              Create a new user account with auto-generated secure password. Share the email and password with the user for login.
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="userId">Replit User ID*</Label>
-                <Input
-                  id="userId"
-                  placeholder="e.g., BU_ADMIN_004"
-                  value={newUserData.id}
-                  onChange={(e) => setNewUserData({ ...newUserData, id: e.target.value })}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Unique identifier for Replit Auth
-                </p>
-              </div>
+
               <div>
                 <Label htmlFor="email">Email Address*</Label>
                 <Input
@@ -3057,7 +3045,7 @@ function UserManagement() {
                 variant="outline"
                 onClick={() => {
                   setShowCreateForm(false);
-                  setNewUserData({ id: '', email: '', firstName: '', lastName: '', role: 'business_unit_admin' });
+                  setNewUserData({ email: '', firstName: '', lastName: '', role: 'business_unit_admin' });
                 }}
               >
                 Cancel

@@ -124,6 +124,10 @@ UrbanKetl is a comprehensive B2B corporate tea dispensing system that combines R
 - **Performance**: Query optimization and connection pooling
 
 ## Recent Changes
+- July 31, 2025: COMPLETED - Comprehensive authentication system cleanup removing ALL old Replit Auth references
+- July 31, 2025: Fixed Support Tickets page authentication - now accessible to regular users (was giving 401 errors)
+- July 31, 2025: Removed old `replitAuth.ts` file and all legacy authentication patterns from controllers
+- July 31, 2025: Standardized all authentication to use `req.user.id` pattern across entire codebase
 - July 31, 2025: FIXED - Critical authentication middleware issue preventing business units from displaying - updated all `req.user.claims.sub` references to `req.user.id` across 39+ locations
 - July 31, 2025: RESOLVED - Business units, machines, and usage logs now properly loading after fixing user ID extraction in corporate routes
 - July 31, 2025: UPDATED - Login page design with professional hero section, removing unprofessional "UK" text and adding proper UrbanKetl branding

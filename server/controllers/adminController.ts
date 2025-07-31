@@ -195,7 +195,7 @@ export async function updateUserAdminStatus(req: any, res: Response) {
   try {
     const { userId } = req.params;
     const { isAdmin } = req.body;
-    const currentUserId = req.session?.user?.id || req.user?.claims?.sub;
+    const currentUserId = req.user.id;
     
     if (!currentUserId) {
       return res.status(401).json({ message: 'Unauthorized' });
@@ -218,7 +218,7 @@ export async function updateUserAdminStatus(req: any, res: Response) {
 export async function createUserAccount(req: any, res: Response) {
   try {
     const { id, email, firstName, lastName, role } = req.body;
-    const createdBy = req.session?.user?.id || req.user?.claims?.sub;
+    const createdBy = req.user.id;
 
     if (!id || !email || !firstName || !lastName || !role) {
       return res.status(400).json({ 
@@ -261,7 +261,7 @@ export async function createUserAccount(req: any, res: Response) {
 export async function deleteUserAccount(req: any, res: Response) {
   try {
     const { userId } = req.params;
-    const deletedBy = req.session?.user?.id || req.user?.claims?.sub;
+    const deletedBy = req.user.id;
 
     if (!userId) {
       return res.status(400).json({ message: 'User ID is required' });

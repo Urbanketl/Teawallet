@@ -5,7 +5,7 @@ import { createOrder, verifyPayment } from "../razorpay";
 
 export async function getUserTransactions(req: any, res: Response) {
   try {
-    const userId = req.session?.user?.id || req.user?.claims?.sub;
+    const userId = req.user.id;
     const transactions = await storage.getUserTransactions(userId);
     res.json(transactions);
   } catch (error) {
@@ -16,7 +16,7 @@ export async function getUserTransactions(req: any, res: Response) {
 
 export async function createTransaction(req: any, res: Response) {
   try {
-    const userId = req.session?.user?.id || req.user?.claims?.sub;
+    const userId = req.user.id;
     
     // Ensure business unit is captured for transactions
     let businessUnitId = req.body.businessUnitId;
@@ -70,7 +70,7 @@ export async function createTransaction(req: any, res: Response) {
 export async function createPaymentOrder(req: any, res: Response) {
   try {
     const { amount, businessUnitId } = req.body;
-    const userId = req.session?.user?.id || req.user?.claims?.sub;
+    const userId = req.user.id;
     
     console.log('=== CREATE PAYMENT ORDER ===');
     console.log('Amount:', amount);
@@ -147,7 +147,7 @@ export async function createPaymentOrder(req: any, res: Response) {
 
 export async function verifyPaymentAndAddFunds(req: any, res: Response) {
   try {
-    const userId = req.session?.user?.id || req.user?.claims?.sub;
+    const userId = req.user.id;
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, amount, businessUnitId } = req.body;
 
     const isValid = await verifyPayment(razorpay_order_id, razorpay_payment_id, razorpay_signature);

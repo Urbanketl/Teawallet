@@ -202,14 +202,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Legacy routes (keeping for backward compatibility)
+  // Authentication user route
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      // Handle demo session
-      if (req.session?.user) {
-        return res.json(req.session.user);
-      }
-      
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       if (!user) {

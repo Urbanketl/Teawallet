@@ -5,7 +5,7 @@ export async function getCurrentUser(req: any, res: Response) {
   try {
     // Check for pseudo login parameter first
     const pseudoUserId = req.query.pseudo;
-    const userId = pseudoUserId || req.user?.id || req.session?.user?.id;
+    const userId = req.user.id;
     
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -28,7 +28,7 @@ export async function getCurrentUser(req: any, res: Response) {
 
 export async function updateUserProfile(req: any, res: Response) {
   try {
-    const userId = req.user?.id || req.session?.user?.id;
+    const userId = req.user.id;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
@@ -48,7 +48,7 @@ export function requireAuth(req: any, res: Response, next: NextFunction) {
   }
   
   // Then check for demo session
-  const userId = req.user?.id || req.session?.user?.id;
+  const userId = req.user.id;
   if (!userId) {
     return res.status(401).json({ message: "Unauthorized" });
   }
@@ -57,7 +57,7 @@ export function requireAuth(req: any, res: Response, next: NextFunction) {
 
 export async function requireAdmin(req: any, res: Response, next: NextFunction) {
   try {
-    const userId = req.user?.id || req.session?.user?.id;
+    const userId = req.user.id;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }

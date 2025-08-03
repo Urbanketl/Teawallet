@@ -1401,6 +1401,15 @@ export class DatabaseStorage implements IStorage {
       console.log('Applied default 30-day filter');
     }
 
+    // Build date conditions separately for the LEFT JOIN
+    let dateConditions = [eq(dispensingLogs.success, true)];
+    if (startDate && endDate) {
+      dateConditions.push(gte(dispensingLogs.createdAt, new Date(startDate)));
+      dateConditions.push(lte(dispensingLogs.createdAt, new Date(endDate)));
+    } else {
+      dateConditions.push(sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`);
+    }
+
     // Get all business units with their dispensing data
     const businessUnitStats = await db
       .select({
@@ -1413,7 +1422,7 @@ export class DatabaseStorage implements IStorage {
       .from(businessUnits)
       .leftJoin(dispensingLogs, and(
         eq(dispensingLogs.businessUnitId, businessUnits.id),
-        ...whereClause  // This applies all the date and success filters
+        ...dateConditions  // Apply date and success filters in LEFT JOIN
       ))
       .leftJoin(teaMachines, and(
         eq(teaMachines.businessUnitId, businessUnits.id),

@@ -277,65 +277,62 @@ export default function AnalyticsPage() {
                   <Label className="text-sm font-medium text-gray-700">Time Period</Label>
                   <div className="flex items-center space-x-2">
                     <Calendar className="w-4 h-4 text-gray-500" />
-                    <Select value={dateRange} onValueChange={(value) => {
-                      console.log('Date range changed to:', value);
-                      setDateRange(value);
-                    }}>
-                      <SelectTrigger className="flex-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1day">Last 24 Hours</SelectItem>
-                        <SelectItem value="7days">Last 7 Days</SelectItem>
-                        <SelectItem value="30days">Last 30 Days</SelectItem>
-                        <SelectItem value="thisWeek">This Week</SelectItem>
-                        <SelectItem value="thisMonth">This Month</SelectItem>
-                        <SelectItem value="custom">Custom Range</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <select 
+                      value={dateRange} 
+                      onChange={(e) => {
+                        console.log('Date range changed to:', e.target.value);
+                        setDateRange(e.target.value);
+                      }}
+                      className="flex-1 h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    >
+                      <option value="1day">Last 24 Hours</option>
+                      <option value="7days">Last 7 Days</option>
+                      <option value="30days">Last 30 Days</option>
+                      <option value="thisWeek">This Week</option>
+                      <option value="thisMonth">This Month</option>
+                      <option value="custom">Custom Range</option>
+                    </select>
                   </div>
                 </div>
 
                 {typedUser?.isSuperAdmin && (
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-gray-700">Business Unit</Label>
-                    <Select value={selectedBusinessUnit} onValueChange={(value) => {
-                      console.log('Business unit changed to:', value);
-                      setSelectedBusinessUnit(value);
-                    }}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All Business Units" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Business Units</SelectItem>
-                        {allBusinessUnits.map((bu: any) => (
-                          <SelectItem key={bu.id} value={bu.id}>
-                            {bu.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <select 
+                      value={selectedBusinessUnit} 
+                      onChange={(e) => {
+                        console.log('Business unit changed to:', e.target.value);
+                        setSelectedBusinessUnit(e.target.value);
+                      }}
+                      className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    >
+                      <option value="all">All Business Units</option>
+                      {allBusinessUnits.map((bu: any) => (
+                        <option key={bu.id} value={bu.id}>
+                          {bu.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 )}
 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-gray-700">Machine Filter</Label>
-                  <Select value={selectedMachine} onValueChange={(value) => {
-                    console.log('Machine changed to:', value);
-                    setSelectedMachine(value);
-                  }}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Machines" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Machines</SelectItem>
-                      {(allMachines as any[]).map((machine: any) => (
-                        <SelectItem key={machine.id} value={machine.id}>
-                          {machine.name || machine.id}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <select 
+                    value={selectedMachine} 
+                    onChange={(e) => {
+                      console.log('Machine changed to:', e.target.value);
+                      setSelectedMachine(e.target.value);
+                    }}
+                    className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  >
+                    <option value="all">All Machines</option>
+                    {(allMachines as any[]).map((machine: any) => (
+                      <option key={machine.id} value={machine.id}>
+                        {machine.name || machine.id}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="space-y-2">

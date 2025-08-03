@@ -1388,38 +1388,63 @@ export class DatabaseStorage implements IStorage {
   }[]> {
     console.log('getBusinessUnitComparison called with:', { startDate, endDate });
     
-    // Build date conditions for the LEFT JOIN
-    let dateConditions = [eq(dispensingLogs.success, true), isNotNull(dispensingLogs.businessUnitId)];
+    console.log('Applied date filters:', { startDate, endDate });
+
+    // Use raw SQL with proper date filtering
+    let businessUnitStats: any[];
+    
     if (startDate && endDate) {
-      dateConditions.push(gte(dispensingLogs.createdAt, new Date(startDate)));
-      dateConditions.push(lte(dispensingLogs.createdAt, new Date(endDate)));
-      console.log('Applied date filters:', { startDate, endDate });
+      businessUnitStats = await db.execute(sql`
+        SELECT 
+          bu.id,
+          bu.name,
+          COALESCE(stats.cups_dispensed, 0)::int as "cupsDispensed",
+          COALESCE(stats.revenue, '0')::text as revenue,
+          COALESCE(COUNT(DISTINCT tm.id), 0)::int as "activeMachines"
+        FROM business_units bu
+        LEFT JOIN (
+          SELECT 
+            dl.business_unit_id,
+            COUNT(*) as cups_dispensed,
+            SUM(dl.amount) as revenue
+          FROM dispensing_logs dl
+          WHERE dl.success = true 
+            AND dl.business_unit_id IS NOT NULL
+            AND dl.created_at >= ${startDate}::date
+            AND dl.created_at <= ${endDate}::date
+          GROUP BY dl.business_unit_id
+        ) stats ON stats.business_unit_id = bu.id
+        LEFT JOIN tea_machines tm ON (tm.business_unit_id = bu.id AND tm.is_active = true)
+        GROUP BY bu.id, bu.name, stats.cups_dispensed, stats.revenue
+        ORDER BY bu.name
+      `);
     } else {
-      dateConditions.push(sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`);
-      console.log('Applied default 30-day filter');
+      businessUnitStats = await db.execute(sql`
+        SELECT 
+          bu.id,
+          bu.name,
+          COALESCE(stats.cups_dispensed, 0)::int as "cupsDispensed",
+          COALESCE(stats.revenue, '0')::text as revenue,
+          COALESCE(COUNT(DISTINCT tm.id), 0)::int as "activeMachines"
+        FROM business_units bu
+        LEFT JOIN (
+          SELECT 
+            dl.business_unit_id,
+            COUNT(*) as cups_dispensed,
+            SUM(dl.amount) as revenue
+          FROM dispensing_logs dl
+          WHERE dl.success = true 
+            AND dl.business_unit_id IS NOT NULL
+            AND dl.created_at > NOW() - INTERVAL '30 days'
+          GROUP BY dl.business_unit_id
+        ) stats ON stats.business_unit_id = bu.id
+        LEFT JOIN tea_machines tm ON (tm.business_unit_id = bu.id AND tm.is_active = true)
+        GROUP BY bu.id, bu.name, stats.cups_dispensed, stats.revenue
+        ORDER BY bu.name
+      `);
     }
 
-    // Get all business units with their dispensing data
-    const businessUnitStats = await db
-      .select({
-        id: businessUnits.id,
-        name: businessUnits.name,
-        cupsDispensed: sql<number>`COALESCE(COUNT(${dispensingLogs.id}), 0)::int`,
-        revenue: sql<string>`COALESCE(SUM(${dispensingLogs.amount}), '0')::text`,
-        activeMachines: sql<number>`COALESCE(COUNT(DISTINCT ${teaMachines.id}), 0)::int`
-      })
-      .from(businessUnits)
-      .leftJoin(dispensingLogs, and(
-        eq(dispensingLogs.businessUnitId, businessUnits.id),
-        ...dateConditions  // Apply date and success filters in LEFT JOIN
-      ))
-      .leftJoin(teaMachines, and(
-        eq(teaMachines.businessUnitId, businessUnits.id),
-        eq(teaMachines.isActive, true)
-      ))
-      .groupBy(businessUnits.id, businessUnits.name);
-
-    console.log('Business unit query date conditions:', dateConditions);
+    console.log('Business unit raw SQL query executed successfully');
 
     console.log('Business unit stats query result:', businessUnitStats);
 

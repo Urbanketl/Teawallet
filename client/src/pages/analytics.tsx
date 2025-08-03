@@ -64,7 +64,7 @@ export default function AnalyticsPage() {
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
 
-  // Calculate date range
+  // Calculate date range with custom date support
   const getDateRange = () => {
     const now = new Date();
     switch (dateRange) {
@@ -78,6 +78,15 @@ export default function AnalyticsPage() {
         return { start: startOfWeek(now), end: endOfWeek(now) };
       case 'thisMonth':
         return { start: startOfMonth(now), end: endOfMonth(now) };
+      case 'custom':
+        if (customStartDate && customEndDate) {
+          return { 
+            start: new Date(customStartDate), 
+            end: new Date(customEndDate) 
+          };
+        }
+        // Fallback to last 7 days if custom dates not set
+        return { start: subDays(now, 7), end: now };
       default:
         return { start: subDays(now, 7), end: now };
     }
@@ -85,42 +94,58 @@ export default function AnalyticsPage() {
 
   const { start: startDate, end: endDate } = getDateRange();
 
-  // Ensure filters trigger query refetches with proper dependencies
+  // Enhanced Analytics Queries with complete filter support
+  const buildQueryParams = (extraParams: Record<string, string> = {}) => {
+    const params = new URLSearchParams({
+      start: format(startDate, 'yyyy-MM-dd'),
+      end: format(endDate, 'yyyy-MM-dd'),
+      ...extraParams
+    });
+    
+    if (selectedBusinessUnit && selectedBusinessUnit !== 'all') {
+      params.set('businessUnitId', selectedBusinessUnit);
+    }
+    
+    return params.toString();
+  };
+
   const { data: peakHours = [] } = useQuery<PeakHour[]>({
-    queryKey: ['/api/analytics/peak-hours', dateRange, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
-    queryFn: () => fetch(`/api/analytics/peak-hours?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`).then(res => res.json()),
+    queryKey: ['/api/analytics/peak-hours', dateRange, selectedBusinessUnit, selectedMachine, customStartDate, customEndDate, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
+    queryFn: () => {
+      const url = `/api/analytics/peak-hours?${buildQueryParams()}`;
+      console.log('Peak Hours Query URL:', url);
+      return fetch(url).then(res => res.json());
+    },
     enabled: Boolean(typedUser?.isAdmin),
   });
 
   const { data: machinePerformance = [] } = useQuery<MachinePerformance[]>({
-    queryKey: ['/api/analytics/machine-performance', dateRange, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
-    queryFn: () => fetch(`/api/analytics/machine-performance?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`).then(res => res.json()),
+    queryKey: ['/api/analytics/machine-performance', dateRange, selectedBusinessUnit, selectedMachine, customStartDate, customEndDate, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
+    queryFn: () => fetch(`/api/analytics/machine-performance?${buildQueryParams(selectedMachine !== 'all' ? { machineId: selectedMachine } : {})}`).then(res => res.json()),
     enabled: Boolean(typedUser?.isAdmin),
   });
 
   const { data: userBehavior } = useQuery<UserBehavior>({
-    queryKey: ['/api/analytics/user-behavior', dateRange, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
-    queryFn: () => fetch(`/api/analytics/user-behavior?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`).then(res => res.json()),
+    queryKey: ['/api/analytics/user-behavior', dateRange, selectedBusinessUnit, selectedMachine, customStartDate, customEndDate, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
+    queryFn: () => fetch(`/api/analytics/user-behavior?${buildQueryParams(selectedMachine !== 'all' ? { machineId: selectedMachine } : {})}`).then(res => res.json()),
     enabled: Boolean(typedUser?.isAdmin),
   });
 
-  // Enhanced Analytics Queries
   const { data: businessUnitComparison = [] } = useQuery<BusinessUnitComparison[]>({
-    queryKey: ['/api/analytics/business-unit-comparison', dateRange, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
-    queryFn: () => fetch(`/api/analytics/business-unit-comparison?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`).then(res => res.json()),
+    queryKey: ['/api/analytics/business-unit-comparison', dateRange, selectedBusinessUnit, customStartDate, customEndDate, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
+    queryFn: () => fetch(`/api/analytics/business-unit-comparison?${buildQueryParams()}`).then(res => res.json()),
     enabled: Boolean(typedUser?.isAdmin && typedUser?.isSuperAdmin),
   });
 
   const { data: revenueTrends = [] } = useQuery<RevenueTrend[]>({
-    queryKey: ['/api/analytics/revenue-trends', dateRange, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
-    queryFn: () => fetch(`/api/analytics/revenue-trends?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`).then(res => res.json()),
+    queryKey: ['/api/analytics/revenue-trends', dateRange, selectedBusinessUnit, selectedMachine, customStartDate, customEndDate, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
+    queryFn: () => fetch(`/api/analytics/revenue-trends?${buildQueryParams(selectedMachine !== 'all' ? { machineId: selectedMachine } : {})}`).then(res => res.json()),
     enabled: Boolean(typedUser?.isAdmin),
   });
 
-  // New query for machine dispensing data
   const { data: machineDispensing = [] } = useQuery<MachineDispensing[]>({
-    queryKey: ['/api/analytics/machine-dispensing', dateRange, selectedMachine, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
-    queryFn: () => fetch(`/api/analytics/machine-dispensing?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}${selectedMachine !== 'all' ? `&machineId=${selectedMachine}` : ''}`).then(res => res.json()),
+    queryKey: ['/api/analytics/machine-dispensing', dateRange, selectedBusinessUnit, selectedMachine, customStartDate, customEndDate, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
+    queryFn: () => fetch(`/api/analytics/machine-dispensing?${buildQueryParams(selectedMachine !== 'all' ? { machineId: selectedMachine } : {})}`).then(res => res.json()),
     enabled: Boolean(typedUser?.isAdmin),
   });
 
@@ -128,6 +153,12 @@ export default function AnalyticsPage() {
   const { data: allMachines = [] } = useQuery<any[]>({
     queryKey: typedUser?.isSuperAdmin ? ['/api/admin/machines'] : ['/api/corporate/machines'],
     enabled: Boolean(typedUser?.isAdmin),
+  });
+
+  // Get business units for super admin filtering
+  const { data: allBusinessUnits = [] } = useQuery<any[]>({
+    queryKey: ['/api/corporate/business-units'],
+    enabled: Boolean(typedUser?.isAdmin && typedUser?.isSuperAdmin),
   });
 
   if (isLoading) {
@@ -179,8 +210,10 @@ export default function AnalyticsPage() {
     let interval: NodeJS.Timeout;
     if (autoRefresh) {
       interval = setInterval(() => {
-        // Force refresh all queries
-        window.location.reload();
+        // Force refresh all queries using react-query's invalidation
+        import('@/lib/queryClient').then(({ queryClient }) => {
+          queryClient.invalidateQueries({ queryKey: ['/api/analytics'] });
+        });
       }, 30000); // Refresh every 30 seconds
     }
     return () => {
@@ -258,7 +291,11 @@ export default function AnalyticsPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Business Units</SelectItem>
-                        {/* Business units would be populated here */}
+                        {allBusinessUnits.map((bu: any) => (
+                          <SelectItem key={bu.id} value={bu.id}>
+                            {bu.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

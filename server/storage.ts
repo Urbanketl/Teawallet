@@ -1388,26 +1388,15 @@ export class DatabaseStorage implements IStorage {
   }[]> {
     console.log('getBusinessUnitComparison called with:', { startDate, endDate });
     
-    let whereClause = [eq(dispensingLogs.success, true)];
-    
-    // Add date filtering if provided
-    if (startDate && endDate) {
-      whereClause.push(gte(dispensingLogs.createdAt, new Date(startDate)));
-      whereClause.push(lte(dispensingLogs.createdAt, new Date(endDate)));
-      console.log('Applied date filters:', { startDate, endDate });
-    } else {
-      // Default to last 30 days if no dates provided
-      whereClause.push(sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`);
-      console.log('Applied default 30-day filter');
-    }
-
-    // Build date conditions separately for the LEFT JOIN
-    let dateConditions = [eq(dispensingLogs.success, true)];
+    // Build date conditions for the LEFT JOIN
+    let dateConditions = [eq(dispensingLogs.success, true), isNotNull(dispensingLogs.businessUnitId)];
     if (startDate && endDate) {
       dateConditions.push(gte(dispensingLogs.createdAt, new Date(startDate)));
       dateConditions.push(lte(dispensingLogs.createdAt, new Date(endDate)));
+      console.log('Applied date filters:', { startDate, endDate });
     } else {
       dateConditions.push(sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`);
+      console.log('Applied default 30-day filter');
     }
 
     // Get all business units with their dispensing data
@@ -1430,7 +1419,7 @@ export class DatabaseStorage implements IStorage {
       ))
       .groupBy(businessUnits.id, businessUnits.name);
 
-    console.log('Business unit query WHERE clause:', whereClause);
+    console.log('Business unit query date conditions:', dateConditions);
 
     console.log('Business unit stats query result:', businessUnitStats);
 

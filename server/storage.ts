@@ -1448,7 +1448,11 @@ export class DatabaseStorage implements IStorage {
   }[]> {
     console.log('getRevenueTrends called with:', { startDate, endDate, businessUnitAdminId, machineId });
     
-    let whereClause = [eq(dispensingLogs.success, true)];
+    let whereClause = [
+      eq(dispensingLogs.success, true),
+      // Exclude transactions without valid business units to match business unit comparison
+      isNotNull(dispensingLogs.businessUnitId)
+    ];
     
     if (startDate && endDate) {
       whereClause.push(gte(dispensingLogs.createdAt, new Date(startDate)));

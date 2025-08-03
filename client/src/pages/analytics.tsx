@@ -211,36 +211,43 @@ export default function AnalyticsPage() {
       return data;
     }
 
-    const weeklyData = new Map<string, { revenue: number; cups: number; dates: string[] }>();
+    const weeklyData = new Map<string, { revenue: number; cups: number; weekStart: Date; weekEnd: Date; hasData: boolean }>();
     
     data.forEach(item => {
       const date = parseISO(item.date);
-      const year = getYear(date);
-      const week = getWeek(date);
-      const weekKey = `${year}-W${week.toString().padStart(2, '0')}`;
+      const weekStart = startOfWeek(date, { weekStartsOn: 1 }); // Start week on Monday
+      const weekEnd = endOfWeek(date, { weekStartsOn: 1 });
+      const weekKey = format(weekStart, 'yyyy-MM-dd');
       
       if (!weeklyData.has(weekKey)) {
-        weeklyData.set(weekKey, { revenue: 0, cups: 0, dates: [] });
+        weeklyData.set(weekKey, { 
+          revenue: 0, 
+          cups: 0, 
+          weekStart, 
+          weekEnd,
+          hasData: false 
+        });
       }
       
       const existing = weeklyData.get(weekKey)!;
       existing.revenue += parseFloat(item.revenue);
       existing.cups += item.cups;
-      existing.dates.push(item.date);
+      existing.hasData = true;
     });
 
-    return Array.from(weeklyData.entries()).map(([weekKey, data]) => {
-      const sortedDates = data.dates.sort();
-      const startDate = format(parseISO(sortedDates[0]), 'MMM dd');
-      const endDate = format(parseISO(sortedDates[sortedDates.length - 1]), 'MMM dd');
-      
-      return {
-        date: sortedDates.length === 1 ? startDate : `${startDate} - ${endDate}`,
-        revenue: data.revenue.toFixed(2),
-        cups: data.cups,
-        avgPerCup: data.cups > 0 ? (data.revenue / data.cups).toFixed(2) : '0.00'
-      };
-    }).sort((a, b) => a.date.localeCompare(b.date));
+    return Array.from(weeklyData.entries())
+      .filter(([_, data]) => data.hasData) // Only include weeks with actual data
+      .map(([weekKey, data]) => {
+        const weekLabel = `Week of ${format(data.weekStart, 'MMM dd')}`;
+        
+        return {
+          date: weekLabel,
+          revenue: data.revenue.toFixed(2),
+          cups: data.cups,
+          avgPerCup: data.cups > 0 ? (data.revenue / data.cups).toFixed(2) : '0.00'
+        };
+      })
+      .sort((a, b) => a.date.localeCompare(b.date));
   };
 
   // Apply weekly aggregation to revenue trends

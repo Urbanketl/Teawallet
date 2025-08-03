@@ -711,7 +711,15 @@ export default function AnalyticsPage() {
               <Card className="border-0 shadow-lg">
                 <CardHeader className="flex flex-row items-center justify-between pb-4">
                   <div>
-                    <CardTitle className="text-xl font-bold text-gray-900">Peak Usage Hours</CardTitle>
+                    <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                      Peak Usage Hours
+                      <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full font-normal">
+                        {selectedBusinessUnit === 'all' 
+                          ? 'All Business Units' 
+                          : allBusinessUnits.find(bu => bu.id === selectedBusinessUnit)?.name || 'Selected Unit'
+                        }
+                      </span>
+                    </CardTitle>
                     <p className="text-sm text-gray-600 mt-1">Hourly consumption patterns throughout the day</p>
                   </div>
                   <Button

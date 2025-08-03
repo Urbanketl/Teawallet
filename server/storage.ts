@@ -1448,7 +1448,7 @@ export class DatabaseStorage implements IStorage {
 
     console.log('Business unit stats query result:', businessUnitStats);
 
-    const result = businessUnitStats.map(stat => ({
+    const result = businessUnitStats.rows.map(stat => ({
       id: stat.id,
       name: stat.name,
       cupsDispensed: stat.cupsDispensed,

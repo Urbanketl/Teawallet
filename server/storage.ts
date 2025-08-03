@@ -1444,23 +1444,29 @@ export class DatabaseStorage implements IStorage {
     cups: number;
     avgPerCup: string;
   }[]> {
+    console.log('getRevenueTrends called with:', { startDate, endDate, businessUnitAdminId, machineId });
+    
     let whereClause = [eq(dispensingLogs.success, true)];
     
     if (startDate && endDate) {
       whereClause.push(gte(dispensingLogs.createdAt, new Date(startDate)));
       whereClause.push(lte(dispensingLogs.createdAt, new Date(endDate)));
+      console.log('Applied date filters:', { startDate, endDate });
     } else {
       whereClause.push(sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`);
+      console.log('Applied default 30-day filter');
     }
     
     // Filter by business unit - use direct business unit ID
     if (businessUnitAdminId && businessUnitAdminId !== 'all') {
       whereClause.push(eq(dispensingLogs.businessUnitId, businessUnitAdminId));
+      console.log('Applied business unit filter:', businessUnitAdminId);
     }
     
     // Filter by machine if specified
     if (machineId && machineId !== 'all') {
       whereClause.push(eq(dispensingLogs.machineId, machineId));
+      console.log('Applied machine filter:', machineId);
     }
 
     const dailyRevenue = await db
@@ -1474,7 +1480,9 @@ export class DatabaseStorage implements IStorage {
       .groupBy(sql`DATE(${dispensingLogs.createdAt})`)
       .orderBy(sql`DATE(${dispensingLogs.createdAt})`);
 
-    return dailyRevenue.map(day => ({
+    console.log('Revenue trends raw data:', dailyRevenue);
+
+    const result = dailyRevenue.map(day => ({
       date: day.date,
       revenue: day.revenue,
       cups: day.cups,
@@ -1482,6 +1490,12 @@ export class DatabaseStorage implements IStorage {
         ? (parseFloat(day.revenue) / day.cups).toFixed(2)
         : '0.00'
     }));
+
+    const totalRevenue = result.reduce((sum, day) => sum + parseFloat(day.revenue), 0);
+    console.log('Revenue trends total revenue:', totalRevenue.toFixed(2));
+    console.log('Revenue trends final result:', result);
+
+    return result;
   }
 
   async getUsageTrendsByBusinessUnit(businessUnitId: string, startDate?: string, endDate?: string): Promise<{

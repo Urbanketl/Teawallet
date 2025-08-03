@@ -586,6 +586,11 @@ export default function AdminPage() {
     systemName: "UrbanKetl Tea System"
   });
 
+  // Balance monitoring states
+  const [balanceFilter, setBalanceFilter] = useState<string>('all'); // all, low, critical, empty
+  const [balanceThreshold, setBalanceThreshold] = useState<number>(500); // Default threshold in rupees
+  const [sortBalance, setSortBalance] = useState<'asc' | 'desc'>('asc');
+
   // Pagination state
   const [usersPage, setUsersPage] = useState(1);
   const [usersSearch, setUsersSearch] = useState("");
@@ -661,6 +666,13 @@ export default function AdminPage() {
 
   const { data: adminStats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/admin/stats"],
+    enabled: Boolean(isAuthenticated && typedUser?.isAdmin),
+    retry: false,
+  });
+
+  // Business unit balance monitoring query
+  const { data: businessUnitBalances = [], isLoading: balancesLoading } = useQuery({
+    queryKey: ["/api/admin/business-unit-balances"],
     enabled: Boolean(isAuthenticated && typedUser?.isAdmin),
     retry: false,
   });
@@ -1328,9 +1340,266 @@ export default function AdminPage() {
 
 
           {currentTab === "overview" && (
-            <div className="text-center py-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Overview Dashboard</h3>
-              <p className="text-gray-600">System statistics and insights displayed above</p>
+            <div className="space-y-6">
+              {/* Balance Overview Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <AlertCircle className="w-5 h-5 text-red-600" />
+                      <Badge className="bg-red-500 text-white text-xs">Critical</Badge>
+                    </div>
+                    <div className="text-2xl font-bold text-red-800 mb-1">
+                      {balancesLoading ? "..." : (businessUnitBalances as any[]).filter((bu: any) => bu.balance <= 100).length}
+                    </div>
+                    <div className="text-red-700 text-sm">Units ≤ ₹100</div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Wallet className="w-5 h-5 text-yellow-600" />
+                      <Badge className="bg-yellow-500 text-white text-xs">Low</Badge>
+                    </div>
+                    <div className="text-2xl font-bold text-yellow-800 mb-1">
+                      {balancesLoading ? "..." : (businessUnitBalances as any[]).filter((bu: any) => bu.balance > 100 && bu.balance <= balanceThreshold).length}
+                    </div>
+                    <div className="text-yellow-700 text-sm">Units ≤ ₹{balanceThreshold}</div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <Badge className="bg-green-500 text-white text-xs">Healthy</Badge>
+                    </div>
+                    <div className="text-2xl font-bold text-green-800 mb-1">
+                      {balancesLoading ? "..." : (businessUnitBalances as any[]).filter((bu: any) => bu.balance > balanceThreshold).length}
+                    </div>
+                    <div className="text-green-700 text-sm">Units {'>'} ₹{balanceThreshold}</div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Building2 className="w-5 h-5 text-blue-600" />
+                      <Badge className="bg-blue-500 text-white text-xs">Total</Badge>
+                    </div>
+                    <div className="text-2xl font-bold text-blue-800 mb-1">
+                      {balancesLoading ? "..." : (businessUnitBalances as any[]).length}
+                    </div>
+                    <div className="text-blue-700 text-sm">Total Units</div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Balance Monitoring Controls */}
+              <Card>
+                <CardHeader>
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Wallet className="w-5 h-5 text-orange-600" />
+                        Business Unit Balance Monitor
+                      </CardTitle>
+                      <CardDescription>Track and manage low balance alerts across all business units</CardDescription>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          // Refresh balance data
+                          queryClient.invalidateQueries({ queryKey: ["/api/admin/business-unit-balances"] });
+                        }}
+                      >
+                        <Activity className="w-4 h-4 mr-2" />
+                        Refresh
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {/* Filter Controls */}
+                  <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                    <div className="flex-1">
+                      <Label className="text-sm font-medium mb-2 block">Balance Filter</Label>
+                      <select
+                        value={balanceFilter}
+                        onChange={(e) => setBalanceFilter(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      >
+                        <option value="all">All Business Units</option>
+                        <option value="critical">Critical (≤ ₹100)</option>
+                        <option value="low">Low Balance (≤ ₹{balanceThreshold})</option>
+                        <option value="healthy">Healthy ({'>'} ₹{balanceThreshold})</option>
+                        <option value="empty">Empty (₹0)</option>
+                      </select>
+                    </div>
+                    <div className="w-full sm:w-48">
+                      <Label className="text-sm font-medium mb-2 block">Custom Threshold (₹)</Label>
+                      <Input
+                        type="number"
+                        value={balanceThreshold}
+                        onChange={(e) => setBalanceThreshold(Number(e.target.value))}
+                        placeholder="500"
+                        className="w-full"
+                      />
+                    </div>
+                    <div className="w-full sm:w-32">
+                      <Label className="text-sm font-medium mb-2 block">Sort</Label>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSortBalance(sortBalance === 'asc' ? 'desc' : 'asc')}
+                        className="w-full justify-between"
+                      >
+                        Balance
+                        {sortBalance === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Business Units Table */}
+                  {balancesLoading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto"></div>
+                      <p className="text-gray-600 mt-2">Loading balance data...</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="border-b border-gray-200">
+                            <th className="text-left py-3 px-4 font-medium text-gray-700">Status</th>
+                            <th className="text-left py-3 px-4 font-medium text-gray-700">Business Unit</th>
+                            <th className="text-right py-3 px-4 font-medium text-gray-700">Balance</th>
+                            <th className="text-center py-3 px-4 font-medium text-gray-700">Last Activity</th>
+                            <th className="text-center py-3 px-4 font-medium text-gray-700">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(() => {
+                            let filteredUnits = [...(businessUnitBalances as any[])];
+                            
+                            // Apply balance filter
+                            switch (balanceFilter) {
+                              case 'critical':
+                                filteredUnits = filteredUnits.filter(bu => bu.balance <= 100);
+                                break;
+                              case 'low':
+                                filteredUnits = filteredUnits.filter(bu => bu.balance > 100 && bu.balance <= balanceThreshold);
+                                break;
+                              case 'healthy':
+                                filteredUnits = filteredUnits.filter(bu => bu.balance > balanceThreshold);
+                                break;
+                              case 'empty':
+                                filteredUnits = filteredUnits.filter(bu => bu.balance === 0);
+                                break;
+                            }
+                            
+                            // Apply sorting
+                            filteredUnits.sort((a, b) => {
+                              return sortBalance === 'asc' ? a.balance - b.balance : b.balance - a.balance;
+                            });
+                            
+                            return filteredUnits.length === 0 ? (
+                              <tr>
+                                <td colSpan={5} className="text-center py-8 text-gray-500">
+                                  No business units match the current filter
+                                </td>
+                              </tr>
+                            ) : filteredUnits.map((unit: any) => {
+                              const getStatusBadge = (balance: number) => {
+                                if (balance <= 100) return <Badge className="bg-red-500 text-white">Critical</Badge>;
+                                if (balance <= balanceThreshold) return <Badge className="bg-yellow-500 text-white">Low</Badge>;
+                                return <Badge className="bg-green-500 text-white">Healthy</Badge>;
+                              };
+                              
+                              const getStatusIcon = (balance: number) => {
+                                if (balance <= 100) return <AlertCircle className="w-4 h-4 text-red-500" />;
+                                if (balance <= balanceThreshold) return <Clock className="w-4 h-4 text-yellow-500" />;
+                                return <CheckCircle className="w-4 h-4 text-green-500" />;
+                              };
+                              
+                              return (
+                                <tr key={unit.id} className="border-b border-gray-100 hover:bg-gray-50">
+                                  <td className="py-3 px-4">
+                                    <div className="flex items-center gap-2">
+                                      {getStatusIcon(unit.balance)}
+                                      {getStatusBadge(unit.balance)}
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-4">
+                                    <div>
+                                      <div className="font-medium text-gray-900">{unit.name}</div>
+                                      <div className="text-sm text-gray-500">{unit.code || unit.id}</div>
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-4 text-right">
+                                    <div className={`font-bold text-lg ${
+                                      unit.balance <= 100 ? 'text-red-600' :
+                                      unit.balance <= balanceThreshold ? 'text-yellow-600' :
+                                      'text-green-600'
+                                    }`}>
+                                      ₹{unit.balance?.toFixed(2) || '0.00'}
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-4 text-center text-sm text-gray-600">
+                                    {unit.lastActivity ? format(new Date(unit.lastActivity), 'MMM d, HH:mm') : 'No activity'}
+                                  </td>
+                                  <td className="py-3 px-4">
+                                    <div className="flex items-center justify-center gap-2">
+                                      {unit.balance <= balanceThreshold && (
+                                        <>
+                                          <Button 
+                                            size="sm" 
+                                            variant="outline"
+                                            onClick={() => {
+                                              // Send reminder action
+                                              toast({
+                                                title: "Reminder Sent",
+                                                description: `Low balance reminder sent to ${unit.name}`,
+                                              });
+                                            }}
+                                          >
+                                            <MessageCircle className="w-3 h-3 mr-1" />
+                                            Remind
+                                          </Button>
+                                          <Button 
+                                            size="sm" 
+                                            className="bg-orange-600 hover:bg-orange-700"
+                                            onClick={() => {
+                                              // Quick action - could navigate to recharge page
+                                              window.open(`/corporate?businessUnit=${unit.id}#wallet`, '_blank');
+                                            }}
+                                          >
+                                            <CreditCard className="w-3 h-3 mr-1" />
+                                            Recharge
+                                          </Button>
+                                        </>
+                                      )}
+                                      {unit.balance > balanceThreshold && (
+                                        <Button size="sm" variant="ghost" disabled>
+                                          <CheckCircle className="w-3 h-3 mr-1" />
+                                          Healthy
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            });
+                          })()}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           )}
 

@@ -49,6 +49,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/admin/users/:userId', requireAuth, requireAdmin, adminController.deleteUserAccount);
   app.patch('/api/admin/users/:userId/admin-status', requireAuth, requireAdmin, adminController.updateUserAdminStatus);
   app.get('/api/admin/stats', requireAuth, requireAdmin, adminController.getDashboardStats);
+  app.get('/api/admin/business-unit-balances', requireAuth, requireAdmin, adminController.getBusinessUnitBalances);
   app.get('/api/admin/rfid/cards', requireAuth, requireAdmin, async (req: any, res) => {
     try {
       const page = parseInt(req.query.page as string);

@@ -33,6 +33,36 @@ export async function getDashboardStats(req: any, res: Response) {
   }
 }
 
+export async function getBusinessUnitBalances(req: any, res: Response) {
+  try {
+    const businessUnits = await storage.getAllBusinessUnits();
+    
+    // Map business units to include balance and last activity information
+    const businessUnitBalances = businessUnits.map((unit: any) => ({
+      id: unit.id,
+      name: unit.name,
+      code: unit.code,
+      balance: parseFloat(unit.walletBalance || '0'),
+      walletBalance: unit.walletBalance,
+      contactEmail: unit.contactEmail,
+      contactPhone: unit.contactPhone,
+      address: unit.address,
+      isActive: unit.isActive,
+      createdAt: unit.createdAt,
+      // Calculate status based on balance
+      status: parseFloat(unit.walletBalance || '0') === 0 ? 'empty' 
+             : parseFloat(unit.walletBalance || '0') <= 100 ? 'critical'
+             : parseFloat(unit.walletBalance || '0') <= 500 ? 'low'
+             : 'healthy'
+    }));
+
+    res.json(businessUnitBalances);
+  } catch (error) {
+    console.error('Error fetching business unit balances:', error);
+    res.status(500).json({ message: 'Failed to fetch business unit balances' });
+  }
+}
+
 export async function getAllRfidCards(req: any, res: Response) {
   try {
     const cards = await storage.getAllRfidCards();

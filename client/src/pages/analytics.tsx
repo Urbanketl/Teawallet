@@ -872,15 +872,30 @@ export default function AnalyticsPage() {
               <p className="text-sm text-gray-600 mt-1">Individual machine dispensing trends and performance metrics</p>
             </div>
             <div className="flex items-center gap-3">
+              {typedUser?.isSuperAdmin && (
+                <Select value={selectedBusinessUnit} onValueChange={setSelectedBusinessUnit}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="All Business Units" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Business Units</SelectItem>
+                    {(allBusinessUnits as any[]).map((bu: any) => (
+                      <SelectItem key={bu.id} value={bu.id}>
+                        {bu.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               <Select value={selectedMachine} onValueChange={setSelectedMachine}>
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="All Machines" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Machines</SelectItem>
-                  {(allMachines as any[]).map((machine: any) => (
+                  {(filteredMachines as any[]).map((machine: any) => (
                     <SelectItem key={machine.id} value={machine.id}>
-                      {machine.name} ({machine.id})
+                      {machine.name || machine.id}
                     </SelectItem>
                   ))}
                 </SelectContent>

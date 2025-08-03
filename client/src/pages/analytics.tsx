@@ -485,16 +485,61 @@ export default function AnalyticsPage() {
                     <CardTitle className="text-xl font-bold text-gray-900">Revenue Trends</CardTitle>
                     <p className="text-sm text-gray-600 mt-1">Daily revenue and cup dispensing patterns</p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsFullscreen(isFullscreen === 'revenue' ? null : 'revenue')}
-                  >
-                    <Maximize2 className="w-4 h-4" />
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {/* Quick Date Selection for Trends */}
+                    <div className="flex bg-gray-100 rounded-lg p-1">
+                      <button
+                        className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                          dateRange === '7days' 
+                            ? 'bg-white text-gray-900 shadow-sm' 
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                        onClick={() => setDateRange('7days')}
+                      >
+                        7d
+                      </button>
+                      <button
+                        className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                          dateRange === '30days' 
+                            ? 'bg-white text-gray-900 shadow-sm' 
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                        onClick={() => setDateRange('30days')}
+                      >
+                        30d
+                      </button>
+                      <button
+                        className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                          dateRange === '90days' 
+                            ? 'bg-white text-gray-900 shadow-sm' 
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                        onClick={() => setDateRange('90days')}
+                      >
+                        90d
+                      </button>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsFullscreen(isFullscreen === 'revenue' ? null : 'revenue')}
+                    >
+                      <Maximize2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent className="pt-2">
-                  <ResponsiveContainer width="100%" height={isFullscreen === 'revenue' ? 500 : 350}>
+                  {revenueTrends.length === 0 && (
+                    <div className="flex items-center justify-center h-[350px] text-gray-500">
+                      <div className="text-center">
+                        <BarChart3 className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                        <p className="text-sm">No revenue data available for selected period</p>
+                        <p className="text-xs text-gray-400 mt-1">Try selecting a different date range</p>
+                      </div>
+                    </div>
+                  )}
+                  {revenueTrends.length > 0 && (
+                    <ResponsiveContainer width="100%" height={isFullscreen === 'revenue' ? 500 : 350}>
                     <AreaChart data={revenueTrends} margin={{ top: 10, right: 30, left: 0, bottom: 60 }}>
                       <defs>
                         <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
@@ -534,8 +579,8 @@ export default function AnalyticsPage() {
                           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                         }}
                         formatter={(value, name) => [
-                          name === 'revenue' ? `₹${Number(value).toFixed(2)}` : `${value} cups`,
-                          name === 'revenue' ? 'Revenue' : 'Cups Dispensed'
+                          name === 'Daily Revenue' ? `₹${Number(value).toFixed(2)}` : `${value} cups`,
+                          name === 'Daily Revenue' ? 'Daily Revenue' : 'Cups Dispensed'
                         ]}
                         labelFormatter={(label) => `Date: ${label}`}
                       />
@@ -560,6 +605,34 @@ export default function AnalyticsPage() {
                       />
                     </AreaChart>
                   </ResponsiveContainer>
+                  )}
+                  
+                  {revenueTrends.length > 0 && (
+                    <div className="mt-4 pt-4 border-t grid grid-cols-3 gap-4 text-center">
+                      <div>
+                        <p className="text-xs text-gray-500">Total Revenue</p>
+                        <p className="text-lg font-semibold text-[#F49E1B]">
+                          ₹{revenueTrends.reduce((sum, day) => sum + parseFloat(day.revenue), 0).toFixed(2)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Total Cups</p>
+                        <p className="text-lg font-semibold text-green-600">
+                          {revenueTrends.reduce((sum, day) => sum + day.cups, 0)} cups
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Avg per Cup</p>
+                        <p className="text-lg font-semibold text-gray-700">
+                          ₹{(() => {
+                            const totalRevenue = revenueTrends.reduce((sum, day) => sum + parseFloat(day.revenue), 0);
+                            const totalCups = revenueTrends.reduce((sum, day) => sum + day.cups, 0);
+                            return totalCups > 0 ? (totalRevenue / totalCups).toFixed(2) : '0.00';
+                          })()}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 

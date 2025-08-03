@@ -94,6 +94,17 @@ export default function AnalyticsPage() {
 
   const { start: startDate, end: endDate } = getDateRange();
 
+  // Debug current filter state
+  console.log('Current filter state:', {
+    dateRange,
+    selectedBusinessUnit,
+    selectedMachine,
+    customStartDate,
+    customEndDate,
+    startDate: format(startDate, 'yyyy-MM-dd'),
+    endDate: format(endDate, 'yyyy-MM-dd')
+  });
+
   // Enhanced Analytics Queries with complete filter support
   const buildQueryParams = (extraParams: Record<string, string> = {}) => {
     const params = new URLSearchParams({
@@ -266,7 +277,10 @@ export default function AnalyticsPage() {
                   <Label className="text-sm font-medium text-gray-700">Time Period</Label>
                   <div className="flex items-center space-x-2">
                     <Calendar className="w-4 h-4 text-gray-500" />
-                    <Select value={dateRange} onValueChange={setDateRange}>
+                    <Select value={dateRange} onValueChange={(value) => {
+                      console.log('Date range changed to:', value);
+                      setDateRange(value);
+                    }}>
                       <SelectTrigger className="flex-1">
                         <SelectValue />
                       </SelectTrigger>
@@ -285,7 +299,10 @@ export default function AnalyticsPage() {
                 {typedUser?.isSuperAdmin && (
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-gray-700">Business Unit</Label>
-                    <Select value={selectedBusinessUnit} onValueChange={setSelectedBusinessUnit}>
+                    <Select value={selectedBusinessUnit} onValueChange={(value) => {
+                      console.log('Business unit changed to:', value);
+                      setSelectedBusinessUnit(value);
+                    }}>
                       <SelectTrigger>
                         <SelectValue placeholder="All Business Units" />
                       </SelectTrigger>
@@ -303,7 +320,10 @@ export default function AnalyticsPage() {
 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-gray-700">Machine Filter</Label>
-                  <Select value={selectedMachine} onValueChange={setSelectedMachine}>
+                  <Select value={selectedMachine} onValueChange={(value) => {
+                    console.log('Machine changed to:', value);
+                    setSelectedMachine(value);
+                  }}>
                     <SelectTrigger>
                       <SelectValue placeholder="All Machines" />
                     </SelectTrigger>
@@ -311,7 +331,7 @@ export default function AnalyticsPage() {
                       <SelectItem value="all">All Machines</SelectItem>
                       {(allMachines as any[]).map((machine: any) => (
                         <SelectItem key={machine.id} value={machine.id}>
-                          {machine.name}
+                          {machine.name || machine.id}
                         </SelectItem>
                       ))}
                     </SelectContent>

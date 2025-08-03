@@ -1469,6 +1469,17 @@ export class DatabaseStorage implements IStorage {
       console.log('Applied machine filter:', machineId);
     }
 
+    // First get total revenue to verify consistency
+    const totalStats = await db
+      .select({
+        totalRevenue: sql<string>`COALESCE(SUM(${dispensingLogs.amount}), '0')::text`,
+        totalCups: sql<number>`COUNT(*)::int`
+      })
+      .from(dispensingLogs)
+      .where(and(...whereClause));
+
+    console.log('Revenue trends total stats verification:', totalStats[0]);
+
     const dailyRevenue = await db
       .select({
         date: sql<string>`DATE(${dispensingLogs.createdAt})::text`,

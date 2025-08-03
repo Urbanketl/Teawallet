@@ -1413,13 +1413,15 @@ export class DatabaseStorage implements IStorage {
       .from(businessUnits)
       .leftJoin(dispensingLogs, and(
         eq(dispensingLogs.businessUnitId, businessUnits.id),
-        ...whereClause
+        ...whereClause  // This applies all the date and success filters
       ))
       .leftJoin(teaMachines, and(
         eq(teaMachines.businessUnitId, businessUnits.id),
         eq(teaMachines.isActive, true)
       ))
       .groupBy(businessUnits.id, businessUnits.name);
+
+    console.log('Business unit query WHERE clause:', whereClause);
 
     console.log('Business unit stats query result:', businessUnitStats);
 

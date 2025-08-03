@@ -109,6 +109,13 @@ export default function AnalyticsPage() {
 
   // Enhanced Analytics Queries with complete filter support
   const buildQueryParams = (extraParams: Record<string, string> = {}) => {
+    console.log('buildQueryParams called with:', {
+      selectedBusinessUnit,
+      selectedMachine,
+      startDate: format(startDate, 'yyyy-MM-dd'),
+      endDate: format(endDate, 'yyyy-MM-dd')
+    });
+    
     const params = new URLSearchParams({
       start: format(startDate, 'yyyy-MM-dd'),
       end: format(endDate, 'yyyy-MM-dd'),
@@ -116,14 +123,18 @@ export default function AnalyticsPage() {
     });
     
     if (selectedBusinessUnit && selectedBusinessUnit !== 'all') {
+      console.log('Adding businessUnitId to params:', selectedBusinessUnit);
       params.set('businessUnitId', selectedBusinessUnit);
     }
     
     if (selectedMachine && selectedMachine !== 'all') {
+      console.log('Adding machineId to params:', selectedMachine);
       params.set('machineId', selectedMachine);
     }
     
-    return params.toString();
+    const queryString = params.toString();
+    console.log('Final query string:', queryString);
+    return queryString;
   };
 
   const { data: peakHours = [] } = useQuery<PeakHour[]>({
@@ -873,40 +884,52 @@ export default function AnalyticsPage() {
             </div>
             <div className="flex items-center gap-3">
               {typedUser?.isSuperAdmin && (
-                <Select value={selectedBusinessUnit} onValueChange={setSelectedBusinessUnit}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="All Business Units" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Business Units</SelectItem>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-600">Business Unit</label>
+                  <select 
+                    value={selectedBusinessUnit} 
+                    onChange={(e) => {
+                      console.log('Chart Business unit changed to:', e.target.value);
+                      setSelectedBusinessUnit(e.target.value);
+                    }}
+                    className="h-9 w-48 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  >
+                    <option value="all">All Business Units</option>
                     {(allBusinessUnits as any[]).map((bu: any) => (
-                      <SelectItem key={bu.id} value={bu.id}>
+                      <option key={bu.id} value={bu.id}>
                         {bu.name}
-                      </SelectItem>
+                      </option>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </select>
+                </div>
               )}
-              <Select value={selectedMachine} onValueChange={setSelectedMachine}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="All Machines" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Machines</SelectItem>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-600">Machine</label>
+                <select 
+                  value={selectedMachine} 
+                  onChange={(e) => {
+                    console.log('Chart Machine changed to:', e.target.value);
+                    setSelectedMachine(e.target.value);
+                  }}
+                  className="h-9 w-48 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                >
+                  <option value="all">All Machines</option>
                   {(filteredMachines as any[]).map((machine: any) => (
-                    <SelectItem key={machine.id} value={machine.id}>
+                    <option key={machine.id} value={machine.id}>
                       {machine.name || machine.id}
-                    </SelectItem>
+                    </option>
                   ))}
-                </SelectContent>
-              </Select>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsFullscreen(isFullscreen === 'machines' ? null : 'machines')}
-              >
-                <Maximize2 className="w-4 h-4" />
-              </Button>
+                </select>
+              </div>
+              <div className="pt-6">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsFullscreen(isFullscreen === 'machines' ? null : 'machines')}
+                >
+                  <Maximize2 className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>

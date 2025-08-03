@@ -11,7 +11,7 @@ import Navigation from "@/components/Navigation";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart } from 'recharts';
 import { TrendingUp, Clock, Coffee, Activity, Users, DollarSign, Calendar, Download, Building2, Filter, RefreshCw, Maximize2, Eye, BarChart3 } from "lucide-react";
 import React, { useState, useEffect } from "react";
-import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
+import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek, parseISO, getWeek, getYear } from "date-fns";
 import type { User } from "@shared/schema";
 
 // Type definitions for API responses
@@ -203,6 +203,50 @@ export default function AnalyticsPage() {
     queryKey: ['/api/corporate/business-units'],
     enabled: Boolean(typedUser?.isAdmin && typedUser?.isSuperAdmin),
   });
+
+  // Weekly aggregation function for revenue trends
+  const aggregateRevenueByWeek = (data: RevenueTrend[]) => {
+    if (dateRange === '7days' || dateRange === '1day') {
+      // Keep daily view for short ranges
+      return data;
+    }
+
+    const weeklyData = new Map<string, { revenue: number; cups: number; dates: string[] }>();
+    
+    data.forEach(item => {
+      const date = parseISO(item.date);
+      const year = getYear(date);
+      const week = getWeek(date);
+      const weekKey = `${year}-W${week.toString().padStart(2, '0')}`;
+      
+      if (!weeklyData.has(weekKey)) {
+        weeklyData.set(weekKey, { revenue: 0, cups: 0, dates: [] });
+      }
+      
+      const existing = weeklyData.get(weekKey)!;
+      existing.revenue += parseFloat(item.revenue);
+      existing.cups += item.cups;
+      existing.dates.push(item.date);
+    });
+
+    return Array.from(weeklyData.entries()).map(([weekKey, data]) => {
+      const sortedDates = data.dates.sort();
+      const startDate = format(parseISO(sortedDates[0]), 'MMM dd');
+      const endDate = format(parseISO(sortedDates[sortedDates.length - 1]), 'MMM dd');
+      
+      return {
+        date: sortedDates.length === 1 ? startDate : `${startDate} - ${endDate}`,
+        revenue: data.revenue.toFixed(2),
+        cups: data.cups,
+        avgPerCup: data.cups > 0 ? (data.revenue / data.cups).toFixed(2) : '0.00'
+      };
+    }).sort((a, b) => a.date.localeCompare(b.date));
+  };
+
+  // Apply weekly aggregation to revenue trends
+  const processedRevenueTrends = React.useMemo(() => {
+    return aggregateRevenueByWeek(revenueTrends);
+  }, [revenueTrends, dateRange]);
 
   if (isLoading) {
     return (
@@ -485,7 +529,17 @@ export default function AnalyticsPage() {
                 <CardHeader className="flex flex-row items-center justify-between pb-4">
                   <div>
                     <CardTitle className="text-xl font-bold text-gray-900">Revenue Trends</CardTitle>
-                    <p className="text-sm text-gray-600 mt-1">Daily revenue and cup dispensing patterns</p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {dateRange === '7days' || dateRange === '1day' 
+                        ? 'Daily revenue and cup dispensing patterns' 
+                        : 'Weekly aggregated revenue and cup dispensing patterns'
+                      }
+                      {(dateRange === '30days' || dateRange === '90days') && (
+                        <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                          Grouped by week
+                        </span>
+                      )}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     {/* Quick Date Selection for Trends */}
@@ -531,7 +585,7 @@ export default function AnalyticsPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="pt-2">
-                  {revenueTrends.length === 0 && (
+                  {processedRevenueTrends.length === 0 && (
                     <div className="flex items-center justify-center h-[350px] text-gray-500">
                       <div className="text-center">
                         <BarChart3 className="w-12 h-12 mx-auto mb-3 text-gray-300" />
@@ -540,9 +594,9 @@ export default function AnalyticsPage() {
                       </div>
                     </div>
                   )}
-                  {revenueTrends.length > 0 && (
+                  {processedRevenueTrends.length > 0 && (
                     <ResponsiveContainer width="100%" height={isFullscreen === 'revenue' ? 500 : 350}>
-                    <AreaChart data={revenueTrends} margin={{ top: 10, right: 30, left: 0, bottom: 60 }}>
+                    <AreaChart data={processedRevenueTrends} margin={{ top: 10, right: 30, left: 0, bottom: 60 }}>
                       <defs>
                         <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#F49E1B" stopOpacity={0.3}/>
@@ -560,7 +614,7 @@ export default function AnalyticsPage() {
                         angle={-45} 
                         textAnchor="end" 
                         height={80}
-                        interval={0}
+                        interval={dateRange === '90days' ? 'preserveStartEnd' : 0}
                       />
                       <YAxis 
                         yAxisId="left"
@@ -609,26 +663,26 @@ export default function AnalyticsPage() {
                   </ResponsiveContainer>
                   )}
                   
-                  {revenueTrends.length > 0 && (
+                  {processedRevenueTrends.length > 0 && (
                     <div className="mt-4 pt-4 border-t grid grid-cols-3 gap-4 text-center">
                       <div>
                         <p className="text-xs text-gray-500">Total Revenue</p>
                         <p className="text-lg font-semibold text-[#F49E1B]">
-                          ₹{revenueTrends.reduce((sum, day) => sum + parseFloat(day.revenue), 0).toFixed(2)}
+                          ₹{processedRevenueTrends.reduce((sum, day) => sum + parseFloat(day.revenue), 0).toFixed(2)}
                         </p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Total Cups</p>
                         <p className="text-lg font-semibold text-green-600">
-                          {revenueTrends.reduce((sum, day) => sum + day.cups, 0)} cups
+                          {processedRevenueTrends.reduce((sum, day) => sum + day.cups, 0)} cups
                         </p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Avg per Cup</p>
                         <p className="text-lg font-semibold text-gray-700">
                           ₹{(() => {
-                            const totalRevenue = revenueTrends.reduce((sum, day) => sum + parseFloat(day.revenue), 0);
-                            const totalCups = revenueTrends.reduce((sum, day) => sum + day.cups, 0);
+                            const totalRevenue = processedRevenueTrends.reduce((sum, day) => sum + parseFloat(day.revenue), 0);
+                            const totalCups = processedRevenueTrends.reduce((sum, day) => sum + day.cups, 0);
                             return totalCups > 0 ? (totalRevenue / totalCups).toFixed(2) : '0.00';
                           })()}
                         </p>

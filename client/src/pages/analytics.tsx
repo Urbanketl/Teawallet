@@ -799,6 +799,27 @@ export default function AnalyticsPage() {
                 <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
                   <Building2 className="h-6 w-6 text-[#F49E1B]" />
                   Business Unit Performance Comparison
+                  {/* Filter Indicators */}
+                  <div className="flex items-center gap-2 ml-4">
+                    <Badge variant="outline" className="text-xs text-gray-600 border-gray-300">
+                      📅 {dateRange === 'custom' ? `${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d')}` : 
+                          dateRange === '1day' ? 'Last 24 Hours' :
+                          dateRange === '7days' ? 'Last 7 Days' :
+                          dateRange === '30days' ? 'Last 30 Days' :
+                          dateRange === 'thisWeek' ? 'This Week' :
+                          dateRange === 'thisMonth' ? 'This Month' : '7 Days'}
+                    </Badge>
+                    {selectedBusinessUnit && selectedBusinessUnit !== 'all' && (
+                      <Badge variant="outline" className="text-xs text-blue-600 border-blue-300">
+                        🏢 {allBusinessUnits.find((bu: any) => bu.id === selectedBusinessUnit)?.name || selectedBusinessUnit}
+                      </Badge>
+                    )}
+                    {selectedMachine && selectedMachine !== 'all' && (
+                      <Badge variant="outline" className="text-xs text-green-600 border-green-300">
+                        ⚙️ {allMachines.find((m: any) => m.id === selectedMachine)?.name || selectedMachine}
+                      </Badge>
+                    )}
+                  </div>
                 </CardTitle>
                 <p className="text-sm text-gray-600 mt-1">Cross-unit revenue and consumption analysis</p>
               </div>

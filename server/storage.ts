@@ -1442,13 +1442,9 @@ export class DatabaseStorage implements IStorage {
       whereClause.push(sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`);
     }
     
-    // Filter by business unit admin for regular admins
+    // Filter by business unit - use direct business unit ID
     if (businessUnitAdminId && businessUnitAdminId !== 'all') {
-      const userUnits = await this.getUserBusinessUnits(businessUnitAdminId);
-      const unitIds = userUnits.map(unit => unit.id);
-      if (unitIds.length > 0) {
-        whereClause.push(inArray(dispensingLogs.businessUnitId, unitIds));
-      }
+      whereClause.push(eq(dispensingLogs.businessUnitId, businessUnitAdminId));
     }
     
     // Filter by machine if specified

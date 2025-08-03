@@ -63,11 +63,11 @@ router.get('/revenue-trends', async (req, res) => {
   try {
     const { start, end, businessUnitId, machineId } = req.query;
     console.log('Revenue trends query params:', { start, end, businessUnitId, machineId });
-    // Note: getRevenueTrends uses businessUnitAdminId parameter for filtering
+    // Note: getRevenueTrends now uses direct businessUnitId filtering
     const revenueTrends = await storage.getRevenueTrends(
       start as string, 
       end as string, 
-      businessUnitId as string,  // This will be passed as businessUnitAdminId
+      businessUnitId as string,  // Direct business unit ID filtering
       machineId as string
     );
     res.json(revenueTrends);

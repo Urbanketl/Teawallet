@@ -117,6 +117,10 @@ export default function AnalyticsPage() {
       params.set('businessUnitId', selectedBusinessUnit);
     }
     
+    if (selectedMachine && selectedMachine !== 'all') {
+      params.set('machineId', selectedMachine);
+    }
+    
     return params.toString();
   };
 
@@ -132,13 +136,13 @@ export default function AnalyticsPage() {
 
   const { data: machinePerformance = [] } = useQuery<MachinePerformance[]>({
     queryKey: ['/api/analytics/machine-performance', dateRange, selectedBusinessUnit, selectedMachine, customStartDate, customEndDate, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
-    queryFn: () => fetch(`/api/analytics/machine-performance?${buildQueryParams(selectedMachine !== 'all' ? { machineId: selectedMachine } : {})}`).then(res => res.json()),
+    queryFn: () => fetch(`/api/analytics/machine-performance?${buildQueryParams()}`).then(res => res.json()),
     enabled: Boolean(typedUser?.isAdmin),
   });
 
   const { data: userBehavior } = useQuery<UserBehavior>({
     queryKey: ['/api/analytics/user-behavior', dateRange, selectedBusinessUnit, selectedMachine, customStartDate, customEndDate, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
-    queryFn: () => fetch(`/api/analytics/user-behavior?${buildQueryParams(selectedMachine !== 'all' ? { machineId: selectedMachine } : {})}`).then(res => res.json()),
+    queryFn: () => fetch(`/api/analytics/user-behavior?${buildQueryParams()}`).then(res => res.json()),
     enabled: Boolean(typedUser?.isAdmin),
   });
 
@@ -150,13 +154,13 @@ export default function AnalyticsPage() {
 
   const { data: revenueTrends = [] } = useQuery<RevenueTrend[]>({
     queryKey: ['/api/analytics/revenue-trends', dateRange, selectedBusinessUnit, selectedMachine, customStartDate, customEndDate, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
-    queryFn: () => fetch(`/api/analytics/revenue-trends?${buildQueryParams(selectedMachine !== 'all' ? { machineId: selectedMachine } : {})}`).then(res => res.json()),
+    queryFn: () => fetch(`/api/analytics/revenue-trends?${buildQueryParams()}`).then(res => res.json()),
     enabled: Boolean(typedUser?.isAdmin),
   });
 
   const { data: machineDispensing = [] } = useQuery<MachineDispensing[]>({
     queryKey: ['/api/analytics/machine-dispensing', dateRange, selectedBusinessUnit, selectedMachine, customStartDate, customEndDate, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
-    queryFn: () => fetch(`/api/analytics/machine-dispensing?${buildQueryParams(selectedMachine !== 'all' ? { machineId: selectedMachine } : {})}`).then(res => res.json()),
+    queryFn: () => fetch(`/api/analytics/machine-dispensing?${buildQueryParams()}`).then(res => res.json()),
     enabled: Boolean(typedUser?.isAdmin),
   });
 

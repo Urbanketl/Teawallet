@@ -895,70 +895,94 @@ export default function AnalyticsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {/* Enhanced Machine Performance Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
-              {(machinePerformance as any[]).map((machine: any, index) => (
-                <Card 
-                  key={machine.machineId} 
-                  className="bg-gradient-to-br from-white to-gray-50 border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300"
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                        <div 
-                          className="w-4 h-4 rounded-full" 
-                          style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                        />
-                        Machine {machine.machineId}
-                      </CardTitle>
-                      <div className={`w-3 h-3 rounded-full ${machine.uptime > 95 ? 'bg-green-400' : machine.uptime > 80 ? 'bg-yellow-400' : 'bg-red-400'}`} />
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Uptime</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full rounded-full transition-all duration-300 ${
-                                machine.uptime > 95 ? 'bg-green-500' : 
-                                machine.uptime > 80 ? 'bg-yellow-500' : 'bg-red-500'
-                              }`}
-                              style={{ width: `${machine.uptime}%` }}
-                            />
-                          </div>
-                          <Badge variant="outline" className={`text-xs ${
-                            machine.uptime > 95 ? 'text-green-600 border-green-200' : 
-                            machine.uptime > 80 ? 'text-yellow-600 border-yellow-200' : 
-                            'text-red-600 border-red-200'
-                          }`}>
-                            {machine.uptime}%
-                          </Badge>
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Total Dispensed</span>
-                        <span className="font-semibold text-[#F49E1B]">
-                          {machine.totalDispensed.toLocaleString()} cups
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Revenue Generated</span>
-                        <span className="font-semibold text-green-600">
-                          ₹{(machine.totalDispensed * 5).toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Daily Average</span>
-                        <span className="text-sm font-semibold text-gray-900">
-                          {Math.round(machine.totalDispensed / Math.max(1, Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))))} cups/day
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            {/* Machine Performance Bar Chart */}
+            <div className="mb-8">
+              {machinePerformance.length === 0 ? (
+                <div className="flex items-center justify-center h-[400px] text-gray-500">
+                  <div className="text-center">
+                    <Coffee className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                    <p className="text-sm">No machine performance data available for selected period</p>
+                    <p className="text-xs text-gray-400 mt-1">Try selecting a different date range or business unit</p>
+                  </div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={isFullscreen === 'machines' ? 600 : 400}>
+                  <BarChart 
+                    data={machinePerformance.map((machine: any) => ({
+                      machineId: `${machine.machineId}`,
+                      totalDispensed: machine.totalDispensed,
+                      uptime: machine.uptime,
+                      dailyAverage: Math.round(machine.totalDispensed / Math.max(1, Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)))),
+                      revenue: machine.totalDispensed * 5
+                    }))}
+                    margin={{ top: 20, right: 30, left: 0, bottom: 60 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis 
+                      dataKey="machineId" 
+                      tick={{ fontSize: 12, fill: '#666' }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis 
+                      yAxisId="left"
+                      tick={{ fontSize: 12, fill: '#666' }}
+                      tickFormatter={(value) => `${value}`}
+                    />
+                    <YAxis 
+                      yAxisId="right"
+                      orientation="right"
+                      tick={{ fontSize: 12, fill: '#666' }}
+                      tickFormatter={(value) => `${value}%`}
+                    />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'white',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      }}
+                      formatter={(value, name) => {
+                        switch(name) {
+                          case 'Total Dispensed':
+                            return [`${value} cups`, name];
+                          case 'Uptime':
+                            return [`${value}%`, name];
+                          case 'Daily Average':
+                            return [`${value} cups/day`, name];
+                          case 'Revenue Generated':
+                            return [`₹${value}`, name];
+                          default:
+                            return [value, name];
+                        }
+                      }}
+                    />
+                    <Legend />
+                    <Bar 
+                      yAxisId="left"
+                      dataKey="totalDispensed" 
+                      name="Total Dispensed" 
+                      fill="#F49E1B"
+                      radius={[2, 2, 0, 0]}
+                    />
+                    <Bar 
+                      yAxisId="right"
+                      dataKey="uptime" 
+                      name="Uptime" 
+                      fill="#22c55e"
+                      radius={[2, 2, 0, 0]}
+                    />
+                    <Bar 
+                      yAxisId="left"
+                      dataKey="dailyAverage" 
+                      name="Daily Average" 
+                      fill="#3b82f6"
+                      radius={[2, 2, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
 
             {/* Enhanced Dispensing Chart */}

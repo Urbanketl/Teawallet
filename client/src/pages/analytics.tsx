@@ -74,6 +74,8 @@ export default function AnalyticsPage() {
         return { start: subDays(now, 7), end: now };
       case '30days':
         return { start: subDays(now, 30), end: now };
+      case '90days':
+        return { start: subDays(now, 90), end: now };
       case 'thisWeek':
         return { start: startOfWeek(now), end: endOfWeek(now) };
       case 'thisMonth':

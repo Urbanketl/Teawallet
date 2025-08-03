@@ -1427,7 +1427,7 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async getRevenueTrends(startDate?: string, endDate?: string, businessUnitAdminId?: string): Promise<{
+  async getRevenueTrends(startDate?: string, endDate?: string, businessUnitAdminId?: string, machineId?: string): Promise<{
     date: string;
     revenue: string;
     cups: number;
@@ -1443,12 +1443,17 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Filter by business unit admin for regular admins
-    if (businessUnitAdminId) {
+    if (businessUnitAdminId && businessUnitAdminId !== 'all') {
       const userUnits = await this.getUserBusinessUnits(businessUnitAdminId);
       const unitIds = userUnits.map(unit => unit.id);
       if (unitIds.length > 0) {
         whereClause.push(inArray(dispensingLogs.businessUnitId, unitIds));
       }
+    }
+    
+    // Filter by machine if specified
+    if (machineId && machineId !== 'all') {
+      whereClause.push(eq(dispensingLogs.machineId, machineId));
     }
 
     const dailyRevenue = await db
@@ -2171,7 +2176,7 @@ export class DatabaseStorage implements IStorage {
 
   // Analytics operations (removed getPopularTeaTypes - only serves Regular Tea)
 
-  async getPeakHours(startDate?: string, endDate?: string, businessUnitId?: string): Promise<{ hour: number; count: number }[]> {
+  async getPeakHours(startDate?: string, endDate?: string, businessUnitId?: string, machineId?: string): Promise<{ hour: number; count: number }[]> {
     let whereClause = sql`1=1`;
     
     if (startDate && endDate) {
@@ -2181,8 +2186,13 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Filter by business unit admin if specified (for regular admins)
-    if (businessUnitId) {
+    if (businessUnitId && businessUnitId !== 'all') {
       whereClause = sql`${whereClause} AND ${dispensingLogs.businessUnitId} = ${businessUnitId}`;
+    }
+    
+    // Filter by machine if specified
+    if (machineId && machineId !== 'all') {
+      whereClause = sql`${whereClause} AND ${dispensingLogs.machineId} = ${machineId}`;
     }
     
     return await db
@@ -2196,7 +2206,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(sql`EXTRACT(HOUR FROM ${dispensingLogs.createdAt})`);
   }
 
-  async getMachinePerformance(startDate?: string, endDate?: string, businessUnitId?: string): Promise<{ machineId: string; uptime: number; totalDispensed: number }[]> {
+  async getMachinePerformance(startDate?: string, endDate?: string, businessUnitId?: string, machineId?: string): Promise<{ machineId: string; uptime: number; totalDispensed: number }[]> {
     let whereClause = sql`1=1`;
     
     if (startDate && endDate) {
@@ -2206,8 +2216,13 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Filter by business unit admin if specified (for regular admins)
-    if (businessUnitId) {
+    if (businessUnitId && businessUnitId !== 'all') {
       whereClause = sql`${whereClause} AND ${dispensingLogs.businessUnitId} = ${businessUnitId}`;
+    }
+    
+    // Filter by machine if specified
+    if (machineId && machineId !== 'all') {
+      whereClause = sql`${whereClause} AND ${dispensingLogs.machineId} = ${machineId}`;
     }
     
     const machineStats = await db
@@ -2226,7 +2241,7 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async getUserBehaviorInsights(startDate?: string, endDate?: string, businessUnitId?: string): Promise<{ avgTeaPerDay: number; preferredTimes: number[]; }> {
+  async getUserBehaviorInsights(startDate?: string, endDate?: string, businessUnitId?: string, machineId?: string): Promise<{ avgTeaPerDay: number; preferredTimes: number[]; }> {
     let whereClause = sql`1=1`;
     let daysDiff = 30;
     
@@ -2238,8 +2253,13 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Filter by business unit admin if specified (for regular admins)
-    if (businessUnitId) {
+    if (businessUnitId && businessUnitId !== 'all') {
       whereClause = sql`${whereClause} AND ${dispensingLogs.businessUnitId} = ${businessUnitId}`;
+    }
+
+    // Filter by machine if specified
+    if (machineId && machineId !== 'all') {
+      whereClause = sql`${whereClause} AND ${dispensingLogs.machineId} = ${machineId}`;
     }
 
     const [avgResult] = await db

@@ -10,12 +10,13 @@ router.use(requireAdmin);
 
 router.get('/peak-hours', async (req, res) => {
   try {
-    const { start, end, businessUnitId } = req.query;
-    console.log('Peak hours query params:', { start, end, businessUnitId });
+    const { start, end, businessUnitId, machineId } = req.query;
+    console.log('Peak hours query params:', { start, end, businessUnitId, machineId });
     const peakHours = await storage.getPeakHours(
       start as string, 
       end as string, 
-      businessUnitId as string
+      businessUnitId as string,
+      machineId as string
     );
     res.json(peakHours);
   } catch (error) {
@@ -26,12 +27,13 @@ router.get('/peak-hours', async (req, res) => {
 
 router.get('/machine-performance', async (req, res) => {
   try {
-    const { start, end, businessUnitId } = req.query;
-    console.log('Machine performance query params:', { start, end, businessUnitId });
+    const { start, end, businessUnitId, machineId } = req.query;
+    console.log('Machine performance query params:', { start, end, businessUnitId, machineId });
     const performance = await storage.getMachinePerformance(
       start as string, 
       end as string, 
-      businessUnitId as string
+      businessUnitId as string,
+      machineId as string
     );
     res.json(performance);
   } catch (error) {
@@ -42,12 +44,13 @@ router.get('/machine-performance', async (req, res) => {
 
 router.get('/user-behavior', async (req, res) => {
   try {
-    const { start, end, businessUnitId } = req.query;
-    console.log('User behavior query params:', { start, end, businessUnitId });
+    const { start, end, businessUnitId, machineId } = req.query;
+    console.log('User behavior query params:', { start, end, businessUnitId, machineId });
     const insights = await storage.getUserBehaviorInsights(
       start as string, 
       end as string, 
-      businessUnitId as string
+      businessUnitId as string,
+      machineId as string
     );
     res.json(insights);
   } catch (error) {
@@ -58,13 +61,14 @@ router.get('/user-behavior', async (req, res) => {
 
 router.get('/revenue-trends', async (req, res) => {
   try {
-    const { start, end, businessUnitId } = req.query;
-    console.log('Revenue trends query params:', { start, end, businessUnitId });
+    const { start, end, businessUnitId, machineId } = req.query;
+    console.log('Revenue trends query params:', { start, end, businessUnitId, machineId });
     // Note: getRevenueTrends uses businessUnitAdminId parameter for filtering
     const revenueTrends = await storage.getRevenueTrends(
       start as string, 
       end as string, 
-      businessUnitId as string  // This will be passed as businessUnitAdminId
+      businessUnitId as string,  // This will be passed as businessUnitAdminId
+      machineId as string
     );
     res.json(revenueTrends);
   } catch (error) {

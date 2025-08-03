@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart } from 'recharts';
 import { TrendingUp, Clock, Coffee, Activity, Users, DollarSign, Calendar, Download, Building2, Filter, RefreshCw, Maximize2, Eye, BarChart3 } from "lucide-react";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 import type { User } from "@shared/schema";
 
@@ -165,6 +165,23 @@ export default function AnalyticsPage() {
     queryKey: typedUser?.isSuperAdmin ? ['/api/admin/machines'] : ['/api/corporate/machines'],
     enabled: Boolean(typedUser?.isAdmin),
   });
+
+  // Filter machines based on selected business unit
+  const filteredMachines = React.useMemo(() => {
+    if (!selectedBusinessUnit || selectedBusinessUnit === 'all') {
+      return allMachines;
+    }
+    return allMachines.filter((machine: any) => machine.businessUnitId === selectedBusinessUnit);
+  }, [allMachines, selectedBusinessUnit]);
+
+  // Reset machine selection when business unit changes
+  React.useEffect(() => {
+    if (selectedBusinessUnit && selectedBusinessUnit !== 'all') {
+      if (selectedMachine !== 'all' && !filteredMachines.find((m: any) => m.id === selectedMachine)) {
+        setSelectedMachine('all');
+      }
+    }
+  }, [selectedBusinessUnit, filteredMachines, selectedMachine]);
 
   // Get business units for super admin filtering
   const { data: allBusinessUnits = [] } = useQuery<any[]>({
@@ -327,7 +344,7 @@ export default function AnalyticsPage() {
                     className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   >
                     <option value="all">All Machines</option>
-                    {(allMachines as any[]).map((machine: any) => (
+                    {(filteredMachines as any[]).map((machine: any) => (
                       <option key={machine.id} value={machine.id}>
                         {machine.name || machine.id}
                       </option>

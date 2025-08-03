@@ -1386,12 +1386,19 @@ export class DatabaseStorage implements IStorage {
     activeMachines: number;
     averagePerCup: string;
   }[]> {
-    let dateConditions = [];
-    if (startDate) {
-      dateConditions.push(gte(dispensingLogs.createdAt, new Date(startDate)));
-    }
-    if (endDate) {
-      dateConditions.push(lte(dispensingLogs.createdAt, new Date(endDate)));
+    console.log('getBusinessUnitComparison called with:', { startDate, endDate });
+    
+    let whereClause = [eq(dispensingLogs.success, true)];
+    
+    // Add date filtering if provided
+    if (startDate && endDate) {
+      whereClause.push(gte(dispensingLogs.createdAt, new Date(startDate)));
+      whereClause.push(lte(dispensingLogs.createdAt, new Date(endDate)));
+      console.log('Applied date filters:', { startDate, endDate });
+    } else {
+      // Default to last 30 days if no dates provided
+      whereClause.push(sql`${dispensingLogs.createdAt} > NOW() - INTERVAL '30 days'`);
+      console.log('Applied default 30-day filter');
     }
 
     // Get all business units with their dispensing data
@@ -1406,8 +1413,7 @@ export class DatabaseStorage implements IStorage {
       .from(businessUnits)
       .leftJoin(dispensingLogs, and(
         eq(dispensingLogs.businessUnitId, businessUnits.id),
-        eq(dispensingLogs.success, true),
-        ...(dateConditions.length > 0 ? dateConditions : [])
+        ...whereClause
       ))
       .leftJoin(teaMachines, and(
         eq(teaMachines.businessUnitId, businessUnits.id),
@@ -1415,7 +1421,9 @@ export class DatabaseStorage implements IStorage {
       ))
       .groupBy(businessUnits.id, businessUnits.name);
 
-    return businessUnitStats.map(stat => ({
+    console.log('Business unit stats query result:', businessUnitStats);
+
+    const result = businessUnitStats.map(stat => ({
       id: stat.id,
       name: stat.name,
       cupsDispensed: stat.cupsDispensed,
@@ -1425,6 +1433,9 @@ export class DatabaseStorage implements IStorage {
         ? (parseFloat(stat.revenue) / stat.cupsDispensed).toFixed(2)
         : '0.00'
     }));
+
+    console.log('Final business unit comparison result:', result);
+    return result;
   }
 
   async getRevenueTrends(startDate?: string, endDate?: string, businessUnitAdminId?: string, machineId?: string): Promise<{

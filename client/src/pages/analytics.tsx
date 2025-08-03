@@ -147,8 +147,17 @@ export default function AnalyticsPage() {
   });
 
   const { data: businessUnitComparison = [] } = useQuery<BusinessUnitComparison[]>({
-    queryKey: ['/api/analytics/business-unit-comparison', dateRange, selectedBusinessUnit, customStartDate, customEndDate, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
-    queryFn: () => fetch(`/api/analytics/business-unit-comparison?${buildQueryParams()}`).then(res => res.json()),
+    queryKey: ['/api/analytics/business-unit-comparison', dateRange, selectedBusinessUnit, selectedMachine, customStartDate, customEndDate, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
+    queryFn: () => {
+      // For business unit comparison, don't filter by specific business unit - show all units but with date filtering
+      const params = new URLSearchParams({
+        start: format(startDate, 'yyyy-MM-dd'),
+        end: format(endDate, 'yyyy-MM-dd')
+      });
+      const url = `/api/analytics/business-unit-comparison?${params.toString()}`;
+      console.log('Business Unit Comparison Query URL:', url);
+      return fetch(url).then(res => res.json());
+    },
     enabled: Boolean(typedUser?.isAdmin && typedUser?.isSuperAdmin),
   });
 

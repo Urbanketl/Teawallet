@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { Wallet, Plus, IndianRupee, Building2 } from "lucide-react";
-import RechargeHistory from "@/components/RechargeHistory";
 
 export default function WalletPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -330,16 +329,28 @@ export default function WalletPage() {
           </CardContent>
         </Card>
 
-        {/* Recharge History Section */}
-        {businessUnits.length > 0 && (
-          <div className="mt-8">
-            <RechargeHistory 
-              businessUnitId={selectedBusinessUnitId || businessUnits[0]?.id || ''}
-              businessUnitName={businessUnits.find((unit: any) => unit.id === (selectedBusinessUnitId || businessUnits[0]?.id))?.name || 'Unknown Business Unit'}
-              showBusinessUnitFilter={true}
-            />
-          </div>
-        )}
+        {/* Quick link to Recharge History */}
+        <Card className="shadow-material mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Wallet className="w-5 h-5" />
+              <span>Need to check your recharge history?</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 mb-4">
+              View all your wallet recharge transactions across all business units in the dedicated recharge history page.
+            </p>
+            <Button 
+              variant="outline" 
+              className="border-tea-green text-tea-green hover:bg-tea-green hover:text-white"
+              onClick={() => window.location.href = '/recharge-history'}
+            >
+              <Wallet className="w-4 h-4 mr-2" />
+              View Recharge History
+            </Button>
+          </CardContent>
+        </Card>
       </main>
     </div>
   );

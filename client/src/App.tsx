@@ -20,6 +20,7 @@ import Support from "@/pages/support";
 import Analytics from "@/pages/analytics";
 import Corporate from "@/pages/corporate";
 import WalletPage from "@/pages/wallet";
+import RechargeHistoryPage from "@/pages/recharge-history";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -65,6 +66,7 @@ function Router() {
         <Route path="/" component={Corporate} />
         <Route path="/auth" component={AuthPage} />
         <Route path="/wallet" component={WalletPage} />
+        <Route path="/recharge-history" component={RechargeHistoryPage} />
         <Route path="/profile" component={Profile} />
         <Route path="/admin" component={Admin} />
         <Route path="/support" component={Support} />

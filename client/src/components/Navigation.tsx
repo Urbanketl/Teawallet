@@ -15,7 +15,8 @@ import {
   Users,
   MessageCircle,
   BarChart3,
-  Menu
+  Menu,
+  History
 } from "lucide-react";
 
 export default function Navigation() {
@@ -36,6 +37,7 @@ export default function Navigation() {
   const navItems = [
     { href: "/", icon: Coffee, label: "Business Unit" },
     { href: "/wallet", icon: Wallet, label: "Business Wallet" },
+    { href: "/recharge-history", icon: History, label: "Recharge History" },
     { href: "/support", icon: MessageCircle, label: "Business Support" },
     { href: "/profile", icon: UserIcon, label: "Profile" },
   ];

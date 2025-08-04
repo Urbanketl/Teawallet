@@ -23,109 +23,71 @@ interface BusinessUnit {
 
 // Balance Monitoring Overview Component
 function BalanceMonitoringOverview({ businessUnits }: { businessUnits: BusinessUnit[] }) {
-  // Calculate balance statistics across all business units
-  const criticalUnits = businessUnits.filter(unit => parseFloat(unit.walletBalance || '0') <= 100);
-  const lowUnits = businessUnits.filter(unit => {
-    const balance = parseFloat(unit.walletBalance || '0');
-    return balance > 100 && balance <= 500;
-  });
-  const healthyUnits = businessUnits.filter(unit => parseFloat(unit.walletBalance || '0') > 500);
-
   if (businessUnits.length === 0) return null;
+
+  // Function to get balance status and styling
+  const getBalanceStatus = (balance: number) => {
+    if (balance <= 100) {
+      return {
+        status: 'Critical',
+        bgColor: 'bg-gradient-to-br from-red-50 to-red-100',
+        borderColor: 'border-red-200',
+        textColor: 'text-red-800',
+        badgeColor: 'bg-red-500 text-white'
+      };
+    } else if (balance <= 500) {
+      return {
+        status: 'Low Balance',
+        bgColor: 'bg-gradient-to-br from-yellow-50 to-yellow-100',
+        borderColor: 'border-yellow-200',
+        textColor: 'text-yellow-800',
+        badgeColor: 'bg-yellow-500 text-white'
+      };
+    } else {
+      return {
+        status: 'Active',
+        bgColor: 'bg-gradient-to-br from-green-50 to-green-100',
+        borderColor: 'border-green-200',
+        textColor: 'text-green-800',
+        badgeColor: 'bg-green-500 text-white'
+      };
+    }
+  };
 
   return (
     <div className="mb-6">
-      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-        <Wallet className="w-5 h-5 text-orange-600" />
-        Balance Monitoring Overview
-      </h3>
+      <h3 className="text-lg font-semibold mb-4">Quick Overview:</h3>
       
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-        <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <AlertCircle className="w-5 h-5 text-red-600" />
-              <Badge className="bg-red-500 text-white text-xs">Critical</Badge>
-            </div>
-            <div className="text-2xl font-bold text-red-800 mb-1">
-              {criticalUnits.length}
-            </div>
-            <div className="text-red-700 text-sm">Units ≤ ₹100</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <Clock className="w-5 h-5 text-yellow-600" />
-              <Badge className="bg-yellow-500 text-white text-xs">Low</Badge>
-            </div>
-            <div className="text-2xl font-bold text-yellow-800 mb-1">
-              {lowUnits.length}
-            </div>
-            <div className="text-yellow-700 text-sm">Units ≤ ₹500</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              <Badge className="bg-green-500 text-white text-xs">Healthy</Badge>
-            </div>
-            <div className="text-2xl font-bold text-green-800 mb-1">
-              {healthyUnits.length}
-            </div>
-            <div className="text-green-700 text-sm">Units {'>'} ₹500</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <Building2 className="w-5 h-5 text-blue-600" />
-              <Badge className="bg-blue-500 text-white text-xs">Total</Badge>
-            </div>
-            <div className="text-2xl font-bold text-blue-800 mb-1">
-              {businessUnits.length}
-            </div>
-            <div className="text-blue-700 text-sm">Total Units</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {(criticalUnits.length > 0 || lowUnits.length > 0) && (
-        <Card className="border border-orange-200 bg-orange-50">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5" />
-              <div>
-                <h4 className="font-medium text-orange-800 mb-2">Units Requiring Attention</h4>
-                <div className="space-y-1 text-sm">
-                  {criticalUnits.map(unit => (
-                    <div key={unit.id} className="flex justify-between items-center bg-white rounded px-3 py-2">
-                      <span className="font-medium">{unit.name}</span>
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-red-500 text-white text-xs">Critical</Badge>
-                        <span className="text-red-600 font-bold">₹{parseFloat(unit.walletBalance || '0').toFixed(2)}</span>
-                      </div>
-                    </div>
-                  ))}
-                  {lowUnits.map(unit => (
-                    <div key={unit.id} className="flex justify-between items-center bg-white rounded px-3 py-2">
-                      <span className="font-medium">{unit.name}</span>
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-yellow-500 text-white text-xs">Low</Badge>
-                        <span className="text-yellow-600 font-bold">₹{parseFloat(unit.walletBalance || '0').toFixed(2)}</span>
-                      </div>
-                    </div>
-                  ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {businessUnits.map(unit => {
+          const balance = parseFloat(unit.walletBalance || '0');
+          const balanceStatus = getBalanceStatus(balance);
+          
+          return (
+            <Card key={unit.id} className={`${balanceStatus.bgColor} ${balanceStatus.borderColor} border-2`}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <Building2 className="w-5 h-5 text-gray-600" />
+                  <Badge className={`${balanceStatus.badgeColor} text-xs`}>
+                    {balanceStatus.status}
+                  </Badge>
                 </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                <div className="mb-2">
+                  <h4 className={`font-bold text-lg ${balanceStatus.textColor}`}>
+                    {unit.name}
+                  </h4>
+                </div>
+                <div className={`text-2xl font-bold mb-1 ${balanceStatus.textColor}`}>
+                  ₹{balance.toFixed(2)}
+                </div>
+                <div className="text-sm text-gray-600">
+                  {unit.code}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -209,12 +171,6 @@ export default function Dashboard() {
     <div className="min-h-screen bg-neutral-warm">
       <Navigation />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Business Unit Selector */}
-        <BusinessUnitSelector 
-          selectedBusinessUnitId={selectedBusinessUnitId}
-          onBusinessUnitChange={setSelectedBusinessUnitId}
-        />
-
         {/* Balance Monitoring Overview */}
         <BalanceMonitoringOverview businessUnits={businessUnits} />
 

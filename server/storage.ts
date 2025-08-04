@@ -2984,7 +2984,7 @@ export class DatabaseStorage implements IStorage {
 
       // Get total count
       const [totalResult] = await db
-        .select({ count: count(transactions.id) })
+        .select({ count: sql<number>`count(*)` })
         .from(transactions)
         .where(and(...whereConditions));
 
@@ -3041,7 +3041,7 @@ export class DatabaseStorage implements IStorage {
 
       // Get total count
       const [totalResult] = await db
-        .select({ count: count(transactions.id) })
+        .select({ count: sql<number>`count(*)` })
         .from(transactions)
         .where(and(...whereConditions));
 

@@ -7,25 +7,14 @@ import { Badge } from "@/components/ui/badge";
 // Removed Radix UI Select - using native HTML select instead
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { 
   History, 
-  Download, 
   CalendarIcon, 
   Filter, 
   ChevronLeft, 
   ChevronRight,
   Plus,
-  CreditCard,
-  AlertCircle,
-  FileText
+  CreditCard
 } from "lucide-react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -48,7 +37,6 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
     end: null,
   });
   const [showCalendar, setShowCalendar] = useState(false);
-  const [showExportDialog, setShowExportDialog] = useState(false);
 
   const limit = 10; // Show 10 recharges per page
 
@@ -170,95 +158,7 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
     }
   };
 
-  // Show export confirmation dialog
-  const handleExportClick = () => {
-    console.log('=== EXPORT BUTTON CLICKED ===');
-    console.log('Current state - showExportDialog:', showExportDialog);
-    console.log('Total recharges:', totalRecharges);
-    console.log('Is loading:', isLoading);
-    alert('Export button clicked! Check console for details.');
-    setShowExportDialog(true);
-    console.log('Export dialog should now be visible');
-  };
 
-  // Export recharge history
-  const handleExportConfirm = async () => {
-    console.log('=== EXPORT CONFIRM CLICKED ===');
-    console.log('Starting export process...');
-    try {
-      const queryParams = new URLSearchParams();
-      
-      let startDate: string | undefined;
-      let endDate: string | undefined;
-
-      if (dateFilter === "week") {
-        const now = new Date();
-        startDate = format(startOfWeek(now), "yyyy-MM-dd");
-        endDate = format(endOfWeek(now), "yyyy-MM-dd");
-      } else if (dateFilter === "month") {
-        const now = new Date();
-        startDate = format(startOfMonth(now), "yyyy-MM-dd");
-        endDate = format(endOfMonth(now), "yyyy-MM-dd");
-      } else if (dateFilter === "custom" && dateRange.start && dateRange.end) {
-        startDate = format(dateRange.start, "yyyy-MM-dd");
-        endDate = format(dateRange.end, "yyyy-MM-dd");
-      }
-
-      if (startDate && endDate) {
-        queryParams.append("startDate", startDate);
-        queryParams.append("endDate", endDate);
-      }
-
-      // Determine the correct endpoint based on context
-      let exportUrl: string;
-      if (showBusinessUnitFilter && selectedBusinessUnit === "all") {
-        // Export all business units for the user
-        exportUrl = `/api/recharge/export/user?${queryParams}`;
-      } else {
-        // Export specific business unit
-        const targetBusinessUnit = businessUnitId || selectedBusinessUnit;
-        exportUrl = `/api/recharge/export/${targetBusinessUnit}?${queryParams}`;
-      }
-
-      console.log('Export URL:', exportUrl);
-
-      const response = await fetch(exportUrl, {
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to export recharge history');
-      }
-
-      // Handle file download
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      
-      // Generate appropriate filename
-      let filename: string;
-      if (showBusinessUnitFilter && selectedBusinessUnit === "all") {
-        filename = `recharge-history-all-units-${Date.now()}.csv`;
-      } else {
-        const unitName = businessUnitName || 
-          (businessUnits as any[])?.find((unit: any) => unit.id === selectedBusinessUnit)?.name || 
-          'unit';
-        filename = `recharge-history-${unitName.replace(/\s+/g, '-')}-${Date.now()}.csv`;
-      }
-      
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      
-      setShowExportDialog(false);
-    } catch (error) {
-      console.error('Export failed:', error);
-      // You might want to show a toast here
-    }
-  };
 
   // Get status badge variant
   const getStatusVariant = (status: string) => {
@@ -390,23 +290,46 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
               </div>
             )}
 
-            {/* Export Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExportClick}
-              disabled={isLoading || totalRecharges === 0}
-              className="bg-white hover:bg-gray-50 border-2 border-tea-green text-tea-green hover:text-tea-green font-medium min-w-[100px] cursor-pointer"
-              style={{ pointerEvents: 'auto', zIndex: 10 }}
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Export ({totalRecharges})
-            </Button>
+
           </div>
         </div>
       </CardHeader>
 
       <CardContent>
+        {/* Pagination Navigation at Top */}
+        {!isLoading && recharges.length > 0 && totalPages > 1 && (
+          <div className="flex items-center justify-between mb-6 p-4 bg-gray-50 rounded-lg">
+            <div className="text-sm text-gray-600">
+              Showing {((currentPage - 1) * limit) + 1} to {Math.min(currentPage * limit, totalRecharges)} of {totalRecharges} recharges
+            </div>
+            <div className="flex items-center space-x-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Previous
+              </Button>
+              
+              <span className="text-sm font-medium">
+                Page {currentPage} of {totalPages}
+              </span>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
         {isLoading ? (
           <div className="text-center py-8 text-gray-500">
             Loading recharge history...
@@ -424,14 +347,6 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Column Headers */}
-            <div className="hidden md:grid md:grid-cols-12 gap-4 px-4 py-2 bg-gray-50 rounded-lg text-sm font-medium text-gray-700">
-              <div className="col-span-3">Amount & Status</div>
-              <div className="col-span-3">Date & Time</div>
-              <div className="col-span-2">Business Unit</div>
-              <div className="col-span-2">Recharged By</div>
-              <div className="col-span-2">Payment ID</div>
-            </div>
 
             {/* Recharge List */}
             <div className="space-y-3">
@@ -493,119 +408,12 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
               ))}
             </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between pt-4">
-                <p className="text-sm text-gray-600">
-                  Showing {((currentPage - 1) * limit) + 1} to {Math.min(currentPage * limit, totalRecharges)} of {totalRecharges} recharges
-                </p>
-                
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(currentPage - 1)}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                    Previous
-                  </Button>
-                  
-                  <span className="text-sm font-medium">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                  >
-                    Next
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
+
           </div>
         )}
       </CardContent>
 
-      {/* Export Confirmation Dialog */}
-      <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              Export Recharge History
-            </DialogTitle>
-            <DialogDescription>
-              You're about to download a CSV file with the following data:
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4 space-y-4">
-            {/* Export Summary */}
-            <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="font-medium">Business Unit:</span>
-                <span className="text-sm">
-                  {showBusinessUnitFilter && selectedBusinessUnit === "all" 
-                    ? "All Business Units" 
-                    : businessUnitName || 
-                      (businessUnits as any[])?.find((unit: any) => unit.id === selectedBusinessUnit)?.name || 
-                      'Selected Business Unit'
-                  }
-                </span>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <span className="font-medium">Date Range:</span>
-                <span className="text-sm">
-                  {dateFilter === "all" ? "All Time" :
-                   dateFilter === "week" ? "This Week" :
-                   dateFilter === "month" ? "This Month" :
-                   dateFilter === "custom" && dateRange.start && dateRange.end ?
-                   `${format(dateRange.start, "MMM d")} - ${format(dateRange.end, "MMM d, yyyy")}` :
-                   "All Time"
-                  }
-                </span>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <span className="font-medium">Total Records:</span>
-                <span className="text-sm font-semibold">{totalRecharges} recharges</span>
-              </div>
-            </div>
 
-            {totalRecharges > 100 && (
-              <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-amber-800">
-                  <p className="font-medium">Large Export Warning</p>
-                  <p>This export contains {totalRecharges} records. The file may take a moment to generate.</p>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <DialogFooter className="gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setShowExportDialog(false)}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleExportConfirm}
-              disabled={totalRecharges === 0}
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Download CSV
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 }

@@ -1372,16 +1372,44 @@ export class DatabaseStorage implements IStorage {
     const cupsDispensed = cupsResult?.count || 0;
     const totalSpent = spentResult?.total || '0';
     
-    // Calculate total recharged as current balance + total spent
-    // This accounts for initial wallet balance + all historical spending
-    const currentBalance = parseFloat(businessUnit?.walletBalance || '0');
+    // Calculate total recharged amount from actual recharge transactions
+    const rechargeResult = await db
+      .select({ 
+        total: sql<string>`COALESCE(SUM(${transactions.amount}), 0)::text`
+      })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.businessUnitId, businessUnitId),
+          or(
+            eq(transactions.type, 'recharge'),
+            eq(transactions.type, 'credit')
+          )
+        )
+      );
+    
+    const totalRecharged = rechargeResult[0]?.total || '0.00';
     const spentAmount = parseFloat(totalSpent);
-    const totalRecharged = (currentBalance + spentAmount).toFixed(2);
     
     // Calculate average per cup
     const averagePerCup = cupsDispensed > 0 
       ? (spentAmount / cupsDispensed).toFixed(2)
       : '0.00';
+
+    // Also update the business unit wallet balance to match actual total recharged - spent
+    const calculatedBalance = (parseFloat(totalRecharged) - spentAmount).toFixed(2);
+    await db
+      .update(businessUnits)
+      .set({ walletBalance: calculatedBalance })
+      .where(eq(businessUnits.id, businessUnitId));
+
+    console.log(`Summary data:`, {
+      totalRecharged,
+      cupsDispensed,
+      totalSpent,
+      averagePerCup,
+      calculatedBalance
+    });
 
     return {
       totalRecharged,

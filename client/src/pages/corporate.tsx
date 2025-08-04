@@ -148,11 +148,13 @@ function BusinessUnitTabs({ businessUnits, selectedBusinessUnitId, onSelectBusin
   );
 }
 
-function BusinessUnitOverview({ businessUnit, machines, rfidCards, dispensingLogs }: {
+function BusinessUnitOverview({ businessUnit, machines, rfidCards, dispensingLogs, criticalThreshold, lowBalanceThreshold }: {
   businessUnit: BusinessUnit;
   machines: TeaMachine[];
   rfidCards: RfidCard[];
   dispensingLogs: DispensingLog[];
+  criticalThreshold: number;
+  lowBalanceThreshold: number;
 }) {
   const activeMachines = machines.filter(m => m.isActive);
   const activeCards = rfidCards.filter(c => c.isActive);
@@ -162,15 +164,15 @@ function BusinessUnitOverview({ businessUnit, machines, rfidCards, dispensingLog
     return logDate.toDateString() === today.toDateString();
   });
 
-  // Get balance status based on default thresholds (will be configurable later)
+  // Get balance status based on dynamic thresholds from database
   const balance = parseFloat(businessUnit.walletBalance || '0');
-  const getBalanceStatus = () => {
-    if (balance <= 100) return { status: 'critical', color: 'red', icon: AlertCircle };
-    if (balance <= 500) return { status: 'low', color: 'yellow', icon: Clock };
+  const getBalanceStatus = (criticalThreshold: number, lowBalanceThreshold: number) => {
+    if (balance <= criticalThreshold) return { status: 'critical', color: 'red', icon: AlertCircle };
+    if (balance <= lowBalanceThreshold) return { status: 'low', color: 'yellow', icon: Clock };
     return { status: 'healthy', color: 'green', icon: CheckCircle };
   };
   
-  const balanceStatus = getBalanceStatus();
+  const balanceStatus = getBalanceStatus(criticalThreshold, lowBalanceThreshold);
   const BalanceIcon = balanceStatus.icon;
 
   return (
@@ -259,14 +261,18 @@ function BusinessUnitOverview({ businessUnit, machines, rfidCards, dispensingLog
   );
 }
 
-function BalanceMonitoringOverview({ businessUnits }: { businessUnits: BusinessUnit[] }) {
-  // Calculate balance statistics across all business units
-  const criticalUnits = businessUnits.filter(unit => parseFloat(unit.walletBalance || '0') <= 100);
+function BalanceMonitoringOverview({ businessUnits, criticalThreshold, lowBalanceThreshold }: { 
+  businessUnits: BusinessUnit[]; 
+  criticalThreshold: number; 
+  lowBalanceThreshold: number; 
+}) {
+  // Calculate balance statistics across all business units using dynamic thresholds
+  const criticalUnits = businessUnits.filter(unit => parseFloat(unit.walletBalance || '0') <= criticalThreshold);
   const lowUnits = businessUnits.filter(unit => {
     const balance = parseFloat(unit.walletBalance || '0');
-    return balance > 100 && balance <= 500;
+    return balance > criticalThreshold && balance <= lowBalanceThreshold;
   });
-  const healthyUnits = businessUnits.filter(unit => parseFloat(unit.walletBalance || '0') > 500);
+  const healthyUnits = businessUnits.filter(unit => parseFloat(unit.walletBalance || '0') > lowBalanceThreshold);
   const emptyUnits = businessUnits.filter(unit => parseFloat(unit.walletBalance || '0') === 0);
 
   if (businessUnits.length === 0) return null;
@@ -288,7 +294,7 @@ function BalanceMonitoringOverview({ businessUnits }: { businessUnits: BusinessU
             <div className="text-2xl font-bold text-red-800 mb-1">
               {criticalUnits.length}
             </div>
-            <div className="text-red-700 text-sm">Units ≤ ₹100</div>
+            <div className="text-red-700 text-sm">Units ≤ ₹{criticalThreshold}</div>
           </CardContent>
         </Card>
 
@@ -301,7 +307,7 @@ function BalanceMonitoringOverview({ businessUnits }: { businessUnits: BusinessU
             <div className="text-2xl font-bold text-yellow-800 mb-1">
               {lowUnits.length}
             </div>
-            <div className="text-yellow-700 text-sm">Units ≤ ₹500</div>
+            <div className="text-yellow-700 text-sm">Units ≤ ₹{lowBalanceThreshold}</div>
           </CardContent>
         </Card>
 
@@ -314,7 +320,7 @@ function BalanceMonitoringOverview({ businessUnits }: { businessUnits: BusinessU
             <div className="text-2xl font-bold text-green-800 mb-1">
               {healthyUnits.length}
             </div>
-            <div className="text-green-700 text-sm">Units {'>'} ₹500</div>
+            <div className="text-green-700 text-sm">Units {'>'} ₹{lowBalanceThreshold}</div>
           </CardContent>
         </Card>
 
@@ -396,6 +402,30 @@ export default function Corporate() {
     enabled: !!user,
     retry: false,
   });
+
+  // Load system settings for dynamic thresholds
+  const { data: systemSettings } = useQuery({
+    queryKey: ["/api/admin/settings"],
+    enabled: !!user,
+    retry: false,
+  });
+
+  // Get dynamic thresholds from database settings
+  const getDynamicThresholds = () => {
+    if (!systemSettings || !Array.isArray(systemSettings)) {
+      return { criticalThreshold: 100, lowBalanceThreshold: 500 }; // Fallback values
+    }
+    
+    const criticalSetting = systemSettings.find(s => s.key === 'critical_balance_threshold');
+    const lowBalanceSetting = systemSettings.find(s => s.key === 'low_balance_threshold');
+    
+    return {
+      criticalThreshold: criticalSetting ? parseFloat(criticalSetting.value) : 100,
+      lowBalanceThreshold: lowBalanceSetting ? parseFloat(lowBalanceSetting.value) : 500
+    };
+  };
+  
+  const { criticalThreshold, lowBalanceThreshold } = getDynamicThresholds();
 
   // Get user's business units
   const { data: businessUnits = [], isLoading: businessUnitsLoading } = useQuery<BusinessUnit[]>({
@@ -676,7 +706,7 @@ export default function Corporate() {
                   <p className="text-lg drop-shadow-sm text-[#A67C52] mt-2">Ready to manage your premium tea services?</p>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-[#A67C52]">{dashboardStats?.cupsToday || 0}</div>
+                  <div className="text-3xl font-bold text-[#A67C52]">{dashboardStats?.totalCupsDispensedToday || dashboardStats?.totalCups || 0}</div>
                   <div className="text-sm text-[#A67C52]">Cups Today</div>
                 </div>
               </div>
@@ -692,7 +722,11 @@ export default function Corporate() {
         </div>
 
         {/* Business Unit Selection */}
-        <BalanceMonitoringOverview businessUnits={businessUnits} />
+        <BalanceMonitoringOverview 
+          businessUnits={businessUnits} 
+          criticalThreshold={criticalThreshold}
+          lowBalanceThreshold={lowBalanceThreshold}
+        />
         
         <BusinessUnitTabs
           businessUnits={businessUnits}
@@ -730,6 +764,8 @@ export default function Corporate() {
               machines={machines}
               rfidCards={rfidCards}
               dispensingLogs={dispensingLogs}
+              criticalThreshold={criticalThreshold}
+              lowBalanceThreshold={lowBalanceThreshold}
             />
 
             {/* Tabs for detailed view */}

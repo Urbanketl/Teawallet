@@ -91,10 +91,15 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
 
   // Fetch recharge history
   const { data: rechargeData, isLoading, refetch } = useQuery({
-    queryKey: [endpoint, effectiveBusinessUnitId, currentPage, dateFilter, dateRange],
+    queryKey: [endpoint, effectiveBusinessUnitId, currentPage, dateFilter, dateRange, showBusinessUnitFilter],
     queryFn: async () => {
       console.log('=== RECHARGE HISTORY FETCH DEBUG ===');
-      console.log('Business Unit ID:', businessUnitId);
+      console.log('showBusinessUnitFilter:', showBusinessUnitFilter);
+      console.log('selectedBusinessUnit:', selectedBusinessUnit);
+      console.log('effectiveBusinessUnitId:', effectiveBusinessUnitId);
+      console.log('isAllBusinessUnits:', isAllBusinessUnits);
+      console.log('endpoint:', endpoint);
+      console.log('Business Unit ID (prop):', businessUnitId);
       console.log('Is Authenticated:', isAuthenticated);
       
       const queryParams = buildQueryParams();
@@ -103,6 +108,8 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
       const url = isAllBusinessUnits 
         ? `/api/recharge/user?${queryParams}`
         : `/api/recharge/business-unit/${effectiveBusinessUnitId}?${queryParams}`;
+      
+      console.log('Final URL:', url);
       
       const response = await fetch(url, {
         credentials: 'include'

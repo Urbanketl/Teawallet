@@ -331,11 +331,11 @@ export default function WalletPage() {
         </Card>
 
         {/* Recharge History Section */}
-        {selectedBusinessUnitId && businessUnits.length > 0 && (
+        {businessUnits.length > 0 && (
           <div className="mt-8">
             <RechargeHistory 
-              businessUnitId={selectedBusinessUnitId}
-              businessUnitName={businessUnits.find(unit => unit.id === selectedBusinessUnitId)?.name || 'Unknown Business Unit'}
+              businessUnitId={selectedBusinessUnitId || businessUnits[0]?.id || ''}
+              businessUnitName={businessUnits.find(unit => unit.id === (selectedBusinessUnitId || businessUnits[0]?.id))?.name || 'Unknown Business Unit'}
             />
           </div>
         )}

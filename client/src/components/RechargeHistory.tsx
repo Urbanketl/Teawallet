@@ -80,12 +80,23 @@ export default function RechargeHistory({ businessUnitId, businessUnitName }: Re
   const { data: rechargeData, isLoading, refetch } = useQuery({
     queryKey: ["/api/recharge/business-unit", businessUnitId, currentPage, dateFilter, dateRange],
     queryFn: async () => {
+      console.log('=== RECHARGE HISTORY FETCH DEBUG ===');
+      console.log('Business Unit ID:', businessUnitId);
+      console.log('Is Authenticated:', isAuthenticated);
+      
       const queryParams = buildQueryParams();
+      console.log('Query Params:', queryParams);
+      
       const response = await fetch(`/api/recharge/business-unit/${businessUnitId}?${queryParams}`, {
         credentials: 'include'
       });
+      
+      console.log('Response Status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch recharge history');
+        const errorText = await response.text();
+        console.error('API Error:', errorText);
+        throw new Error(`Failed to fetch recharge history: ${response.status}`);
       }
       return response.json();
     },

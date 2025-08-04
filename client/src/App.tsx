@@ -15,7 +15,6 @@ import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
-import Wallet from "@/pages/wallet";
 import Admin from "@/pages/admin";
 import Profile from "@/pages/profile";
 import Support from "@/pages/support";
@@ -64,7 +63,6 @@ function Router() {
       
       <Switch>
         <Route path="/" component={Dashboard} />
-        <Route path="/wallet" component={Wallet} />
         <Route path="/auth" component={AuthPage} />
         <Route path="/profile" component={Profile} />
         <Route path="/admin" component={Admin} />

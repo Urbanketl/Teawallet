@@ -8,9 +8,127 @@ import TransactionHistory from "@/components/TransactionHistory";
 import BusinessUnitSelector from "@/components/BusinessUnitSelector";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
-import { Coffee, CreditCard, History, User, Plus, Headphones, Building2, Activity } from "lucide-react";
+import { Coffee, CreditCard, History, User, Plus, Headphones, Building2, Activity, Wallet, AlertCircle, Clock, CheckCircle } from "lucide-react";
 import { isUnauthorizedError } from "@/lib/authUtils";
+
+// Define BusinessUnit type
+interface BusinessUnit {
+  id: string;
+  name: string;
+  code: string;
+  walletBalance: string;
+}
+
+// Balance Monitoring Overview Component
+function BalanceMonitoringOverview({ businessUnits }: { businessUnits: BusinessUnit[] }) {
+  // Calculate balance statistics across all business units
+  const criticalUnits = businessUnits.filter(unit => parseFloat(unit.walletBalance || '0') <= 100);
+  const lowUnits = businessUnits.filter(unit => {
+    const balance = parseFloat(unit.walletBalance || '0');
+    return balance > 100 && balance <= 500;
+  });
+  const healthyUnits = businessUnits.filter(unit => parseFloat(unit.walletBalance || '0') > 500);
+
+  if (businessUnits.length === 0) return null;
+
+  return (
+    <div className="mb-6">
+      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+        <Wallet className="w-5 h-5 text-orange-600" />
+        Balance Monitoring Overview
+      </h3>
+      
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <AlertCircle className="w-5 h-5 text-red-600" />
+              <Badge className="bg-red-500 text-white text-xs">Critical</Badge>
+            </div>
+            <div className="text-2xl font-bold text-red-800 mb-1">
+              {criticalUnits.length}
+            </div>
+            <div className="text-red-700 text-sm">Units ≤ ₹100</div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <Clock className="w-5 h-5 text-yellow-600" />
+              <Badge className="bg-yellow-500 text-white text-xs">Low</Badge>
+            </div>
+            <div className="text-2xl font-bold text-yellow-800 mb-1">
+              {lowUnits.length}
+            </div>
+            <div className="text-yellow-700 text-sm">Units ≤ ₹500</div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              <Badge className="bg-green-500 text-white text-xs">Healthy</Badge>
+            </div>
+            <div className="text-2xl font-bold text-green-800 mb-1">
+              {healthyUnits.length}
+            </div>
+            <div className="text-green-700 text-sm">Units {'>'} ₹500</div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <Building2 className="w-5 h-5 text-blue-600" />
+              <Badge className="bg-blue-500 text-white text-xs">Total</Badge>
+            </div>
+            <div className="text-2xl font-bold text-blue-800 mb-1">
+              {businessUnits.length}
+            </div>
+            <div className="text-blue-700 text-sm">Total Units</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {(criticalUnits.length > 0 || lowUnits.length > 0) && (
+        <Card className="border border-orange-200 bg-orange-50">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5" />
+              <div>
+                <h4 className="font-medium text-orange-800 mb-2">Units Requiring Attention</h4>
+                <div className="space-y-1 text-sm">
+                  {criticalUnits.map(unit => (
+                    <div key={unit.id} className="flex justify-between items-center bg-white rounded px-3 py-2">
+                      <span className="font-medium">{unit.name}</span>
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-red-500 text-white text-xs">Critical</Badge>
+                        <span className="text-red-600 font-bold">₹{parseFloat(unit.walletBalance || '0').toFixed(2)}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {lowUnits.map(unit => (
+                    <div key={unit.id} className="flex justify-between items-center bg-white rounded px-3 py-2">
+                      <span className="font-medium">{unit.name}</span>
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-yellow-500 text-white text-xs">Low</Badge>
+                        <span className="text-yellow-600 font-bold">₹{parseFloat(unit.walletBalance || '0').toFixed(2)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -59,6 +177,13 @@ export default function Dashboard() {
     retry: false,
   });
 
+  // Get user's business units for balance monitoring
+  const { data: businessUnits = [] } = useQuery<BusinessUnit[]>({
+    queryKey: ["/api/corporate/business-units"],
+    enabled: isAuthenticated,
+    retry: false,
+  });
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-neutral-warm flex items-center justify-center">
@@ -89,6 +214,9 @@ export default function Dashboard() {
           selectedBusinessUnitId={selectedBusinessUnitId}
           onBusinessUnitChange={setSelectedBusinessUnitId}
         />
+
+        {/* Balance Monitoring Overview */}
+        <BalanceMonitoringOverview businessUnits={businessUnits} />
 
         {/* Welcome Banner */}
         <div className="mb-8">

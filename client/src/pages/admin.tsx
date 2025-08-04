@@ -628,12 +628,15 @@ export default function AdminPage() {
   useEffect(() => {
     if (systemSettings && Array.isArray(systemSettings)) {
       const maxWalletSetting = systemSettings.find(s => s.key === 'max_wallet_balance');
-      if (maxWalletSetting) {
-        setSettings(prev => ({
-          ...prev,
-          maxWalletBalance: maxWalletSetting.value
-        }));
-      }
+      const criticalBalanceSetting = systemSettings.find(s => s.key === 'critical_balance_threshold');
+      const lowBalanceAlertSetting = systemSettings.find(s => s.key === 'low_balance_threshold');
+      
+      setSettings(prev => ({
+        ...prev,
+        ...(maxWalletSetting && { maxWalletBalance: maxWalletSetting.value }),
+        ...(criticalBalanceSetting && { criticalBalanceThreshold: criticalBalanceSetting.value }),
+        ...(lowBalanceAlertSetting && { lowBalanceAlertThreshold: lowBalanceAlertSetting.value })
+      }));
     }
   }, [systemSettings]);
 
@@ -1087,28 +1090,32 @@ export default function AdminPage() {
                     <Button 
                       onClick={async () => {
                         try {
-                          console.log('Saving settings:', settings.maxWalletBalance);
+                          console.log('Saving all settings...');
                           
-                          // Update max wallet balance in database
-                          const response = await fetch('/api/admin/settings', {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ 
-                              key: 'max_wallet_balance', 
-                              value: parseFloat(settings.maxWalletBalance).toFixed(2) 
-                            }),
-                            credentials: 'include'
-                          });
+                          // Save all three balance-related settings
+                          const settingsToSave = [
+                            { key: 'max_wallet_balance', value: parseFloat(settings.maxWalletBalance).toFixed(2) },
+                            { key: 'critical_balance_threshold', value: parseFloat(settings.criticalBalanceThreshold).toFixed(2) },
+                            { key: 'low_balance_threshold', value: parseFloat(settings.lowBalanceAlertThreshold).toFixed(2) }
+                          ];
 
-                          console.log('Save response status:', response.status);
-                          
-                          if (!response.ok) {
-                            const errorData = await response.text();
-                            console.error('Save failed:', errorData);
-                            throw new Error(`Failed to update setting: ${response.status}`);
+                          // Save each setting
+                          for (const setting of settingsToSave) {
+                            const response = await fetch('/api/admin/settings', {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify(setting),
+                              credentials: 'include'
+                            });
+
+                            if (!response.ok) {
+                              const errorData = await response.text();
+                              console.error(`Failed to save ${setting.key}:`, errorData);
+                              throw new Error(`Failed to update ${setting.key}: ${response.status}`);
+                            }
                           }
 
-                          console.log('Settings saved successfully, refreshing cache...');
+                          console.log('All settings saved successfully, refreshing cache...');
 
                           // Force refresh all settings-related queries
                           await queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
@@ -1118,7 +1125,7 @@ export default function AdminPage() {
 
                           toast({
                             title: "Settings Updated Successfully",
-                            description: `Maximum wallet balance is now ₹${settings.maxWalletBalance}. Payment validation will use this new limit immediately.`,
+                            description: `All balance thresholds updated: Max Wallet ₹${settings.maxWalletBalance}, Critical ₹${settings.criticalBalanceThreshold}, Low Balance ₹${settings.lowBalanceAlertThreshold}`,
                           });
                           
                           setSettingsOpen(false);

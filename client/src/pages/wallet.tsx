@@ -335,7 +335,8 @@ export default function WalletPage() {
           <div className="mt-8">
             <RechargeHistory 
               businessUnitId={selectedBusinessUnitId || businessUnits[0]?.id || ''}
-              businessUnitName={businessUnits.find(unit => unit.id === (selectedBusinessUnitId || businessUnits[0]?.id))?.name || 'Unknown Business Unit'}
+              businessUnitName={businessUnits.find((unit: any) => unit.id === (selectedBusinessUnitId || businessUnits[0]?.id))?.name || 'Unknown Business Unit'}
+              showBusinessUnitFilter={true}
             />
           </div>
         )}

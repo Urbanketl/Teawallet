@@ -27,16 +27,18 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-f
 import { cn } from "@/lib/utils";
 
 interface RechargeHistoryProps {
-  businessUnitId: string;
-  businessUnitName: string;
+  businessUnitId?: string;
+  businessUnitName?: string;
+  showBusinessUnitFilter?: boolean;
 }
 
-export default function RechargeHistory({ businessUnitId, businessUnitName }: RechargeHistoryProps) {
+export default function RechargeHistory({ businessUnitId, businessUnitName, showBusinessUnitFilter = false }: RechargeHistoryProps) {
   const { isAuthenticated } = useAuth();
   
   // Pagination and filtering state
   const [currentPage, setCurrentPage] = useState(1);
   const [dateFilter, setDateFilter] = useState<"all" | "week" | "month" | "custom">("all");
+  const [selectedBusinessUnit, setSelectedBusinessUnit] = useState<string>(businessUnitId || "all");
   const [dateRange, setDateRange] = useState<{ start: Date | null; end: Date | null }>({
     start: null,
     end: null,
@@ -76,9 +78,20 @@ export default function RechargeHistory({ businessUnitId, businessUnitName }: Re
     return params.toString();
   };
 
+  // Fetch user's business units for the filter
+  const { data: businessUnits = [] } = useQuery({
+    queryKey: ["/api/corporate/business-units"],
+    enabled: isAuthenticated && showBusinessUnitFilter,
+  });
+
+  // Determine endpoint and query params based on filter mode
+  const effectiveBusinessUnitId = showBusinessUnitFilter ? selectedBusinessUnit : businessUnitId;
+  const isAllBusinessUnits = showBusinessUnitFilter && selectedBusinessUnit === "all";
+  const endpoint = isAllBusinessUnits ? "/api/recharge/user" : "/api/recharge/business-unit";
+
   // Fetch recharge history
   const { data: rechargeData, isLoading, refetch } = useQuery({
-    queryKey: ["/api/recharge/business-unit", businessUnitId, currentPage, dateFilter, dateRange],
+    queryKey: [endpoint, effectiveBusinessUnitId, currentPage, dateFilter, dateRange],
     queryFn: async () => {
       console.log('=== RECHARGE HISTORY FETCH DEBUG ===');
       console.log('Business Unit ID:', businessUnitId);
@@ -87,7 +100,11 @@ export default function RechargeHistory({ businessUnitId, businessUnitName }: Re
       const queryParams = buildQueryParams();
       console.log('Query Params:', queryParams);
       
-      const response = await fetch(`/api/recharge/business-unit/${businessUnitId}?${queryParams}`, {
+      const url = isAllBusinessUnits 
+        ? `/api/recharge/user?${queryParams}`
+        : `/api/recharge/business-unit/${effectiveBusinessUnitId}?${queryParams}`;
+      
+      const response = await fetch(url, {
         credentials: 'include'
       });
       
@@ -100,7 +117,7 @@ export default function RechargeHistory({ businessUnitId, businessUnitName }: Re
       }
       return response.json();
     },
-    enabled: isAuthenticated && !!businessUnitId,
+    enabled: isAuthenticated && (!!businessUnitId || showBusinessUnitFilter),
     staleTime: 0,
     gcTime: 0,
   });
@@ -208,6 +225,29 @@ export default function RechargeHistory({ businessUnitId, businessUnitName }: Re
           </CardTitle>
           
           <div className="flex items-center space-x-2">
+            {/* Business Unit Filter */}
+            {showBusinessUnitFilter && (
+              <div className="relative">
+                <Select value={selectedBusinessUnit} onValueChange={(value) => {
+                  setSelectedBusinessUnit(value);
+                  setCurrentPage(1);
+                }}>
+                  <SelectTrigger className="w-48 bg-white border border-gray-300 hover:border-gray-400">
+                    <Filter className="w-4 h-4 mr-2" />
+                    <SelectValue placeholder="All Business Units" />
+                  </SelectTrigger>
+                  <SelectContent className="z-50 bg-white border border-gray-200 shadow-lg">
+                    <SelectItem value="all">All Business Units</SelectItem>
+                    {(businessUnits as any[]).map((unit: any) => (
+                      <SelectItem key={unit.id} value={unit.id}>
+                        {unit.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             {/* Date Filter */}
             <div className="relative">
               <Select value={dateFilter} onValueChange={handleDateFilterChange}>
@@ -337,7 +377,9 @@ export default function RechargeHistory({ businessUnitId, businessUnitName }: Re
                       
                       <div className="flex items-center space-x-4 text-xs text-gray-500">
                         <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-full font-medium">
-                          {businessUnitName}
+                          {showBusinessUnitFilter && isAllBusinessUnits 
+                            ? recharge.businessUnitName || 'Unknown Unit'
+                            : businessUnitName}
                         </span>
                         {recharge.razorpayPaymentId && (
                           <span className="font-mono">ID: {recharge.razorpayPaymentId}</span>

@@ -590,8 +590,11 @@ export default function AdminPage() {
 
   // Balance monitoring states
   const [balanceFilter, setBalanceFilter] = useState<string>('all'); // all, low, critical, empty
-  const [balanceThreshold, setBalanceThreshold] = useState<number>(500); // Default threshold in rupees
   const [sortBalance, setSortBalance] = useState<'asc' | 'desc'>('asc');
+  
+  // Dynamic thresholds from database settings
+  const criticalThreshold = parseFloat(settings.criticalBalanceThreshold);
+  const lowBalanceThreshold = parseFloat(settings.lowBalanceAlertThreshold);
 
   // Pagination state
   const [usersPage, setUsersPage] = useState(1);
@@ -1387,9 +1390,9 @@ export default function AdminPage() {
                       <Badge className="bg-red-500 text-white text-xs">Critical</Badge>
                     </div>
                     <div className="text-2xl font-bold text-red-800 mb-1">
-                      {balancesLoading ? "..." : (businessUnitBalances as any[]).filter((bu: any) => bu.balance <= 100).length}
+                      {balancesLoading ? "..." : (businessUnitBalances as any[]).filter((bu: any) => bu.balance <= criticalThreshold).length}
                     </div>
-                    <div className="text-red-700 text-sm">Units ≤ ₹100</div>
+                    <div className="text-red-700 text-sm">Units ≤ ₹{criticalThreshold}</div>
                   </CardContent>
                 </Card>
 
@@ -1400,9 +1403,9 @@ export default function AdminPage() {
                       <Badge className="bg-yellow-500 text-white text-xs">Low</Badge>
                     </div>
                     <div className="text-2xl font-bold text-yellow-800 mb-1">
-                      {balancesLoading ? "..." : (businessUnitBalances as any[]).filter((bu: any) => bu.balance > 100 && bu.balance <= balanceThreshold).length}
+                      {balancesLoading ? "..." : (businessUnitBalances as any[]).filter((bu: any) => bu.balance > criticalThreshold && bu.balance <= lowBalanceThreshold).length}
                     </div>
-                    <div className="text-yellow-700 text-sm">Units ≤ ₹{balanceThreshold}</div>
+                    <div className="text-yellow-700 text-sm">Units ≤ ₹{lowBalanceThreshold}</div>
                   </CardContent>
                 </Card>
 
@@ -1413,9 +1416,9 @@ export default function AdminPage() {
                       <Badge className="bg-green-500 text-white text-xs">Healthy</Badge>
                     </div>
                     <div className="text-2xl font-bold text-green-800 mb-1">
-                      {balancesLoading ? "..." : (businessUnitBalances as any[]).filter((bu: any) => bu.balance > balanceThreshold).length}
+                      {balancesLoading ? "..." : (businessUnitBalances as any[]).filter((bu: any) => bu.balance > lowBalanceThreshold).length}
                     </div>
-                    <div className="text-green-700 text-sm">Units {'>'} ₹{balanceThreshold}</div>
+                    <div className="text-green-700 text-sm">Units {'>'} ₹{lowBalanceThreshold}</div>
                   </CardContent>
                 </Card>
 
@@ -1470,9 +1473,9 @@ export default function AdminPage() {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                       >
                         <option value="all">All Business Units</option>
-                        <option value="critical">Critical (≤ ₹100)</option>
-                        <option value="low">Low Balance (≤ ₹{balanceThreshold})</option>
-                        <option value="healthy">Healthy ({'>'} ₹{balanceThreshold})</option>
+                        <option value="critical">Critical (≤ ₹{criticalThreshold})</option>
+                        <option value="low">Low Balance (≤ ₹{lowBalanceThreshold})</option>
+                        <option value="healthy">Healthy ({'>'} ₹{lowBalanceThreshold})</option>
                         <option value="empty">Empty (₹0)</option>
                       </select>
                     </div>
@@ -1480,8 +1483,14 @@ export default function AdminPage() {
                       <Label className="text-sm font-medium mb-2 block">Custom Threshold (₹)</Label>
                       <Input
                         type="number"
-                        value={balanceThreshold}
-                        onChange={(e) => setBalanceThreshold(Number(e.target.value))}
+                        value={lowBalanceThreshold}
+                        onChange={(e) => {
+                          const newValue = e.target.value;
+                          setSettings(prev => ({
+                            ...prev,
+                            lowBalanceAlertThreshold: newValue
+                          }));
+                        }}
                         placeholder="500"
                         className="w-full"
                       />
@@ -1525,13 +1534,13 @@ export default function AdminPage() {
                             // Apply balance filter
                             switch (balanceFilter) {
                               case 'critical':
-                                filteredUnits = filteredUnits.filter(bu => bu.balance <= 100);
+                                filteredUnits = filteredUnits.filter(bu => bu.balance <= criticalThreshold);
                                 break;
                               case 'low':
-                                filteredUnits = filteredUnits.filter(bu => bu.balance > 100 && bu.balance <= balanceThreshold);
+                                filteredUnits = filteredUnits.filter(bu => bu.balance > criticalThreshold && bu.balance <= lowBalanceThreshold);
                                 break;
                               case 'healthy':
-                                filteredUnits = filteredUnits.filter(bu => bu.balance > balanceThreshold);
+                                filteredUnits = filteredUnits.filter(bu => bu.balance > lowBalanceThreshold);
                                 break;
                               case 'empty':
                                 filteredUnits = filteredUnits.filter(bu => bu.balance === 0);
@@ -1551,14 +1560,14 @@ export default function AdminPage() {
                               </tr>
                             ) : filteredUnits.map((unit: any) => {
                               const getStatusBadge = (balance: number) => {
-                                if (balance <= 100) return <Badge className="bg-red-500 text-white">Critical</Badge>;
-                                if (balance <= balanceThreshold) return <Badge className="bg-yellow-500 text-white">Low</Badge>;
+                                if (balance <= criticalThreshold) return <Badge className="bg-red-500 text-white">Critical</Badge>;
+                                if (balance <= lowBalanceThreshold) return <Badge className="bg-yellow-500 text-white">Low</Badge>;
                                 return <Badge className="bg-green-500 text-white">Healthy</Badge>;
                               };
                               
                               const getStatusIcon = (balance: number) => {
-                                if (balance <= 100) return <AlertCircle className="w-4 h-4 text-red-500" />;
-                                if (balance <= balanceThreshold) return <Clock className="w-4 h-4 text-yellow-500" />;
+                                if (balance <= criticalThreshold) return <AlertCircle className="w-4 h-4 text-red-500" />;
+                                if (balance <= lowBalanceThreshold) return <Clock className="w-4 h-4 text-yellow-500" />;
                                 return <CheckCircle className="w-4 h-4 text-green-500" />;
                               };
                               
@@ -1578,8 +1587,8 @@ export default function AdminPage() {
                                   </td>
                                   <td className="py-3 px-4 text-right">
                                     <div className={`font-bold text-lg ${
-                                      unit.balance <= 100 ? 'text-red-600' :
-                                      unit.balance <= balanceThreshold ? 'text-yellow-600' :
+                                      unit.balance <= criticalThreshold ? 'text-red-600' :
+                                      unit.balance <= lowBalanceThreshold ? 'text-yellow-600' :
                                       'text-green-600'
                                     }`}>
                                       ₹{unit.balance?.toFixed(2) || '0.00'}
@@ -1590,7 +1599,7 @@ export default function AdminPage() {
                                   </td>
                                   <td className="py-3 px-4">
                                     <div className="flex items-center justify-center gap-2">
-                                      {unit.balance <= balanceThreshold && (
+                                      {unit.balance <= lowBalanceThreshold && (
                                         <>
                                           <Button 
                                             size="sm" 
@@ -1619,7 +1628,7 @@ export default function AdminPage() {
                                           </Button>
                                         </>
                                       )}
-                                      {unit.balance > balanceThreshold && (
+                                      {unit.balance > lowBalanceThreshold && (
                                         <Button size="sm" variant="ghost" disabled>
                                           <CheckCircle className="w-3 h-3 mr-1" />
                                           Healthy

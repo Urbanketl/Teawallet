@@ -290,6 +290,46 @@ export const insertSystemSettingSchema = createInsertSchema(systemSettings).omit
   updatedAt: true,
 });
 
+// Email notification tracking and preferences
+export const emailLogs = pgTable("email_logs", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id),
+  businessUnitId: varchar("business_unit_id").references(() => businessUnits.id),
+  emailType: varchar("email_type", { length: 100 }).notNull(), // 'critical_balance', 'low_balance'
+  subject: varchar("subject", { length: 255 }).notNull(),
+  sentAt: timestamp("sent_at").defaultNow(),
+  deliveryStatus: varchar("delivery_status", { length: 50 }).default("sent"),
+  lastSentAt: timestamp("last_sent_at"),
+});
+
+export const notificationPreferences = pgTable("notification_preferences", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).unique(),
+  emailEnabled: boolean("email_enabled").default(true),
+  balanceAlerts: boolean("balance_alerts").default(true),
+  criticalAlerts: boolean("critical_alerts").default(true),
+  lowBalanceAlerts: boolean("low_balance_alerts").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Export types
+export type EmailLog = typeof emailLogs.$inferSelect;
+export type InsertEmailLog = typeof emailLogs.$inferInsert;
+export type NotificationPreference = typeof notificationPreferences.$inferSelect;
+export type InsertNotificationPreference = typeof notificationPreferences.$inferInsert;
+
+export const insertEmailLogSchema = createInsertSchema(emailLogs).omit({
+  id: true,
+  sentAt: true,
+});
+
+export const insertNotificationPreferenceSchema = createInsertSchema(notificationPreferences).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertBusinessUnitTransferSchema = createInsertSchema(businessUnitTransfers).omit({
   id: true,
   transferDate: true,

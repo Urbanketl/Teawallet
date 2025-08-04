@@ -2,7 +2,7 @@ import { db, pool } from "./db";
 import { 
   users, businessUnits, userBusinessUnits, rfidCards, transactions, dispensingLogs, teaMachines,
   referrals, supportTickets, supportMessages, ticketStatusHistory, faqArticles, systemSettings,
-  businessUnitTransfers,
+  businessUnitTransfers, emailLogs, notificationPreferences,
   type User, type UpsertUser, type BusinessUnit, type InsertBusinessUnit,
   type UserBusinessUnit, type InsertUserBusinessUnit, type RfidCard, type InsertRfidCard,
   type Transaction, type InsertTransaction, type DispensingLog, type InsertDispensingLog,
@@ -10,7 +10,8 @@ import {
   type Referral, type InsertReferral, type SupportTicket, type InsertSupportTicket,
   type SupportMessage, type InsertSupportMessage, type FaqArticle, type InsertFaqArticle,
   type TicketStatusHistory, type InsertTicketStatusHistory, type SystemSetting,
-  type BusinessUnitTransfer, type InsertBusinessUnitTransfer
+  type BusinessUnitTransfer, type InsertBusinessUnitTransfer,
+  type EmailLog, type InsertEmailLog, type NotificationPreference, type InsertNotificationPreference
 } from "@shared/schema";
 import { eq, and, desc, asc, sql, gte, lte, or, ilike, inArray, isNotNull, isNull } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -208,6 +209,7 @@ export interface IStorage {
   getSystemSetting(key: string): Promise<string | undefined>;
   updateSystemSetting(key: string, value: string, updatedBy: string): Promise<void>;
   getAllSystemSettings(): Promise<{ key: string; value: string; description: string | null }[]>;
+  getSystemSettings(): Promise<SystemSetting[]>;
   
   // Monthly reporting operations
   getMonthlyTransactionSummary(businessUnitId: string, month: string): Promise<{
@@ -236,6 +238,19 @@ export interface IStorage {
   getUserRechargeHistory(userId: string, page: number, limit: number, startDate?: string, endDate?: string): Promise<{ recharges: (Transaction & { businessUnitName?: string })[], total: number }>;
   getRechargeHistoryExport(businessUnitId: string, startDate?: string, endDate?: string): Promise<(Transaction & { userName?: string })[]>;
   getUserRechargeHistoryExport(userId: string, startDate?: string, endDate?: string): Promise<(Transaction & { businessUnitName?: string })[]>;
+
+  // Email notification operations
+  logEmailSent(emailData: InsertEmailLog): Promise<EmailLog>;
+  getLastEmailLog(businessUnitId: string, emailType: string): Promise<EmailLog | undefined>;
+  getEmailLogs(businessUnitId?: string, limit?: number): Promise<EmailLog[]>;
+  
+  // Notification preferences
+  getNotificationPreferences(userId: string): Promise<NotificationPreference | undefined>;
+  updateNotificationPreferences(userId: string, preferences: Partial<InsertNotificationPreference>): Promise<NotificationPreference>;
+  createDefaultNotificationPreferences(userId: string): Promise<NotificationPreference>;
+
+  // System settings (alternative method name)
+  getSystemSettings(): Promise<SystemSetting[]>;
 }
 
 const PostgresSessionStore = connectPg(session);
@@ -3171,6 +3186,89 @@ export class DatabaseStorage implements IStorage {
       console.error("Failed to create user account:", error);
       throw error;
     }
+  }
+
+  // Email notification operations
+  async logEmailSent(emailData: InsertEmailLog): Promise<EmailLog> {
+    const [log] = await db.insert(emailLogs).values(emailData).returning();
+    return log;
+  }
+
+  async getLastEmailLog(businessUnitId: string, emailType: string): Promise<EmailLog | undefined> {
+    const [log] = await db
+      .select()
+      .from(emailLogs)
+      .where(and(
+        eq(emailLogs.businessUnitId, businessUnitId),
+        eq(emailLogs.emailType, emailType)
+      ))
+      .orderBy(desc(emailLogs.sentAt))
+      .limit(1);
+    return log;
+  }
+
+  async getEmailLogs(businessUnitId?: string, limit?: number): Promise<EmailLog[]> {
+    const query = db.select().from(emailLogs);
+    
+    if (businessUnitId) {
+      query.where(eq(emailLogs.businessUnitId, businessUnitId));
+    }
+    
+    query.orderBy(desc(emailLogs.sentAt));
+    
+    if (limit) {
+      query.limit(limit);
+    }
+    
+    return await query;
+  }
+
+  // Notification preferences
+  async getNotificationPreferences(userId: string): Promise<NotificationPreference | undefined> {
+    const [preferences] = await db
+      .select()
+      .from(notificationPreferences)
+      .where(eq(notificationPreferences.userId, userId));
+    
+    if (!preferences) {
+      // Create default preferences if none exist
+      return await this.createDefaultNotificationPreferences(userId);
+    }
+    
+    return preferences;
+  }
+
+  async updateNotificationPreferences(userId: string, preferences: Partial<InsertNotificationPreference>): Promise<NotificationPreference> {
+    const [updated] = await db
+      .update(notificationPreferences)
+      .set({
+        ...preferences,
+        updatedAt: new Date()
+      })
+      .where(eq(notificationPreferences.userId, userId))
+      .returning();
+    
+    return updated;
+  }
+
+  async createDefaultNotificationPreferences(userId: string): Promise<NotificationPreference> {
+    const [preferences] = await db
+      .insert(notificationPreferences)
+      .values({
+        userId,
+        emailEnabled: true,
+        balanceAlerts: true,
+        criticalAlerts: true,
+        lowBalanceAlerts: true
+      })
+      .returning();
+    
+    return preferences;
+  }
+
+  // System settings alternative method name
+  async getSystemSettings(): Promise<SystemSetting[]> {
+    return await db.select().from(systemSettings);
   }
 
   async deleteUserAccount(userId: string, deletedBy: string): Promise<{ success: boolean; message: string }> {

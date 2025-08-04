@@ -140,11 +140,19 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
 
   // Handle custom date range selection
   const handleDateRangeSelect = (range: any) => {
-    if (range?.from && range?.to) {
-      setDateRange({ start: range.from, end: range.to });
-      setDateFilter("custom");
+    console.log('Date range selected:', range);
+    if (range?.from) {
+      setDateRange({ 
+        start: range.from, 
+        end: range.to || range.from // Allow single date selection
+      });
       setCurrentPage(1);
-      setShowCalendar(false);
+      
+      // Only close calendar and update filter when both dates are selected
+      if (range.to) {
+        setShowCalendar(false);
+        setDateFilter("custom");
+      }
     }
   };
 
@@ -277,10 +285,16 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
                         "w-60 justify-start text-left font-normal bg-white border border-gray-300 hover:border-gray-400",
                         !dateRange.start && "text-muted-foreground"
                       )}
+                      onClick={() => {
+                        console.log('Date picker button clicked');
+                        setShowCalendar(!showCalendar);
+                      }}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {dateRange.start && dateRange.end ? (
                         `${format(dateRange.start, "MMM d")} - ${format(dateRange.end, "MMM d, yyyy")}`
+                      ) : dateRange.start ? (
+                        `${format(dateRange.start, "MMM d, yyyy")} - Select end date`
                       ) : (
                         "Pick date range"
                       )}
@@ -295,6 +309,7 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
                       }}
                       onSelect={handleDateRangeSelect}
                       numberOfMonths={2}
+                      className="rounded-md border"
                     />
                   </PopoverContent>
                 </Popover>

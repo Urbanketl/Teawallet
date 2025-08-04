@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { Wallet, Plus, IndianRupee, Building2 } from "lucide-react";
+import RechargeHistory from "@/components/RechargeHistory";
 
 export default function WalletPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -328,6 +329,16 @@ export default function WalletPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Recharge History Section */}
+        {selectedBusinessUnitId && businessUnits.length > 0 && (
+          <div className="mt-8">
+            <RechargeHistory 
+              businessUnitId={selectedBusinessUnitId}
+              businessUnitName={businessUnits.find(unit => unit.id === selectedBusinessUnitId)?.name || 'Unknown Business Unit'}
+            />
+          </div>
+        )}
       </main>
     </div>
   );

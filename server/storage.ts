@@ -228,6 +228,11 @@ export interface IStorage {
     uniqueCards: number;
   }>;
   getCustomDateRangeTransactions(businessUnitId: string, startDate: string, endDate: string): Promise<any[]>;
+  
+  // Recharge history operations
+  getBusinessUnitRechargeHistory(businessUnitId: string, page: number, limit: number, startDate?: string, endDate?: string): Promise<{ recharges: (Transaction & { userName?: string })[], total: number }>;
+  getUserRechargeHistory(userId: string, page: number, limit: number, startDate?: string, endDate?: string): Promise<{ recharges: (Transaction & { businessUnitName?: string })[], total: number }>;
+  getRechargeHistoryExport(businessUnitId: string, startDate?: string, endDate?: string): Promise<(Transaction & { userName?: string })[]>;
 }
 
 const PostgresSessionStore = connectPg(session);
@@ -2953,6 +2958,161 @@ export class DatabaseStorage implements IStorage {
     const start = new Date(startDate);
     const end = new Date(endDate);
     return this.getTransactionsByDateRange(businessUnitId, start, end);
+  }
+
+  // Recharge history operations
+  async getBusinessUnitRechargeHistory(businessUnitId: string, page: number, limit: number, startDate?: string, endDate?: string): Promise<{ recharges: (Transaction & { userName?: string })[], total: number }> {
+    try {
+      const offset = (page - 1) * limit;
+      
+      // Build where conditions
+      const whereConditions = [
+        eq(transactions.businessUnitId, businessUnitId),
+        or(
+          eq(transactions.type, 'recharge'),
+          eq(transactions.type, 'credit')
+        )
+      ];
+
+      if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999); // Include full end date
+        whereConditions.push(gte(transactions.createdAt, start));
+        whereConditions.push(lte(transactions.createdAt, end));
+      }
+
+      // Get total count
+      const [totalResult] = await db
+        .select({ count: count(transactions.id) })
+        .from(transactions)
+        .where(and(...whereConditions));
+
+      // Get recharges with user names
+      const rechargeResults = await db
+        .select({
+          transaction: transactions,
+          userName: sql<string>`${users.firstName} || ' ' || ${users.lastName}`,
+          userEmail: users.email
+        })
+        .from(transactions)
+        .leftJoin(users, eq(transactions.userId, users.id))
+        .where(and(...whereConditions))
+        .orderBy(desc(transactions.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      const recharges = rechargeResults.map(row => ({
+        ...row.transaction,
+        userName: row.userName,
+        userEmail: row.userEmail
+      }));
+
+      return {
+        recharges,
+        total: totalResult.count
+      };
+    } catch (error) {
+      console.error("Error getting business unit recharge history:", error);
+      return { recharges: [], total: 0 };
+    }
+  }
+
+  async getUserRechargeHistory(userId: string, page: number, limit: number, startDate?: string, endDate?: string): Promise<{ recharges: (Transaction & { businessUnitName?: string })[], total: number }> {
+    try {
+      const offset = (page - 1) * limit;
+      
+      // Build where conditions
+      const whereConditions = [
+        eq(transactions.userId, userId),
+        or(
+          eq(transactions.type, 'recharge'),
+          eq(transactions.type, 'credit')
+        )
+      ];
+
+      if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999); // Include full end date
+        whereConditions.push(gte(transactions.createdAt, start));
+        whereConditions.push(lte(transactions.createdAt, end));
+      }
+
+      // Get total count
+      const [totalResult] = await db
+        .select({ count: count(transactions.id) })
+        .from(transactions)
+        .where(and(...whereConditions));
+
+      // Get recharges with business unit names
+      const rechargeResults = await db
+        .select({
+          transaction: transactions,
+          businessUnitName: businessUnits.name
+        })
+        .from(transactions)
+        .leftJoin(businessUnits, eq(transactions.businessUnitId, businessUnits.id))
+        .where(and(...whereConditions))
+        .orderBy(desc(transactions.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      const recharges = rechargeResults.map(row => ({
+        ...row.transaction,
+        businessUnitName: row.businessUnitName
+      }));
+
+      return {
+        recharges,
+        total: totalResult.count
+      };
+    } catch (error) {
+      console.error("Error getting user recharge history:", error);
+      return { recharges: [], total: 0 };
+    }
+  }
+
+  async getRechargeHistoryExport(businessUnitId: string, startDate?: string, endDate?: string): Promise<(Transaction & { userName?: string })[]> {
+    try {
+      // Build where conditions
+      const whereConditions = [
+        eq(transactions.businessUnitId, businessUnitId),
+        or(
+          eq(transactions.type, 'recharge'),
+          eq(transactions.type, 'credit')
+        )
+      ];
+
+      if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999); // Include full end date
+        whereConditions.push(gte(transactions.createdAt, start));
+        whereConditions.push(lte(transactions.createdAt, end));
+      }
+
+      // Get all recharges for export (no pagination)
+      const rechargeResults = await db
+        .select({
+          transaction: transactions,
+          userName: sql<string>`${users.firstName} || ' ' || ${users.lastName}`,
+          userEmail: users.email
+        })
+        .from(transactions)
+        .leftJoin(users, eq(transactions.userId, users.id))
+        .where(and(...whereConditions))
+        .orderBy(desc(transactions.createdAt));
+
+      return rechargeResults.map(row => ({
+        ...row.transaction,
+        userName: row.userName,
+        userEmail: row.userEmail
+      }));
+    } catch (error) {
+      console.error("Error getting recharge history for export:", error);
+      return [];
+    }
   }
 
   // Admin-only user creation (replacing auto-registration)

@@ -18,6 +18,7 @@ import { requireAuth, requireAdmin } from "./controllers/authController";
 import { requireAdmin as requireAdminAuth } from "./auth";
 import * as transactionController from "./controllers/transactionController";
 import { registerCorporateRoutes } from "./routes/corporateRoutes";
+import { registerRechargeRoutes } from "./routes/rechargeRoutes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize Razorpay
@@ -38,6 +39,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register B2B Corporate routes
   registerCorporateRoutes(app);
+  
+  // Register recharge history routes
+  registerRechargeRoutes(app);
 
   // Admin user management
   app.post("/api/admin/users", isAuthenticated, requireAdminAuth, adminController.createUser);

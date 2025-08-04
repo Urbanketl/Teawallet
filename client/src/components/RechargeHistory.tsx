@@ -172,11 +172,18 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
 
   // Show export confirmation dialog
   const handleExportClick = () => {
+    console.log('=== EXPORT BUTTON CLICKED ===');
+    console.log('Current state - showExportDialog:', showExportDialog);
+    console.log('Total recharges:', totalRecharges);
+    console.log('Is loading:', isLoading);
     setShowExportDialog(true);
+    console.log('Export dialog should now be visible');
   };
 
   // Export recharge history
   const handleExportConfirm = async () => {
+    console.log('=== EXPORT CONFIRM CLICKED ===');
+    console.log('Starting export process...');
     try {
       const queryParams = new URLSearchParams();
       

@@ -583,7 +583,9 @@ export default function AdminPage() {
     autoRecharge: true,
     maxWalletBalance: "5000.00",
     lowBalanceThreshold: "50.00",
-    systemName: "UrbanKetl Tea System"
+    systemName: "UrbanKetl Tea System",
+    criticalBalanceThreshold: "100.00",
+    lowBalanceAlertThreshold: "500.00"
   });
 
   // Balance monitoring states
@@ -1029,6 +1031,34 @@ export default function AdminPage() {
                         onChange={(e) => setSettings({...settings, lowBalanceThreshold: e.target.value})}
                         className="w-full"
                       />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="criticalBalance">Critical Balance Threshold (₹)</Label>
+                      <Input
+                        id="criticalBalance"
+                        type="number"
+                        step="0.01"
+                        value={settings.criticalBalanceThreshold}
+                        onChange={(e) => setSettings({...settings, criticalBalanceThreshold: e.target.value})}
+                        className="w-full"
+                        placeholder="100.00"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Units with balance at or below this amount will be marked as critical</p>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="lowBalanceAlert">Low Balance Warning Threshold (₹)</Label>
+                      <Input
+                        id="lowBalanceAlert"
+                        type="number"
+                        step="0.01"
+                        value={settings.lowBalanceAlertThreshold}
+                        onChange={(e) => setSettings({...settings, lowBalanceAlertThreshold: e.target.value})}
+                        className="w-full"
+                        placeholder="500.00"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Units with balance below this amount (but above critical) will be marked as low balance</p>
                     </div>
                     
                     <div className="flex items-center justify-between">
@@ -4859,6 +4889,8 @@ function SystemSettingsManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [maxWalletBalance, setMaxWalletBalance] = useState('5000.00');
+  const [criticalBalanceThreshold, setCriticalBalanceThreshold] = useState('100.00');
+  const [lowBalanceThreshold, setLowBalanceThreshold] = useState('500.00');
   const [isLoading, setIsLoading] = useState(false);
 
   const { data: systemSettings, refetch: refetchSettings } = useQuery({
@@ -4869,8 +4901,17 @@ function SystemSettingsManagement() {
   useEffect(() => {
     if (systemSettings) {
       const maxBalance = (systemSettings as any[]).find((s: any) => s.key === 'max_wallet_balance');
+      const criticalThreshold = (systemSettings as any[]).find((s: any) => s.key === 'critical_balance_threshold');
+      const lowThreshold = (systemSettings as any[]).find((s: any) => s.key === 'low_balance_threshold');
+      
       if (maxBalance) {
         setMaxWalletBalance(maxBalance.value);
+      }
+      if (criticalThreshold) {
+        setCriticalBalanceThreshold(criticalThreshold.value);
+      }
+      if (lowThreshold) {
+        setLowBalanceThreshold(lowThreshold.value);
       }
     }
   }, [systemSettings]);
@@ -4919,6 +4960,32 @@ function SystemSettingsManagement() {
     updateSetting('max_wallet_balance', value.toFixed(2));
   };
 
+  const handleCriticalThresholdUpdate = () => {
+    const value = parseFloat(criticalBalanceThreshold);
+    if (isNaN(value) || value < 0) {
+      toast({
+        title: "Invalid Value",
+        description: "Please enter a valid non-negative number",
+        variant: "destructive",
+      });
+      return;
+    }
+    updateSetting('critical_balance_threshold', value.toFixed(2));
+  };
+
+  const handleLowThresholdUpdate = () => {
+    const value = parseFloat(lowBalanceThreshold);
+    if (isNaN(value) || value < parseFloat(criticalBalanceThreshold)) {
+      toast({
+        title: "Invalid Value",
+        description: "Low balance threshold must be greater than critical threshold",
+        variant: "destructive",
+      });
+      return;
+    }
+    updateSetting('low_balance_threshold', value.toFixed(2));
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -4952,6 +5019,58 @@ function SystemSettingsManagement() {
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 ⚠️ Users cannot recharge beyond this amount. Changes take effect immediately.
+              </p>
+            </div>
+            
+            <div>
+              <Label htmlFor="criticalThreshold">Critical Balance Threshold (₹)</Label>
+              <div className="flex space-x-2 mt-1">
+                <Input
+                  id="criticalThreshold"
+                  type="number"
+                  value={criticalBalanceThreshold}
+                  onChange={(e) => setCriticalBalanceThreshold(e.target.value)}
+                  placeholder="100.00"
+                  step="0.01"
+                  min="0"
+                />
+                <Button 
+                  onClick={handleCriticalThresholdUpdate}
+                  disabled={isLoading}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  {isLoading ? "Updating..." : "Update"}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Units at or below this balance will be marked as critical
+              </p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="lowThreshold">Low Balance Threshold (₹)</Label>
+              <div className="flex space-x-2 mt-1">
+                <Input
+                  id="lowThreshold"
+                  type="number"
+                  value={lowBalanceThreshold}
+                  onChange={(e) => setLowBalanceThreshold(e.target.value)}
+                  placeholder="500.00"
+                  step="0.01"
+                  min="0"
+                />
+                <Button 
+                  onClick={handleLowThresholdUpdate}
+                  disabled={isLoading}
+                  className="bg-yellow-600 hover:bg-yellow-700"
+                >
+                  {isLoading ? "Updating..." : "Update"}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Units below this balance (but above critical) will be marked as low
               </p>
             </div>
           </div>

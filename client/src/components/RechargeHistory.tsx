@@ -144,15 +144,18 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
     if (range?.from) {
       setDateRange({ 
         start: range.from, 
-        end: range.to || range.from // Allow single date selection
+        end: range.to || null
       });
       setCurrentPage(1);
       
-      // Only close calendar and update filter when both dates are selected
+      // Update filter when we have both dates selected
       if (range.to) {
-        setShowCalendar(false);
+        console.log('Both dates selected, applying filter');
         setDateFilter("custom");
       }
+    } else if (range === undefined) {
+      // Clear selection
+      setDateRange({ start: null, end: null });
     }
   };
 
@@ -277,30 +280,30 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
             {/* Custom Date Range Picker */}
             {dateFilter === "custom" && (
               <div className="relative">
-                <Popover open={showCalendar} onOpenChange={setShowCalendar}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-60 justify-start text-left font-normal bg-white border border-gray-300 hover:border-gray-400",
-                        !dateRange.start && "text-muted-foreground"
-                      )}
-                      onClick={() => {
-                        console.log('Date picker button clicked');
-                        setShowCalendar(!showCalendar);
-                      }}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dateRange.start && dateRange.end ? (
-                        `${format(dateRange.start, "MMM d")} - ${format(dateRange.end, "MMM d, yyyy")}`
-                      ) : dateRange.start ? (
-                        `${format(dateRange.start, "MMM d, yyyy")} - Select end date`
-                      ) : (
-                        "Pick date range"
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 z-50 bg-white border border-gray-200 shadow-lg" align="start">
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-60 justify-start text-left font-normal bg-white border border-gray-300 hover:border-gray-400",
+                    !dateRange.start && "text-muted-foreground"
+                  )}
+                  onClick={() => {
+                    console.log('Date picker button clicked, current showCalendar:', showCalendar);
+                    setShowCalendar(!showCalendar);
+                  }}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateRange.start && dateRange.end ? (
+                    `${format(dateRange.start, "MMM d")} - ${format(dateRange.end, "MMM d, yyyy")}`
+                  ) : dateRange.start ? (
+                    `${format(dateRange.start, "MMM d, yyyy")} - Select end date`
+                  ) : (
+                    "Pick date range"
+                  )}
+                </Button>
+                
+                {/* Calendar shown directly below button when open */}
+                {showCalendar && (
+                  <div className="absolute top-full left-0 mt-2 z-50 bg-white border border-gray-200 shadow-lg rounded-md p-3">
                     <Calendar
                       mode="range"
                       selected={{
@@ -309,10 +312,29 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
                       }}
                       onSelect={handleDateRangeSelect}
                       numberOfMonths={2}
-                      className="rounded-md border"
+                      className="rounded-md"
                     />
-                  </PopoverContent>
-                </Popover>
+                    <div className="flex justify-end gap-2 mt-3 pt-3 border-t">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setDateRange({ start: null, end: null });
+                          setShowCalendar(false);
+                        }}
+                      >
+                        Clear
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => setShowCalendar(false)}
+                        disabled={!dateRange.start || !dateRange.end}
+                      >
+                        Apply
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

@@ -219,6 +219,15 @@ export interface IStorage {
     machineName?: string;
     machineLocation?: string;
   })[]>;
+  
+  // Custom date range methods for API compatibility
+  getCustomDateRangeTransactionSummary(businessUnitId: string, startDate: string, endDate: string): Promise<{
+    totalTransactions: number;
+    totalAmount: string;
+    uniqueMachines: number;
+    uniqueCards: number;
+  }>;
+  getCustomDateRangeTransactions(businessUnitId: string, startDate: string, endDate: string): Promise<any[]>;
 }
 
 const PostgresSessionStore = connectPg(session);
@@ -2926,6 +2935,24 @@ export class DatabaseStorage implements IStorage {
     endDate.setMilliseconds(-1); // Last millisecond of the previous month
     
     return this.getTransactionsByDateRange(businessUnitId, startDate, endDate);
+  }
+
+  // Custom date range wrapper methods for API compatibility
+  async getCustomDateRangeTransactionSummary(businessUnitId: string, startDate: string, endDate: string): Promise<{
+    totalTransactions: number;
+    totalAmount: string;
+    uniqueMachines: number;
+    uniqueCards: number;
+  }> {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    return this.getTransactionSummaryByDateRange(businessUnitId, start, end);
+  }
+
+  async getCustomDateRangeTransactions(businessUnitId: string, startDate: string, endDate: string): Promise<any[]> {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    return this.getTransactionsByDateRange(businessUnitId, start, end);
   }
 
   // Admin-only user creation (replacing auto-registration)

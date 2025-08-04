@@ -1082,6 +1082,12 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
+  
+  // Date filtering state for custom ranges
+  const [dateFilterMode, setDateFilterMode] = useState<'month' | 'week' | 'custom' | 'all'>('month');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  
   const [isExporting, setIsExporting] = useState(false);
   const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
   const [showExportConfirmation, setShowExportConfirmation] = useState(false);
@@ -1101,10 +1107,58 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
     return options;
   };
 
-  // Get monthly transaction summary
+  // Helper function to get date range based on filter type
+  const getDateRange = () => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    switch (dateFilterMode) {
+      case 'week': {
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6); // End of week (Saturday)
+        weekEnd.setHours(23, 59, 59, 999);
+        return { startDate: weekStart.toISOString(), endDate: weekEnd.toISOString() };
+      }
+      case 'month': {
+        // Use the selected month when in month mode
+        const [year, month] = selectedMonth.split('-').map(Number);
+        const monthStart = new Date(year, month - 1, 1);
+        const monthEnd = new Date(year, month, 0);
+        monthEnd.setHours(23, 59, 59, 999);
+        return { startDate: monthStart.toISOString(), endDate: monthEnd.toISOString() };
+      }
+      case 'custom': {
+        if (!customStartDate || !customEndDate) return null;
+        const startDate = new Date(customStartDate);
+        const endDate = new Date(customEndDate);
+        endDate.setHours(23, 59, 59, 999);
+        return { startDate: startDate.toISOString(), endDate: endDate.toISOString() };
+      }
+      case 'all':
+      default:
+        return null; // No date filtering
+    }
+  };
+
+  // Get monthly transaction summary - updated to use custom date ranges
+  const dateRange = getDateRange();
   const { data: monthlyData, isLoading: monthlyLoading } = useQuery({
-    queryKey: [`/api/corporate/monthly-summary/${businessUnitId}/${selectedMonth}`],
-    enabled: !!businessUnitId && !!selectedMonth,
+    queryKey: [`/api/corporate/monthly-summary/${businessUnitId}`, dateFilterMode, selectedMonth, dateRange],
+    queryFn: async () => {
+      let url = `/api/corporate/monthly-summary/${businessUnitId}`;
+      if (dateFilterMode === 'month') {
+        url = `/api/corporate/monthly-summary/${businessUnitId}/${selectedMonth}`;
+      } else if (dateRange) {
+        url = `/api/corporate/monthly-summary/${businessUnitId}?startDate=${encodeURIComponent(dateRange.startDate)}&endDate=${encodeURIComponent(dateRange.endDate)}`;
+      }
+      
+      const response = await fetch(url, { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch monthly data');
+      return response.json();
+    },
+    enabled: !!businessUnitId && (dateFilterMode === 'month' ? !!selectedMonth : dateFilterMode === 'all' || !!dateRange),
     retry: false,
   });
 
@@ -1112,9 +1166,25 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
     setIsExporting(true);
     setShowExportConfirmation(false);
     try {
-      console.log('Frontend: Starting CSV export for:', { businessUnitId, selectedMonth, businessUnitName });
+      console.log('Frontend: Starting CSV export for:', { businessUnitId, dateFilterMode, selectedMonth, dateRange, businessUnitName });
       
-      const response = await fetch(`/api/corporate/monthly-export/${businessUnitId}/${selectedMonth}`, {
+      let url = `/api/corporate/monthly-export/${businessUnitId}`;
+      let filename = `${businessUnitName}-transactions`;
+      
+      if (dateFilterMode === 'month') {
+        url = `/api/corporate/monthly-export/${businessUnitId}/${selectedMonth}`;
+        filename = `${businessUnitName}-transactions-${selectedMonth}`;
+      } else if (dateRange) {
+        url = `/api/corporate/monthly-export/${businessUnitId}?startDate=${encodeURIComponent(dateRange.startDate)}&endDate=${encodeURIComponent(dateRange.endDate)}`;
+        const startDate = new Date(dateRange.startDate).toISOString().split('T')[0];
+        const endDate = new Date(dateRange.endDate).toISOString().split('T')[0];
+        filename = `${businessUnitName}-transactions-${startDate}-to-${endDate}`;
+      } else {
+        // All time export
+        filename = `${businessUnitName}-transactions-all-time`;
+      }
+      
+      const response = await fetch(url, {
         method: 'GET',
         credentials: 'include',
       });
@@ -1127,18 +1197,18 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
       }
 
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const downloadUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
-      a.download = `${businessUnitName}-transactions-${selectedMonth}.csv`;
+      a.href = downloadUrl;
+      a.download = `${filename}.csv`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(downloadUrl);
       document.body.removeChild(a);
 
       toast({
         title: "Export Successful",
-        description: `Transaction data exported for ${selectedMonth}`,
+        description: `Transaction data exported successfully`,
       });
     } catch (error) {
       toast({
@@ -1163,7 +1233,23 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
     setShowInvoiceConfirmation(false);
     setIsGeneratingInvoice(true);
     try {
-      const response = await fetch(`/api/corporate/monthly-invoice/${businessUnitId}/${selectedMonth}`, {
+      let url = `/api/corporate/monthly-invoice/${businessUnitId}`;
+      let filename = `${businessUnitName}-invoice`;
+      
+      if (dateFilterMode === 'month') {
+        url = `/api/corporate/monthly-invoice/${businessUnitId}/${selectedMonth}`;
+        filename = `${businessUnitName}-invoice-${selectedMonth}`;
+      } else if (dateRange) {
+        url = `/api/corporate/monthly-invoice/${businessUnitId}?startDate=${encodeURIComponent(dateRange.startDate)}&endDate=${encodeURIComponent(dateRange.endDate)}`;
+        const startDate = new Date(dateRange.startDate).toISOString().split('T')[0];
+        const endDate = new Date(dateRange.endDate).toISOString().split('T')[0];
+        filename = `${businessUnitName}-invoice-${startDate}-to-${endDate}`;
+      } else {
+        // All time invoice
+        filename = `${businessUnitName}-invoice-all-time`;
+      }
+      
+      const response = await fetch(url, {
         method: 'GET',
         credentials: 'include',
       });
@@ -1173,18 +1259,18 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
       }
 
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const downloadUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
-      a.download = `${businessUnitName}-invoice-${selectedMonth}.pdf`;
+      a.href = downloadUrl;
+      a.download = `${filename}.pdf`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(downloadUrl);
       document.body.removeChild(a);
 
       toast({
         title: "Invoice Generated",
-        description: `Invoice created for ${selectedMonth}`,
+        description: `Invoice created successfully`,
       });
     } catch (error) {
       toast({
@@ -1209,21 +1295,96 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Month Selection */}
-        <div>
-          <Label htmlFor="month-select">Select Month</Label>
-          <select
-            id="month-select"
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {getMonthOptions().map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+        {/* Date Filter Controls */}
+        <div className="p-4 border rounded-lg bg-gray-50">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-gray-600" />
+              <Label className="text-sm font-medium">Filter by date:</Label>
+            </div>
+            
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setDateFilterMode('all')}
+                className={`px-3 py-1 rounded text-sm ${
+                  dateFilterMode === 'all' 
+                    ? 'bg-blue-500 text-white' 
+                    : 'bg-white border hover:bg-gray-50'
+                }`}
+              >
+                All Time
+              </button>
+              <button
+                onClick={() => setDateFilterMode('week')}
+                className={`px-3 py-1 rounded text-sm ${
+                  dateFilterMode === 'week' 
+                    ? 'bg-blue-500 text-white' 
+                    : 'bg-white border hover:bg-gray-50'
+                }`}
+              >
+                This Week
+              </button>
+              <button
+                onClick={() => setDateFilterMode('month')}
+                className={`px-3 py-1 rounded text-sm ${
+                  dateFilterMode === 'month' 
+                    ? 'bg-blue-500 text-white' 
+                    : 'bg-white border hover:bg-gray-50'
+                }`}
+              >
+                Select Month
+              </button>
+              <button
+                onClick={() => setDateFilterMode('custom')}
+                className={`px-3 py-1 rounded text-sm ${
+                  dateFilterMode === 'custom' 
+                    ? 'bg-blue-500 text-white' 
+                    : 'bg-white border hover:bg-gray-50'
+                }`}
+              >
+                Custom Range
+              </button>
+            </div>
+          </div>
+          
+          {/* Month Selection - Only show when in month mode */}
+          {dateFilterMode === 'month' && (
+            <div className="mt-3">
+              <Label htmlFor="month-select" className="text-sm">Select Month:</Label>
+              <select
+                id="month-select"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="w-auto mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {getMonthOptions().map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          
+          {/* Custom Date Range Inputs */}
+          {dateFilterMode === 'custom' && (
+            <div className="mt-3 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+              <Label className="text-sm">From:</Label>
+              <Input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="w-auto"
+              />
+              <Label className="text-sm">To:</Label>
+              <Input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="w-auto"
+              />
+            </div>
+          )}
         </div>
 
         {/* Monthly Summary */}
@@ -1266,7 +1427,15 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
           </div>
         ) : (
           <div className="text-center py-4 text-gray-500">
-            No transaction data available for the selected month
+            {dateFilterMode === 'month' ? (
+              <p>No transaction data available for the selected month</p>
+            ) : dateFilterMode === 'custom' ? (
+              <p>No transaction data found for the selected date range</p>
+            ) : dateFilterMode === 'week' ? (
+              <p>No transaction data found for this week</p>
+            ) : (
+              <p>No transaction data available</p>
+            )}
           </div>
         )}
 
@@ -1299,7 +1468,7 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
             <li>• <strong>CSV Export:</strong> Contains all transaction details, timestamps, machine IDs, and amounts</li>
             <li>• <strong>Invoice PDF:</strong> Professional invoice with company branding and transaction summary</li>
             <li>• <strong>Data Scope:</strong> All dispensing transactions charged to {businessUnitName} wallet</li>
-            <li>• <strong>File Naming:</strong> Files include business unit name and month for easy organization</li>
+            <li>• <strong>File Naming:</strong> Files include business unit name and date range for easy organization</li>
           </ul>
         </div>
 
@@ -1321,9 +1490,17 @@ function MonthlyReportsTab({ businessUnitId, businessUnitName }: { businessUnitI
                       <span className="text-gray-900">{businessUnitName}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="font-medium text-gray-700">Month:</span>
+                      <span className="font-medium text-gray-700">Period:</span>
                       <span className="text-gray-900">
-                        {new Date(selectedMonth + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
+                        {dateFilterMode === 'month' ? (
+                          new Date(selectedMonth + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+                        ) : dateFilterMode === 'week' ? (
+                          'Current Week'
+                        ) : dateFilterMode === 'custom' ? (
+                          `${customStartDate} to ${customEndDate}`
+                        ) : (
+                          'All Time'
+                        )}
                       </span>
                     </div>
                     {(monthlyData && typeof monthlyData === 'object') ? (

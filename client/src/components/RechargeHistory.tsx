@@ -176,6 +176,7 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
     console.log('Current state - showExportDialog:', showExportDialog);
     console.log('Total recharges:', totalRecharges);
     console.log('Is loading:', isLoading);
+    alert('Export button clicked! Check console for details.');
     setShowExportDialog(true);
     console.log('Export dialog should now be visible');
   };
@@ -395,9 +396,11 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
               size="sm"
               onClick={handleExportClick}
               disabled={isLoading || totalRecharges === 0}
+              className="bg-white hover:bg-gray-50 border-2 border-tea-green text-tea-green hover:text-tea-green font-medium min-w-[100px] cursor-pointer"
+              style={{ pointerEvents: 'auto', zIndex: 10 }}
             >
               <Download className="w-4 h-4 mr-2" />
-              Export
+              Export ({totalRecharges})
             </Button>
           </div>
         </div>

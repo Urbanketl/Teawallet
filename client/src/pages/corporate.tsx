@@ -675,17 +675,9 @@ export default function Corporate() {
                   </div>
                   <p className="text-lg drop-shadow-sm text-[#A67C52] mt-2">Ready to manage your premium tea services?</p>
                 </div>
-                <div className="flex items-center space-x-6">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-[#A67C52]">{dashboardStats?.cupsToday || 0}</div>
-                    <div className="text-sm text-[#A67C52]">Cups Today</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-2">
-                      <CreditCard className="text-white text-lg" />
-                    </div>
-                    <div className="text-sm text-[#A67C52]">RFID Active</div>
-                  </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-[#A67C52]">{dashboardStats?.cupsToday || 0}</div>
+                  <div className="text-sm text-[#A67C52]">Cups Today</div>
                 </div>
               </div>
             </div>

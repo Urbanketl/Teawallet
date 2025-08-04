@@ -663,7 +663,7 @@ export default function Corporate() {
         {/* Welcome Banner */}
         {user && (
           <div className="mb-8">
-            <div className="bg-gradient-to-r from-tea-dark to-tea-green rounded-2xl p-4 text-white shadow-material-lg">
+            <div className="bg-gradient-to-r from-tea-dark to-tea-green rounded-2xl p-2 text-white shadow-material-lg">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
                 <div className="mb-4 md:mb-0">
                   <h2 className="text-2xl md:text-3xl font-inter font-bold mb-2 drop-shadow-sm text-[#A67C52]">

@@ -88,6 +88,83 @@ export function registerRechargeRoutes(app: Express) {
     }
   });
 
+  // Export all user recharge history as CSV
+  app.get("/api/recharge/export/user", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { startDate, endDate } = req.query;
+
+      console.log(`=== USER RECHARGE EXPORT API DEBUG ===`);
+      console.log(`User ID: ${userId}`);
+      console.log(`Date Filter - Start: ${startDate}, End: ${endDate}`);
+
+      // Get all recharges for the user across all their business units
+      const recharges = await storage.getUserRechargeHistoryExport(userId, startDate, endDate);
+
+      if (recharges.length === 0) {
+        return res.status(404).json({ error: "No recharge data found for the specified criteria" });
+      }
+
+      // Prepare CSV data
+      const csvData = recharges.map(recharge => ({
+        date: new Date(recharge.createdAt!).toLocaleDateString('en-IN'),
+        time: new Date(recharge.createdAt!).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+        businessUnit: (recharge as any).businessUnitName || 'Unknown Business Unit',
+        rechargedBy: recharge.userName || 'Unknown User',
+        email: (recharge as any).userEmail || '',
+        amount: `₹${recharge.amount}`,
+        type: recharge.type,
+        status: recharge.status || 'completed',
+        paymentId: recharge.razorpayPaymentId || '',
+        description: recharge.description || 'Wallet recharge'
+      }));
+
+      // Create CSV file
+      const dateRange = startDate && endDate ? `_${startDate}_to_${endDate}` : '';
+      const filename = `recharge-history_all-business-units${dateRange}_${Date.now()}.csv`;
+      const filepath = path.join(process.cwd(), filename);
+
+      const csvWriter = createCsvWriter.createObjectCsvWriter({
+        path: filepath,
+        header: [
+          { id: 'date', title: 'Date' },
+          { id: 'time', title: 'Time' },
+          { id: 'businessUnit', title: 'Business Unit' },
+          { id: 'rechargedBy', title: 'Recharged By' },
+          { id: 'email', title: 'Email' },
+          { id: 'amount', title: 'Amount' },
+          { id: 'type', title: 'Type' },
+          { id: 'status', title: 'Status' },
+          { id: 'paymentId', title: 'Payment ID' },
+          { id: 'description', title: 'Description' }
+        ]
+      });
+
+      await csvWriter.writeRecords(csvData);
+
+      console.log(`User recharge history export generated: ${filename} with ${csvData.length} records`);
+
+      // Set headers for file download
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+      // Stream the file and clean up
+      const fileStream = fs.createReadStream(filepath);
+      fileStream.pipe(res);
+      
+      fileStream.on('end', () => {
+        // Clean up the temporary file
+        fs.unlink(filepath, (err) => {
+          if (err) console.error('Error deleting temporary file:', err);
+        });
+      });
+
+    } catch (error) {
+      console.error("Error exporting user recharge history:", error);
+      res.status(500).json({ error: "Failed to export recharge history" });
+    }
+  });
+
   // Export recharge history as CSV
   app.get("/api/recharge/export/:businessUnitId", isAuthenticated, async (req: any, res) => {
     try {
@@ -165,6 +242,7 @@ export function registerRechargeRoutes(app: Express) {
           if (err) console.error('Error deleting temporary file:', err);
         });
       });
+
 
     } catch (error) {
       console.error("Error exporting recharge history:", error);

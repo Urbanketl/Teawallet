@@ -233,6 +233,7 @@ export interface IStorage {
   getBusinessUnitRechargeHistory(businessUnitId: string, page: number, limit: number, startDate?: string, endDate?: string): Promise<{ recharges: (Transaction & { userName?: string })[], total: number }>;
   getUserRechargeHistory(userId: string, page: number, limit: number, startDate?: string, endDate?: string): Promise<{ recharges: (Transaction & { businessUnitName?: string })[], total: number }>;
   getRechargeHistoryExport(businessUnitId: string, startDate?: string, endDate?: string): Promise<(Transaction & { userName?: string })[]>;
+  getUserRechargeHistoryExport(userId: string, startDate?: string, endDate?: string): Promise<(Transaction & { businessUnitName?: string })[]>;
 }
 
 const PostgresSessionStore = connectPg(session);
@@ -3139,6 +3140,46 @@ export class DatabaseStorage implements IStorage {
       }));
     } catch (error) {
       console.error("Error getting recharge history for export:", error);
+      return [];
+    }
+  }
+
+  async getUserRechargeHistoryExport(userId: string, startDate?: string, endDate?: string): Promise<(Transaction & { businessUnitName?: string })[]> {
+    try {
+      // Build where conditions
+      const whereConditions = [
+        eq(transactions.userId, userId),
+        or(
+          eq(transactions.type, 'recharge'),
+          eq(transactions.type, 'credit')
+        )
+      ];
+
+      if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999); // Include full end date
+        whereConditions.push(gte(transactions.createdAt, start));
+        whereConditions.push(lte(transactions.createdAt, end));
+      }
+
+      // Get all recharges for export (no pagination)
+      const rechargeResults = await db
+        .select({
+          transaction: transactions,
+          businessUnitName: businessUnits.name
+        })
+        .from(transactions)
+        .leftJoin(businessUnits, eq(transactions.businessUnitId, businessUnits.id))
+        .where(and(...whereConditions))
+        .orderBy(desc(transactions.createdAt));
+
+      return rechargeResults.map(row => ({
+        ...row.transaction,
+        businessUnitName: row.businessUnitName
+      }));
+    } catch (error) {
+      console.error("Error getting user recharge history for export:", error);
       return [];
     }
   }

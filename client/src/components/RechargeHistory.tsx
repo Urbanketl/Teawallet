@@ -7,6 +7,14 @@ import { Badge } from "@/components/ui/badge";
 // Removed Radix UI Select - using native HTML select instead
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   History, 
   Download, 
@@ -15,7 +23,9 @@ import {
   ChevronLeft, 
   ChevronRight,
   Plus,
-  CreditCard
+  CreditCard,
+  AlertCircle,
+  FileText
 } from "lucide-react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -38,6 +48,7 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
     end: null,
   });
   const [showCalendar, setShowCalendar] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   const limit = 10; // Show 10 recharges per page
 
@@ -159,8 +170,13 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
     }
   };
 
+  // Show export confirmation dialog
+  const handleExportClick = () => {
+    setShowExportDialog(true);
+  };
+
   // Export recharge history
-  const handleExport = async () => {
+  const handleExportConfirm = async () => {
     try {
       const queryParams = new URLSearchParams();
       
@@ -185,7 +201,20 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
         queryParams.append("endDate", endDate);
       }
 
-      const response = await fetch(`/api/recharge/export/${businessUnitId}?${queryParams}`, {
+      // Determine the correct endpoint based on context
+      let exportUrl: string;
+      if (showBusinessUnitFilter && selectedBusinessUnit === "all") {
+        // Export all business units for the user
+        exportUrl = `/api/recharge/export/user?${queryParams}`;
+      } else {
+        // Export specific business unit
+        const targetBusinessUnit = businessUnitId || selectedBusinessUnit;
+        exportUrl = `/api/recharge/export/${targetBusinessUnit}?${queryParams}`;
+      }
+
+      console.log('Export URL:', exportUrl);
+
+      const response = await fetch(exportUrl, {
         credentials: 'include'
       });
 
@@ -198,13 +227,28 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `recharge-history-${businessUnitName}-${Date.now()}.csv`;
+      
+      // Generate appropriate filename
+      let filename: string;
+      if (showBusinessUnitFilter && selectedBusinessUnit === "all") {
+        filename = `recharge-history-all-units-${Date.now()}.csv`;
+      } else {
+        const unitName = businessUnitName || 
+          (businessUnits as any[])?.find((unit: any) => unit.id === selectedBusinessUnit)?.name || 
+          'unit';
+        filename = `recharge-history-${unitName.replace(/\s+/g, '-')}-${Date.now()}.csv`;
+      }
+      
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
+      
+      setShowExportDialog(false);
     } catch (error) {
       console.error('Export failed:', error);
+      // You might want to show a toast here
     }
   };
 
@@ -342,7 +386,7 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
             <Button
               variant="outline"
               size="sm"
-              onClick={handleExport}
+              onClick={handleExportClick}
               disabled={isLoading || totalRecharges === 0}
             >
               <Download className="w-4 h-4 mr-2" />
@@ -476,6 +520,82 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
           </div>
         )}
       </CardContent>
+
+      {/* Export Confirmation Dialog */}
+      <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Export Recharge History
+            </DialogTitle>
+            <DialogDescription>
+              You're about to download a CSV file with the following data:
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4 space-y-4">
+            {/* Export Summary */}
+            <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="font-medium">Business Unit:</span>
+                <span className="text-sm">
+                  {showBusinessUnitFilter && selectedBusinessUnit === "all" 
+                    ? "All Business Units" 
+                    : businessUnitName || 
+                      (businessUnits as any[])?.find((unit: any) => unit.id === selectedBusinessUnit)?.name || 
+                      'Selected Business Unit'
+                  }
+                </span>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <span className="font-medium">Date Range:</span>
+                <span className="text-sm">
+                  {dateFilter === "all" ? "All Time" :
+                   dateFilter === "week" ? "This Week" :
+                   dateFilter === "month" ? "This Month" :
+                   dateFilter === "custom" && dateRange.start && dateRange.end ?
+                   `${format(dateRange.start, "MMM d")} - ${format(dateRange.end, "MMM d, yyyy")}` :
+                   "All Time"
+                  }
+                </span>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <span className="font-medium">Total Records:</span>
+                <span className="text-sm font-semibold">{totalRecharges} recharges</span>
+              </div>
+            </div>
+
+            {totalRecharges > 100 && (
+              <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-amber-800">
+                  <p className="font-medium">Large Export Warning</p>
+                  <p>This export contains {totalRecharges} records. The file may take a moment to generate.</p>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowExportDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleExportConfirm}
+              disabled={totalRecharges === 0}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download CSV
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

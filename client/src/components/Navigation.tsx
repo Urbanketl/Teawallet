@@ -34,10 +34,7 @@ export default function Navigation() {
   if (isLoading || !typedUser) return null;
 
   const navItems = [
-    { href: "/", icon: LayoutDashboard, label: "Dashboard" },
-    { href: "/corporate", icon: Coffee, label: "Business Unit" },
-    { href: "/wallet", icon: Wallet, label: "Business Wallet" },
-
+    { href: "/", icon: Coffee, label: "Business Unit" },
     { href: "/support", icon: MessageCircle, label: "Business Support" },
     { href: "/profile", icon: UserIcon, label: "Profile" },
   ];

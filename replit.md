@@ -12,7 +12,8 @@ Preferred communication style: Simple, everyday language.
 - **Frontend Framework**: React 18 with TypeScript, utilizing Radix UI components and Tailwind CSS for a modern and responsive design.
 - **Mobile**: React Native with Expo for a companion mobile application.
 - **Design Principles**: Brand-aligned login page redesign with a centered layout, professional branding, and optimized for viewport height. Consistent application of brand colors (Pantone Gold Fusion) to key interactive elements.
-- **Navigation**: Streamlined navigation with simplified role-based access. Mobile navigation optimized with native HTML select dropdowns for improved accessibility.
+- **Navigation**: Streamlined navigation with simplified role-based access. Corporate page serves as main landing page with integrated welcome banner. Dashboard and wallet pages removed for cleaner user experience.
+- **Landing Page Architecture**: Corporate page (/) is the primary entry point featuring color-coded business unit cards, personalized welcome banner, and comprehensive business unit management tools.
 
 ### Technical Implementations
 - **Backend**: Node.js with Express.js, written in TypeScript, providing RESTful APIs.

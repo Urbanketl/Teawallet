@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { apiRequest } from "@/lib/queryClient";
 import Navigation from "@/components/Navigation";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   Coffee, 
   CreditCard, 
@@ -367,7 +368,7 @@ function BalanceMonitoringOverview({ businessUnits }: { businessUnits: BusinessU
   );
 }
 
-export default function CorporateDashboard() {
+export default function Corporate() {
   const [selectedBusinessUnitId, setSelectedBusinessUnitId] = useState<string | null>(null);
   const [newCardName, setNewCardName] = useState("");
   const [newCardNumber, setNewCardNumber] = useState("");
@@ -381,12 +382,20 @@ export default function CorporateDashboard() {
   const [customEndDate, setCustomEndDate] = useState('');
   
   const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   
   // Check for pseudo login parameter and tab parameter
   const urlParams = new URLSearchParams(window.location.search);
   const pseudoParam = urlParams.get('pseudo') ? `?pseudo=${urlParams.get('pseudo')}` : '';
   const defaultTab = urlParams.get('tab') || 'machines';
+
+  // Get dashboard stats for welcome banner
+  const { data: dashboardStats } = useQuery({
+    queryKey: ["/api/dashboard/stats"],
+    enabled: !!user,
+    retry: false,
+  });
 
   // Get user's business units
   const { data: businessUnits = [], isLoading: businessUnitsLoading } = useQuery<BusinessUnit[]>({
@@ -648,6 +657,38 @@ export default function CorporateDashboard() {
             <p className="text-blue-700 text-sm">
               You are viewing the dashboard as this user. Data shown is specific to their business unit assignments.
             </p>
+          </div>
+        )}
+
+        {/* Welcome Banner */}
+        {user && (
+          <div className="mb-8">
+            <div className="bg-gradient-to-r from-tea-dark to-tea-green rounded-2xl p-8 text-white shadow-material-lg">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
+                <div className="mb-4 md:mb-0">
+                  <h2 className="text-2xl md:text-3xl font-inter font-bold mb-2 drop-shadow-sm text-[#A67C52]">
+                    Welcome back, {user.firstName || "Tea Lover"}!
+                  </h2>
+                  <div className="bg-white/20 rounded-lg px-3 py-2 mt-2 inline-block">
+                    <p className="text-lg font-semibold">Business Unit Management</p>
+                    <p className="text-sm opacity-80">Manage your tea operations</p>
+                  </div>
+                  <p className="text-lg drop-shadow-sm text-[#A67C52] mt-2">Ready to manage your premium tea services?</p>
+                </div>
+                <div className="flex items-center space-x-6">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-[#A67C52]">{dashboardStats?.cupsToday || 0}</div>
+                    <div className="text-sm text-[#A67C52]">Cups Today</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-2">
+                      <CreditCard className="text-white text-lg" />
+                    </div>
+                    <div className="text-sm text-[#A67C52]">RFID Active</div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

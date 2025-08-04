@@ -14,7 +14,6 @@ import { Suspense } from "react";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import AuthPage from "@/pages/auth-page";
-import Dashboard from "@/pages/dashboard";
 import Admin from "@/pages/admin";
 import Profile from "@/pages/profile";
 import Support from "@/pages/support";
@@ -62,13 +61,12 @@ function Router() {
       )}
       
       <Switch>
-        <Route path="/" component={Dashboard} />
+        <Route path="/" component={Corporate} />
         <Route path="/auth" component={AuthPage} />
         <Route path="/profile" component={Profile} />
         <Route path="/admin" component={Admin} />
         <Route path="/support" component={Support} />
         <Route path="/analytics" component={Analytics} />
-        <Route path="/corporate" component={Corporate} />
         <Route component={NotFound} />
       </Switch>
     </>

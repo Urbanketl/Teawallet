@@ -209,50 +209,54 @@ export default function RechargeHistory({ businessUnitId, businessUnitName }: Re
           
           <div className="flex items-center space-x-2">
             {/* Date Filter */}
-            <Select value={dateFilter} onValueChange={handleDateFilterChange}>
-              <SelectTrigger className="w-40">
-                <Filter className="w-4 h-4 mr-2" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Time</SelectItem>
-                <SelectItem value="week">This Week</SelectItem>
-                <SelectItem value="month">This Month</SelectItem>
-                <SelectItem value="custom">Custom Range</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="relative">
+              <Select value={dateFilter} onValueChange={handleDateFilterChange}>
+                <SelectTrigger className="w-40 bg-white border border-gray-300 hover:border-gray-400">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Filter by date" />
+                </SelectTrigger>
+                <SelectContent className="z-50 bg-white border border-gray-200 shadow-lg">
+                  <SelectItem value="all">All Time</SelectItem>
+                  <SelectItem value="week">This Week</SelectItem>
+                  <SelectItem value="month">This Month</SelectItem>
+                  <SelectItem value="custom">Custom Range</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* Custom Date Range Picker */}
             {dateFilter === "custom" && (
-              <Popover open={showCalendar} onOpenChange={setShowCalendar}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-60 justify-start text-left font-normal",
-                      !dateRange.start && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateRange.start && dateRange.end ? (
-                      `${format(dateRange.start, "MMM d")} - ${format(dateRange.end, "MMM d, yyyy")}`
-                    ) : (
-                      "Pick date range"
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="range"
-                    selected={{
-                      from: dateRange.start || undefined,
-                      to: dateRange.end || undefined
-                    }}
-                    onSelect={handleDateRangeSelect}
-                    numberOfMonths={2}
-                  />
-                </PopoverContent>
-              </Popover>
+              <div className="relative">
+                <Popover open={showCalendar} onOpenChange={setShowCalendar}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-60 justify-start text-left font-normal bg-white border border-gray-300 hover:border-gray-400",
+                        !dateRange.start && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateRange.start && dateRange.end ? (
+                        `${format(dateRange.start, "MMM d")} - ${format(dateRange.end, "MMM d, yyyy")}`
+                      ) : (
+                        "Pick date range"
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 z-50 bg-white border border-gray-200 shadow-lg" align="start">
+                    <Calendar
+                      mode="range"
+                      selected={{
+                        from: dateRange.start || undefined,
+                        to: dateRange.end || undefined
+                      }}
+                      onSelect={handleDateRangeSelect}
+                      numberOfMonths={2}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
             )}
 
             {/* Export Button */}
@@ -287,6 +291,15 @@ export default function RechargeHistory({ businessUnitId, businessUnitName }: Re
           </div>
         ) : (
           <div className="space-y-4">
+            {/* Column Headers */}
+            <div className="hidden md:grid md:grid-cols-12 gap-4 px-4 py-2 bg-gray-50 rounded-lg text-sm font-medium text-gray-700">
+              <div className="col-span-3">Amount & Status</div>
+              <div className="col-span-3">Date & Time</div>
+              <div className="col-span-2">Business Unit</div>
+              <div className="col-span-2">Recharged By</div>
+              <div className="col-span-2">Payment ID</div>
+            </div>
+
             {/* Recharge List */}
             <div className="space-y-3">
               {recharges.map((recharge: any) => (
@@ -299,8 +312,8 @@ export default function RechargeHistory({ businessUnitId, businessUnitName }: Re
                       <Plus className="w-5 h-5 text-green-600" />
                     </div>
                     
-                    <div>
-                      <div className="flex items-center space-x-2">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
                         <p className="font-medium text-gray-900">
                           {formatAmount(recharge.amount, recharge.type)}
                         </p>
@@ -309,7 +322,7 @@ export default function RechargeHistory({ businessUnitId, businessUnitName }: Re
                         </Badge>
                       </div>
                       
-                      <div className="flex items-center space-x-4 text-sm text-gray-600">
+                      <div className="flex items-center space-x-4 text-sm text-gray-600 mb-1">
                         <span>
                           {new Date(recharge.createdAt).toLocaleDateString('en-IN')} at{' '}
                           {new Date(recharge.createdAt).toLocaleTimeString('en-IN', { 
@@ -320,8 +333,14 @@ export default function RechargeHistory({ businessUnitId, businessUnitName }: Re
                         {recharge.userName && (
                           <span>by {recharge.userName}</span>
                         )}
-                        {recharge.paymentId && (
-                          <span className="font-mono text-xs">ID: {recharge.paymentId}</span>
+                      </div>
+                      
+                      <div className="flex items-center space-x-4 text-xs text-gray-500">
+                        <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-full font-medium">
+                          {businessUnitName}
+                        </span>
+                        {recharge.razorpayPaymentId && (
+                          <span className="font-mono">ID: {recharge.razorpayPaymentId}</span>
                         )}
                       </div>
                     </div>

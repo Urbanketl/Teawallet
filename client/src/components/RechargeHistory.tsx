@@ -95,6 +95,7 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
       console.log('endpoint:', endpoint);
       console.log('Business Unit ID (prop):', businessUnitId);
       console.log('Is Authenticated:', isAuthenticated);
+      console.log('Available business units:', businessUnits);
       
       const queryParams = buildQueryParams();
       console.log('Query Params:', queryParams);
@@ -378,8 +379,10 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
                       
                       <div className="flex items-center space-x-4 text-xs text-gray-500">
                         <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-full font-medium">
-                          {showBusinessUnitFilter && isAllBusinessUnits 
-                            ? recharge.businessUnitName || 'Unknown Unit'
+                          {showBusinessUnitFilter 
+                            ? (isAllBusinessUnits 
+                                ? recharge.businessUnitName || 'Unknown Unit'
+                                : (businessUnits as any[]).find((unit: any) => unit.id === selectedBusinessUnit)?.name || 'Unknown Unit')
                             : businessUnitName}
                         </span>
                         {recharge.razorpayPaymentId && (

@@ -5,6 +5,7 @@ UrbanKetl is a B2B corporate tea dispensing system integrating RFID technology w
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
+UI/UX preferences: Clean, simplified interfaces without unnecessary elements like export buttons or column headers in data tables. Pagination controls should be positioned at the top of listings.
 
 ## System Architecture
 

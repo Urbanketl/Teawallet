@@ -110,10 +110,16 @@ export async function getSuggestedCardNumber(req: any, res: Response) {
 // Create user with password generation
 export async function createUser(req: any, res: Response) {
   try {
-    const { email, firstName, lastName, role } = req.body;
+    const { email, firstName, lastName, mobileNumber, role } = req.body;
     
-    if (!email || !firstName || !lastName || !role) {
-      return res.status(400).json({ error: 'Email, first name, last name, and role are required' });
+    if (!email || !firstName || !lastName || !mobileNumber || !role) {
+      return res.status(400).json({ error: 'Email, first name, last name, mobile number, and role are required' });
+    }
+
+    // Validate mobile number format (basic validation)
+    const mobileRegex = /^[\+]?[1-9][\d]{0,15}$/;
+    if (!mobileRegex.test(mobileNumber.replace(/\s+/g, ''))) {
+      return res.status(400).json({ error: 'Please enter a valid mobile number' });
     }
 
     // Check if user already exists
@@ -157,6 +163,7 @@ export async function createUser(req: any, res: Response) {
       password: hashedPassword,
       firstName,
       lastName,
+      mobileNumber,
       isAdmin,
       isSuperAdmin,
       requiresPasswordReset: true, // User must reset password on first login
@@ -269,13 +276,19 @@ export async function updateUserAdminStatus(req: any, res: Response) {
 // Admin-only user creation
 export async function createUserAccount(req: any, res: Response) {
   try {
-    const { id, email, firstName, lastName, role } = req.body;
+    const { id, email, firstName, lastName, mobileNumber, role } = req.body;
     const createdBy = req.user.id;
 
-    if (!id || !email || !firstName || !lastName || !role) {
+    if (!id || !email || !firstName || !lastName || !mobileNumber || !role) {
       return res.status(400).json({ 
-        message: 'User ID, email, first name, last name, and role are required' 
+        message: 'User ID, email, first name, last name, mobile number, and role are required' 
       });
+    }
+
+    // Validate mobile number format (basic validation)
+    const mobileRegex = /^[\+]?[1-9][\d]{0,15}$/;
+    if (!mobileRegex.test(mobileNumber.replace(/\s+/g, ''))) {
+      return res.status(400).json({ message: 'Please enter a valid mobile number' });
     }
 
     // Convert role to boolean flags
@@ -287,6 +300,7 @@ export async function createUserAccount(req: any, res: Response) {
       email,
       firstName,
       lastName,
+      mobileNumber,
       isAdmin,
       isSuperAdmin,
       createdBy

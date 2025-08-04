@@ -3717,6 +3717,7 @@ function UserManagement() {
     email: '',
     firstName: '',
     lastName: '',
+    mobileNumber: '',
     role: 'business_unit_admin' as 'platform_admin' | 'business_unit_admin' | 'viewer'
   });
   const usersLimit = 20;
@@ -3797,7 +3798,7 @@ function UserManagement() {
         description: `User account created successfully for ${result.user.email}. Generated password: ${result.generatedPassword}`,
       });
       setShowCreateForm(false);
-      setNewUserData({ email: '', firstName: '', lastName: '', role: 'business_unit_admin' });
+      setNewUserData({ email: '', firstName: '', lastName: '', mobileNumber: '', role: 'business_unit_admin' });
       
       // Show credential sharing information
       toast({
@@ -3849,10 +3850,21 @@ function UserManagement() {
   });
 
   const handleCreateUser = () => {
-    if (!newUserData.email || !newUserData.firstName || !newUserData.lastName) {
+    if (!newUserData.email || !newUserData.firstName || !newUserData.lastName || !newUserData.mobileNumber) {
       toast({
         title: "Error",
         description: "All fields are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate mobile number format
+    const mobileRegex = /^[\+]?[1-9][\d]{0,15}$/;
+    if (!mobileRegex.test(newUserData.mobileNumber.replace(/\s+/g, ''))) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid mobile number",
         variant: "destructive",
       });
       return;
@@ -3942,6 +3954,16 @@ function UserManagement() {
                   onChange={(e) => setNewUserData({ ...newUserData, lastName: e.target.value })}
                 />
               </div>
+              <div>
+                <Label htmlFor="mobileNumber">Mobile Number*</Label>
+                <Input
+                  id="mobileNumber"
+                  type="tel"
+                  placeholder="+91 98765 43210"
+                  value={newUserData.mobileNumber}
+                  onChange={(e) => setNewUserData({ ...newUserData, mobileNumber: e.target.value })}
+                />
+              </div>
             </div>
             
             <div>
@@ -3968,7 +3990,7 @@ function UserManagement() {
                 variant="outline"
                 onClick={() => {
                   setShowCreateForm(false);
-                  setNewUserData({ email: '', firstName: '', lastName: '', role: 'business_unit_admin' });
+                  setNewUserData({ email: '', firstName: '', lastName: '', mobileNumber: '', role: 'business_unit_admin' });
                 }}
               >
                 Cancel

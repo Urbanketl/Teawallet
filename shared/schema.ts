@@ -17,6 +17,7 @@ export const users = pgTable("users", {
   password: varchar("password").notNull(), // Hashed password
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
+  mobileNumber: varchar("mobile_number").notNull(), // Mobile number - mandatory field
   profileImageUrl: varchar("profile_image_url"),
   isAdmin: boolean("is_admin").default(false), // Platform admin vs regular user
   isSuperAdmin: boolean("is_super_admin").default(false), // UrbanKetl platform super admin

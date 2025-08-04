@@ -19,7 +19,7 @@ import connectPg from "connect-pg-simple";
 
 export interface IStorage {
   // Session store for authentication
-  sessionStore: session.SessionStore;
+  sessionStore: any;
   
   // User operations
   getUser(id: string): Promise<User | undefined>;
@@ -152,7 +152,9 @@ export interface IStorage {
     email: string;
     firstName: string;
     lastName: string;
+    mobileNumber: string;
     isAdmin?: boolean;
+    isSuperAdmin?: boolean;
     createdBy: string;
   }): Promise<User>;
   deleteUserAccount(userId: string, deletedBy: string): Promise<{ success: boolean; message: string }>;
@@ -239,7 +241,7 @@ export interface IStorage {
 const PostgresSessionStore = connectPg(session);
 
 export class DatabaseStorage implements IStorage {
-  public sessionStore: session.SessionStore;
+  public sessionStore: any;
 
   constructor() {
     // Initialize session store with database connection
@@ -354,72 +356,7 @@ export class DatabaseStorage implements IStorage {
     await db.delete(users).where(eq(users.id, id));
   }
 
-  async updateUserPassword(id: string, hashedPassword: string): Promise<void> {
-    await db
-      .update(users)
-      .set({
-        password: hashedPassword,
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, id));
-  }
 
-  async setPasswordResetToken(id: string, token: string, expiresAt: Date): Promise<void> {
-    await db
-      .update(users)
-      .set({
-        passwordResetToken: token,
-        passwordResetExpires: expiresAt,
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, id));
-  }
-
-  async getUserByResetToken(token: string): Promise<User | undefined> {
-    const result = await db
-      .select()
-      .from(users)
-      .where(
-        and(
-          eq(users.passwordResetToken, token),
-          gte(users.passwordResetExpires, new Date())
-        )
-      )
-      .limit(1);
-
-    return result[0];
-  }
-
-  async clearPasswordResetToken(id: string): Promise<void> {
-    await db
-      .update(users)
-      .set({
-        passwordResetToken: null,
-        passwordResetExpires: null,
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, id));
-  }
-
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    const result = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, email))
-      .limit(1);
-
-    return result[0];
-  }
-
-  async setPasswordResetStatus(id: string, requiresReset: boolean): Promise<void> {
-    await db
-      .update(users)
-      .set({
-        requiresPasswordReset: requiresReset,
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, id));
-  }
 
   // Business Unit operations
   async createBusinessUnit(businessUnit: InsertBusinessUnit): Promise<BusinessUnit> {
@@ -3190,6 +3127,7 @@ export class DatabaseStorage implements IStorage {
     email: string;
     firstName: string;
     lastName: string;
+    mobileNumber: string;
     isAdmin?: boolean;
     isSuperAdmin?: boolean;
     createdBy: string;
@@ -3219,6 +3157,7 @@ export class DatabaseStorage implements IStorage {
           email: userData.email,
           firstName: userData.firstName,
           lastName: userData.lastName,
+          mobileNumber: userData.mobileNumber,
           isAdmin: userData.isAdmin || false,
           isSuperAdmin: userData.isSuperAdmin || false,
           createdAt: new Date(),

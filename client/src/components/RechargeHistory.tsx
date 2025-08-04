@@ -4,13 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
+// Removed Radix UI Select - using native HTML select instead
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { 
@@ -135,6 +129,7 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
 
   // Handle date filter changes
   const handleDateFilterChange = (value: string) => {
+    console.log('Date filter changed to:', value);
     setDateFilter(value as any);
     setCurrentPage(1);
     if (value !== "custom") {
@@ -234,41 +229,40 @@ export default function RechargeHistory({ businessUnitId, businessUnitName, show
           <div className="flex items-center space-x-2">
             {/* Business Unit Filter */}
             {showBusinessUnitFilter && (
-              <div className="relative">
-                <Select value={selectedBusinessUnit} onValueChange={(value) => {
-                  setSelectedBusinessUnit(value);
-                  setCurrentPage(1);
-                }}>
-                  <SelectTrigger className="w-48 bg-white border border-gray-300 hover:border-gray-400">
-                    <Filter className="w-4 h-4 mr-2" />
-                    <SelectValue placeholder="All Business Units" />
-                  </SelectTrigger>
-                  <SelectContent className="z-50 bg-white border border-gray-200 shadow-lg">
-                    <SelectItem value="all">All Business Units</SelectItem>
-                    {(businessUnits as any[]).map((unit: any) => (
-                      <SelectItem key={unit.id} value={unit.id}>
-                        {unit.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="relative flex items-center">
+                <Filter className="w-4 h-4 mr-2 text-gray-500" />
+                <select 
+                  value={selectedBusinessUnit} 
+                  onChange={(e) => {
+                    console.log('Business unit filter changed to:', e.target.value);
+                    setSelectedBusinessUnit(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-48 px-3 py-2 border border-gray-300 rounded-lg bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-tea-green focus:border-transparent text-sm"
+                >
+                  <option value="all">All Business Units</option>
+                  {(businessUnits as any[]).map((unit: any) => (
+                    <option key={unit.id} value={unit.id}>
+                      {unit.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
 
             {/* Date Filter */}
-            <div className="relative">
-              <Select value={dateFilter} onValueChange={handleDateFilterChange}>
-                <SelectTrigger className="w-40 bg-white border border-gray-300 hover:border-gray-400">
-                  <Filter className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Filter by date" />
-                </SelectTrigger>
-                <SelectContent className="z-50 bg-white border border-gray-200 shadow-lg">
-                  <SelectItem value="all">All Time</SelectItem>
-                  <SelectItem value="week">This Week</SelectItem>
-                  <SelectItem value="month">This Month</SelectItem>
-                  <SelectItem value="custom">Custom Range</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="relative flex items-center">
+              <Filter className="w-4 h-4 mr-2 text-gray-500" />
+              <select 
+                value={dateFilter} 
+                onChange={(e) => handleDateFilterChange(e.target.value)}
+                className="w-40 px-3 py-2 border border-gray-300 rounded-lg bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-tea-green focus:border-transparent text-sm"
+              >
+                <option value="all">All Time</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="custom">Custom Range</option>
+              </select>
             </div>
 
             {/* Custom Date Range Picker */}

@@ -1,0 +1,10 @@
+# UrbanKetl Tea Machine Dependencies
+# Install with: pip install -r requirements.txt
+
+requests>=2.25.1
+mfrc522>=0.0.7
+RPi.GPIO>=0.7.0
+
+# Optional: for advanced features
+schedule>=1.1.0
+psutil>=5.8.0

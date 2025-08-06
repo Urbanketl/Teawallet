@@ -1207,6 +1207,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Machine heartbeat endpoint (no authentication required for machines)
+  app.post('/api/machines/heartbeat', async (req, res) => {
+    try {
+      const { machineId, status, dailyDispensed, totalDispensed, timestamp } = req.body;
+      
+      if (!machineId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Machine ID required'
+        });
+      }
+
+      // Update machine status
+      const machine = await storage.getTeaMachine(machineId);
+      
+      if (!machine) {
+        return res.status(404).json({
+          success: false,
+          message: 'Machine not found'
+        });
+      }
+
+      // Log heartbeat for monitoring
+      console.log(`Heartbeat from ${machineId}: ${status}, dispensed today: ${dailyDispensed || 0}`);
+
+      return res.status(200).json({
+        success: true,
+        machineId: machineId,
+        serverTime: new Date().toISOString(),
+        message: 'Heartbeat received'
+      });
+
+    } catch (error) {
+      console.error('Machine heartbeat error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error processing heartbeat'
+      });
+    }
+  });
+
   // FAQ routes
   app.get('/api/faq', async (req, res) => {
     try {

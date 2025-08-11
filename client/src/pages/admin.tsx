@@ -3849,8 +3849,14 @@ function UserManagement() {
           variant: "destructive",
         });
       }
-      setShowCreateForm(false);
-      setNewUserData({ email: '', firstName: '', lastName: '', mobileNumber: '', role: 'business_unit_admin' });
+      
+      // Don't reset form or close create form if we're showing password modal
+      if (!result.generatedPassword) {
+        setShowCreateForm(false);
+        setNewUserData({ email: '', firstName: '', lastName: '', mobileNumber: '', role: 'business_unit_admin' });
+      } else {
+        console.log('🔒 Not resetting form - keeping password modal context');
+      }
     },
     onError: (error: any) => {
       console.error('❌ User creation FAILED:', error);
@@ -4316,7 +4322,22 @@ function UserManagement() {
       )}
 
       {/* Password Display Modal */}
-      <Dialog open={showPasswordModal} onOpenChange={setShowPasswordModal}>
+      <Dialog 
+        open={showPasswordModal} 
+        onOpenChange={(open) => {
+          console.log('🚪 Dialog onOpenChange called with:', open);
+          console.log('🚪 Current showPasswordModal state:', showPasswordModal);
+          console.log('🚪 createdUserInfo exists:', !!createdUserInfo);
+          
+          // Don't allow closing if we just set it to open and have user info
+          if (!open && createdUserInfo) {
+            console.log('🔒 Preventing modal close - user just created');
+            return;
+          }
+          
+          setShowPasswordModal(open);
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
@@ -4393,8 +4414,11 @@ function UserManagement() {
                 <Button
                   variant="outline"
                   onClick={() => {
+                    console.log('🔚 Close button clicked - closing modal and resetting form');
                     setShowPasswordModal(false);
                     setCreatedUserInfo(null);
+                    setShowCreateForm(false);
+                    setNewUserData({ email: '', firstName: '', lastName: '', mobileNumber: '', role: 'business_unit_admin' });
                   }}
                 >
                   Close

@@ -3715,6 +3715,11 @@ function UserManagement() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [createdUserInfo, setCreatedUserInfo] = useState<any>(null);
+  
+  // Debug modal state
+  console.log('🎭 MODAL STATE DEBUG:');
+  console.log('🚪 showPasswordModal:', showPasswordModal);
+  console.log('👤 createdUserInfo:', createdUserInfo);
   const [newUserData, setNewUserData] = useState({
     email: '',
     firstName: '',
@@ -3828,6 +3833,13 @@ function UserManagement() {
         setShowPasswordModal(true);
         
         console.log('✨ Password modal state set! Modal should be visible now.');
+        
+        // Force a debug check after state update
+        setTimeout(() => {
+          console.log('⏰ POST-STATE UPDATE CHECK:');
+          console.log('🚪 showPasswordModal after update:', showPasswordModal);
+          console.log('👤 createdUserInfo after update:', createdUserInfo);
+        }, 100);
       } else {
         console.error('❌ NO GENERATED PASSWORD in response!');
         console.error('📋 Full response object keys:', Object.keys(result));

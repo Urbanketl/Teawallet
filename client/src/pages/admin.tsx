@@ -3713,6 +3713,8 @@ function UserManagement() {
   const [usersPage, setUsersPage] = useState(1);
   const [selectedUserDetails, setSelectedUserDetails] = useState<any>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [createdUserInfo, setCreatedUserInfo] = useState<any>(null);
   const [newUserData, setNewUserData] = useState({
     email: '',
     firstName: '',
@@ -3793,19 +3795,15 @@ function UserManagement() {
       queryClient.invalidateQueries({ 
         predicate: (query) => query.queryKey[0]?.toString()?.includes('/api/admin/users') || false
       });
-      toast({
-        title: "Success",
-        description: `User account created successfully for ${result.user.email}. Generated password: ${result.generatedPassword}`,
+      
+      // Store user info and password to show in modal
+      setCreatedUserInfo({
+        user: result.user,
+        generatedPassword: result.generatedPassword
       });
+      setShowPasswordModal(true);
       setShowCreateForm(false);
       setNewUserData({ email: '', firstName: '', lastName: '', mobileNumber: '', role: 'business_unit_admin' });
-      
-      // Show credential sharing information
-      toast({
-        title: "Account Created",
-        description: `Share login credentials: Replit ID '${result.credentials.replitId}' with email '${result.credentials.email}'`,
-        duration: 10000,
-      });
     },
     onError: (error: any) => {
       toast({
@@ -4263,6 +4261,106 @@ function UserManagement() {
           </div>
         </div>
       )}
+
+      {/* Password Display Modal */}
+      <Dialog open={showPasswordModal} onOpenChange={setShowPasswordModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <UserPlus className="w-5 h-5 text-green-600" />
+              <span>Account Created Successfully!</span>
+            </DialogTitle>
+            <DialogDescription>
+              Share these login credentials with the new user
+            </DialogDescription>
+          </DialogHeader>
+          
+          {createdUserInfo && (
+            <div className="space-y-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">User Email</label>
+                    <div className="flex items-center space-x-2 mt-1">
+                      <Input 
+                        value={createdUserInfo.user.email} 
+                        readOnly 
+                        className="bg-white" 
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          navigator.clipboard.writeText(createdUserInfo.user.email);
+                          toast({ title: "Copied!", description: "Email copied to clipboard" });
+                        }}
+                      >
+                        Copy
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Generated Password</label>
+                    <div className="flex items-center space-x-2 mt-1">
+                      <Input 
+                        value={createdUserInfo.generatedPassword} 
+                        readOnly 
+                        className="bg-white font-mono" 
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          navigator.clipboard.writeText(createdUserInfo.generatedPassword);
+                          toast({ title: "Copied!", description: "Password copied to clipboard" });
+                        }}
+                      >
+                        Copy
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start space-x-2">
+                  <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-blue-900">Important Instructions</p>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Share the email and password with the user. They can log in at your UrbanKetl portal. 
+                      The user will be required to change their password on first login.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowPasswordModal(false);
+                    setCreatedUserInfo(null);
+                  }}
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={() => {
+                    const credentials = `Email: ${createdUserInfo.user.email}\nPassword: ${createdUserInfo.generatedPassword}`;
+                    navigator.clipboard.writeText(credentials);
+                    toast({ title: "Copied!", description: "Both credentials copied to clipboard" });
+                  }}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  Copy Both
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -18,7 +18,7 @@ UI/UX preferences: Clean, simplified interfaces without unnecessary elements lik
 
 ### Technical Implementations
 - **Backend**: Node.js with Express.js, written in TypeScript, providing RESTful APIs.
-- **Authentication**: Custom email/password authentication system replacing Replit Auth, featuring admin-controlled user creation and secure session management with PostgreSQL persistence. Role-based access control (Business Unit Admin, Platform Admin, Viewer).
+- **Authentication**: Custom email/password authentication system replacing Replit Auth, featuring admin-controlled user creation and secure session management with PostgreSQL persistence. Role-based access control with two user types: Platform Admin (full system access) and Business Unit Admin (analytics access).
 - **Session Management**: Server-side sessions persisted in PostgreSQL.
 - **RFID Integration**: Centralized RFID card management system allowing platform admins to batch create and assign cards to business units. Machine-facing API endpoints validate cards and process transactions with automatic wallet deduction.
 - **Payment Processing**: Razorpay integration for digital wallet recharges, supporting recharge, deduction, and refund operations. Includes payment verification and webhook handling.

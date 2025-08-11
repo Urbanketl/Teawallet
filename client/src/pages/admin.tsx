@@ -3720,7 +3720,7 @@ function UserManagement() {
     firstName: '',
     lastName: '',
     mobileNumber: '',
-    role: 'business_unit_admin' as 'platform_admin' | 'business_unit_admin' | 'viewer'
+    role: 'business_unit_admin' as 'platform_admin' | 'business_unit_admin'
   });
   const usersLimit = 20;
 
@@ -3986,12 +3986,10 @@ function UserManagement() {
               >
                 <option value="platform_admin">Platform Admin - Full system access</option>
                 <option value="business_unit_admin">Business Unit Admin - Manage tea programs</option>
-                <option value="viewer">Viewer - Read-only access to reports</option>
               </select>
               <p className="text-xs text-muted-foreground mt-1">
                 {newUserData.role === 'platform_admin' && 'Can create accounts, manage all business units, and access system settings'}
                 {newUserData.role === 'business_unit_admin' && 'Can manage assigned business units, wallets, and RFID cards'}
-                {newUserData.role === 'viewer' && 'Can view analytics and reports for assigned business units only'}
               </p>
             </div>
 
@@ -4069,12 +4067,7 @@ function UserManagement() {
                             Business Unit Admin
                           </Badge>
                         )}
-                        {!user.isAdmin && (
-                          <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">
-                            <Eye className="w-3 h-3 mr-1" />
-                            Viewer
-                          </Badge>
-                        )}
+
                         {user.id === (currentUser as any)?.id && (
                           <Badge variant="outline" className="text-blue-600 border-blue-200">
                             You

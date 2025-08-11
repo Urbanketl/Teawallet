@@ -31,13 +31,13 @@ function UserAssignmentInterface({ businessUnits, setActiveTab }: { businessUnit
   const queryClient = useQueryClient();
   const [selectedBusinessUnit, setSelectedBusinessUnit] = useState("");
   const [selectedUser, setSelectedUser] = useState("");
-  const [selectedRole, setSelectedRole] = useState("Viewer");
+  const [selectedRole, setSelectedRole] = useState("business_unit_admin");
 
   // Reset form when business unit changes
   const handleBusinessUnitChange = (businessUnitId: string) => {
     setSelectedBusinessUnit(businessUnitId);
     setSelectedUser("");
-    setSelectedRole("Viewer"); // Always reset to Viewer when changing business units
+    setSelectedRole("business_unit_admin"); // Always reset to Business Unit Admin when changing business units
   };
 
   // Fetch all users for assignment

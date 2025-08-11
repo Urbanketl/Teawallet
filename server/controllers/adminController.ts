@@ -148,12 +148,8 @@ export async function createUser(req: any, res: Response) {
         isAdmin = true;
         isSuperAdmin = false;
         break;
-      case 'viewer':
-        isAdmin = false;
-        isSuperAdmin = false;
-        break;
       default:
-        return res.status(400).json({ error: 'Invalid role specified' });
+        return res.status(400).json({ error: 'Invalid role specified. Only platform_admin and business_unit_admin are allowed.' });
     }
 
     // Create user

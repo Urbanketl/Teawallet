@@ -3718,9 +3718,7 @@ function UserManagement() {
   
   // Watch for createdUserInfo changes and open modal
   useEffect(() => {
-    console.log('useEffect triggered - createdUserInfo:', createdUserInfo);
     if (createdUserInfo && createdUserInfo.generatedPassword) {
-      console.log('Opening password modal with password:', createdUserInfo.generatedPassword);
       setShowPasswordModal(true);
     }
   }, [createdUserInfo]);
@@ -3814,7 +3812,6 @@ function UserManagement() {
           generatedPassword: result.generatedPassword
         };
         
-        console.log('Setting createdUserInfo with password:', result.generatedPassword);
         setCreatedUserInfo(userInfo);
         // useEffect will handle opening the modal
       } else {

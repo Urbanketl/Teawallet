@@ -4113,7 +4113,7 @@ function UserManagement() {
                   </div>
                   
                   <div className="flex items-center space-x-2">
-                    {user.id !== (currentUser as any)?.id && (
+                    {user.id !== (currentUser as any)?.id && (currentUser as any)?.isSuperAdmin && (
                       <>
                         <Button
                           variant={user.isAdmin ? "destructive" : "default"}

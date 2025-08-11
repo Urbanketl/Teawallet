@@ -4229,10 +4229,6 @@ function UserManagement() {
                 <h3 className="font-medium text-gray-900 border-b pb-2">Account Details</h3>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Wallet Balance</label>
-                    <p className="text-sm text-gray-900 font-medium">₹{parseFloat(selectedUserDetails.walletBalance || "0").toFixed(2)}</p>
-                  </div>
-                  <div>
                     <label className="text-sm font-medium text-gray-600">Account Created</label>
                     <p className="text-sm text-gray-900">{format(new Date(selectedUserDetails.createdAt), 'MMMM dd, yyyy h:mm a')}</p>
                   </div>

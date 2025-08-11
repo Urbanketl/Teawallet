@@ -3777,6 +3777,8 @@ function UserManagement() {
   // Create user mutation
   const createUserMutation = useMutation({
     mutationFn: async (userData: typeof newUserData) => {
+      console.log('🚀 STARTING USER CREATION with data:', userData);
+      
       const response = await fetch('/api/admin/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -3784,32 +3786,53 @@ function UserManagement() {
         body: JSON.stringify(userData),
       });
       
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response ok:', response.ok);
+      
       if (!response.ok) {
         const error = await response.json();
+        console.error('❌ API Error:', error);
         throw new Error(error.message || 'Failed to create user account');
       }
       
-      return response.json();
+      const result = await response.json();
+      console.log('📦 RAW API RESPONSE:', result);
+      console.log('📦 Response has generatedPassword:', !!result.generatedPassword);
+      console.log('📦 Response has user:', !!result.user);
+      
+      return result;
     },
     onSuccess: (result) => {
-      console.log('User creation success:', result);
+      console.log('✅ User creation mutation SUCCESS with result:', result);
+      console.log('🔑 Generated password exists:', !!result.generatedPassword);
+      console.log('👤 User data exists:', !!result.user);
+      
       queryClient.invalidateQueries({ 
         predicate: (query) => query.queryKey[0]?.toString()?.includes('/api/admin/users') || false
       });
       
       // Store user info and password to show in modal
       if (result.generatedPassword) {
-        console.log('Setting up password modal with password:', result.generatedPassword);
-        setCreatedUserInfo({
+        console.log('🎯 PASSWORD FOUND! Setting up modal...');
+        console.log('🔑 Password value:', result.generatedPassword);
+        
+        const userInfo = {
           user: result.user,
           generatedPassword: result.generatedPassword
-        });
+        };
+        
+        console.log('💾 Setting createdUserInfo to:', userInfo);
+        setCreatedUserInfo(userInfo);
+        
+        console.log('🚪 Opening password modal...');
         setShowPasswordModal(true);
-        console.log('Password modal should be showing now');
+        
+        console.log('✨ Password modal state set! Modal should be visible now.');
       } else {
-        console.error('No generatedPassword in response:', result);
+        console.error('❌ NO GENERATED PASSWORD in response!');
+        console.error('📋 Full response object keys:', Object.keys(result));
         toast({
-          title: "Error",
+          title: "Error", 
           description: "Password was not generated properly. Please check server logs.",
           variant: "destructive",
         });
@@ -3818,6 +3841,7 @@ function UserManagement() {
       setNewUserData({ email: '', firstName: '', lastName: '', mobileNumber: '', role: 'business_unit_admin' });
     },
     onError: (error: any) => {
+      console.error('❌ User creation FAILED:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to create user account",

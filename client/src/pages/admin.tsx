@@ -3792,16 +3792,28 @@ function UserManagement() {
       return response.json();
     },
     onSuccess: (result) => {
+      console.log('User creation success:', result);
       queryClient.invalidateQueries({ 
         predicate: (query) => query.queryKey[0]?.toString()?.includes('/api/admin/users') || false
       });
       
       // Store user info and password to show in modal
-      setCreatedUserInfo({
-        user: result.user,
-        generatedPassword: result.generatedPassword
-      });
-      setShowPasswordModal(true);
+      if (result.generatedPassword) {
+        console.log('Setting up password modal with password:', result.generatedPassword);
+        setCreatedUserInfo({
+          user: result.user,
+          generatedPassword: result.generatedPassword
+        });
+        setShowPasswordModal(true);
+        console.log('Password modal should be showing now');
+      } else {
+        console.error('No generatedPassword in response:', result);
+        toast({
+          title: "Error",
+          description: "Password was not generated properly. Please check server logs.",
+          variant: "destructive",
+        });
+      }
       setShowCreateForm(false);
       setNewUserData({ email: '', firstName: '', lastName: '', mobileNumber: '', role: 'business_unit_admin' });
     },
@@ -4045,10 +4057,22 @@ function UserManagement() {
                         <h4 className="font-semibold text-lg">
                           {user.firstName} {user.lastName}
                         </h4>
-                        {user.isAdmin && (
+                        {user.isSuperAdmin && (
+                          <Badge className="bg-red-100 text-red-800 border-red-200">
+                            <Shield className="w-3 h-3 mr-1" />
+                            Platform Admin
+                          </Badge>
+                        )}
+                        {user.isAdmin && !user.isSuperAdmin && (
                           <Badge className="bg-purple-100 text-purple-800 border-purple-200">
                             <Shield className="w-3 h-3 mr-1" />
-                            Admin
+                            Business Unit Admin
+                          </Badge>
+                        )}
+                        {!user.isAdmin && (
+                          <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">
+                            <Eye className="w-3 h-3 mr-1" />
+                            Viewer
                           </Badge>
                         )}
                         {user.id === (currentUser as any)?.id && (

@@ -3715,11 +3715,6 @@ function UserManagement() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [createdUserInfo, setCreatedUserInfo] = useState<any>(null);
-  
-  // Debug modal state
-  console.log('🎭 MODAL STATE DEBUG:');
-  console.log('🚪 showPasswordModal:', showPasswordModal);
-  console.log('👤 createdUserInfo:', createdUserInfo);
   const [newUserData, setNewUserData] = useState({
     email: '',
     firstName: '',
@@ -3782,8 +3777,6 @@ function UserManagement() {
   // Create user mutation
   const createUserMutation = useMutation({
     mutationFn: async (userData: typeof newUserData) => {
-      console.log('🚀 STARTING USER CREATION with data:', userData);
-      
       const response = await fetch('/api/admin/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -3791,53 +3784,33 @@ function UserManagement() {
         body: JSON.stringify(userData),
       });
       
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response ok:', response.ok);
-      
       if (!response.ok) {
         const error = await response.json();
-        console.error('❌ API Error:', error);
         throw new Error(error.message || 'Failed to create user account');
       }
       
       const result = await response.json();
-      console.log('📦 RAW API RESPONSE:', result);
-      console.log('📦 Response has generatedPassword:', !!result.generatedPassword);
-      console.log('📦 Response has user:', !!result.user);
-      
       return result;
     },
     onSuccess: (result) => {
-      console.log('✅ User creation mutation SUCCESS with result:', result);
-      console.log('🔑 Generated password exists:', !!result.generatedPassword);
-      console.log('👤 User data exists:', !!result.user);
-      
       queryClient.invalidateQueries({ 
         predicate: (query) => query.queryKey[0]?.toString()?.includes('/api/admin/users') || false
       });
       
       // Store user info and password to show in modal
       if (result.generatedPassword) {
-        console.log('🎯 PASSWORD FOUND! Setting up modal...');
-        console.log('🔑 Password value:', result.generatedPassword);
-        
         const userInfo = {
           user: result.user,
           generatedPassword: result.generatedPassword
         };
         
-        console.log('💾 Setting createdUserInfo to:', userInfo);
         setCreatedUserInfo(userInfo);
         
-        console.log('🚪 Opening password modal...');
         // Set modal state after a small delay to ensure createdUserInfo is set
         setTimeout(() => {
           setShowPasswordModal(true);
-          console.log('✨ Password modal state set! Modal should be visible now.');
         }, 50);
       } else {
-        console.error('❌ NO GENERATED PASSWORD in response!');
-        console.error('📋 Full response object keys:', Object.keys(result));
         toast({
           title: "Error", 
           description: "Password was not generated properly. Please check server logs.",
@@ -3849,8 +3822,6 @@ function UserManagement() {
       if (!result.generatedPassword) {
         setShowCreateForm(false);
         setNewUserData({ email: '', firstName: '', lastName: '', mobileNumber: '', role: 'business_unit_admin' });
-      } else {
-        console.log('🔒 Not resetting form - keeping password modal context');
       }
     },
     onError: (error: any) => {
@@ -4316,23 +4287,19 @@ function UserManagement() {
         </div>
       )}
 
-      {/* Password Display Modal - Force render when createdUserInfo exists */}
-      <Dialog 
-        open={showPasswordModal && !!createdUserInfo} 
-        onOpenChange={(open) => {
-          console.log('🚪 Dialog onOpenChange called with:', open);
-          console.log('🚪 Current showPasswordModal state:', showPasswordModal);
-          console.log('🚪 createdUserInfo exists:', !!createdUserInfo);
-          
-          if (!open) {
-            console.log('🔚 User explicitly closing modal');
-            setShowPasswordModal(false);
-            setCreatedUserInfo(null);
-            setShowCreateForm(false);
-            setNewUserData({ email: '', firstName: '', lastName: '', mobileNumber: '', role: 'business_unit_admin' });
-          }
-        }}
-      >
+      {/* Password Display Modal */}
+      {showPasswordModal && createdUserInfo && (
+        <Dialog 
+          open={true} 
+          onOpenChange={(open) => {
+            if (!open) {
+              setShowPasswordModal(false);
+              setCreatedUserInfo(null);
+              setShowCreateForm(false);
+              setNewUserData({ email: '', firstName: '', lastName: '', mobileNumber: '', role: 'business_unit_admin' });
+            }
+          }}
+        >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
@@ -4409,7 +4376,6 @@ function UserManagement() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    console.log('🔚 Close button clicked - closing modal and resetting form');
                     setShowPasswordModal(false);
                     setCreatedUserInfo(null);
                     setShowCreateForm(false);
@@ -4433,6 +4399,7 @@ function UserManagement() {
           )}
         </DialogContent>
       </Dialog>
+      )}
     </div>
   );
 }

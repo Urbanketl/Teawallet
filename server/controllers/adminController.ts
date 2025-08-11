@@ -165,7 +165,7 @@ export async function createUser(req: any, res: Response) {
       requiresPasswordReset: true, // User must reset password on first login
     });
 
-    const responseData = { 
+    res.json({ 
       success: true, 
       user: {
         id: user.id,
@@ -176,15 +176,7 @@ export async function createUser(req: any, res: Response) {
         isSuperAdmin: user.isSuperAdmin,
       },
       generatedPassword // Admin needs to share this with the user
-    };
-    
-    console.log('🚀 SERVER: Sending user creation response:');
-    console.log('📦 Response contains generatedPassword:', !!responseData.generatedPassword);
-    console.log('🔑 Password value:', responseData.generatedPassword);
-    console.log('👤 User data:', responseData.user);
-    console.log('✅ Full response object:', responseData);
-    
-    res.json(responseData);
+    });
   } catch (error) {
     console.error('Error creating user:', error);
     res.status(500).json({ error: 'Failed to create user' });

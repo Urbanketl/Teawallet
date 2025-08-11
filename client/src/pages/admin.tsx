@@ -3715,6 +3715,16 @@ function UserManagement() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [createdUserInfo, setCreatedUserInfo] = useState<any>(null);
+  
+  // Watch for createdUserInfo changes and open modal
+  useEffect(() => {
+    console.log('useEffect triggered - createdUserInfo:', createdUserInfo);
+    if (createdUserInfo && createdUserInfo.generatedPassword) {
+      console.log('Opening password modal with password:', createdUserInfo.generatedPassword);
+      setShowPasswordModal(true);
+    }
+  }, [createdUserInfo]);
+  
   const [newUserData, setNewUserData] = useState({
     email: '',
     firstName: '',
@@ -3804,12 +3814,9 @@ function UserManagement() {
           generatedPassword: result.generatedPassword
         };
         
+        console.log('Setting createdUserInfo with password:', result.generatedPassword);
         setCreatedUserInfo(userInfo);
-        
-        // Set modal state after a small delay to ensure createdUserInfo is set
-        setTimeout(() => {
-          setShowPasswordModal(true);
-        }, 50);
+        // useEffect will handle opening the modal
       } else {
         toast({
           title: "Error", 
@@ -4288,18 +4295,17 @@ function UserManagement() {
       )}
 
       {/* Password Display Modal */}
-      {showPasswordModal && createdUserInfo && (
-        <Dialog 
-          open={true} 
-          onOpenChange={(open) => {
-            if (!open) {
-              setShowPasswordModal(false);
-              setCreatedUserInfo(null);
-              setShowCreateForm(false);
-              setNewUserData({ email: '', firstName: '', lastName: '', mobileNumber: '', role: 'business_unit_admin' });
-            }
-          }}
-        >
+      <Dialog 
+        open={showPasswordModal && !!createdUserInfo?.generatedPassword} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowPasswordModal(false);
+            setCreatedUserInfo(null);
+            setShowCreateForm(false);
+            setNewUserData({ email: '', firstName: '', lastName: '', mobileNumber: '', role: 'business_unit_admin' });
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
@@ -4399,7 +4405,6 @@ function UserManagement() {
           )}
         </DialogContent>
       </Dialog>
-      )}
     </div>
   );
 }

@@ -3830,16 +3830,11 @@ function UserManagement() {
         setCreatedUserInfo(userInfo);
         
         console.log('🚪 Opening password modal...');
-        setShowPasswordModal(true);
-        
-        console.log('✨ Password modal state set! Modal should be visible now.');
-        
-        // Force a debug check after state update
+        // Set modal state after a small delay to ensure createdUserInfo is set
         setTimeout(() => {
-          console.log('⏰ POST-STATE UPDATE CHECK:');
-          console.log('🚪 showPasswordModal after update:', showPasswordModal);
-          console.log('👤 createdUserInfo after update:', createdUserInfo);
-        }, 100);
+          setShowPasswordModal(true);
+          console.log('✨ Password modal state set! Modal should be visible now.');
+        }, 50);
       } else {
         console.error('❌ NO GENERATED PASSWORD in response!');
         console.error('📋 Full response object keys:', Object.keys(result));
@@ -4321,21 +4316,21 @@ function UserManagement() {
         </div>
       )}
 
-      {/* Password Display Modal */}
+      {/* Password Display Modal - Force render when createdUserInfo exists */}
       <Dialog 
-        open={showPasswordModal} 
+        open={showPasswordModal && !!createdUserInfo} 
         onOpenChange={(open) => {
           console.log('🚪 Dialog onOpenChange called with:', open);
           console.log('🚪 Current showPasswordModal state:', showPasswordModal);
           console.log('🚪 createdUserInfo exists:', !!createdUserInfo);
           
-          // Don't allow closing if we just set it to open and have user info
-          if (!open && createdUserInfo) {
-            console.log('🔒 Preventing modal close - user just created');
-            return;
+          if (!open) {
+            console.log('🔚 User explicitly closing modal');
+            setShowPasswordModal(false);
+            setCreatedUserInfo(null);
+            setShowCreateForm(false);
+            setNewUserData({ email: '', firstName: '', lastName: '', mobileNumber: '', role: 'business_unit_admin' });
           }
-          
-          setShowPasswordModal(open);
         }}
       >
         <DialogContent className="sm:max-w-md">

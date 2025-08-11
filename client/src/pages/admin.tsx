@@ -4294,28 +4294,21 @@ function UserManagement() {
         </div>
       )}
 
-      {/* Password Display Modal */}
-      <Dialog 
-        open={showPasswordModal && !!createdUserInfo?.generatedPassword} 
-        onOpenChange={(open) => {
-          if (!open) {
-            setShowPasswordModal(false);
-            setCreatedUserInfo(null);
-            setShowCreateForm(false);
-            setNewUserData({ email: '', firstName: '', lastName: '', mobileNumber: '', role: 'business_unit_admin' });
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2">
+      {/* Password Display Modal - Simple overlay without Dialog component */}
+      {showPasswordModal && createdUserInfo?.generatedPassword && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div className="fixed inset-0 bg-black/50" onClick={(e) => e.stopPropagation()} />
+          
+          {/* Modal Content */}
+          <div className="relative bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center space-x-2 mb-2">
               <UserPlus className="w-5 h-5 text-green-600" />
-              <span>Account Created Successfully!</span>
-            </DialogTitle>
-            <DialogDescription>
+              <h2 className="text-lg font-semibold">Account Created Successfully!</h2>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
               Share these login credentials with the new user
-            </DialogDescription>
-          </DialogHeader>
+            </p>
           
           {createdUserInfo && (
             <div className="space-y-4">
@@ -4343,7 +4336,7 @@ function UserManagement() {
                   </div>
                   
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Generated Password</label>
+                    <label className="text-sm font-medium text-gray-600">Temporary Password</label>
                     <div className="flex items-center space-x-2 mt-1">
                       <Input 
                         value={createdUserInfo.generatedPassword} 
@@ -4403,8 +4396,9 @@ function UserManagement() {
               </div>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

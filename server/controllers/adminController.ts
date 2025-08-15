@@ -269,6 +269,54 @@ export async function updateUserAdminStatus(req: any, res: Response) {
   }
 }
 
+export async function resetUserPassword(req: any, res: Response) {
+  try {
+    const { userId } = req.params;
+    const { password } = req.body;
+    
+    if (!password) {
+      return res.status(400).json({ error: 'Password is required' });
+    }
+
+    // Find user by ID or email
+    let user;
+    if (userId.includes('@')) {
+      // If userId contains @, treat it as email
+      user = await storage.getUserByEmail(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+    } else {
+      // Otherwise treat as user ID
+      user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+    }
+
+    // Hash the new password
+    const hashedPassword = await hashPassword(password);
+    
+    // Update the user's password
+    await storage.updateUserPassword(user.id, hashedPassword);
+    await storage.setPasswordResetStatus(user.id, false);
+    
+    res.json({ 
+      success: true, 
+      message: 'Password updated successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName
+      }
+    });
+  } catch (error) {
+    console.error('Error resetting user password:', error);
+    res.status(500).json({ error: 'Failed to reset user password' });
+  }
+}
+
 // Admin-only user creation
 export async function createUserAccount(req: any, res: Response) {
   try {

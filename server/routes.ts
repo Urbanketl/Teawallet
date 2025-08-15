@@ -46,6 +46,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin user management
   app.post("/api/admin/users", isAuthenticated, requireAdminAuth, adminController.createUser);
   app.delete("/api/admin/users/:userId", isAuthenticated, requireAdminAuth, adminController.deleteUser);
+  app.patch("/api/admin/users/:userId/password", isAuthenticated, requireAdminAuth, adminController.resetUserPassword);
 
   // Admin routes - require authentication and admin privileges
   app.get('/api/admin/users', requireAuth, requireAdmin, adminController.getAllUsers);

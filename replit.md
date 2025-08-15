@@ -7,6 +7,7 @@ UrbanKetl is a B2B corporate tea dispensing system integrating RFID technology w
 - Fixed password display modal issue: Replaced Radix UI Dialog component with custom overlay modal to prevent state management conflicts that were immediately clearing the user creation password
 - Simplified user role system: Removed Viewer role, keeping only Platform Admin and Business Unit Admin
 - Enhanced role badges: Platform Admin (red) and Business Unit Admin (purple) for clear visual distinction
+- Updated user password: Changed prasad.thirtha@gmail.com password to Urbanketl@123 via direct database update
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

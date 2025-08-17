@@ -19,6 +19,7 @@ import { requireAdmin as requireAdminAuth } from "./auth";
 import * as transactionController from "./controllers/transactionController";
 import { registerCorporateRoutes } from "./routes/corporateRoutes";
 import { registerRechargeRoutes } from "./routes/rechargeRoutes";
+import { machineSyncController } from "./controllers/machineSyncController";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize Razorpay
@@ -1889,6 +1890,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch transfers" });
     }
   });
+
+  // **Phase 2: Machine Sync Dashboard API Routes**
+  
+  // Get all machines sync status (Admin only)
+  app.get('/api/admin/sync/machines', isAuthenticated, requireAdminAuth, machineSyncController.getAllMachineStatus.bind(machineSyncController));
+  
+  // Get specific machine sync status
+  app.get('/api/admin/sync/machines/:machineId', isAuthenticated, requireAdminAuth, machineSyncController.getMachineStatus.bind(machineSyncController));
+  
+  // Trigger manual sync for specific machine
+  app.post('/api/admin/sync/machines/:machineId', isAuthenticated, requireAdminAuth, machineSyncController.syncMachineCards.bind(machineSyncController));
+  
+  // Bulk sync all machines
+  app.post('/api/admin/sync/bulk', isAuthenticated, requireAdminAuth, machineSyncController.bulkSyncMachines.bind(machineSyncController));
+  
+  // Get sync logs
+  app.get('/api/admin/sync/logs', isAuthenticated, requireAdminAuth, machineSyncController.getSyncLogs.bind(machineSyncController));
+  
+  // Get RFID authentication logs
+  app.get('/api/admin/sync/auth-logs', isAuthenticated, requireAdminAuth, machineSyncController.getAuthLogs.bind(machineSyncController));
+  
+  // Rotate DESFire keys for business unit
+  app.post('/api/admin/sync/rotate-keys/:businessUnitId', isAuthenticated, requireAdminAuth, machineSyncController.rotateKeys.bind(machineSyncController));
+  
+  // Machine heartbeat endpoint for sync monitoring (no auth required - used by machines)
+  app.post('/api/sync/heartbeat', machineSyncController.heartbeat.bind(machineSyncController));
 
   const httpServer = createServer(app);
   return httpServer;

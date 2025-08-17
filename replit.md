@@ -3,11 +3,15 @@
 ## Overview
 UrbanKetl is a B2B corporate tea dispensing system integrating RFID technology with a web application. It enables business unit administrators to manage multiple tea machines, issue generic RFID cards to employees, and monitor dispensing activity charged to a corporate wallet. The project aims to provide a comprehensive solution for corporate tea services, streamlining management and billing.
 
-## Recent Changes (August 11, 2025)
-- Fixed password display modal issue: Replaced Radix UI Dialog component with custom overlay modal to prevent state management conflicts that were immediately clearing the user creation password
-- Simplified user role system: Removed Viewer role, keeping only Platform Admin and Business Unit Admin
-- Enhanced role badges: Platform Admin (red) and Business Unit Admin (purple) for clear visual distinction
-- Updated user password: Changed prasad.thirtha@gmail.com password to Urbanketl@123 via direct database update
+## Recent Changes (August 17, 2025)
+- **Completed Phase 2: Machine Sync Dashboard** - Implemented comprehensive machine synchronization management system with DESFire RFID card support
+- Added machine sync API endpoints with controller-based architecture for managing RFID card synchronization across all tea machines
+- Created interactive machine sync dashboard in admin interface with real-time status monitoring, sync logs, authentication logs, and security key management
+- Integrated machine sync tab into main admin interface with full UI/UX consistency
+- Enhanced backend with robust sync tracking, error handling, and automated sync operations for DESFire challenge-response cards
+- Added security key rotation capabilities for business units with AES encryption key management
+- Implemented heartbeat monitoring system for real-time machine status tracking
+- Previous changes maintained: Password display modal fix, simplified user role system, enhanced role badges
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

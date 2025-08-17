@@ -58,6 +58,7 @@ import { format } from "date-fns";
 import Pagination from "@/components/Pagination";
 import { BusinessUnitsTab } from "@/components/BusinessUnitsTab";
 import { PseudoLogin } from "@/components/PseudoLogin";
+import MachineSyncDashboard from "./machine-sync-dashboard";
 import type { User } from "@shared/schema";
 
 function AdminReports() {
@@ -1271,6 +1272,16 @@ export default function AdminPage() {
                   ❓ FAQ
                 </button>
                 <button 
+                  onClick={() => setCurrentTab("machine-sync")}
+                  className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                    currentTab === "machine-sync" 
+                      ? "border-orange-500 text-orange-600 bg-orange-50" 
+                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  🔄 Machine Sync
+                </button>
+                <button 
                   onClick={() => setCurrentTab("reports")}
                   className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                     currentTab === "reports" 
@@ -2078,6 +2089,10 @@ export default function AdminPage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">System Settings</h3>
               <p className="text-gray-600">Configure system settings using the button above</p>
             </div>
+          )}
+
+          {currentTab === "machine-sync" && (
+            <MachineSyncDashboard />
           )}
         </div>
       </main>

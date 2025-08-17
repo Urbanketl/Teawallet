@@ -1,0 +1,509 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { 
+  RotateCw, 
+  RefreshCw, 
+  Play, 
+  AlertCircle, 
+  CheckCircle, 
+  Clock, 
+  Server, 
+  Wifi,
+  WifiOff,
+  Shield,
+  Key,
+  Activity,
+  History
+} from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+import { apiRequest } from '@/lib/queryClient';
+
+interface MachineStatus {
+  machine: {
+    id: string;
+    name: string;
+    location: string;
+    businessUnitId: string;
+    isActive: boolean;
+    price: string;
+  };
+  businessUnitName: string;
+  syncStatus: string;
+  lastSync: string | null;
+  cardsCount: number;
+  isOnline: boolean;
+}
+
+interface SyncLog {
+  id: number;
+  machineId: string;
+  machineName: string;
+  syncType: string;
+  syncStatus: string;
+  dataPushed?: any;
+  errorMessage?: string;
+  cardsUpdated: number;
+  createdAt: string;
+}
+
+interface AuthLog {
+  id: number;
+  machineId: string;
+  machineName: string;
+  businessUnitId: string;
+  businessUnitName: string;
+  cardNumber: string;
+  authMethod: string;
+  authResult: string;
+  challengeData?: any;
+  responseData?: any;
+  createdAt: string;
+}
+
+export default function MachineSyncDashboard() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [selectedTab, setSelectedTab] = useState('overview');
+  const [syncFilter, setSyncFilter] = useState('all');
+  const [authFilter, setAuthFilter] = useState('all');
+
+  // Fetch all machine statuses
+  const { 
+    data: machineStatuses = [], 
+    isLoading: isLoadingMachines,
+    refetch: refetchMachines
+  } = useQuery<MachineStatus[]>({
+    queryKey: ['/api/admin/sync/machines'],
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
+  });
+
+  // Fetch sync logs
+  const { 
+    data: syncLogs = [], 
+    isLoading: isLoadingSyncLogs,
+    refetch: refetchSyncLogs
+  } = useQuery<SyncLog[]>({
+    queryKey: ['/api/admin/sync/logs'],
+  });
+
+  // Fetch auth logs
+  const { 
+    data: authLogs = [], 
+    isLoading: isLoadingAuthLogs,
+    refetch: refetchAuthLogs
+  } = useQuery<AuthLog[]>({
+    queryKey: ['/api/admin/sync/auth-logs'],
+  });
+
+  // Individual machine sync mutation
+  const syncMachineMutation = useMutation({
+    mutationFn: async (machineId: string) => {
+      const res = await apiRequest('POST', `/api/admin/sync/machines/${machineId}`);
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Machine Sync Success",
+        description: data.message,
+      });
+      refetchMachines();
+      refetchSyncLogs();
+    },
+    onError: (error) => {
+      toast({
+        title: "Machine Sync Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Bulk sync mutation
+  const bulkSyncMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest('POST', '/api/admin/sync/bulk');
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Bulk Sync Completed",
+        description: `${data.results.synced} machines synced, ${data.results.failed} failed`,
+      });
+      refetchMachines();
+      refetchSyncLogs();
+    },
+    onError: (error) => {
+      toast({
+        title: "Bulk Sync Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Key rotation mutation
+  const rotateKeysMutation = useMutation({
+    mutationFn: async (businessUnitId: string) => {
+      const res = await apiRequest('POST', `/api/admin/sync/rotate-keys/${businessUnitId}`);
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Key Rotation Success",
+        description: data.message,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Key Rotation Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const getSyncStatusBadge = (status: string) => {
+    switch (status) {
+      case 'synced':
+        return <Badge variant="default" className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />Synced</Badge>;
+      case 'pending':
+        return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />Pending</Badge>;
+      case 'failed':
+        return <Badge variant="destructive"><AlertCircle className="w-3 h-3 mr-1" />Failed</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const getOnlineStatusBadge = (isOnline: boolean) => {
+    return isOnline ? (
+      <Badge variant="default" className="bg-green-500"><Wifi className="w-3 h-3 mr-1" />Online</Badge>
+    ) : (
+      <Badge variant="destructive"><WifiOff className="w-3 h-3 mr-1" />Offline</Badge>
+    );
+  };
+
+  const filteredSyncLogs = syncLogs.filter(log => 
+    syncFilter === 'all' || log.syncStatus === syncFilter
+  );
+
+  const filteredAuthLogs = authLogs.filter(log => 
+    authFilter === 'all' || log.authResult === authFilter
+  );
+
+  const onlineMachines = machineStatuses.filter(m => m.isOnline).length;
+  const syncedMachines = machineStatuses.filter(m => m.syncStatus === 'synced').length;
+  const failedMachines = machineStatuses.filter(m => m.syncStatus === 'failed').length;
+  const pendingMachines = machineStatuses.filter(m => m.syncStatus === 'pending').length;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Machine Sync Dashboard</h1>
+          <p className="text-gray-600 dark:text-gray-400">Monitor and manage DESFire card synchronization across all machines</p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => refetchMachines()}
+            variant="outline"
+            disabled={isLoadingMachines}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingMachines ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Button
+            onClick={() => bulkSyncMutation.mutate()}
+            disabled={bulkSyncMutation.isPending}
+          >
+            <RotateCw className="w-4 h-4 mr-2" />
+            {bulkSyncMutation.isPending ? 'Syncing All...' : 'Sync All Machines'}
+          </Button>
+        </div>
+      </div>
+
+      {/* Status Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Machines</CardTitle>
+            <Server className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{machineStatuses.length}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Online</CardTitle>
+            <Wifi className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{onlineMachines}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Synced</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{syncedMachines}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Sync Issues</CardTitle>
+            <AlertCircle className="h-4 w-4 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">{failedMachines + pendingMachines}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="overview">Machine Status</TabsTrigger>
+          <TabsTrigger value="sync-logs">Sync Logs</TabsTrigger>
+          <TabsTrigger value="auth-logs">Auth Logs</TabsTrigger>
+          <TabsTrigger value="security">Security & Keys</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Machine Sync Status</CardTitle>
+              <CardDescription>Real-time status of all tea machines and their card synchronization</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Machine</TableHead>
+                      <TableHead>Business Unit</TableHead>
+                      <TableHead>Online Status</TableHead>
+                      <TableHead>Sync Status</TableHead>
+                      <TableHead>Cards Loaded</TableHead>
+                      <TableHead>Last Sync</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {machineStatuses.map((machine) => (
+                      <TableRow key={machine.machine.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{machine.machine.name}</div>
+                            <div className="text-sm text-gray-500">{machine.machine.location}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{machine.businessUnitName || 'Unassigned'}</TableCell>
+                        <TableCell>{getOnlineStatusBadge(machine.isOnline)}</TableCell>
+                        <TableCell>{getSyncStatusBadge(machine.syncStatus)}</TableCell>
+                        <TableCell>{machine.cardsCount}</TableCell>
+                        <TableCell>
+                          {machine.lastSync ? format(new Date(machine.lastSync), 'MMM d, HH:mm') : 'Never'}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            onClick={() => syncMachineMutation.mutate(machine.machine.id)}
+                            disabled={syncMachineMutation.isPending || !machine.machine.businessUnitId}
+                          >
+                            <Play className="w-3 h-3 mr-1" />
+                            Sync
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="sync-logs" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Synchronization Logs</CardTitle>
+                  <CardDescription>History of card synchronization operations</CardDescription>
+                </div>
+                <Select value={syncFilter} onValueChange={setSyncFilter}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="Filter" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="success">Success</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Machine</TableHead>
+                      <TableHead>Sync Type</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Cards Updated</TableHead>
+                      <TableHead>Time</TableHead>
+                      <TableHead>Details</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredSyncLogs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell>{log.machineName}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{log.syncType}</Badge>
+                        </TableCell>
+                        <TableCell>{getSyncStatusBadge(log.syncStatus)}</TableCell>
+                        <TableCell>{log.cardsUpdated}</TableCell>
+                        <TableCell>{format(new Date(log.createdAt), 'MMM d, HH:mm:ss')}</TableCell>
+                        <TableCell>
+                          {log.errorMessage && (
+                            <span className="text-red-600 text-sm">{log.errorMessage}</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="auth-logs" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>RFID Authentication Logs</CardTitle>
+                  <CardDescription>Real-time authentication attempts and challenge-response logs</CardDescription>
+                </div>
+                <Select value={authFilter} onValueChange={setAuthFilter}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="Filter" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Results</SelectItem>
+                    <SelectItem value="success">Success</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                    <SelectItem value="blocked">Blocked</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Machine</TableHead>
+                      <TableHead>Business Unit</TableHead>
+                      <TableHead>Card Number</TableHead>
+                      <TableHead>Auth Method</TableHead>
+                      <TableHead>Result</TableHead>
+                      <TableHead>Time</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAuthLogs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell>{log.machineName}</TableCell>
+                        <TableCell>{log.businessUnitName}</TableCell>
+                        <TableCell className="font-mono text-sm">{log.cardNumber}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="flex items-center">
+                            <Shield className="w-3 h-3 mr-1" />
+                            {log.authMethod}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {log.authResult === 'success' ? (
+                            <Badge variant="default" className="bg-green-500">Success</Badge>
+                          ) : (
+                            <Badge variant="destructive">Failed</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>{format(new Date(log.createdAt), 'MMM d, HH:mm:ss')}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="security" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>DESFire Key Management</CardTitle>
+              <CardDescription>Manage encryption keys for challenge-response authentication</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-4 border rounded-lg bg-yellow-50 dark:bg-yellow-900/20">
+                <div className="flex items-center">
+                  <Key className="w-5 h-5 text-yellow-600 mr-2" />
+                  <div>
+                    <h4 className="font-medium">Key Rotation Schedule</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      DESFire keys should be rotated every 30 days for maximum security. 
+                      This operation will generate new AES keys for all cards in a business unit.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="font-medium">Business Unit Key Rotation</h4>
+                {Array.from(new Set(machineStatuses.map(m => m.machine.businessUnitId).filter(Boolean))).map(businessUnitId => {
+                  const businessUnit = machineStatuses.find(m => m.machine.businessUnitId === businessUnitId);
+                  return (
+                    <div key={businessUnitId} className="flex justify-between items-center p-3 border rounded-lg">
+                      <div>
+                        <div className="font-medium">{businessUnit?.businessUnitName}</div>
+                        <div className="text-sm text-gray-500">
+                          Cards: {machineStatuses.filter(m => m.machine.businessUnitId === businessUnitId).reduce((sum, m) => sum + m.cardsCount, 0)}
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => rotateKeysMutation.mutate(businessUnitId!)}
+                        disabled={rotateKeysMutation.isPending}
+                        variant="outline"
+                      >
+                        <Key className="w-4 h-4 mr-2" />
+                        Rotate Keys
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

@@ -4425,6 +4425,11 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
   const [selectedCardToAssign, setSelectedCardToAssign] = useState<string>("");
   const [assignToBusinessUnit, setAssignToBusinessUnit] = useState<string>("");
   
+  // Phase 4: DESFire card creation fields
+  const [cardType, setCardType] = useState<"basic" | "desfire">("basic");
+  const [hardwareUid, setHardwareUid] = useState("");
+  const [autoGenerateKey, setAutoGenerateKey] = useState(true);
+  
   // New state for enhanced features
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all"); // all, active, inactive
@@ -4484,6 +4489,9 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
       setCardNumber("");
       setCardName("");
       setBatchSize(1);
+      setCardType("basic");
+      setHardwareUid("");
+      setAutoGenerateKey(true);
       toast({
         title: "Success",
         description: "RFID card(s) created successfully",
@@ -4544,6 +4552,9 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
       cardNumber: cardNumber,
       cardName: cardName || undefined,
       batchSize: batchSize,
+      cardType: cardType,
+      hardwareUid: cardType === "desfire" ? hardwareUid : undefined,
+      autoGenerateKey: cardType === "desfire" ? autoGenerateKey : undefined,
     });
   };
 
@@ -4621,10 +4632,61 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
               Create RFID Cards (Platform Admin)
             </CardTitle>
             <CardDescription>
-              Create RFID cards for business distribution. Cards can be assigned immediately or kept unassigned for later assignment.
+              Create RFID cards for business distribution. Choose between Basic cards (simple RFID) or DESFire cards (advanced cryptographic authentication). Cards can be assigned immediately or kept unassigned for later assignment.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Card Type Selection */}
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h4 className="font-medium text-blue-900 mb-3">Card Technology</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div 
+                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                    cardType === "basic" 
+                      ? "border-blue-500 bg-blue-100" 
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                  onClick={() => setCardType("basic")}
+                >
+                  <div className="flex items-center space-x-2 mb-2">
+                    <input 
+                      type="radio" 
+                      checked={cardType === "basic"} 
+                      onChange={() => setCardType("basic")}
+                      className="text-blue-600"
+                    />
+                    <span className="font-medium">Basic RFID Card</span>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Standard RFID card with simple authentication. Suitable for basic access control.
+                  </p>
+                </div>
+                
+                <div 
+                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                    cardType === "desfire" 
+                      ? "border-green-500 bg-green-100" 
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                  onClick={() => setCardType("desfire")}
+                >
+                  <div className="flex items-center space-x-2 mb-2">
+                    <input 
+                      type="radio" 
+                      checked={cardType === "desfire"} 
+                      onChange={() => setCardType("desfire")}
+                      className="text-green-600"
+                    />
+                    <span className="font-medium">DESFire EV1 Card</span>
+                    <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded">Advanced</span>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    MIFARE DESFire EV1 with AES encryption and challenge-response authentication. Maximum security.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Assign to Business Unit (Optional)</label>
@@ -4696,6 +4758,53 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
                     />
                     <p className="text-xs text-gray-500 mt-1">Friendly name for the card</p>
                   </div>
+                  
+                  {/* DESFire specific fields */}
+                  {cardType === "desfire" && (
+                    <>
+                      <div>
+                        <label className="text-sm font-medium">Hardware UID (Optional)</label>
+                        <input
+                          type="text"
+                          value={hardwareUid}
+                          onChange={(e) => {
+                            // Allow only hex characters, max 14 chars (7 bytes)
+                            const value = e.target.value.toUpperCase().replace(/[^0-9A-F]/g, '');
+                            if (value.length <= 14) {
+                              setHardwareUid(value);
+                            }
+                          }}
+                          placeholder="e.g., 04A1B2C3D4E5F6"
+                          className="w-full p-2 border rounded-md font-mono"
+                          maxLength={14}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          DESFire factory UID (7 bytes hex). Leave empty for auto-assignment.
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <label className="text-sm font-medium">AES Key Management</label>
+                        <div className="mt-2 space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <input 
+                              type="checkbox" 
+                              checked={autoGenerateKey} 
+                              onChange={(e) => setAutoGenerateKey(e.target.checked)}
+                              className="text-green-600"
+                            />
+                            <span className="text-sm">Auto-generate AES encryption key</span>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            {autoGenerateKey 
+                              ? "Secure AES key will be automatically generated and encrypted for storage"
+                              : "Manual key assignment will be available after card creation"
+                            }
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </>
               )}
             </div>
@@ -4704,10 +4813,13 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
               <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                 <h4 className="font-medium text-green-900 mb-2">Assignment Preview:</h4>
                 <p className="text-green-800">
-                  {batchSize} card(s) will be assigned to: {(businessUnits as any[])?.find(u => u.id === selectedBusinessUnit)?.name}
+                  {batchSize} {cardType.toUpperCase()} card(s) will be assigned to: {(businessUnits as any[])?.find(u => u.id === selectedBusinessUnit)?.name}
                 </p>
                 <p className="text-green-700 text-sm mt-1">
-                  Business unit admin will receive these cards for employee distribution
+                  {cardType === "desfire" 
+                    ? "Advanced DESFire cards with AES encryption will be created" 
+                    : "Basic RFID cards will be created"
+                  }
                 </p>
               </div>
             )}
@@ -4716,10 +4828,13 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
               <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
                 <h4 className="font-medium text-yellow-900 mb-2">Unassigned Cards:</h4>
                 <p className="text-yellow-800">
-                  {batchSize} card(s) will be created without business unit assignment
+                  {batchSize} {cardType.toUpperCase()} card(s) will be created without business unit assignment
                 </p>
                 <p className="text-yellow-700 text-sm mt-1">
-                  Use "Assign Cards" to distribute them to business units later
+                  {cardType === "desfire" 
+                    ? "DESFire cards with cryptographic keys will be generated. Use 'Assign Cards' to distribute them later." 
+                    : "Basic RFID cards will be created. Use 'Assign Cards' to distribute them to business units later."
+                  }
                 </p>
               </div>
             )}
@@ -4924,7 +5039,32 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
               <div key={card.id} className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="flex items-center space-x-4">
                   <div className="flex-1">
-                    <div className="font-medium">{card.cardNumber}</div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium">{card.cardNumber}</span>
+                      {/* Card Type Badge */}
+                      <Badge variant={card.cardType === 'desfire' ? 'default' : 'secondary'} className={
+                        card.cardType === 'desfire' 
+                          ? 'bg-green-100 text-green-800 border-green-200' 
+                          : 'bg-blue-100 text-blue-800 border-blue-200'
+                      }>
+                        {card.cardType === 'desfire' ? 'DESFire EV1' : 'Basic RFID'}
+                      </Badge>
+                      {/* Security Features */}
+                      {card.cardType === 'desfire' && (
+                        <div className="flex items-center gap-1">
+                          {card.aesKeyEncrypted && (
+                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300">
+                              AES Encrypted
+                            </Badge>
+                          )}
+                          {card.keyVersion && (
+                            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-300">
+                              Key v{card.keyVersion}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                    </div>
                     <div className="text-sm text-muted-foreground">
                       {card.cardName && <span className="font-medium">{card.cardName} • </span>}
                       {card.businessUnit?.name ? (
@@ -4937,6 +5077,10 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
                       Created: {new Date(card.createdAt).toLocaleDateString()}
                       {card.lastUsed && (
                         <span> • Last used: {new Date(card.lastUsed).toLocaleDateString()}</span>
+                      )}
+                      {/* DESFire Hardware UID */}
+                      {card.cardType === 'desfire' && card.hardwareUid && (
+                        <span> • Hardware UID: {card.hardwareUid}</span>
                       )}
                     </div>
                   </div>

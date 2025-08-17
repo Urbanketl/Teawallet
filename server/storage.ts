@@ -883,9 +883,12 @@ export class DatabaseStorage implements IStorage {
     cardNumber?: string;
     cardName?: string;
     batchSize?: number;
+    cardType?: 'basic' | 'desfire';
+    hardwareUid?: string;
+    autoGenerateKey?: boolean;
   }): Promise<{ success: boolean; cards: RfidCard[]; message: string }> {
     try {
-      const { businessUnitId, cardNumber, cardName, batchSize = 1 } = params;
+      const { businessUnitId, cardNumber, cardName, batchSize = 1, cardType = 'basic', hardwareUid, autoGenerateKey = true } = params;
       const cards: RfidCard[] = [];
 
       if (batchSize === 1 && cardNumber) {
@@ -903,14 +906,30 @@ export class DatabaseStorage implements IStorage {
           };
         }
 
+        // Create card with DESFire fields if needed
+        const cardData: any = {
+          cardNumber,
+          cardName,
+          businessUnitId: businessUnitId || '',
+          isActive: true,
+          cardType,
+        };
+
+        // Add DESFire-specific fields
+        if (cardType === 'desfire') {
+          cardData.hardwareUid = hardwareUid || null;
+          if (autoGenerateKey) {
+            // Import challengeResponseService for key generation
+            const { challengeResponseService } = await import('../services/challengeResponseService');
+            const keyData = await challengeResponseService.generateAESKey();
+            cardData.aesKeyEncrypted = keyData.encryptedKey;
+            cardData.keyVersion = 1;
+          }
+        }
+
         const [newCard] = await db
           .insert(rfidCards)
-          .values({
-            cardNumber,
-            cardName,
-            businessUnitId: businessUnitId || '',
-            isActive: true,
-          })
+          .values(cardData)
           .returning();
         
         cards.push(newCard);
@@ -921,14 +940,30 @@ export class DatabaseStorage implements IStorage {
           const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
           const autoCardNumber = `RFID_${timestamp}_${randomNum}`;
           
+          // Create card with DESFire fields if needed
+          const cardData: any = {
+            cardNumber: autoCardNumber,
+            cardName: cardName ? `${cardName} #${i + 1}` : `Corporate Card #${i + 1}`,
+            businessUnitId: businessUnitId || '',
+            isActive: true,
+            cardType,
+          };
+
+          // Add DESFire-specific fields for batch creation
+          if (cardType === 'desfire') {
+            cardData.hardwareUid = null; // Auto-generated in batch, no manual UID
+            if (autoGenerateKey) {
+              // Import challengeResponseService for key generation
+              const { challengeResponseService } = await import('../services/challengeResponseService');
+              const keyData = await challengeResponseService.generateAESKey();
+              cardData.aesKeyEncrypted = keyData.encryptedKey;
+              cardData.keyVersion = 1;
+            }
+          }
+
           const [newCard] = await db
             .insert(rfidCards)
-            .values({
-              cardNumber: autoCardNumber,
-              cardName: cardName ? `${cardName} #${i + 1}` : `Corporate Card #${i + 1}`,
-              businessUnitId: businessUnitId || '',
-              isActive: true,
-            })
+            .values(cardData)
             .returning();
           
           cards.push(newCard);

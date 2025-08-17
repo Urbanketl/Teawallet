@@ -393,7 +393,7 @@ export async function deleteUserAccount(req: any, res: Response) {
 // NEW: Centralized RFID Card Creation & Assignment
 export async function createRfidCardBatch(req: any, res: Response) {
   try {
-    const { businessUnitId, cardNumber, cardName, batchSize } = req.body;
+    const { businessUnitId, cardNumber, cardName, batchSize, cardType, hardwareUid, autoGenerateKey } = req.body;
     
     // Validate card number format for single card creation
     if (batchSize === 1) {
@@ -415,7 +415,10 @@ export async function createRfidCardBatch(req: any, res: Response) {
       businessUnitId,
       cardNumber,
       cardName,
-      batchSize
+      batchSize,
+      cardType: cardType || 'basic',
+      hardwareUid,
+      autoGenerateKey: autoGenerateKey !== false // default true
     });
     
     if (result.success) {

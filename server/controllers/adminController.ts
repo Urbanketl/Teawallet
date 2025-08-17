@@ -390,45 +390,57 @@ export async function deleteUserAccount(req: any, res: Response) {
   }
 }
 
-// NEW: Centralized RFID Card Creation & Assignment
-export async function createRfidCardBatch(req: any, res: Response) {
+// NEW: Single RFID Card Creation (No Batch)
+export async function createRfidCard(req: any, res: Response) {
   try {
-    const { businessUnitId, cardNumber, cardName, batchSize, cardType, hardwareUid, autoGenerateKey } = req.body;
+    const { businessUnitId, cardNumber, cardName, hardwareUid } = req.body;
     
-    // Validate card number format for single card creation
-    if (batchSize === 1) {
-      if (!cardNumber || cardNumber.length < 6 || cardNumber.length > 20) {
-        return res.status(400).json({ 
-          message: 'Card number must be 6-20 characters long' 
-        });
-      }
-      
-      // Check format: only letters, numbers, underscore, hyphen
-      if (!/^[A-Z0-9_-]+$/.test(cardNumber)) {
-        return res.status(400).json({ 
-          message: 'Card number can only contain letters, numbers, underscore, and hyphen' 
-        });
-      }
+    // Validate card number format
+    if (!cardNumber || cardNumber.length < 6 || cardNumber.length > 20) {
+      return res.status(400).json({ 
+        message: 'Card number must be 6-20 characters long' 
+      });
+    }
+    
+    // Check format: only letters, numbers, underscore, hyphen
+    if (!/^[A-Z0-9_-]+$/.test(cardNumber)) {
+      return res.status(400).json({ 
+        message: 'Card number can only contain letters, numbers, underscore, and hyphen' 
+      });
     }
     
     const result = await storage.createRfidCardBatch({
       businessUnitId,
       cardNumber,
       cardName,
-      batchSize,
+      batchSize: 1, // Force single card creation
       cardType: 'desfire', // Always DESFire EV1
       hardwareUid,
-      autoGenerateKey: autoGenerateKey !== false // default true
+      autoGenerateKey: true // Always auto-generate AES key
     });
     
     if (result.success) {
-      res.json(result);
+      // Return card with AES key for embedding
+      const card = result.cards[0];
+      res.json({
+        success: true,
+        card: {
+          id: card.id,
+          cardNumber: card.cardNumber,
+          cardName: card.cardName,
+          hardwareUid: card.hardwareUid,
+          aesKey: card.aesKeyPlain, // Plain AES key for embedding
+          keyVersion: card.keyVersion,
+          businessUnitId: card.businessUnitId
+        },
+        message: result.message
+      });
     } else {
       res.status(400).json(result);
     }
   } catch (error) {
-    console.error('Error creating RFID card batch:', error);
-    res.status(500).json({ message: 'Failed to create RFID cards' });
+    console.error('Error creating RFID card:', error);
+    res.status(500).json({ message: 'Failed to create RFID card' });
   }
 }
 

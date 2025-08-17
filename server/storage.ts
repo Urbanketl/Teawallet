@@ -919,10 +919,11 @@ export class DatabaseStorage implements IStorage {
         cardData.hardwareUid = hardwareUid || null;
         if (autoGenerateKey) {
           // Import challengeResponseService for key generation
-          const { challengeResponseService } = await import('../services/challengeResponseService');
+          const { challengeResponseService } = await import('./services/challengeResponseService');
           const keyData = await challengeResponseService.generateAESKey();
           cardData.aesKeyEncrypted = keyData.encryptedKey;
           cardData.keyVersion = 1;
+          cardData.aesKeyPlain = keyData.plainKey; // Store plain key for display
         }
 
         const [newCard] = await db
@@ -930,40 +931,12 @@ export class DatabaseStorage implements IStorage {
           .values(cardData)
           .returning();
         
-        cards.push(newCard);
-      } else {
-        // Batch creation with auto-generated numbers
-        for (let i = 0; i < batchSize; i++) {
-          const timestamp = Date.now();
-          const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-          const autoCardNumber = `RFID_${timestamp}_${randomNum}`;
-          
-          // Create card with DESFire fields if needed
-          const cardData: any = {
-            cardNumber: autoCardNumber,
-            cardName: cardName ? `${cardName} #${i + 1}` : `Corporate Card #${i + 1}`,
-            businessUnitId: businessUnitId || '',
-            isActive: true,
-            cardType,
-          };
-
-          // Add DESFire-specific fields for batch creation (all cards are DESFire EV1)
-          cardData.hardwareUid = null; // Auto-generated in batch, no manual UID
-          if (autoGenerateKey) {
-            // Import challengeResponseService for key generation
-            const { challengeResponseService } = await import('../services/challengeResponseService');
-            const keyData = await challengeResponseService.generateAESKey();
-            cardData.aesKeyEncrypted = keyData.encryptedKey;
-            cardData.keyVersion = 1;
-          }
-
-          const [newCard] = await db
-            .insert(rfidCards)
-            .values(cardData)
-            .returning();
-          
-          cards.push(newCard);
+        // Include AES key in response if auto-generated
+        if (autoGenerateKey && cardData.aesKeyPlain) {
+          newCard.aesKeyPlain = cardData.aesKeyPlain;
         }
+        
+        cards.push(newCard);
       }
 
       const assignmentMessage = businessUnitId 

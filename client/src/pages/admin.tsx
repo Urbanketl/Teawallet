@@ -4421,7 +4421,7 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
   const [selectedBusinessUnit, setSelectedBusinessUnit] = useState<string>("");
   const [cardNumber, setCardNumber] = useState("");
   const [cardName, setCardName] = useState("");
-  const [batchSize, setBatchSize] = useState(1);
+  const [createdCard, setCreatedCard] = useState<any>(null);
   const [selectedCardToAssign, setSelectedCardToAssign] = useState<string>("");
   const [assignToBusinessUnit, setAssignToBusinessUnit] = useState<string>("");
   
@@ -4472,27 +4472,25 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
 
 
   const createCardMutation = useMutation({
-    mutationFn: async (data: { businessUnitId?: string; cardNumber: string; cardName?: string; batchSize?: number }) => {
-      const response = await fetch('/api/admin/rfid/cards/create-batch', {
+    mutationFn: async (data: { businessUnitId?: string; cardNumber: string; cardName?: string; hardwareUid?: string }) => {
+      const response = await fetch('/api/admin/rfid/cards/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      if (!response.ok) throw new Error('Failed to create card(s)');
+      if (!response.ok) throw new Error('Failed to create card');
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       refetchCards();
-      setShowCreateForm(false);
+      setCreatedCard(result.card); // Store created card with AES key
       setSelectedBusinessUnit("");
       setCardNumber("");
       setCardName("");
-      setBatchSize(1);
       setHardwareUid("");
-      setAutoGenerateKey(true);
       toast({
         title: "Success",
-        description: "RFID card(s) created successfully",
+        description: "RFID card created successfully",
       });
     },
     onError: (error: any) => {
@@ -4664,22 +4662,181 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
               </div>
 
               <div>
-                <label className="text-sm font-medium">Batch Size</label>
-                <select 
-                  value={batchSize} 
-                  onChange={(e) => setBatchSize(parseInt(e.target.value))}
+                <label className="text-sm font-medium">Card Number</label>
+                <input
+                  type="text"
+                  value={cardNumber}
+                  onChange={(e) => {
+                    const value = e.target.value.toUpperCase();
+                    // Allow only alphanumeric, underscores, and hyphens, max 20 chars
+                    if (/^[A-Z0-9_-]*$/.test(value) && value.length <= 20) {
+                      setCardNumber(value);
+                    }
+                  }}
+                  placeholder="e.g., RFID_CORP_001"
                   className="w-full p-2 border rounded-md"
-                >
-                  <option value={1}>Single Card</option>
-                  <option value={5}>5 Cards</option>
-                  <option value={10}>10 Cards</option>
-                  <option value={25}>25 Cards</option>
-                  <option value={50}>50 Cards</option>
-                </select>
-                <p className="text-xs text-gray-500 mt-1">Create multiple cards at once</p>
+                  maxLength={20}
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">6-20 characters, letters, numbers, underscore, hyphen only</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Card Name (Optional)</label>
+                <input
+                  type="text"
+                  value={cardName}
+                  onChange={(e) => setCardName(e.target.value)}
+                  placeholder="e.g., Employee Card Set A"
+                  className="w-full p-2 border rounded-md"
+                />
+                <p className="text-xs text-gray-500 mt-1">Human-readable description</p>
               </div>
 
-              {batchSize === 1 && (
+              <div>
+                <label className="text-sm font-medium">Hardware UID</label>
+                <input
+                  type="text"
+                  value={hardwareUid}
+                  onChange={(e) => setHardwareUid(e.target.value)}
+                  placeholder="e.g., 04A1B2C3D4E5F6"
+                  className="w-full p-2 border rounded-md"
+                />
+                <p className="text-xs text-gray-500 mt-1">14-character hex UID from physical card</p>
+              </div>
+            </div>
+
+            {/* AES Key Display for Created Card */}
+            {createdCard && (
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mt-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-yellow-800">
+                      Card Created Successfully - Embed This AES Key
+                    </h3>
+                    <div className="mt-2 text-sm text-yellow-700">
+                      <p><strong>Card Number:</strong> {createdCard.cardNumber}</p>
+                      <p><strong>Hardware UID:</strong> {createdCard.hardwareUid}</p>
+                      <p><strong>AES Key (for embedding):</strong></p>
+                      <div className="bg-yellow-100 p-2 rounded mt-1 font-mono text-xs break-all">
+                        {createdCard.aesKey}
+                      </div>
+                      <p className="mt-2"><strong>Key Version:</strong> {createdCard.keyVersion}</p>
+                      <div className="mt-3 flex space-x-2">
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(createdCard.aesKey);
+                            toast({ title: "Copied!", description: "AES key copied to clipboard" });
+                          }}
+                          className="bg-yellow-200 hover:bg-yellow-300 text-yellow-800 px-3 py-1 rounded text-xs"
+                        >
+                          Copy AES Key
+                        </button>
+                        <button
+                          onClick={() => setCreatedCard(null)}
+                          className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded text-xs"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-between items-center pt-4 border-t">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setShowCreateForm(false);
+                  setCreatedCard(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (!cardNumber.trim()) {
+                    toast({
+                      title: "Error",
+                      description: "Card number is required",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  createCardMutation.mutate({
+                    businessUnitId: selectedBusinessUnit || undefined,
+                    cardNumber: cardNumber.trim(),
+                    cardName: cardName.trim() || undefined,
+                    hardwareUid: hardwareUid.trim() || undefined,
+                  });
+                }}
+                disabled={createCardMutation.isPending}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                {createCardMutation.isPending ? "Creating..." : "Create DESFire Card"}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Card Created Success Message */}
+        {!showCreateForm && createdCard && (
+          <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-green-800">
+                  Card Successfully Created
+                </h3>
+                <div className="mt-2 text-sm text-green-700">
+                  <p>Card <strong>{createdCard.cardNumber}</strong> has been created with AES encryption.</p>
+                  <button
+                    onClick={() => setCreatedCard(null)}
+                    className="bg-green-200 hover:bg-green-300 text-green-800 px-3 py-1 rounded text-xs mt-2"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Continue with the existing sections - Assignment, Filters, etc. */}
+        <div className="flex flex-col sm:flex-row gap-4 items-start">
+          <Button
+            onClick={() => {
+              setShowCreateForm(true);
+              setCreatedCard(null);
+            }}
+            className="bg-orange-600 hover:bg-orange-700"
+          >
+            + Create DESFire Card
+          </Button>
+          <Button
+            onClick={() => setShowAssignForm(true)}
+            variant="outline"
+          >
+            📎 Assign Existing Card
+          </Button>
+        </div>
+
+        {/* Rest of the component continues... */}
+        {showAssignForm && (
                 <>
                   <div>
                     <label className="text-sm font-medium">Card Number</label>

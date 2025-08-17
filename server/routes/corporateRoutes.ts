@@ -607,7 +607,7 @@ export function registerCorporateRoutes(app: Express) {
         doc.text('Card', 150, startY);
         doc.text('Machine', 260, startY);
         doc.text('Tea Type', 400, startY);
-        doc.text('Amount', 470, startY);
+        doc.text('Amount (Rs.)', 470, startY);
         doc.text('Status', 530, startY);
         
         doc.moveTo(50, doc.y + 5).lineTo(580, doc.y + 5).stroke();
@@ -621,7 +621,7 @@ export function registerCorporateRoutes(app: Express) {
           doc.text(String(t.cardNumber || t.rfidCardId), 150, y);
           doc.text(String(t.machineName || t.machineId).substring(0, 25), 260, y);
           doc.text(String(t.teaType).substring(0, 12), 400, y);
-          doc.text(`Rs.${t.amount}`, 470, y);
+          doc.text(String(t.amount), 470, y);
           doc.text(t.success ? 'OK' : 'Failed', 530, y);
           doc.moveDown(0.3);
           
@@ -710,7 +710,7 @@ export function registerCorporateRoutes(app: Express) {
         doc.text('Card', 150, startY);
         doc.text('Machine', 260, startY);
         doc.text('Tea Type', 400, startY);
-        doc.text('Amount', 470, startY);
+        doc.text('Amount (Rs.)', 470, startY);
         doc.text('Status', 530, startY);
         
         doc.moveTo(50, doc.y + 5).lineTo(580, doc.y + 5).stroke();
@@ -724,7 +724,7 @@ export function registerCorporateRoutes(app: Express) {
           doc.text(String(t.cardNumber || t.rfidCardId), 150, y);
           doc.text(String(t.machineName || t.machineId).substring(0, 25), 260, y);
           doc.text(String(t.teaType).substring(0, 12), 400, y);
-          doc.text(`Rs.${t.amount}`, 470, y);
+          doc.text(String(t.amount), 470, y);
           doc.text(t.success ? 'OK' : 'Failed', 530, y);
           doc.moveDown(0.3);
           

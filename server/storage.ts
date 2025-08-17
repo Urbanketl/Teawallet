@@ -888,7 +888,7 @@ export class DatabaseStorage implements IStorage {
     autoGenerateKey?: boolean;
   }): Promise<{ success: boolean; cards: RfidCard[]; message: string }> {
     try {
-      const { businessUnitId, cardNumber, cardName, batchSize = 1, cardType = 'basic', hardwareUid, autoGenerateKey = true } = params;
+      const { businessUnitId, cardNumber, cardName, batchSize = 1, cardType = 'desfire', hardwareUid, autoGenerateKey = true } = params;
       const cards: RfidCard[] = [];
 
       if (batchSize === 1 && cardNumber) {
@@ -915,16 +915,14 @@ export class DatabaseStorage implements IStorage {
           cardType,
         };
 
-        // Add DESFire-specific fields
-        if (cardType === 'desfire') {
-          cardData.hardwareUid = hardwareUid || null;
-          if (autoGenerateKey) {
-            // Import challengeResponseService for key generation
-            const { challengeResponseService } = await import('../services/challengeResponseService');
-            const keyData = await challengeResponseService.generateAESKey();
-            cardData.aesKeyEncrypted = keyData.encryptedKey;
-            cardData.keyVersion = 1;
-          }
+        // Add DESFire-specific fields (all cards are DESFire EV1)
+        cardData.hardwareUid = hardwareUid || null;
+        if (autoGenerateKey) {
+          // Import challengeResponseService for key generation
+          const { challengeResponseService } = await import('../services/challengeResponseService');
+          const keyData = await challengeResponseService.generateAESKey();
+          cardData.aesKeyEncrypted = keyData.encryptedKey;
+          cardData.keyVersion = 1;
         }
 
         const [newCard] = await db
@@ -949,16 +947,14 @@ export class DatabaseStorage implements IStorage {
             cardType,
           };
 
-          // Add DESFire-specific fields for batch creation
-          if (cardType === 'desfire') {
-            cardData.hardwareUid = null; // Auto-generated in batch, no manual UID
-            if (autoGenerateKey) {
-              // Import challengeResponseService for key generation
-              const { challengeResponseService } = await import('../services/challengeResponseService');
-              const keyData = await challengeResponseService.generateAESKey();
-              cardData.aesKeyEncrypted = keyData.encryptedKey;
-              cardData.keyVersion = 1;
-            }
+          // Add DESFire-specific fields for batch creation (all cards are DESFire EV1)
+          cardData.hardwareUid = null; // Auto-generated in batch, no manual UID
+          if (autoGenerateKey) {
+            // Import challengeResponseService for key generation
+            const { challengeResponseService } = await import('../services/challengeResponseService');
+            const keyData = await challengeResponseService.generateAESKey();
+            cardData.aesKeyEncrypted = keyData.encryptedKey;
+            cardData.keyVersion = 1;
           }
 
           const [newCard] = await db

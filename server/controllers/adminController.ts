@@ -416,7 +416,7 @@ export async function createRfidCardBatch(req: any, res: Response) {
       cardNumber,
       cardName,
       batchSize,
-      cardType: cardType || 'basic',
+      cardType: 'desfire', // Always DESFire EV1
       hardwareUid,
       autoGenerateKey: autoGenerateKey !== false // default true
     });

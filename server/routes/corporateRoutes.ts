@@ -600,29 +600,29 @@ export function registerCorporateRoutes(app: Express) {
         doc.fontSize(16).text('Transaction Details', { underline: true });
         doc.fontSize(10);
         
-        // Table header with wider machine column spacing
+        // Table header with expanded card column
         const startY = doc.y;
         doc.text('Date', 50, startY);
         doc.text('Time', 105, startY);
         doc.text('Card', 150, startY);
-        doc.text('Machine', 210, startY);
-        doc.text('Tea Type', 350, startY);
-        doc.text('Amount', 420, startY);
-        doc.text('Status', 480, startY);
+        doc.text('Machine', 260, startY);
+        doc.text('Tea Type', 400, startY);
+        doc.text('Amount', 470, startY);
+        doc.text('Status', 530, startY);
         
-        doc.moveTo(50, doc.y + 5).lineTo(540, doc.y + 5).stroke();
+        doc.moveTo(50, doc.y + 5).lineTo(580, doc.y + 5).stroke();
         doc.moveDown(0.5);
 
-        // Transaction rows with wider machine column
+        // Transaction rows with full card numbers
         transactions.slice(0, 50).forEach((t: any, index: number) => {
           const y = doc.y;
           doc.text(new Date(t.createdAt).toLocaleDateString('en-IN'), 50, y);
           doc.text(new Date(t.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }), 105, y);
-          doc.text(String(t.cardNumber || t.rfidCardId).substring(0, 9), 150, y);
-          doc.text(String(t.machineName || t.machineId).substring(0, 25), 210, y);
-          doc.text(String(t.teaType).substring(0, 12), 350, y);
-          doc.text(`₹${t.amount}`, 420, y);
-          doc.text(t.success ? 'OK' : 'Failed', 480, y);
+          doc.text(String(t.cardNumber || t.rfidCardId), 150, y);
+          doc.text(String(t.machineName || t.machineId).substring(0, 25), 260, y);
+          doc.text(String(t.teaType).substring(0, 12), 400, y);
+          doc.text(`₹${t.amount}`, 470, y);
+          doc.text(t.success ? 'OK' : 'Failed', 530, y);
           doc.moveDown(0.3);
           
           if (index % 20 === 19 && index < transactions.length - 1) {
@@ -703,29 +703,29 @@ export function registerCorporateRoutes(app: Express) {
         doc.fontSize(16).text('Transaction Details', { underline: true });
         doc.fontSize(10);
         
-        // Table header with wider machine column spacing
+        // Table header with expanded card column
         const startY = doc.y;
         doc.text('Date', 50, startY);
         doc.text('Time', 105, startY);
         doc.text('Card', 150, startY);
-        doc.text('Machine', 210, startY);
-        doc.text('Tea Type', 350, startY);
-        doc.text('Amount', 420, startY);
-        doc.text('Status', 480, startY);
+        doc.text('Machine', 260, startY);
+        doc.text('Tea Type', 400, startY);
+        doc.text('Amount', 470, startY);
+        doc.text('Status', 530, startY);
         
-        doc.moveTo(50, doc.y + 5).lineTo(540, doc.y + 5).stroke();
+        doc.moveTo(50, doc.y + 5).lineTo(580, doc.y + 5).stroke();
         doc.moveDown(0.5);
 
-        // Transaction rows with wider machine column
+        // Transaction rows with full card numbers
         transactions.slice(0, 50).forEach((t: any, index: number) => {
           const y = doc.y;
           doc.text(new Date(t.createdAt).toLocaleDateString('en-IN'), 50, y);
           doc.text(new Date(t.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }), 105, y);
-          doc.text(String(t.cardNumber || t.rfidCardId).substring(0, 9), 150, y);
-          doc.text(String(t.machineName || t.machineId).substring(0, 25), 210, y);
-          doc.text(String(t.teaType).substring(0, 12), 350, y);
-          doc.text(`₹${t.amount}`, 420, y);
-          doc.text(t.success ? 'OK' : 'Failed', 480, y);
+          doc.text(String(t.cardNumber || t.rfidCardId), 150, y);
+          doc.text(String(t.machineName || t.machineId).substring(0, 25), 260, y);
+          doc.text(String(t.teaType).substring(0, 12), 400, y);
+          doc.text(`₹${t.amount}`, 470, y);
+          doc.text(t.success ? 'OK' : 'Failed', 530, y);
           doc.moveDown(0.3);
           
           if (index % 20 === 19 && index < transactions.length - 1) {

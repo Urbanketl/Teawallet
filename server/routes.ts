@@ -20,6 +20,8 @@ import * as transactionController from "./controllers/transactionController";
 import { registerCorporateRoutes } from "./routes/corporateRoutes";
 import { registerRechargeRoutes } from "./routes/rechargeRoutes";
 import { machineSyncController } from "./controllers/machineSyncController";
+import { ChallengeResponseController } from "./controllers/challengeResponseController";
+import { AutoSyncController } from "./controllers/autoSyncController";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize Razorpay
@@ -1916,6 +1918,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Machine heartbeat endpoint for sync monitoring (no auth required - used by machines)
   app.post('/api/sync/heartbeat', machineSyncController.heartbeat.bind(machineSyncController));
+
+  // ========== PHASE 3: AUTO-SYNC SYSTEM ROUTES ==========
+  const autoSyncController = new AutoSyncController();
+  
+  // Auto-sync service management (Admin only)
+  app.post('/api/admin/auto-sync/start', isAuthenticated, requireAdminAuth, autoSyncController.startAutoSync.bind(autoSyncController));
+  app.post('/api/admin/auto-sync/stop', isAuthenticated, requireAdminAuth, autoSyncController.stopAutoSync.bind(autoSyncController));
+  app.get('/api/admin/auto-sync/status', isAuthenticated, requireAdminAuth, autoSyncController.getSyncStatus.bind(autoSyncController));
+  
+  // Manual sync triggers (Admin only)
+  app.post('/api/admin/auto-sync/trigger/:machineId', isAuthenticated, requireAdminAuth, autoSyncController.triggerMachineSync.bind(autoSyncController));
+  app.post('/api/admin/auto-sync/trigger-bulk', isAuthenticated, requireAdminAuth, autoSyncController.triggerBulkSync.bind(autoSyncController));
+  
+  // Sync logs and statistics (Admin only)
+  app.get('/api/admin/auto-sync/logs', isAuthenticated, requireAdminAuth, autoSyncController.getSyncLogs.bind(autoSyncController));
+  app.get('/api/admin/auto-sync/stats', isAuthenticated, requireAdminAuth, autoSyncController.getSyncStats.bind(autoSyncController));
+
+  // ========== PHASE 4: CHALLENGE-RESPONSE AUTHENTICATION ROUTES ==========
+  const challengeResponseController = new ChallengeResponseController();
+  
+  // Machine authentication endpoints (No auth required - used by tea machines)
+  app.post('/api/machine/auth/challenge', challengeResponseController.generateChallenge.bind(challengeResponseController));
+  app.post('/api/machine/auth/validate', challengeResponseController.validateResponse.bind(challengeResponseController));
+  app.post('/api/machine/auth/dispense', challengeResponseController.processDispensing.bind(challengeResponseController));
+  
+  // Admin authentication management
+  app.post('/api/admin/auth/rotate-keys/:businessUnitId', isAuthenticated, requireAdminAuth, challengeResponseController.rotateKeys.bind(challengeResponseController));
+  app.get('/api/admin/auth/logs', isAuthenticated, requireAdminAuth, challengeResponseController.getAuthLogs.bind(challengeResponseController));
+  app.get('/api/admin/auth/service-status', isAuthenticated, requireAdminAuth, challengeResponseController.getServiceStatus.bind(challengeResponseController));
 
   const httpServer = createServer(app);
   return httpServer;

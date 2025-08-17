@@ -2,7 +2,7 @@ import { db, pool } from "./db";
 import { 
   users, businessUnits, userBusinessUnits, rfidCards, transactions, dispensingLogs, teaMachines,
   referrals, supportTickets, supportMessages, ticketStatusHistory, faqArticles, systemSettings,
-  businessUnitTransfers, emailLogs, notificationPreferences,
+  businessUnitTransfers, emailLogs, notificationPreferences, machineSyncLogs, machineCertificates, rfidAuthLogs,
   type User, type UpsertUser, type BusinessUnit, type InsertBusinessUnit,
   type UserBusinessUnit, type InsertUserBusinessUnit, type RfidCard, type InsertRfidCard,
   type Transaction, type InsertTransaction, type DispensingLog, type InsertDispensingLog,
@@ -11,7 +11,9 @@ import {
   type SupportMessage, type InsertSupportMessage, type FaqArticle, type InsertFaqArticle,
   type TicketStatusHistory, type InsertTicketStatusHistory, type SystemSetting,
   type BusinessUnitTransfer, type InsertBusinessUnitTransfer,
-  type EmailLog, type InsertEmailLog, type NotificationPreference, type InsertNotificationPreference
+  type EmailLog, type InsertEmailLog, type NotificationPreference, type InsertNotificationPreference,
+  type MachineSyncLog, type InsertMachineSyncLog, type MachineCertificate, type InsertMachineCertificate,
+  type RfidAuthLog, type InsertRfidAuthLog
 } from "@shared/schema";
 import { eq, and, desc, asc, sql, gte, lte, or, ilike, inArray, isNotNull, isNull } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -57,12 +59,34 @@ export interface IStorage {
   getBusinessUnitTransferHistory(businessUnitId: string): Promise<(BusinessUnitTransfer & { fromUser?: User; toUser: User; transferrer: User })[]>;
   getAllBusinessUnitTransfers(): Promise<(BusinessUnitTransfer & { businessUnit: BusinessUnit; fromUser?: User; toUser: User; transferrer: User })[]>;
   
-  // RFID operations
+  // RFID operations  
   getBusinessUnitRfidCards(businessUnitId: string): Promise<RfidCard[]>;
   getRfidCardByNumber(cardNumber: string): Promise<RfidCard | undefined>;
+  getRfidCardByHardwareUid(hardwareUid: string): Promise<RfidCard | undefined>;
   createRfidCard(rfidCard: InsertRfidCard): Promise<RfidCard>;
   updateRfidCardLastUsed(cardId: number, machineId: string): Promise<void>;
   deactivateRfidCard(cardId: number): Promise<void>;
+  
+  // DESFire RFID operations
+  createDesfireCard(cardData: {
+    businessUnitId: string;
+    cardNumber: string;
+    cardName?: string;
+    hardwareUid: string;
+    aesKeyEncrypted: string;
+  }): Promise<RfidCard>;
+  updateCardAESKey(cardId: number, aesKeyEncrypted: string, keyVersion: number): Promise<void>;
+  rotateCardKeys(businessUnitId: string): Promise<{ updated: number; errors: string[] }>;
+  getCardsForMachineSync(businessUnitId: string): Promise<{
+    businessUnit: string;
+    cards: {
+      cardNumber: string;
+      hardwareUid: string | null;
+      aesKeyEncrypted: string | null;
+      cardType: string | null;
+      isActive: boolean | null;
+    }[];
+  }>;
   
   // Machine operations
   getBusinessUnitMachines(businessUnitId: string): Promise<TeaMachine[]>;
@@ -73,6 +97,46 @@ export interface IStorage {
   createTeaMachine(machine: InsertTeaMachine): Promise<TeaMachine>;
   updateMachinePing(machineId: string): Promise<void>;
   updateMachineStatus(machineId: string, isActive: boolean): Promise<void>;
+  
+  // Machine sync operations
+  updateMachineSync(machineId: string, syncData: {
+    syncStatus: string;
+    cardsCount: number;
+    lastSync: Date;
+    ipAddress?: string;
+  }): Promise<void>;
+  getMachineStatus(machineId: string): Promise<{
+    machine: TeaMachine;
+    syncStatus: string;
+    lastSync: Date | null;
+    cardsCount: number;
+    lastPing: Date | null;
+  } | undefined>;
+  getAllMachineStatus(): Promise<Array<{
+    machine: TeaMachine;
+    businessUnitName: string | null;
+    syncStatus: string;
+    lastSync: Date | null;
+    cardsCount: number;
+    isOnline: boolean;
+  }>>;
+  
+  // Machine certificate operations
+  createMachineCertificate(cert: InsertMachineCertificate): Promise<MachineCertificate>;
+  getMachineCertificate(machineId: string): Promise<MachineCertificate | undefined>;
+  updateMachineAuthentication(machineId: string): Promise<void>;
+  
+  // Sync logging
+  createSyncLog(log: InsertMachineSyncLog): Promise<MachineSyncLog>;
+  getMachineSyncLogs(machineId: string, limit?: number): Promise<MachineSyncLog[]>;
+  getAllSyncLogs(limit?: number): Promise<Array<MachineSyncLog & { machineName: string }>>;
+  
+  // RFID authentication logging
+  createRfidAuthLog(log: InsertRfidAuthLog): Promise<RfidAuthLog>;
+  getRfidAuthLogs(machineId?: string, limit?: number): Promise<Array<RfidAuthLog & {
+    machineName: string;
+    businessUnitName: string | null;
+  }>>;
   updateMachineTeaTypes(machineId: string, teaTypes: any[]): Promise<void>;
   updateMachine(machineId: string, updates: { name?: string; location?: string; isActive?: boolean }): Promise<TeaMachine | undefined>;
   assignMachineToBusinessUnit(machineId: string, businessUnitId: string): Promise<TeaMachine | undefined>;
@@ -202,7 +266,7 @@ export interface IStorage {
   getPopularTeaTypes(startDate?: string, endDate?: string, businessUnitId?: string): Promise<{ teaType: string; count: number }[]>;
   getPeakHours(startDate?: string, endDate?: string, businessUnitId?: string): Promise<{ hour: number; count: number }[]>;
   getMachinePerformance(startDate?: string, endDate?: string, businessUnitId?: string): Promise<{ machineId: string; uptime: number; totalDispensed: number }[]>;
-  getUserBehaviorInsights(startDate?: string, endDate?: string, businessUnitId?: string): Promise<{ avgTeaPerDay: number; preferredTimes: number[]; topTeaTypes: string[] }>;
+  getUserBehaviorInsights(startDate?: string, endDate?: string, businessUnitId?: string, machineId?: string): Promise<{ avgTeaPerDay: number; preferredTimes: number[]; topTeaTypes: string[] }>;
   getMachineDispensingData(startDate?: string, endDate?: string, machineId?: string, businessUnitId?: string): Promise<{ date: string; dispensed: number; machineId?: string; [key: string]: any }[]>;
   
   // System settings operations
@@ -920,8 +984,7 @@ export class DatabaseStorage implements IStorage {
       await db
         .update(rfidCards)
         .set({ 
-          businessUnitId,
-          updatedAt: new Date()
+          businessUnitId
         })
         .where(eq(rfidCards.id, parseInt(cardId)));
 
@@ -1389,7 +1452,7 @@ export class DatabaseStorage implements IStorage {
     let businessUnitStats: any[];
     
     if (startDate && endDate) {
-      businessUnitStats = await db.execute(sql`
+      const result = await db.execute(sql`
         SELECT 
           bu.id,
           bu.name,
@@ -1413,8 +1476,9 @@ export class DatabaseStorage implements IStorage {
         GROUP BY bu.id, bu.name, stats.cups_dispensed, stats.revenue
         ORDER BY bu.name
       `);
+      businessUnitStats = result.rows;
     } else {
-      businessUnitStats = await db.execute(sql`
+      const result2 = await db.execute(sql`
         SELECT 
           bu.id,
           bu.name,
@@ -1437,13 +1501,14 @@ export class DatabaseStorage implements IStorage {
         GROUP BY bu.id, bu.name, stats.cups_dispensed, stats.revenue
         ORDER BY bu.name
       `);
+      businessUnitStats = result2.rows;
     }
 
     console.log('Business unit raw SQL query executed successfully');
 
     console.log('Business unit stats query result:', businessUnitStats);
 
-    const result = businessUnitStats.rows.map(stat => ({
+    const result = businessUnitStats.map(stat => ({
       id: stat.id,
       name: stat.name,
       cupsDispensed: stat.cupsDispensed,
@@ -2297,7 +2362,7 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async getUserBehaviorInsights(startDate?: string, endDate?: string, businessUnitId?: string, machineId?: string): Promise<{ avgTeaPerDay: number; preferredTimes: number[]; }> {
+  async getUserBehaviorInsights(startDate?: string, endDate?: string, businessUnitId?: string, machineId?: string): Promise<{ avgTeaPerDay: number; preferredTimes: number[]; topTeaTypes: string[]; }> {
     let whereClause = sql`1=1`;
     let daysDiff = 30;
     
@@ -2336,10 +2401,11 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(sql`count(*)`))
       .limit(3);
 
-    // Removed topTeaTypes - only serve Regular Tea variety
+    // Simplified to only serve Regular Tea variety
     return {
       avgTeaPerDay: avgResult?.avgTeaPerDay || 0,
       preferredTimes: preferredTimes.map(pt => pt.hour),
+      topTeaTypes: ["Regular Tea"] // Only one tea type in simplified system
     };
   }
 
@@ -2646,17 +2712,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getBusinessUnitTransferHistory(businessUnitId: string): Promise<(BusinessUnitTransfer & { fromUser?: User; toUser: User; transferrer: User })[]> {
+    const fromUsers = alias(users, 'fromUsers');
+    const toUsers = alias(users, 'toUsers');
+    const transferrerUsers = alias(users, 'transferrerUsers');
+    
     const transfers = await db
       .select({
         transfer: businessUnitTransfers,
-        fromUser: users,
-        toUser: users,
-        transferrer: users
+        fromUser: fromUsers,
+        toUser: toUsers,
+        transferrer: transferrerUsers
       })
       .from(businessUnitTransfers)
-      .leftJoin(users, eq(businessUnitTransfers.fromUserId, users.id))
-      .innerJoin(users, eq(businessUnitTransfers.toUserId, users.id))
-      .innerJoin(users, eq(businessUnitTransfers.transferredBy, users.id))
+      .leftJoin(fromUsers, eq(businessUnitTransfers.fromUserId, fromUsers.id))
+      .innerJoin(toUsers, eq(businessUnitTransfers.toUserId, toUsers.id))
+      .innerJoin(transferrerUsers, eq(businessUnitTransfers.transferredBy, transferrerUsers.id))
       .where(eq(businessUnitTransfers.businessUnitId, businessUnitId))
       .orderBy(desc(businessUnitTransfers.transferDate));
 
@@ -3168,11 +3238,11 @@ export class DatabaseStorage implements IStorage {
       const [newUser] = await db
         .insert(users)
         .values({
-          id: userData.id,
           email: userData.email,
           firstName: userData.firstName,
           lastName: userData.lastName,
           mobileNumber: userData.mobileNumber,
+          password: '', // Will be set later via password reset flow
           isAdmin: userData.isAdmin || false,
           isSuperAdmin: userData.isSuperAdmin || false,
           createdAt: new Date(),
@@ -3305,6 +3375,276 @@ export class DatabaseStorage implements IStorage {
         message: error instanceof Error ? error.message : "Failed to delete user account" 
       };
     }
+  }
+  // DESFire RFID operations
+  async getRfidCardByHardwareUid(hardwareUid: string): Promise<RfidCard | undefined> {
+    const [card] = await db
+      .select()
+      .from(rfidCards)
+      .where(eq(rfidCards.hardwareUid, hardwareUid));
+    return card || undefined;
+  }
+
+  async createDesfireCard(cardData: {
+    businessUnitId: string;
+    cardNumber: string;
+    cardName?: string;
+    hardwareUid: string;
+    aesKeyEncrypted: string;
+  }): Promise<RfidCard> {
+    const [card] = await db
+      .insert(rfidCards)
+      .values({
+        businessUnitId: cardData.businessUnitId,
+        cardNumber: cardData.cardNumber,
+        cardName: cardData.cardName,
+        hardwareUid: cardData.hardwareUid,
+        aesKeyEncrypted: cardData.aesKeyEncrypted,
+        cardType: 'desfire',
+        keyVersion: 1,
+        lastKeyRotation: new Date(),
+        isActive: true
+      })
+      .returning();
+    return card;
+  }
+
+  async updateCardAESKey(cardId: number, aesKeyEncrypted: string, keyVersion: number): Promise<void> {
+    await db
+      .update(rfidCards)
+      .set({ 
+        aesKeyEncrypted, 
+        keyVersion, 
+        lastKeyRotation: new Date() 
+      })
+      .where(eq(rfidCards.id, cardId));
+  }
+
+  async rotateCardKeys(businessUnitId: string): Promise<{ updated: number; errors: string[] }> {
+    const cards = await db
+      .select()
+      .from(rfidCards)
+      .where(and(
+        eq(rfidCards.businessUnitId, businessUnitId),
+        eq(rfidCards.cardType, 'desfire')
+      ));
+
+    let updated = 0;
+    const errors: string[] = [];
+
+    for (const card of cards) {
+      try {
+        // In a real implementation, you would:
+        // 1. Generate new AES key
+        // 2. Encrypt with machine's master key
+        // 3. Update card in database
+        const newKeyVersion = (card.keyVersion || 1) + 1;
+        await this.updateCardAESKey(card.id, card.aesKeyEncrypted!, newKeyVersion);
+        updated++;
+      } catch (error) {
+        errors.push(`Card ${card.cardNumber}: ${error}`);
+      }
+    }
+
+    return { updated, errors };
+  }
+
+  async getCardsForMachineSync(businessUnitId: string): Promise<{
+    businessUnit: string;
+    cards: {
+      cardNumber: string;
+      hardwareUid: string | null;
+      aesKeyEncrypted: string | null;
+      cardType: string | null;
+      isActive: boolean | null;
+    }[];
+  }> {
+    const [businessUnit] = await db
+      .select({ name: businessUnits.name })
+      .from(businessUnits)
+      .where(eq(businessUnits.id, businessUnitId));
+
+    const cards = await db
+      .select({
+        cardNumber: rfidCards.cardNumber,
+        hardwareUid: rfidCards.hardwareUid,
+        aesKeyEncrypted: rfidCards.aesKeyEncrypted,
+        cardType: rfidCards.cardType,
+        isActive: rfidCards.isActive
+      })
+      .from(rfidCards)
+      .where(eq(rfidCards.businessUnitId, businessUnitId));
+
+    return {
+      businessUnit: businessUnit?.name || "Unknown",
+      cards
+    };
+  }
+
+  // Machine sync operations
+  async updateMachineSync(machineId: string, syncData: {
+    syncStatus: string;
+    cardsCount: number;
+    lastSync: Date;
+    ipAddress?: string;
+  }): Promise<void> {
+    await db
+      .update(teaMachines)
+      .set({
+        syncStatus: syncData.syncStatus,
+        cardsCount: syncData.cardsCount,
+        lastSync: syncData.lastSync,
+        ipAddress: syncData.ipAddress
+      })
+      .where(eq(teaMachines.id, machineId));
+  }
+
+  async getMachineStatus(machineId: string): Promise<{
+    machine: TeaMachine;
+    syncStatus: string;
+    lastSync: Date | null;
+    cardsCount: number;
+    lastPing: Date | null;
+  } | undefined> {
+    const [machine] = await db
+      .select()
+      .from(teaMachines)
+      .where(eq(teaMachines.id, machineId));
+
+    if (!machine) return undefined;
+
+    return {
+      machine,
+      syncStatus: machine.syncStatus || 'pending',
+      lastSync: machine.lastSync,
+      cardsCount: machine.cardsCount || 0,
+      lastPing: machine.lastPing
+    };
+  }
+
+  async getAllMachineStatus(): Promise<Array<{
+    machine: TeaMachine;
+    businessUnitName: string | null;
+    syncStatus: string;
+    lastSync: Date | null;
+    cardsCount: number;
+    isOnline: boolean;
+  }>> {
+    const machines = await db
+      .select({
+        machine: teaMachines,
+        businessUnitName: businessUnits.name
+      })
+      .from(teaMachines)
+      .leftJoin(businessUnits, eq(teaMachines.businessUnitId, businessUnits.id))
+      .orderBy(teaMachines.name);
+
+    return machines.map(row => ({
+      machine: row.machine,
+      businessUnitName: row.businessUnitName,
+      syncStatus: row.machine.syncStatus || 'pending',
+      lastSync: row.machine.lastSync,
+      cardsCount: row.machine.cardsCount || 0,
+      isOnline: row.machine.lastPing && 
+        (new Date().getTime() - new Date(row.machine.lastPing).getTime()) < 300000 // 5 minutes
+    }));
+  }
+
+  // Machine certificate operations
+  async createMachineCertificate(cert: InsertMachineCertificate): Promise<MachineCertificate> {
+    const [certificate] = await db
+      .insert(machineCertificates)
+      .values(cert)
+      .returning();
+    return certificate;
+  }
+
+  async getMachineCertificate(machineId: string): Promise<MachineCertificate | undefined> {
+    const [certificate] = await db
+      .select()
+      .from(machineCertificates)
+      .where(eq(machineCertificates.machineId, machineId));
+    return certificate || undefined;
+  }
+
+  async updateMachineAuthentication(machineId: string): Promise<void> {
+    await db
+      .update(machineCertificates)
+      .set({ lastAuthentication: new Date() })
+      .where(eq(machineCertificates.machineId, machineId));
+  }
+
+  // Sync logging
+  async createSyncLog(log: InsertMachineSyncLog): Promise<MachineSyncLog> {
+    const [syncLog] = await db
+      .insert(machineSyncLogs)
+      .values(log)
+      .returning();
+    return syncLog;
+  }
+
+  async getMachineSyncLogs(machineId: string, limit: number = 50): Promise<MachineSyncLog[]> {
+    return await db
+      .select()
+      .from(machineSyncLogs)
+      .where(eq(machineSyncLogs.machineId, machineId))
+      .orderBy(desc(machineSyncLogs.createdAt))
+      .limit(limit);
+  }
+
+  async getAllSyncLogs(limit: number = 100): Promise<Array<MachineSyncLog & { machineName: string }>> {
+    const logs = await db
+      .select({
+        syncLog: machineSyncLogs,
+        machineName: teaMachines.name
+      })
+      .from(machineSyncLogs)
+      .innerJoin(teaMachines, eq(machineSyncLogs.machineId, teaMachines.id))
+      .orderBy(desc(machineSyncLogs.createdAt))
+      .limit(limit);
+
+    return logs.map(row => ({
+      ...row.syncLog,
+      machineName: row.machineName
+    }));
+  }
+
+  // RFID authentication logging
+  async createRfidAuthLog(log: InsertRfidAuthLog): Promise<RfidAuthLog> {
+    const [authLog] = await db
+      .insert(rfidAuthLogs)
+      .values(log)
+      .returning();
+    return authLog;
+  }
+
+  async getRfidAuthLogs(machineId?: string, limit: number = 100): Promise<Array<RfidAuthLog & {
+    machineName: string;
+    businessUnitName: string | null;
+  }>> {
+    let query = db
+      .select({
+        authLog: rfidAuthLogs,
+        machineName: teaMachines.name,
+        businessUnitName: businessUnits.name
+      })
+      .from(rfidAuthLogs)
+      .innerJoin(teaMachines, eq(rfidAuthLogs.machineId, teaMachines.id))
+      .leftJoin(businessUnits, eq(rfidAuthLogs.businessUnitId, businessUnits.id))
+      .orderBy(desc(rfidAuthLogs.createdAt))
+      .limit(limit);
+
+    if (machineId) {
+      query = query.where(eq(rfidAuthLogs.machineId, machineId)) as any;
+    }
+
+    const logs = await query;
+
+    return logs.map(row => ({
+      ...row.authLog,
+      machineName: row.machineName,
+      businessUnitName: row.businessUnitName
+    }));
   }
 }
 

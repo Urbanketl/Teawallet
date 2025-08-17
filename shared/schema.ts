@@ -48,12 +48,17 @@ export const userBusinessUnits = pgTable("user_business_units", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// RFID Cards - Generic cards under business units
+// RFID Cards - Generic cards under business units with DESFire support
 export const rfidCards = pgTable("rfid_cards", {
   id: serial("id").primaryKey(),
   businessUnitId: varchar("business_unit_id").notNull().references(() => businessUnits.id), // Business unit this card belongs to
   cardNumber: varchar("card_number").notNull().unique(),
   cardName: varchar("card_name"), // Optional name/label for the card (e.g., "Office Card #1")
+  hardwareUid: varchar("hardware_uid").unique(), // DESFire factory UID (7-byte hex)
+  aesKeyEncrypted: text("aes_key_encrypted"), // Encrypted AES key for challenge-response
+  keyVersion: integer("key_version").default(1), // Key rotation version
+  cardType: varchar("card_type").default("basic"), // 'basic', 'desfire'
+  lastKeyRotation: timestamp("last_key_rotation"),
   isActive: boolean("is_active").default(true),
   lastUsed: timestamp("last_used"),
   lastUsedMachineId: varchar("last_used_machine_id"),
@@ -88,7 +93,7 @@ export const dispensingLogs = pgTable("dispensing_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Tea Machines - Linked to business units
+// Tea Machines - Linked to business units with sync support
 export const teaMachines = pgTable("tea_machines", {
   id: varchar("id").primaryKey(),
   businessUnitId: varchar("business_unit_id").references(() => businessUnits.id), // Business unit this machine belongs to (optional for unassigned machines)
@@ -96,6 +101,12 @@ export const teaMachines = pgTable("tea_machines", {
   location: varchar("location").notNull(),
   isActive: boolean("is_active").default(true),
   lastPing: timestamp("last_ping"),
+  lastSync: timestamp("last_sync"), // Last successful card data sync
+  syncStatus: varchar("sync_status").default("pending"), // 'synced', 'pending', 'failed'
+  ipAddress: varchar("ip_address"), // Machine network address
+  authToken: varchar("auth_token"), // Machine authentication token
+  masterKeyHash: varchar("master_key_hash"), // Hash of machine's master key
+  cardsCount: integer("cards_count").default(0), // Number of cards synced
   teaTypes: jsonb("tea_types"), // Legacy field - keeping for backward compatibility
   price: decimal("price", { precision: 10, scale: 2 }).default("5.00"), // Single price per cup for Regular Tea
   serialNumber: varchar("serial_number"),
@@ -186,6 +197,44 @@ export const businessUnitTransfers = pgTable("business_unit_transfers", {
   assetsTransferred: jsonb("assets_transferred"), // snapshot of assets at transfer time
 });
 
+// Machine Sync Logs - Track all sync operations
+export const machineSyncLogs = pgTable("machine_sync_logs", {
+  id: serial("id").primaryKey(),
+  machineId: varchar("machine_id").notNull().references(() => teaMachines.id),
+  syncType: varchar("sync_type").notNull(), // 'initial', 'update', 'heartbeat', 'bulk'
+  dataPushed: jsonb("data_pushed"), // What data was sent
+  syncStatus: varchar("sync_status").notNull(), // 'success', 'failed', 'partial'
+  errorMessage: text("error_message"),
+  responseTime: integer("response_time"), // milliseconds
+  cardsUpdated: integer("cards_updated").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Machine Certificates - Authentication for machines
+export const machineCertificates = pgTable("machine_certificates", {
+  machineId: varchar("machine_id").primaryKey().references(() => teaMachines.id),
+  publicKey: text("public_key").notNull(),
+  certificateHash: varchar("certificate_hash").notNull(),
+  masterKeyVersion: integer("master_key_version").default(1),
+  isActive: boolean("is_active").default(true),
+  lastAuthentication: timestamp("last_authentication"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// RFID Authentication Logs - Track all card authentication attempts
+export const rfidAuthLogs = pgTable("rfid_auth_logs", {
+  id: serial("id").primaryKey(),
+  machineId: varchar("machine_id").notNull().references(() => teaMachines.id),
+  cardIdentifier: varchar("card_identifier"), // Could be UID or card number
+  businessUnitId: varchar("business_unit_id").references(() => businessUnits.id),
+  authMethod: varchar("auth_method").notNull(), // 'challenge_response', 'basic_uid'
+  authResult: boolean("auth_result").notNull(),
+  errorMessage: text("error_message"),
+  responseTime: integer("response_time"), // milliseconds
+  challengeHash: varchar("challenge_hash"), // Hash of challenge for audit
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations - Updated for multi-business unit model
 export const usersRelations = relations(users, ({ many }) => ({
   userBusinessUnits: many(userBusinessUnits),
@@ -215,6 +264,22 @@ export const rfidCardsRelations = relations(rfidCards, ({ one, many }) => ({
 export const teaMachinesRelations = relations(teaMachines, ({ one, many }) => ({
   businessUnit: one(businessUnits, { fields: [teaMachines.businessUnitId], references: [businessUnits.id] }),
   dispensingLogs: many(dispensingLogs),
+  syncLogs: many(machineSyncLogs),
+  certificate: one(machineCertificates, { fields: [teaMachines.id], references: [machineCertificates.machineId] }),
+  authLogs: many(rfidAuthLogs),
+}));
+
+export const machineSyncLogsRelations = relations(machineSyncLogs, ({ one }) => ({
+  machine: one(teaMachines, { fields: [machineSyncLogs.machineId], references: [teaMachines.id] }),
+}));
+
+export const machineCertificatesRelations = relations(machineCertificates, ({ one }) => ({
+  machine: one(teaMachines, { fields: [machineCertificates.machineId], references: [teaMachines.id] }),
+}));
+
+export const rfidAuthLogsRelations = relations(rfidAuthLogs, ({ one }) => ({
+  machine: one(teaMachines, { fields: [rfidAuthLogs.machineId], references: [teaMachines.id] }),
+  businessUnit: one(businessUnits, { fields: [rfidAuthLogs.businessUnitId], references: [businessUnits.id] }),
 }));
 
 export const transactionsRelations = relations(transactions, ({ one }) => ({
@@ -335,6 +400,20 @@ export const insertBusinessUnitTransferSchema = createInsertSchema(businessUnitT
   transferDate: true,
 });
 
+export const insertMachineSyncLogSchema = createInsertSchema(machineSyncLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertMachineCertificateSchema = createInsertSchema(machineCertificates).omit({
+  createdAt: true,
+});
+
+export const insertRfidAuthLogSchema = createInsertSchema(rfidAuthLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -368,3 +447,9 @@ export type SystemSetting = typeof systemSettings.$inferSelect;
 export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
 export type BusinessUnitTransfer = typeof businessUnitTransfers.$inferSelect;
 export type InsertBusinessUnitTransfer = z.infer<typeof insertBusinessUnitTransferSchema>;
+export type MachineSyncLog = typeof machineSyncLogs.$inferSelect;
+export type InsertMachineSyncLog = z.infer<typeof insertMachineSyncLogSchema>;
+export type MachineCertificate = typeof machineCertificates.$inferSelect;
+export type InsertMachineCertificate = z.infer<typeof insertMachineCertificateSchema>;
+export type RfidAuthLog = typeof rfidAuthLogs.$inferSelect;
+export type InsertRfidAuthLog = z.infer<typeof insertRfidAuthLogSchema>;

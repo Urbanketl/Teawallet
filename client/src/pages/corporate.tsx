@@ -1025,32 +1025,38 @@ export default function Corporate() {
                         )}
 
                         <div className="space-y-4 mb-4">
-                          {dispensingLogs.map((log: DispensingLog) => (
-                            <div key={log.id} className="flex items-center justify-between p-4 border rounded-lg">
-                              <div className="flex items-center gap-3">
-                                <div className={`w-3 h-3 rounded-full ${log.success ? 'bg-green-500' : 'bg-red-500'}`} />
-                                <div>
-                                  <h3 className="font-medium">
-                                    {log.teaType} - ₹{log.amount}
-                                  </h3>
-                                  <p className="text-sm text-gray-500">
-                                    Card ID: {log.rfidCardId} • Machine: {log.machineId}
+                          {dispensingLogs.map((log: DispensingLog) => {
+                            // Find the corresponding card and machine by ID
+                            const card = rfidCards.find((c: RfidCard) => c.id === log.rfidCardId);
+                            const machine = machines.find((m: TeaMachine) => m.id === log.machineId);
+                            
+                            return (
+                              <div key={log.id} className="flex items-center justify-between p-4 border rounded-lg">
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-3 h-3 rounded-full ${log.success ? 'bg-green-500' : 'bg-red-500'}`} />
+                                  <div>
+                                    <h3 className="font-medium">
+                                      {log.teaType} - ₹{log.amount}
+                                    </h3>
+                                    <p className="text-sm text-gray-500">
+                                      Card: {card?.cardNumber || `ID ${log.rfidCardId}`} • Machine: {machine?.name || log.machineId}
+                                    </p>
+                                    {log.errorMessage && (
+                                      <p className="text-xs text-red-500">{log.errorMessage}</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <Badge variant={log.success ? "default" : "destructive"}>
+                                    {log.success ? "Success" : "Failed"}
+                                  </Badge>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    {format(new Date(log.createdAt), "MMM d, HH:mm")}
                                   </p>
-                                  {log.errorMessage && (
-                                    <p className="text-xs text-red-500">{log.errorMessage}</p>
-                                  )}
                                 </div>
                               </div>
-                              <div className="text-right">
-                                <Badge variant={log.success ? "default" : "destructive"}>
-                                  {log.success ? "Success" : "Failed"}
-                                </Badge>
-                                <p className="text-xs text-gray-500 mt-1">
-                                  {format(new Date(log.createdAt), "MMM d, HH:mm")}
-                                </p>
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                         
                         {/* Pagination controls moved to top */}

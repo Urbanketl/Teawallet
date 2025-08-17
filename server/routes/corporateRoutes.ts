@@ -589,7 +589,7 @@ export function registerCorporateRoutes(app: Express) {
       // Summary section
       doc.fontSize(16).text('Period Summary', { underline: true });
       doc.fontSize(12);
-      doc.text(`Total Transactions: ${summary.totalTransactions || 0}`);
+      doc.text(`Total Transactions: ${String(summary.totalTransactions || 0)}`);
       doc.text(`Total Amount: ₹${parseFloat(summary.totalAmount || 0).toFixed(2)}`);
       doc.text(`Machines Used: ${summary.uniqueMachines || 0}`);
       doc.text(`Employee Cards Active: ${summary.uniqueCards || 0}`);
@@ -600,29 +600,29 @@ export function registerCorporateRoutes(app: Express) {
         doc.fontSize(16).text('Transaction Details', { underline: true });
         doc.fontSize(10);
         
-        // Table header
+        // Table header with optimized column widths
         const startY = doc.y;
         doc.text('Date', 50, startY);
-        doc.text('Time', 120, startY);
-        doc.text('Card', 180, startY);
+        doc.text('Time', 110, startY);
+        doc.text('Card', 160, startY);
         doc.text('Machine', 220, startY);
-        doc.text('Tea Type', 300, startY);
+        doc.text('Tea Type', 320, startY);
         doc.text('Amount', 380, startY);
-        doc.text('Status', 430, startY);
+        doc.text('Status', 440, startY);
         
-        doc.moveTo(50, doc.y + 5).lineTo(500, doc.y + 5).stroke();
+        doc.moveTo(50, doc.y + 5).lineTo(520, doc.y + 5).stroke();
         doc.moveDown(0.5);
 
-        // Transaction rows
+        // Transaction rows with better text fitting
         transactions.slice(0, 50).forEach((t: any, index: number) => {
           const y = doc.y;
           doc.text(new Date(t.createdAt).toLocaleDateString('en-IN'), 50, y);
-          doc.text(new Date(t.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }), 120, y);
-          doc.text(String(t.cardNumber || t.rfidCardId).substring(0, 8), 180, y);
-          doc.text(String(t.machineName || t.machineId).substring(0, 12), 220, y);
-          doc.text(String(t.teaType).substring(0, 12), 300, y);
+          doc.text(new Date(t.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }), 110, y);
+          doc.text(String(t.cardNumber || t.rfidCardId).substring(0, 10), 160, y);
+          doc.text(String(t.machineName || t.machineId).substring(0, 18), 220, y);
+          doc.text(String(t.teaType).substring(0, 10), 320, y);
           doc.text(`₹${t.amount}`, 380, y);
-          doc.text(t.success ? 'OK' : 'Failed', 430, y);
+          doc.text(t.success ? 'OK' : 'Failed', 440, y);
           doc.moveDown(0.3);
           
           if (index % 20 === 19 && index < transactions.length - 1) {
@@ -692,7 +692,7 @@ export function registerCorporateRoutes(app: Express) {
       // Summary section
       doc.fontSize(16).text('Monthly Summary', { underline: true });
       doc.fontSize(12);
-      doc.text(`Total Transactions: ${summary.totalTransactions || 0}`);
+      doc.text(`Total Transactions: ${String(summary.totalTransactions || 0)}`);
       doc.text(`Total Amount: ₹${parseFloat(summary.totalAmount || 0).toFixed(2)}`);
       doc.text(`Machines Used: ${summary.uniqueMachines || 0}`);
       doc.text(`Employee Cards Active: ${summary.uniqueCards || 0}`);
@@ -703,29 +703,29 @@ export function registerCorporateRoutes(app: Express) {
         doc.fontSize(16).text('Transaction Details', { underline: true });
         doc.fontSize(10);
         
-        // Table header
+        // Table header with optimized column widths
         const startY = doc.y;
         doc.text('Date', 50, startY);
-        doc.text('Time', 120, startY);
-        doc.text('Card', 180, startY);
+        doc.text('Time', 110, startY);
+        doc.text('Card', 160, startY);
         doc.text('Machine', 220, startY);
-        doc.text('Tea Type', 300, startY);
+        doc.text('Tea Type', 320, startY);
         doc.text('Amount', 380, startY);
-        doc.text('Status', 430, startY);
+        doc.text('Status', 440, startY);
         
-        doc.moveTo(50, doc.y + 5).lineTo(500, doc.y + 5).stroke();
+        doc.moveTo(50, doc.y + 5).lineTo(520, doc.y + 5).stroke();
         doc.moveDown(0.5);
 
-        // Transaction rows
+        // Transaction rows with better text fitting
         transactions.slice(0, 50).forEach((t: any, index: number) => {
           const y = doc.y;
           doc.text(new Date(t.createdAt).toLocaleDateString('en-IN'), 50, y);
-          doc.text(new Date(t.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }), 120, y);
-          doc.text(String(t.cardNumber || t.rfidCardId).substring(0, 8), 180, y);
-          doc.text(String(t.machineName || t.machineId).substring(0, 12), 220, y);
-          doc.text(String(t.teaType).substring(0, 12), 300, y);
+          doc.text(new Date(t.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }), 110, y);
+          doc.text(String(t.cardNumber || t.rfidCardId).substring(0, 10), 160, y);
+          doc.text(String(t.machineName || t.machineId).substring(0, 18), 220, y);
+          doc.text(String(t.teaType).substring(0, 10), 320, y);
           doc.text(`₹${t.amount}`, 380, y);
-          doc.text(t.success ? 'OK' : 'Failed', 430, y);
+          doc.text(t.success ? 'OK' : 'Failed', 440, y);
           doc.moveDown(0.3);
           
           if (index % 20 === 19 && index < transactions.length - 1) {

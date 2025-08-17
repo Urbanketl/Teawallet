@@ -590,7 +590,7 @@ export function registerCorporateRoutes(app: Express) {
       doc.fontSize(16).text('Period Summary', { underline: true });
       doc.fontSize(12);
       doc.text(`Total Transactions: ${String(summary.totalTransactions || 0)}`);
-      doc.text(`Total Amount: ₹${parseFloat(String(summary.totalAmount || '0')).toFixed(2)}`);
+      doc.text(`Total Amount: Rs.${parseFloat(String(summary.totalAmount || '0')).toFixed(2)}`);
       doc.text(`Machines Used: ${String(summary.uniqueMachines || 0)}`);
       doc.text(`Employee Cards Active: ${String(summary.uniqueCards || 0)}`);
       doc.moveDown();
@@ -621,7 +621,7 @@ export function registerCorporateRoutes(app: Express) {
           doc.text(String(t.cardNumber || t.rfidCardId), 150, y);
           doc.text(String(t.machineName || t.machineId).substring(0, 25), 260, y);
           doc.text(String(t.teaType).substring(0, 12), 400, y);
-          doc.text(`₹${t.amount}`, 470, y);
+          doc.text(`Rs.${t.amount}`, 470, y);
           doc.text(t.success ? 'OK' : 'Failed', 530, y);
           doc.moveDown(0.3);
           
@@ -693,7 +693,7 @@ export function registerCorporateRoutes(app: Express) {
       doc.fontSize(16).text('Monthly Summary', { underline: true });
       doc.fontSize(12);
       doc.text(`Total Transactions: ${String(summary.totalTransactions || 0)}`);
-      doc.text(`Total Amount: ₹${parseFloat(String(summary.totalAmount || '0')).toFixed(2)}`);
+      doc.text(`Total Amount: Rs.${parseFloat(String(summary.totalAmount || '0')).toFixed(2)}`);
       doc.text(`Machines Used: ${String(summary.uniqueMachines || 0)}`);
       doc.text(`Employee Cards Active: ${String(summary.uniqueCards || 0)}`);
       doc.moveDown();
@@ -724,7 +724,7 @@ export function registerCorporateRoutes(app: Express) {
           doc.text(String(t.cardNumber || t.rfidCardId), 150, y);
           doc.text(String(t.machineName || t.machineId).substring(0, 25), 260, y);
           doc.text(String(t.teaType).substring(0, 12), 400, y);
-          doc.text(`₹${t.amount}`, 470, y);
+          doc.text(`Rs.${t.amount}`, 470, y);
           doc.text(t.success ? 'OK' : 'Failed', 530, y);
           doc.moveDown(0.3);
           

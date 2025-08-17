@@ -73,16 +73,7 @@ export async function getAllRfidCards(req: any, res: Response) {
   }
 }
 
-export async function createRfidCard(req: any, res: Response) {
-  try {
-    const { userId, cardNumber } = req.body;
-    const card = await storage.createRfidCardForUser(userId, cardNumber);
-    res.json(card);
-  } catch (error) {
-    console.error('Error creating RFID card:', error);
-    res.status(500).json({ message: 'Failed to create RFID card' });
-  }
-}
+
 
 export async function deleteRfidCard(req: any, res: Response) {
   try {
@@ -429,7 +420,7 @@ export async function createRfidCard(req: any, res: Response) {
           cardNumber: card.cardNumber,
           cardName: card.cardName,
           hardwareUid: card.hardwareUid,
-          aesKey: card.aesKeyPlain, // Plain AES key for embedding
+          aesKey: (card as any).aesKeyPlain, // Plain AES key for embedding
           keyVersion: card.keyVersion,
           businessUnitId: card.businessUnitId
         },

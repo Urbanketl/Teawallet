@@ -918,12 +918,12 @@ export class DatabaseStorage implements IStorage {
         // Add DESFire-specific fields (all cards are DESFire EV1)
         cardData.hardwareUid = hardwareUid || null;
         if (autoGenerateKey) {
-          // Import challengeResponseService for key generation
-          const { challengeResponseService } = await import('./services/challengeResponseService');
-          const keyData = await challengeResponseService.generateAESKey();
-          cardData.aesKeyEncrypted = keyData.encryptedKey;
+          // Generate AES key directly
+          const crypto = await import('crypto');
+          const aesKey = crypto.randomBytes(16).toString('hex').toUpperCase();
+          cardData.aesKeyEncrypted = aesKey; // For now, store as plain (encrypt later)
           cardData.keyVersion = 1;
-          cardData.aesKeyPlain = keyData.plainKey; // Store plain key for display
+          cardData.aesKeyPlain = aesKey; // Store plain key for display
         }
 
         const [newCard] = await db

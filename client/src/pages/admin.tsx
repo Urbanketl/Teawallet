@@ -4519,7 +4519,7 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
       setAssignToBusinessUnit("");
       toast({
         title: "Success",
-        description: "RFID card assigned to business unit successfully",
+        description: "RFID card assigned successfully",
       });
     },
     onError: (error: any) => {
@@ -4531,40 +4531,8 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
     },
   });
 
-
-
-  const handleCreateCard = () => {
-    if (batchSize === 1 && (!cardNumber || cardNumber.length < 6)) {
-      toast({
-        title: "Validation Error",
-        description: "Card number must be 6-20 characters long",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    createCardMutation.mutate({
-      businessUnitId: selectedBusinessUnit || undefined,
-      cardNumber: cardNumber,
-      cardName: cardName || undefined,
-      batchSize: batchSize,
-      cardType: "desfire", // Always DESFire EV1
-      hardwareUid: hardwareUid || undefined,
-      autoGenerateKey: autoGenerateKey,
-    });
-  };
-
-  const handleAssignCard = () => {
-    if (!selectedCardToAssign || !assignToBusinessUnit) return;
-    
-    assignCardMutation.mutate({
-      cardId: selectedCardToAssign,
-      businessUnitId: assignToBusinessUnit,
-    });
-  };
-
   const deleteCardMutation = useMutation({
-    mutationFn: async (cardId: number) => {
+    mutationFn: async (cardId: string) => {
       const response = await fetch(`/api/admin/rfid/cards/${cardId}`, {
         method: 'DELETE',
       });
@@ -4572,23 +4540,47 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
       return response.json();
     },
     onSuccess: () => {
-      toast({ title: "Success", description: "RFID card deleted successfully" });
       refetchCards();
+      toast({
+        title: "Success",
+        description: "RFID card deleted successfully",
+      });
     },
     onError: (error: any) => {
-      toast({ 
-        title: "Error", 
+      toast({
+        title: "Error",
         description: error.message || "Failed to delete RFID card",
-        variant: "destructive" 
+        variant: "destructive",
       });
     },
   });
 
-  const handleDeleteCard = (cardId: number) => {
-    if (confirm("Are you sure you want to delete this RFID card? This action cannot be undone.")) {
+  const handleAssignCard = () => {
+    if (!selectedCardToAssign || !assignToBusinessUnit) {
+      toast({
+        title: "Error",
+        description: "Please select both a card and business unit",
+        variant: "destructive",
+      });
+      return;
+    }
+    assignCardMutation.mutate({
+      cardId: selectedCardToAssign,
+      businessUnitId: assignToBusinessUnit,
+    });
+  };
+
+  const handleDeleteCard = (cardId: string) => {
+    if (confirm('Are you sure you want to delete this RFID card?')) {
       deleteCardMutation.mutate(cardId);
     }
   };
+
+
+
+
+
+
 
 
 
@@ -4786,7 +4778,8 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
                 {createCardMutation.isPending ? "Creating..." : "Create DESFire Card"}
               </Button>
             </div>
-          </div>
+          </CardContent>
+        </Card>
         )}
 
         {/* Card Created Success Message */}
@@ -4835,129 +4828,146 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
           </Button>
         </div>
 
-        {/* Rest of the component continues... */}
-        {showAssignForm && (
-                <>
-                  <div>
-                    <label className="text-sm font-medium">Card Number</label>
-                    <input
-                      type="text"
-                      value={cardNumber}
-                      onChange={(e) => {
-                        const value = e.target.value.toUpperCase();
-                        // Allow only alphanumeric, underscores, and hyphens, max 20 chars
-                        if (/^[A-Z0-9_-]*$/.test(value) && value.length <= 20) {
-                          setCardNumber(value);
-                        }
-                      }}
-                      placeholder="e.g., RFID_CORP_001"
-                      className="w-full p-2 border rounded-md"
-                      maxLength={20}
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      6-20 characters: letters, numbers, underscore, hyphen only
-                    </p>
-                    {cardNumber.length > 0 && cardNumber.length < 6 && (
-                      <p className="text-xs text-red-500 mt-1">Minimum 6 characters required</p>
-                    )}
-                  </div>
+        {/* Create Form */}
+        {showCreateForm && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Create DESFire EV1 Card</CardTitle>
+              <CardDescription>Create a single MIFARE DESFire EV1 card with AES encryption</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Card Number</label>
+                <input
+                  type="text"
+                  value={cardNumber}
+                  onChange={(e) => {
+                    const value = e.target.value.toUpperCase();
+                    // Allow only alphanumeric, underscores, and hyphens, max 20 chars
+                    if (/^[A-Z0-9_-]*$/.test(value) && value.length <= 20) {
+                      setCardNumber(value);
+                    }
+                  }}
+                  placeholder="e.g., RFID_CORP_001"
+                  className="w-full p-2 border rounded-md"
+                  maxLength={20}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  6-20 characters: letters, numbers, underscore, hyphen only
+                </p>
+                {cardNumber.length > 0 && cardNumber.length < 6 && (
+                  <p className="text-xs text-red-500 mt-1">Minimum 6 characters required</p>
+                )}
+              </div>
 
-                  <div>
-                    <label className="text-sm font-medium">Card Name (Optional)</label>
-                    <input
-                      type="text"
-                      value={cardName}
-                      onChange={(e) => setCardName(e.target.value)}
-                      placeholder="e.g., Employee Card #1"
-                      className="w-full p-2 border rounded-md"
+              <div>
+                <label className="text-sm font-medium">Card Name (Optional)</label>
+                <input
+                  type="text"
+                  value={cardName}
+                  onChange={(e) => setCardName(e.target.value)}
+                  placeholder="e.g., Employee Card #1"
+                  className="w-full p-2 border rounded-md"
+                />
+                <p className="text-xs text-gray-500 mt-1">Friendly name for the card</p>
+              </div>
+              
+              {/* DESFire specific fields - always shown since all cards are DESFire */}
+              <div>
+                <label className="text-sm font-medium">Hardware UID (Optional)</label>
+                <input
+                  type="text"
+                  value={hardwareUid}
+                  onChange={(e) => {
+                    // Allow only hex characters, max 14 chars (7 bytes)
+                    const value = e.target.value.toUpperCase().replace(/[^0-9A-F]/g, '');
+                    if (value.length <= 14) {
+                      setHardwareUid(value);
+                    }
+                  }}
+                  placeholder="e.g., 04A1B2C3D4E5F6"
+                  className="w-full p-2 border rounded-md font-mono"
+                  maxLength={14}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  DESFire factory UID (7 bytes hex). Leave empty for auto-assignment.
+                </p>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium">AES Key Management</label>
+                <div className="mt-2 space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="checkbox" 
+                      checked={autoGenerateKey} 
+                      onChange={(e) => setAutoGenerateKey(e.target.checked)}
+                      className="text-green-600"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Friendly name for the card</p>
+                    <span className="text-sm">Auto-generate AES encryption key</span>
                   </div>
-                  
-                  {/* DESFire specific fields - always shown since all cards are DESFire */}
-                  <div>
-                    <label className="text-sm font-medium">Hardware UID (Optional)</label>
-                    <input
-                      type="text"
-                      value={hardwareUid}
-                      onChange={(e) => {
-                        // Allow only hex characters, max 14 chars (7 bytes)
-                        const value = e.target.value.toUpperCase().replace(/[^0-9A-F]/g, '');
-                        if (value.length <= 14) {
-                          setHardwareUid(value);
-                        }
-                      }}
-                      placeholder="e.g., 04A1B2C3D4E5F6"
-                      className="w-full p-2 border rounded-md font-mono"
-                      maxLength={14}
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      DESFire factory UID (7 bytes hex). Leave empty for auto-assignment.
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium">AES Key Management</label>
-                    <div className="mt-2 space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <input 
-                          type="checkbox" 
-                          checked={autoGenerateKey} 
-                          onChange={(e) => setAutoGenerateKey(e.target.checked)}
-                          className="text-green-600"
-                        />
-                        <span className="text-sm">Auto-generate AES encryption key</span>
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        {autoGenerateKey 
-                          ? "Secure AES key will be automatically generated and encrypted for storage"
-                          : "Manual key assignment will be available after card creation"
-                        }
-                      </p>
-                    </div>
-                  </div>
-                </>
+                  <p className="text-xs text-gray-500">
+                    {autoGenerateKey 
+                      ? "Secure AES key will be automatically generated and encrypted for storage"
+                      : "Manual key assignment will be available after card creation"
+                    }
+                  </p>
+                </div>
+              </div>
+
+              {selectedBusinessUnit && (
+                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                  <h4 className="font-medium text-green-900 mb-2">Assignment Preview:</h4>
+                  <p className="text-green-800">
+                    DESFire EV1 card will be assigned to: {(businessUnits as any[])?.find(u => u.id === selectedBusinessUnit)?.name}
+                  </p>
+                  <p className="text-green-700 text-sm mt-1">
+                    Advanced DESFire card with AES encryption will be created
+                  </p>
+                </div>
               )}
-            </div>
 
-            {selectedBusinessUnit && (
-              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                <h4 className="font-medium text-green-900 mb-2">Assignment Preview:</h4>
-                <p className="text-green-800">
-                  {batchSize} DESFire EV1 card(s) will be assigned to: {(businessUnits as any[])?.find(u => u.id === selectedBusinessUnit)?.name}
-                </p>
-                <p className="text-green-700 text-sm mt-1">
-                  Advanced DESFire cards with AES encryption will be created
-                </p>
+              {!selectedBusinessUnit && (
+                <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <h4 className="font-medium text-yellow-900 mb-2">Unassigned Card:</h4>
+                  <p className="text-yellow-800">
+                    DESFire EV1 card will be created without business unit assignment
+                  </p>
+                  <p className="text-yellow-700 text-sm mt-1">
+                    DESFire card with cryptographic key will be generated. Use 'Assign Cards' to distribute it later.
+                  </p>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowCreateForm(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={() => {
+                    if (!cardNumber.trim()) {
+                      toast({
+                        title: "Error",
+                        description: "Card number is required",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    createCardMutation.mutate({
+                      businessUnitId: selectedBusinessUnit || undefined,
+                      cardNumber: cardNumber.trim(),
+                      cardName: cardName.trim() || undefined,
+                      hardwareUid: hardwareUid.trim() || undefined,
+                    });
+                  }}
+                  disabled={!cardNumber || createCardMutation.isPending}
+                >
+                  {createCardMutation.isPending ? "Creating..." : "Create DESFire Card"}
+                </Button>
               </div>
-            )}
-
-            {!selectedBusinessUnit && (
-              <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                <h4 className="font-medium text-yellow-900 mb-2">Unassigned Cards:</h4>
-                <p className="text-yellow-800">
-                  {batchSize} DESFire EV1 card(s) will be created without business unit assignment
-                </p>
-                <p className="text-yellow-700 text-sm mt-1">
-                  DESFire cards with cryptographic keys will be generated. Use 'Assign Cards' to distribute them later.
-                </p>
-              </div>
-            )}
-
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowCreateForm(false)}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleCreateCard}
-                disabled={(batchSize === 1 && !cardNumber) || createCardMutation.isPending}
-              >
-                {createCardMutation.isPending ? "Creating..." : `Create ${batchSize} Card${batchSize > 1 ? 's' : ''}`}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        )}
 
       {showAssignForm && (
         <Card>

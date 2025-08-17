@@ -1222,6 +1222,69 @@ export class DatabaseStorage implements IStorage {
     return dispensingLog;
   }
 
+  // Atomic RFID Transaction - Critical for billing accuracy
+  async processRfidTransactionForBusinessUnit(params: {
+    businessUnitId: string;
+    cardId: number;
+    machineId: string;
+    teaType: string;
+    amount: string;
+  }): Promise<{ success: true; remainingBalance: string } | { success: false; message: string }> {
+    try {
+      // Start transaction
+      return await db.transaction(async (tx) => {
+        // Get business unit with current balance
+        const [businessUnit] = await tx
+          .select()
+          .from(businessUnits)
+          .where(eq(businessUnits.id, params.businessUnitId))
+          .for("update"); // Lock for update
+        
+        if (!businessUnit) {
+          return { success: false, message: "Business unit not found" };
+        }
+
+        const currentBalance = parseFloat(businessUnit.walletBalance);
+        const transactionAmount = parseFloat(params.amount);
+
+        if (currentBalance < transactionAmount) {
+          return { success: false, message: "Insufficient balance" };
+        }
+
+        // Deduct from wallet
+        const newBalance = currentBalance - transactionAmount;
+        await tx
+          .update(businessUnits)
+          .set({ walletBalance: newBalance.toFixed(2) })
+          .where(eq(businessUnits.id, params.businessUnitId));
+
+        // Create dispensing log
+        await tx.insert(dispensingLogs).values({
+          businessUnitId: params.businessUnitId,
+          rfidCardId: params.cardId,
+          machineId: params.machineId,
+          teaType: params.teaType,
+          amount: params.amount,
+          success: true
+        });
+
+        // Update card last used
+        await tx
+          .update(rfidCards)
+          .set({ 
+            lastUsed: new Date(),
+            lastUsedMachineId: params.machineId
+          })
+          .where(eq(rfidCards.id, params.cardId));
+
+        return { success: true, remainingBalance: newBalance.toFixed(2) };
+      });
+    } catch (error) {
+      console.error("Error processing RFID transaction:", error);
+      return { success: false, message: "Transaction failed" };
+    }
+  }
+
   async getBusinessUnitDispensingLogs(businessUnitId: string, limit = 50, startDate?: string, endDate?: string): Promise<DispensingLog[]> {
     let whereConditions = [eq(dispensingLogs.businessUnitId, businessUnitId)];
     
@@ -2295,7 +2358,39 @@ export class DatabaseStorage implements IStorage {
       .where(eq(faqArticles.id, articleId));
   }
 
-  // Analytics operations (removed getPopularTeaTypes - only serves Regular Tea)
+  // Analytics operations 
+  async getPopularTeaTypes(startDate?: string, endDate?: string, businessUnitId?: string): Promise<{ teaType: string; count: number }[]> {
+    // Since we only serve Regular Tea now, return a simple result
+    let query = db
+      .select({
+        teaType: dispensingLogs.teaType,
+        count: sql<number>`cast(count(*) as int)`
+      })
+      .from(dispensingLogs)
+      .groupBy(dispensingLogs.teaType)
+      .orderBy(sql`count(*) desc`);
+
+    const conditions = [];
+    
+    if (startDate) {
+      conditions.push(gte(dispensingLogs.createdAt, new Date(startDate)));
+    }
+    
+    if (endDate) {
+      conditions.push(lte(dispensingLogs.createdAt, new Date(endDate)));
+    }
+    
+    if (businessUnitId) {
+      conditions.push(eq(dispensingLogs.businessUnitId, businessUnitId));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    const results = await query;
+    return results;
+  }
 
   async getPeakHours(startDate?: string, endDate?: string, businessUnitId?: string, machineId?: string): Promise<{ hour: number; count: number }[]> {
     let whereClause = sql`1=1`;
@@ -3234,15 +3329,17 @@ export class DatabaseStorage implements IStorage {
         throw new Error("Email address already in use");
       }
 
-      // Create the user account
+      // Create the user account - password will be set via reset flow
+      const defaultPassword = "";
+      
       const [newUser] = await db
         .insert(users)
         .values({
-          email: userData.email,
+          id: userData.id,
+          password: defaultPassword,
           firstName: userData.firstName,
           lastName: userData.lastName,
           mobileNumber: userData.mobileNumber,
-          password: '', // Will be set later via password reset flow
           isAdmin: userData.isAdmin || false,
           isSuperAdmin: userData.isSuperAdmin || false,
           createdAt: new Date(),
@@ -3545,8 +3642,8 @@ export class DatabaseStorage implements IStorage {
       syncStatus: row.machine.syncStatus || 'pending',
       lastSync: row.machine.lastSync,
       cardsCount: row.machine.cardsCount || 0,
-      isOnline: row.machine.lastPing && 
-        (new Date().getTime() - new Date(row.machine.lastPing).getTime()) < 300000 // 5 minutes
+      isOnline: !!(row.machine.lastPing && 
+        (new Date().getTime() - new Date(row.machine.lastPing).getTime()) < 300000) // 5 minutes
     }));
   }
 

@@ -54,7 +54,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin routes - require authentication and admin privileges
   app.get('/api/admin/users', requireAuth, requireAdmin, adminController.getAllUsers);
   app.post('/api/admin/users', requireAuth, requireAdmin, adminController.createUserAccount);
+  app.put('/api/admin/users/:userId', requireAuth, requireAdmin, adminController.updateUserAccount);
   app.delete('/api/admin/users/:userId', requireAuth, requireAdmin, adminController.deleteUserAccount);
+  app.post('/api/admin/users/:userId/reset-password', requireAuth, requireAdmin, adminController.resetUserPassword);
   app.patch('/api/admin/users/:userId/admin-status', requireAuth, requireAdmin, adminController.updateUserAdminStatus);
   app.get('/api/admin/stats', requireAuth, requireAdmin, adminController.getDashboardStats);
   app.get('/api/admin/business-unit-balances', requireAuth, requireAdmin, adminController.getBusinessUnitBalances);
@@ -96,13 +98,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   app.post('/api/admin/rfid/cards', requireAuth, requireAdmin, adminController.createRfidCard);
+  app.put('/api/admin/rfid/cards/:cardId', requireAuth, requireAdmin, adminController.updateRfidCard);
   app.delete('/api/admin/rfid/cards/:cardId', requireAuth, requireAdmin, adminController.deleteRfidCard);
+  app.post('/api/admin/rfid/cards/:cardId/activate', requireAuth, requireAdmin, adminController.activateRfidCard);
+  app.post('/api/admin/rfid/cards/:cardId/deactivate', requireAuth, requireAdmin, adminController.deactivateRfidCard);
+  app.post('/api/admin/rfid/cards/:cardId/assign', requireAuth, requireAdmin, adminController.assignRfidCard);
+  app.post('/api/admin/rfid/cards/batch', requireAuth, requireAdmin, adminController.batchCreateRfidCards);
   app.get('/api/admin/rfid/suggest-card-number', requireAuth, requireAdmin, adminController.getSuggestedCardNumber);
   
   // NEW: Single RFID Card Creation (Platform Admin Only)
   app.post('/api/admin/rfid/cards/create', requireAuth, requireAdmin, adminController.createRfidCard);
   app.post('/api/admin/rfid/cards/assign', requireAuth, requireAdmin, adminController.assignRfidCard);
   app.get('/api/admin/business-units', requireAuth, requireAdmin, adminController.getBusinessUnits);
+  app.post('/api/admin/business-units', requireAuth, requireAdmin, adminController.createBusinessUnit);
+  app.put('/api/admin/business-units/:unitId', requireAuth, requireAdmin, adminController.updateBusinessUnit);
+  app.delete('/api/admin/business-units/:unitId', requireAuth, requireAdmin, adminController.deleteBusinessUnit);
+  app.post('/api/admin/business-units/:unitId/wallet', requireAuth, requireAdmin, adminController.updateBusinessUnitWallet);
+  app.post('/api/admin/business-units/:unitId/transfer-ownership', requireAuth, requireAdmin, adminController.transferBusinessUnitOwnership);
   
   // Admin support routes
   app.get('/api/admin/support/tickets', requireAuth, requireAdmin, adminController.getSupportTicketsPaginated);

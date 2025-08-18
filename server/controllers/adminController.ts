@@ -465,3 +465,226 @@ export async function getBusinessUnits(req: any, res: Response) {
     res.status(500).json({ message: 'Failed to fetch business units' });
   }
 }
+
+// Business Unit CRUD operations
+export async function createBusinessUnit(req: any, res: Response) {
+  try {
+    const { name, code, description } = req.body;
+    const createdBy = req.user.id;
+
+    if (!name || !code) {
+      return res.status(400).json({ message: 'Name and code are required' });
+    }
+
+    const result = await storage.createBusinessUnit({
+      name,
+      code: code.toUpperCase(),
+      description: description || '',
+      createdBy
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error creating business unit:', error);
+    res.status(500).json({ message: 'Failed to create business unit' });
+  }
+}
+
+export async function updateBusinessUnit(req: any, res: Response) {
+  try {
+    const { unitId } = req.params;
+    const { name, code, description, isActive } = req.body;
+    const updatedBy = req.user.id;
+
+    if (!unitId) {
+      return res.status(400).json({ message: 'Unit ID is required' });
+    }
+
+    const result = await storage.updateBusinessUnit(unitId, {
+      name,
+      code: code?.toUpperCase(),
+      description,
+      isActive,
+      updatedBy
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error updating business unit:', error);
+    res.status(500).json({ message: 'Failed to update business unit' });
+  }
+}
+
+export async function deleteBusinessUnit(req: any, res: Response) {
+  try {
+    const { unitId } = req.params;
+    const deletedBy = req.user.id;
+
+    if (!unitId) {
+      return res.status(400).json({ message: 'Unit ID is required' });
+    }
+
+    const result = await storage.deleteBusinessUnit(unitId, deletedBy);
+    
+    if (result.success) {
+      res.json({ message: result.message });
+    } else {
+      res.status(400).json({ message: result.message });
+    }
+  } catch (error) {
+    console.error('Error deleting business unit:', error);
+    res.status(500).json({ message: 'Failed to delete business unit' });
+  }
+}
+
+export async function updateBusinessUnitWallet(req: any, res: Response) {
+  try {
+    const { unitId } = req.params;
+    const { amount, type } = req.body;
+    const updatedBy = req.user.id;
+
+    if (!unitId || !amount || !type) {
+      return res.status(400).json({ message: 'Unit ID, amount, and type are required' });
+    }
+
+    if (type !== 'recharge' && type !== 'deduct') {
+      return res.status(400).json({ message: 'Type must be "recharge" or "deduct"' });
+    }
+
+    const result = await storage.updateBusinessUnitWallet(unitId, amount, type, updatedBy);
+    res.json(result);
+  } catch (error) {
+    console.error('Error updating business unit wallet:', error);
+    res.status(500).json({ message: 'Failed to update wallet' });
+  }
+}
+
+export async function transferBusinessUnitOwnership(req: any, res: Response) {
+  try {
+    const { unitId } = req.params;
+    const { newOwnerId } = req.body;
+    const transferredBy = req.user.id;
+
+    if (!unitId || !newOwnerId) {
+      return res.status(400).json({ message: 'Unit ID and new owner ID are required' });
+    }
+
+    const result = await storage.transferBusinessUnitOwnership(unitId, newOwnerId, transferredBy);
+    res.json(result);
+  } catch (error) {
+    console.error('Error transferring business unit ownership:', error);
+    res.status(500).json({ message: 'Failed to transfer ownership' });
+  }
+}
+
+// User CRUD operations
+export async function updateUserAccount(req: any, res: Response) {
+  try {
+    const { userId } = req.params;
+    const { firstName, lastName, mobileNumber, isAdmin } = req.body;
+    const updatedBy = req.user.id;
+
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    const result = await storage.updateUserAccount(userId, {
+      firstName,
+      lastName,
+      mobileNumber,
+      isAdmin,
+      updatedBy
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error updating user account:', error);
+    res.status(500).json({ message: 'Failed to update user account' });
+  }
+}
+
+// RFID Card CRUD operations
+export async function updateRfidCard(req: any, res: Response) {
+  try {
+    const { cardId } = req.params;
+    const { cardName, businessUnitId, isActive } = req.body;
+    const updatedBy = req.user.id;
+
+    if (!cardId) {
+      return res.status(400).json({ message: 'Card ID is required' });
+    }
+
+    const result = await storage.updateRfidCard(cardId, {
+      cardName,
+      businessUnitId,
+      isActive,
+      updatedBy
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error updating RFID card:', error);
+    res.status(500).json({ message: 'Failed to update RFID card' });
+  }
+}
+
+export async function activateRfidCard(req: any, res: Response) {
+  try {
+    const { cardId } = req.params;
+    const activatedBy = req.user.id;
+
+    if (!cardId) {
+      return res.status(400).json({ message: 'Card ID is required' });
+    }
+
+    const result = await storage.activateRfidCard(cardId, activatedBy);
+    res.json(result);
+  } catch (error) {
+    console.error('Error activating RFID card:', error);
+    res.status(500).json({ message: 'Failed to activate RFID card' });
+  }
+}
+
+export async function deactivateRfidCard(req: any, res: Response) {
+  try {
+    const { cardId } = req.params;
+    const deactivatedBy = req.user.id;
+
+    if (!cardId) {
+      return res.status(400).json({ message: 'Card ID is required' });
+    }
+
+    const result = await storage.deactivateRfidCard(cardId, deactivatedBy);
+    res.json(result);
+  } catch (error) {
+    console.error('Error deactivating RFID card:', error);
+    res.status(500).json({ message: 'Failed to deactivate RFID card' });
+  }
+}
+
+
+
+export async function batchCreateRfidCards(req: any, res: Response) {
+  try {
+    const { businessUnitId, batchSize, cardType, cardNamePrefix } = req.body;
+
+    if (!businessUnitId || !batchSize || batchSize < 1 || batchSize > 100) {
+      return res.status(400).json({ 
+        message: 'Business Unit ID is required and batch size must be 1-100' 
+      });
+    }
+
+    const result = await storage.createRfidCardBatch({
+      businessUnitId,
+      batchSize,
+      cardType: cardType || 'desfire',
+      cardNamePrefix: cardNamePrefix || 'Card',
+      autoGenerateKey: true
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error creating RFID card batch:', error);
+    res.status(500).json({ message: 'Failed to create RFID card batch' });
+  }
+}

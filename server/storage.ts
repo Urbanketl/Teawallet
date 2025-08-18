@@ -26,9 +26,14 @@ export interface IStorage {
   
   // User operations
   getUser(id: string): Promise<User | undefined>;
+  getAllUsers(): Promise<User[]>;
+  getUsersPaginated(page: number, limit: number, search?: string): Promise<{ users: User[], total: number }>;
   getUserByEmail(email: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  createUserAccount(userData: any): Promise<User>;
+  updateUserAccount(id: string, data: any): Promise<User>;
   updateUserProfile(id: string, profileData: any): Promise<User>;
+  updateUserAdminStatus(id: string, isAdmin: boolean, updatedBy: string): Promise<User>;
   
   // Password management
   updateUserPassword(id: string, hashedPassword: string): Promise<void>;
@@ -40,10 +45,13 @@ export interface IStorage {
   
   // Business Unit operations
   createBusinessUnit(businessUnit: InsertBusinessUnit): Promise<BusinessUnit>;
+  updateBusinessUnit(id: string, data: Partial<InsertBusinessUnit>): Promise<BusinessUnit>;
+  deleteBusinessUnit(id: string): Promise<void>;
   getBusinessUnit(id: string): Promise<BusinessUnit | undefined>;
   getAllBusinessUnits(): Promise<BusinessUnit[]>;
   getUserBusinessUnits(userId: string): Promise<BusinessUnit[]>;
   updateBusinessUnitWallet(unitId: string, amount: string): Promise<BusinessUnit>;
+  transferBusinessUnitOwnership(businessUnitId: string, newOwnerId: string, transferredBy: string): Promise<void>;
   
   // User-Business Unit assignments
   assignUserToBusinessUnit(userId: string, businessUnitId: string, role: string): Promise<void>;
@@ -64,8 +72,11 @@ export interface IStorage {
   getRfidCardByNumber(cardNumber: string): Promise<RfidCard | undefined>;
   getRfidCardByHardwareUid(hardwareUid: string): Promise<RfidCard | undefined>;
   createRfidCard(rfidCard: InsertRfidCard): Promise<RfidCard>;
+  updateRfidCard(cardId: number, data: Partial<InsertRfidCard>): Promise<RfidCard>;
+  deleteRfidCard(cardId: string, deletedBy: string): Promise<{ success: boolean; message: string }>;
   updateRfidCardLastUsed(cardId: number, machineId: string): Promise<void>;
   deactivateRfidCard(cardId: number): Promise<void>;
+  getDashboardStats(): Promise<any>;
   
   // DESFire RFID operations
   createDesfireCard(cardData: {

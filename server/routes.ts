@@ -46,21 +46,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register recharge history routes
   registerRechargeRoutes(app);
 
-  // Admin user management
-  app.post("/api/admin/users", isAuthenticated, requireAdminAuth, adminController.createUser);
-  app.delete("/api/admin/users/:userId", isAuthenticated, requireAdminAuth, adminController.deleteUser);
-  app.patch("/api/admin/users/:userId/password", isAuthenticated, requireAdminAuth, adminController.resetUserPassword);
-
   // Admin routes - require authentication and admin privileges
-  app.get('/api/admin/users', requireAuth, requireAdmin, adminController.getAllUsers);
-  app.post('/api/admin/users', requireAuth, requireAdmin, adminController.createUserAccount);
-  app.put('/api/admin/users/:userId', requireAuth, requireAdmin, adminController.updateUserAccount);
-  app.delete('/api/admin/users/:userId', requireAuth, requireAdmin, adminController.deleteUserAccount);
-  app.post('/api/admin/users/:userId/reset-password', requireAuth, requireAdmin, adminController.resetUserPassword);
-  app.patch('/api/admin/users/:userId/admin-status', requireAuth, requireAdmin, adminController.updateUserAdminStatus);
-  app.get('/api/admin/stats', requireAuth, requireAdmin, adminController.getDashboardStats);
-  app.get('/api/admin/business-unit-balances', requireAuth, requireAdmin, adminController.getBusinessUnitBalances);
-  app.get('/api/admin/rfid/cards', requireAuth, requireAdmin, async (req: any, res) => {
+  app.get('/api/admin/users', isAuthenticated, requireAdminAuth, adminController.getAllUsers);
+  app.post('/api/admin/users', isAuthenticated, requireAdminAuth, adminController.createUserAccount);
+  app.put('/api/admin/users/:userId', isAuthenticated, requireAdminAuth, adminController.updateUserAccount);
+  app.delete('/api/admin/users/:userId', isAuthenticated, requireAdminAuth, adminController.deleteUserAccount);
+  app.post('/api/admin/users/:userId/reset-password', isAuthenticated, requireAdminAuth, adminController.resetUserPassword);
+  app.patch('/api/admin/users/:userId/admin-status', isAuthenticated, requireAdminAuth, adminController.updateUserAdminStatus);
+  app.get('/api/admin/dashboard-stats', isAuthenticated, requireAdminAuth, adminController.getDashboardStats);
+  app.get('/api/admin/business-unit-balances', isAuthenticated, requireAdminAuth, adminController.getBusinessUnitBalances);
+  app.get('/api/admin/rfid/cards', isAuthenticated, requireAdminAuth, async (req: any, res) => {
     try {
       const page = parseInt(req.query.page as string);
       const limit = parseInt(req.query.limit as string) || 20;

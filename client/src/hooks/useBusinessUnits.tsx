@@ -14,30 +14,60 @@ export function useBusinessUnits() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch business units with pagination
-  const { data: unitsData, isLoading: unitsLoading } = useQuery({
-    queryKey: ["/api/admin/business-units", currentPage, unitsPerPage, searchTerm, statusFilter, sortBy, sortOrder],
+  // Fetch all business units (the API returns simple array)
+  const { data: allBusinessUnits = [], isLoading: unitsLoading } = useQuery({
+    queryKey: ["/api/admin/business-units"],
     queryFn: async () => {
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: unitsPerPage.toString(),
-        paginated: 'true',
-        ...(searchTerm && { search: searchTerm }),
-        ...(statusFilter !== 'all' && { status: statusFilter }),
-        sortBy,
-        sortOrder
+      const response = await fetch("/api/admin/business-units", {
+        credentials: 'include'
       });
-
-      const response = await fetch(`/api/admin/business-units?${params}`);
       if (!response.ok) throw new Error('Failed to fetch business units');
       return response.json();
     },
   });
 
-  // Fetch all business units (non-paginated)
-  const { data: allBusinessUnits = [] } = useQuery({
-    queryKey: ["/api/admin/business-units"],
+  // Client-side filtering and pagination
+  const filteredUnits = allBusinessUnits.filter((unit: any) => {
+    const matchesSearch = !searchTerm || 
+      unit.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      unit.code.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || 
+      (statusFilter === 'active' && unit.isActive) ||
+      (statusFilter === 'inactive' && !unit.isActive) ||
+      (statusFilter === 'critical' && parseFloat(unit.walletBalance || '0') <= 100) ||
+      (statusFilter === 'low' && parseFloat(unit.walletBalance || '0') > 100 && parseFloat(unit.walletBalance || '0') <= 500);
+    
+    return matchesSearch && matchesStatus;
   });
+
+  // Client-side sorting
+  const sortedUnits = [...filteredUnits].sort((a: any, b: any) => {
+    let aValue = a[sortBy];
+    let bValue = b[sortBy];
+    
+    if (sortBy === 'walletBalance') {
+      aValue = parseFloat(aValue || '0');
+      bValue = parseFloat(bValue || '0');
+    }
+    
+    if (typeof aValue === 'string') {
+      aValue = aValue.toLowerCase();
+      bValue = bValue.toLowerCase();
+    }
+    
+    if (sortOrder === 'desc') {
+      return aValue < bValue ? 1 : -1;
+    }
+    return aValue > bValue ? 1 : -1;
+  });
+
+  // Client-side pagination
+  const totalUnits = sortedUnits.length;
+  const totalPages = Math.ceil(totalUnits / unitsPerPage);
+  const startIndex = (currentPage - 1) * unitsPerPage;
+  const endIndex = startIndex + unitsPerPage;
+  const businessUnits = sortedUnits.slice(startIndex, endIndex);
 
   // Create business unit mutation
   const createBusinessUnitMutation = useMutation({
@@ -165,8 +195,8 @@ export function useBusinessUnits() {
 
   return {
     // Data
-    businessUnits: unitsData?.units || [],
-    totalUnits: unitsData?.total || 0,
+    businessUnits,
+    totalUnits,
     allBusinessUnits,
     unitsLoading,
 
@@ -175,7 +205,7 @@ export function useBusinessUnits() {
     setCurrentPage,
     unitsPerPage,
     setUnitsPerPage,
-    totalPages: Math.ceil((unitsData?.total || 0) / unitsPerPage),
+    totalPages,
 
     // Filtering & Sorting
     searchTerm,

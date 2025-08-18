@@ -30,10 +30,10 @@ export function useAdminUsers() {
   // Client-side filtering and pagination
   const filteredUsers = allUsers.filter((user: any) => {
     const matchesSearch = !searchTerm || 
-      user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.mobileNumber.includes(searchTerm);
+      (user.firstName && user.firstName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (user.lastName && user.lastName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (user.mobileNumber && user.mobileNumber.includes(searchTerm));
     
     const matchesRole = roleFilter === 'all' || 
       (roleFilter === 'admin' && user.isAdmin) ||
@@ -48,10 +48,10 @@ export function useAdminUsers() {
 
   // Client-side sorting
   const sortedUsers = [...filteredUsers].sort((a: any, b: any) => {
-    let aValue = a[sortBy];
-    let bValue = b[sortBy];
+    let aValue = a[sortBy] || '';
+    let bValue = b[sortBy] || '';
     
-    if (typeof aValue === 'string') {
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
       aValue = aValue.toLowerCase();
       bValue = bValue.toLowerCase();
     }

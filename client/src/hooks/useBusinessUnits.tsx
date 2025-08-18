@@ -29,8 +29,8 @@ export function useBusinessUnits() {
   // Client-side filtering and pagination
   const filteredUnits = allBusinessUnits.filter((unit: any) => {
     const matchesSearch = !searchTerm || 
-      unit.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      unit.code.toLowerCase().includes(searchTerm.toLowerCase());
+      (unit.name && unit.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (unit.code && unit.code.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesStatus = statusFilter === 'all' || 
       (statusFilter === 'active' && unit.isActive) ||
@@ -43,15 +43,15 @@ export function useBusinessUnits() {
 
   // Client-side sorting
   const sortedUnits = [...filteredUnits].sort((a: any, b: any) => {
-    let aValue = a[sortBy];
-    let bValue = b[sortBy];
+    let aValue = a[sortBy] || '';
+    let bValue = b[sortBy] || '';
     
     if (sortBy === 'walletBalance') {
       aValue = parseFloat(aValue || '0');
       bValue = parseFloat(bValue || '0');
     }
     
-    if (typeof aValue === 'string') {
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
       aValue = aValue.toLowerCase();
       bValue = bValue.toLowerCase();
     }

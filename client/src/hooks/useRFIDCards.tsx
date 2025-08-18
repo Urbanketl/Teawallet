@@ -31,7 +31,7 @@ export function useRFIDCards() {
   // Client-side filtering and pagination
   const filteredCards = allCards.filter((card: any) => {
     const matchesSearch = !searchTerm || 
-      card.cardNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (card.cardNumber && card.cardNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (card.cardName && card.cardName.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (card.hardwareUid && card.hardwareUid.toLowerCase().includes(searchTerm.toLowerCase()));
     
@@ -51,10 +51,10 @@ export function useRFIDCards() {
 
   // Client-side sorting
   const sortedCards = [...filteredCards].sort((a: any, b: any) => {
-    let aValue = a[sortBy];
-    let bValue = b[sortBy];
+    let aValue = a[sortBy] || '';
+    let bValue = b[sortBy] || '';
     
-    if (typeof aValue === 'string') {
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
       aValue = aValue.toLowerCase();
       bValue = bValue.toLowerCase();
     }

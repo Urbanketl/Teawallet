@@ -311,27 +311,47 @@ export async function resetUserPassword(req: any, res: Response) {
 // Admin-only user creation
 export async function createUserAccount(req: any, res: Response) {
   try {
-    const { id, email, firstName, lastName, mobileNumber, role } = req.body;
+    console.log('=== CREATE USER DEBUG ===');
+    console.log('Request body:', req.body);
+    console.log('User making request:', req.user?.id);
+
+    const { email, firstName, lastName, mobileNumber, role } = req.body;
     const createdBy = req.user.id;
 
-    if (!id || !email || !firstName || !lastName || !mobileNumber || !role) {
+    // Validate required fields (ID not required - we auto-generate)
+    if (!email || !firstName || !lastName || !mobileNumber || !role) {
+      console.log('Missing required fields');
       return res.status(400).json({ 
-        message: 'User ID, email, first name, last name, mobile number, and role are required' 
+        message: 'Email, first name, last name, mobile number, and role are required' 
       });
+    }
+
+    // Check if user already exists
+    const existingUser = await storage.getUserByEmail(email);
+    if (existingUser) {
+      console.log('User already exists with email:', email);
+      return res.status(400).json({ message: 'User with this email already exists' });
     }
 
     // Validate mobile number format (basic validation)
     const mobileRegex = /^[\+]?[1-9][\d]{0,15}$/;
     if (!mobileRegex.test(mobileNumber.replace(/\s+/g, ''))) {
+      console.log('Invalid mobile number format:', mobileNumber);
       return res.status(400).json({ message: 'Please enter a valid mobile number' });
     }
+
+    // Auto-generate user ID
+    const userId = uuidv4();
+    console.log('Generated user ID:', userId);
 
     // Convert role to boolean flags
     const isAdmin = role === 'platform_admin' || role === 'business_unit_admin';
     const isSuperAdmin = role === 'platform_admin';
 
-    const newUser = await storage.createUserAccount({
-      id,
+    console.log('Creating user with flags:', { isAdmin, isSuperAdmin, role });
+
+    const userData = {
+      id: userId,
       email,
       firstName,
       lastName,
@@ -339,17 +359,15 @@ export async function createUserAccount(req: any, res: Response) {
       isAdmin,
       isSuperAdmin,
       createdBy
-    });
+    };
+
+    const newUser = await storage.createUserAccount(userData);
+    console.log('User created successfully:', newUser.id);
 
     res.json({ 
+      success: true,
       user: newUser, 
-      message: 'User account created successfully',
-      credentials: {
-        message: 'Share these Replit Auth credentials with the user',
-        replitId: id,
-        email: email,
-        loginUrl: '/api/login'
-      }
+      message: 'User account created successfully'
     });
   } catch (error) {
     console.error('Error creating user account:', error);

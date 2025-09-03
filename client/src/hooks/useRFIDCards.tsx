@@ -16,61 +16,27 @@ export function useRFIDCards() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch all RFID cards (the API returns simple array)
-  const { data: allCards = [], isLoading: cardsLoading } = useQuery({
-    queryKey: ["/api/admin/rfid/cards"],
+  // Fetch RFID cards with pagination
+  const { data: cardsData, isLoading: cardsLoading } = useQuery({
+    queryKey: ["/api/admin/rfid-cards", currentPage, cardsPerPage, searchTerm, statusFilter, businessUnitFilter, cardTypeFilter, sortBy, sortOrder],
     queryFn: async () => {
-      const response = await fetch("/api/admin/rfid/cards", {
-        credentials: 'include'
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: cardsPerPage.toString(),
+        paginated: 'true',
+        ...(searchTerm && { search: searchTerm }),
+        ...(statusFilter !== 'all' && { status: statusFilter }),
+        ...(businessUnitFilter !== 'all' && { businessUnitId: businessUnitFilter }),
+        ...(cardTypeFilter !== 'all' && { cardType: cardTypeFilter }),
+        sortBy,
+        sortOrder
       });
+
+      const response = await fetch(`/api/admin/rfid-cards?${params}`);
       if (!response.ok) throw new Error('Failed to fetch RFID cards');
       return response.json();
     },
   });
-
-  // Client-side filtering and pagination
-  const filteredCards = allCards.filter((card: any) => {
-    const matchesSearch = !searchTerm || 
-      (card.cardNumber && card.cardNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (card.cardName && card.cardName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (card.hardwareUid && card.hardwareUid.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'active' && card.isActive) ||
-      (statusFilter === 'inactive' && !card.isActive);
-    
-    const matchesBusinessUnit = businessUnitFilter === 'all' || 
-      (businessUnitFilter === 'unassigned' && !card.businessUnitId) ||
-      card.businessUnitId === businessUnitFilter;
-    
-    const matchesCardType = cardTypeFilter === 'all' || 
-      (cardTypeFilter === 'desfire' && card.cardType === 'desfire');
-    
-    return matchesSearch && matchesStatus && matchesBusinessUnit && matchesCardType;
-  });
-
-  // Client-side sorting
-  const sortedCards = [...filteredCards].sort((a: any, b: any) => {
-    let aValue = a[sortBy] || '';
-    let bValue = b[sortBy] || '';
-    
-    if (typeof aValue === 'string' && typeof bValue === 'string') {
-      aValue = aValue.toLowerCase();
-      bValue = bValue.toLowerCase();
-    }
-    
-    if (sortOrder === 'desc') {
-      return aValue < bValue ? 1 : -1;
-    }
-    return aValue > bValue ? 1 : -1;
-  });
-
-  // Client-side pagination
-  const totalCards = sortedCards.length;
-  const totalPages = Math.ceil(totalCards / cardsPerPage);
-  const startIndex = (currentPage - 1) * cardsPerPage;
-  const endIndex = startIndex + cardsPerPage;
-  const cards = sortedCards.slice(startIndex, endIndex);
 
   // Create RFID card mutation
   const createRFIDCardMutation = useMutation({
@@ -206,8 +172,8 @@ export function useRFIDCards() {
 
   return {
     // Data
-    cards,
-    totalCards,
+    cards: cardsData?.cards || [],
+    totalCards: cardsData?.total || 0,
     cardsLoading,
 
     // Pagination
@@ -215,7 +181,7 @@ export function useRFIDCards() {
     setCurrentPage,
     cardsPerPage,
     setCardsPerPage,
-    totalPages,
+    totalPages: Math.ceil((cardsData?.total || 0) / cardsPerPage),
 
     // Filtering & Sorting
     searchTerm,

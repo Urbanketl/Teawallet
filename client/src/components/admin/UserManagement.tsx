@@ -85,18 +85,7 @@ export default function UserManagement() {
       return;
     }
 
-    // Convert frontend role to backend role format
-    const backendRole = newUser.role === 'admin' ? 'platform_admin' : 'business_unit_admin';
-    
-    const userData = {
-      email: newUser.email,
-      firstName: newUser.firstName,
-      lastName: newUser.lastName,
-      mobileNumber: newUser.mobileNumber,
-      role: backendRole
-    };
-
-    createUserMutation.mutate(userData, {
+    createUserMutation.mutate(newUser, {
       onSuccess: () => {
         setShowCreateDialog(false);
         setNewUser({

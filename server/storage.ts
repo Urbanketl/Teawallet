@@ -26,14 +26,9 @@ export interface IStorage {
   
   // User operations
   getUser(id: string): Promise<User | undefined>;
-  getAllUsers(): Promise<User[]>;
-  getUsersPaginated(page: number, limit: number, search?: string): Promise<{ users: User[], total: number }>;
   getUserByEmail(email: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
-  createUserAccount(userData: any): Promise<User>;
-  updateUserAccount(id: string, data: any): Promise<User>;
   updateUserProfile(id: string, profileData: any): Promise<User>;
-  updateUserAdminStatus(id: string, isAdmin: boolean, updatedBy: string): Promise<User>;
   
   // Password management
   updateUserPassword(id: string, hashedPassword: string): Promise<void>;
@@ -45,13 +40,10 @@ export interface IStorage {
   
   // Business Unit operations
   createBusinessUnit(businessUnit: InsertBusinessUnit): Promise<BusinessUnit>;
-  updateBusinessUnit(id: string, data: Partial<InsertBusinessUnit>): Promise<BusinessUnit>;
-  deleteBusinessUnit(id: string): Promise<void>;
   getBusinessUnit(id: string): Promise<BusinessUnit | undefined>;
   getAllBusinessUnits(): Promise<BusinessUnit[]>;
   getUserBusinessUnits(userId: string): Promise<BusinessUnit[]>;
   updateBusinessUnitWallet(unitId: string, amount: string): Promise<BusinessUnit>;
-  transferBusinessUnitOwnership(businessUnitId: string, newOwnerId: string, transferredBy: string): Promise<void>;
   
   // User-Business Unit assignments
   assignUserToBusinessUnit(userId: string, businessUnitId: string, role: string): Promise<void>;
@@ -72,11 +64,8 @@ export interface IStorage {
   getRfidCardByNumber(cardNumber: string): Promise<RfidCard | undefined>;
   getRfidCardByHardwareUid(hardwareUid: string): Promise<RfidCard | undefined>;
   createRfidCard(rfidCard: InsertRfidCard): Promise<RfidCard>;
-  updateRfidCard(cardId: number, data: Partial<InsertRfidCard>): Promise<RfidCard>;
-  deleteRfidCard(cardId: string, deletedBy: string): Promise<{ success: boolean; message: string }>;
   updateRfidCardLastUsed(cardId: number, machineId: string): Promise<void>;
   deactivateRfidCard(cardId: number): Promise<void>;
-  getDashboardStats(): Promise<any>;
   
   // DESFire RFID operations
   createDesfireCard(cardData: {
@@ -347,85 +336,6 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getAllUsers(): Promise<User[]> {
-    return await db.select().from(users).orderBy(desc(users.createdAt));
-  }
-
-  async getUsersPaginated(page: number, limit: number, search?: string): Promise<{ users: User[], total: number }> {
-    let query = db.select().from(users);
-    
-    if (search) {
-      query = query.where(
-        or(
-          ilike(users.email, `%${search}%`),
-          ilike(users.firstName, `%${search}%`),
-          ilike(users.lastName, `%${search}%`)
-        )
-      );
-    }
-    
-    const totalQuery = db.select({ count: sql<number>`count(*)` }).from(users);
-    if (search) {
-      totalQuery.where(
-        or(
-          ilike(users.email, `%${search}%`),
-          ilike(users.firstName, `%${search}%`),
-          ilike(users.lastName, `%${search}%`)
-        )
-      );
-    }
-    
-    const [{ count: total }] = await totalQuery;
-    const usersList = await query
-      .orderBy(desc(users.createdAt))
-      .limit(limit)
-      .offset((page - 1) * limit);
-    
-    return { users: usersList, total };
-  }
-
-  async createUserAccount(userData: any): Promise<User> {
-    const [user] = await db.insert(users).values({
-      id: userData.id,
-      email: userData.email,
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      mobileNumber: userData.mobileNumber,
-      password: userData.password,
-      isAdmin: userData.isAdmin || false,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }).returning();
-    return user;
-  }
-
-  async updateUserAccount(id: string, data: any): Promise<User> {
-    const [user] = await db
-      .update(users)
-      .set({
-        firstName: data.firstName,
-        lastName: data.lastName,
-        mobileNumber: data.mobileNumber,
-        isAdmin: data.isAdmin,
-        updatedAt: new Date()
-      })
-      .where(eq(users.id, id))
-      .returning();
-    return user;
-  }
-
-  async updateUserAdminStatus(id: string, isAdmin: boolean, updatedBy: string): Promise<User> {
-    const [user] = await db
-      .update(users)
-      .set({
-        isAdmin,
-        updatedAt: new Date()
-      })
-      .where(eq(users.id, id))
-      .returning();
-    return user;
-  }
-
   async upsertUser(userData: UpsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
@@ -531,54 +441,6 @@ export class DatabaseStorage implements IStorage {
   async createBusinessUnit(businessUnit: InsertBusinessUnit): Promise<BusinessUnit> {
     const [unit] = await db.insert(businessUnits).values(businessUnit).returning();
     return unit;
-  }
-
-  async updateBusinessUnit(id: string, data: Partial<InsertBusinessUnit>): Promise<BusinessUnit> {
-    const [unit] = await db
-      .update(businessUnits)
-      .set({
-        ...data,
-        updatedAt: new Date()
-      })
-      .where(eq(businessUnits.id, id))
-      .returning();
-    return unit;
-  }
-
-  async deleteBusinessUnit(id: string): Promise<void> {
-    await db.delete(businessUnits).where(eq(businessUnits.id, id));
-  }
-
-  async transferBusinessUnitOwnership(businessUnitId: string, newOwnerId: string, transferredBy: string): Promise<void> {
-    // Implementation of ownership transfer logic
-    await db.transaction(async (tx) => {
-      // Remove existing admin assignments for this business unit
-      await tx
-        .delete(userBusinessUnits)
-        .where(
-          and(
-            eq(userBusinessUnits.businessUnitId, businessUnitId),
-            eq(userBusinessUnits.role, 'Business Unit Admin')
-          )
-        );
-      
-      // Assign new owner
-      await tx.insert(userBusinessUnits).values({
-        userId: newOwnerId,
-        businessUnitId,
-        role: 'Business Unit Admin'
-      });
-
-      // Log the transfer
-      await tx.insert(businessUnitTransfers).values({
-        businessUnitId,
-        fromUserId: null, // Will need to track previous owner
-        toUserId: newOwnerId,
-        transferredBy,
-        reason: 'Admin transfer',
-        transferredAt: new Date()
-      });
-    });
   }
 
   async getBusinessUnit(id: string): Promise<BusinessUnit | undefined> {
@@ -821,68 +683,6 @@ export class DatabaseStorage implements IStorage {
       .update(rfidCards)
       .set({ isActive: true })
       .where(eq(rfidCards.id, cardId));
-  }
-
-  async updateRfidCard(cardId: number, data: Partial<InsertRfidCard>): Promise<RfidCard> {
-    const [card] = await db
-      .update(rfidCards)
-      .set({
-        ...data,
-        updatedAt: new Date()
-      })
-      .where(eq(rfidCards.id, cardId))
-      .returning();
-    return card;
-  }
-
-  async deleteRfidCard(cardId: string, deletedBy: string): Promise<{ success: boolean; message: string }> {
-    try {
-      await db.delete(rfidCards).where(eq(rfidCards.id, parseInt(cardId)));
-      return { success: true, message: 'RFID card deleted successfully' };
-    } catch (error) {
-      console.error('Error deleting RFID card:', error);
-      return { success: false, message: 'Failed to delete RFID card' };
-    }
-  }
-
-  async getDashboardStats(): Promise<any> {
-    try {
-      // Get total users count
-      const [usersCount] = await db
-        .select({ count: sql<number>`COUNT(*)::int` })
-        .from(users);
-
-      // Get total revenue from transactions  
-      const [revenueResult] = await db
-        .select({ total: sql<number>`COALESCE(SUM(amount::numeric), 0)::int` })
-        .from(transactions)
-        .where(eq(transactions.type, 'deduction'));
-
-      // Get total business units count
-      const [businessUnitsCount] = await db
-        .select({ count: sql<number>`COUNT(*)::int` })
-        .from(businessUnits);
-
-      // Get total RFID cards count
-      const [rfidCardsCount] = await db
-        .select({ count: sql<number>`COUNT(*)::int` })
-        .from(rfidCards);
-
-      return {
-        totalUsers: usersCount.count?.toString() || '0',
-        totalRevenue: revenueResult.total?.toString() || '0',
-        totalBusinessUnits: businessUnitsCount.count?.toString() || '0',
-        totalRfidCards: rfidCardsCount.count?.toString() || '0'
-      };
-    } catch (error) {
-      console.error('Error getting dashboard stats:', error);
-      return {
-        totalUsers: '0',
-        totalRevenue: '0', 
-        totalBusinessUnits: '0',
-        totalRfidCards: '0'
-      };
-    }
   }
 
   // Legacy Admin RFID operations (for super admin) - DEPRECATED

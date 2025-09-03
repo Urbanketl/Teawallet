@@ -15,59 +15,26 @@ export function useAdminUsers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch all users (the API returns simple array)
-  const { data: allUsers = [], isLoading: usersLoading } = useQuery({
-    queryKey: ["/api/admin/users"],
+  // Fetch users with pagination
+  const { data: usersData, isLoading: usersLoading } = useQuery({
+    queryKey: ["/api/admin/users", currentPage, usersPerPage, searchTerm, roleFilter, statusFilter, sortBy, sortOrder],
     queryFn: async () => {
-      const response = await fetch("/api/admin/users", {
-        credentials: 'include'
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: usersPerPage.toString(),
+        paginated: 'true',
+        ...(searchTerm && { search: searchTerm }),
+        ...(roleFilter !== 'all' && { role: roleFilter }),
+        ...(statusFilter !== 'all' && { status: statusFilter }),
+        sortBy,
+        sortOrder
       });
+
+      const response = await fetch(`/api/admin/users?${params}`);
       if (!response.ok) throw new Error('Failed to fetch users');
       return response.json();
     },
   });
-
-  // Client-side filtering and pagination
-  const filteredUsers = allUsers.filter((user: any) => {
-    const matchesSearch = !searchTerm || 
-      (user.firstName && user.firstName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (user.lastName && user.lastName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (user.mobileNumber && user.mobileNumber.includes(searchTerm));
-    
-    const matchesRole = roleFilter === 'all' || 
-      (roleFilter === 'admin' && user.isAdmin) ||
-      (roleFilter === 'user' && !user.isAdmin);
-    
-    const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'active' && user.isActive) ||
-      (statusFilter === 'inactive' && !user.isActive);
-    
-    return matchesSearch && matchesRole && matchesStatus;
-  });
-
-  // Client-side sorting
-  const sortedUsers = [...filteredUsers].sort((a: any, b: any) => {
-    let aValue = a[sortBy] || '';
-    let bValue = b[sortBy] || '';
-    
-    if (typeof aValue === 'string' && typeof bValue === 'string') {
-      aValue = aValue.toLowerCase();
-      bValue = bValue.toLowerCase();
-    }
-    
-    if (sortOrder === 'desc') {
-      return aValue < bValue ? 1 : -1;
-    }
-    return aValue > bValue ? 1 : -1;
-  });
-
-  // Client-side pagination
-  const totalUsers = sortedUsers.length;
-  const totalPages = Math.ceil(totalUsers / usersPerPage);
-  const startIndex = (currentPage - 1) * usersPerPage;
-  const endIndex = startIndex + usersPerPage;
-  const users = sortedUsers.slice(startIndex, endIndex);
 
   // Create user mutation
   const createUserMutation = useMutation({
@@ -158,8 +125,8 @@ export function useAdminUsers() {
 
   return {
     // Data
-    users,
-    totalUsers,
+    users: usersData?.users || [],
+    totalUsers: usersData?.total || 0,
     usersLoading,
 
     // Pagination
@@ -167,7 +134,7 @@ export function useAdminUsers() {
     setCurrentPage,
     usersPerPage,
     setUsersPerPage,
-    totalPages,
+    totalPages: Math.ceil((usersData?.total || 0) / usersPerPage),
 
     // Filtering & Sorting
     searchTerm,

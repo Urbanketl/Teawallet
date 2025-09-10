@@ -7,6 +7,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { initializeServices } from "./services";
 import { autoSyncService } from "./services/autoSyncService";
 import { challengeResponseService } from "./services/challengeResponseService";
+import { upiSyncService } from "./services/upiSyncService";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -85,6 +86,14 @@ app.use((req, res, next) => {
       console.log('✅ Auto-Sync Service started successfully');
     } catch (error) {
       console.error('❌ Failed to start Auto-Sync Service:', error);
+    }
+    
+    // Start UPI Sync Service (Phase 5)
+    try {
+      await upiSyncService.startDailySync();
+      console.log('✅ UPI Sync Service started successfully (Daily sync at 8 PM IST)');
+    } catch (error) {
+      console.error('❌ Failed to start UPI Sync Service:', error);
     }
     
     // Challenge-Response Service (Phase 4) is already initialized

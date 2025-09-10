@@ -1,3 +1,4 @@
+import * as cron from 'node-cron';
 import { db } from "../db";
 import { dispensingLogs, upiSyncLogs } from "@shared/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
@@ -38,6 +39,8 @@ interface SyncResult {
 
 export class UpiSyncService {
   private readonly KULHAD_API_BASE = 'https://kulhad.vercel.app/api';
+  private dailySyncTask: cron.ScheduledTask | null = null;
+  private syncInProgress = false;
 
   /**
    * Perform initial full sync - pull historical data
@@ -347,6 +350,70 @@ export class UpiSyncService {
         totalTransactionsProcessed: 0,
       };
     }
+  }
+
+  /**
+   * Start the daily UPI sync scheduler (8 PM IST)
+   */
+  async startDailySync(): Promise<void> {
+    if (this.dailySyncTask) {
+      console.log('UPI daily sync is already scheduled');
+      return;
+    }
+
+    console.log('Starting UPI daily sync scheduler...');
+    
+    // Schedule daily sync at 8 PM IST (20:00)
+    this.dailySyncTask = cron.schedule('0 20 * * *', async () => {
+      if (this.syncInProgress) {
+        console.log('UPI sync already in progress, skipping scheduled sync');
+        return;
+      }
+
+      console.log('Starting scheduled daily UPI sync...');
+      this.syncInProgress = true;
+      
+      try {
+        const result = await this.performDailySync();
+        console.log(`Scheduled UPI sync completed: ${result.recordsProcessed} processed, ${result.recordsSkipped} skipped`);
+      } catch (error) {
+        console.error('Scheduled UPI sync failed:', error);
+      } finally {
+        this.syncInProgress = false;
+      }
+    }, {
+      timezone: 'Asia/Kolkata'
+    });
+
+    console.log('UPI daily sync scheduler started successfully (8 PM IST)');
+  }
+
+  /**
+   * Stop the daily UPI sync scheduler
+   */
+  async stopDailySync(): Promise<void> {
+    if (this.dailySyncTask) {
+      this.dailySyncTask.destroy();
+      this.dailySyncTask = null;
+      console.log('UPI daily sync scheduler stopped');
+    } else {
+      console.log('UPI daily sync scheduler is not running');
+    }
+  }
+
+  /**
+   * Get scheduler status
+   */
+  getSchedulerStatus(): {
+    isScheduled: boolean;
+    syncInProgress: boolean;
+    nextScheduledRun: string | null;
+  } {
+    return {
+      isScheduled: this.dailySyncTask !== null,
+      syncInProgress: this.syncInProgress,
+      nextScheduledRun: this.dailySyncTask ? 'Daily at 8:00 PM IST' : null
+    };
   }
 }
 

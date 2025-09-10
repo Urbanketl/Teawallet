@@ -80,17 +80,34 @@ export const transactions = pgTable("transactions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Dispensing Logs
+// Dispensing Logs - Unified for both RFID and UPI transactions
 export const dispensingLogs = pgTable("dispensing_logs", {
   id: serial("id").primaryKey(),
-  businessUnitId: varchar("business_unit_id").notNull().references(() => businessUnits.id), // Business unit whose wallet is charged
-  rfidCardId: integer("rfid_card_id").notNull().references(() => rfidCards.id),
-  machineId: varchar("machine_id").notNull().references(() => teaMachines.id),
+  businessUnitId: varchar("business_unit_id").references(() => businessUnits.id), // Business unit whose wallet is charged (nullable for UPI direct payments)
+  
+  // Payment method differentiation
+  paymentType: varchar("payment_type").notNull().default("rfid"), // 'rfid' or 'upi'
+  
+  // RFID-specific fields (nullable for UPI)
+  rfidCardId: integer("rfid_card_id").references(() => rfidCards.id),
+  
+  // UPI-specific fields (nullable for RFID)
+  upiPaymentId: varchar("upi_payment_id"), // External payment ID from UPI gateway
+  upiVpa: varchar("upi_vpa"), // UPI Virtual Payment Address
+  externalTransactionId: varchar("external_transaction_id"), // kulhad transaction ID
+  externalId: varchar("external_id"), // kulhad _id for deduplication
+  
+  // Common fields
+  machineId: varchar("machine_id").notNull(),
   teaType: varchar("tea_type").notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  cups: integer("cups").default(1), // Number of cups dispensed
   success: boolean("success").default(true),
   errorMessage: text("error_message"),
+  
+  // Timestamps
   createdAt: timestamp("created_at").defaultNow(),
+  externalCreatedAt: timestamp("external_created_at"), // Original timestamp from external system
 });
 
 // Tea Machines - Linked to business units with sync support
@@ -207,6 +224,23 @@ export const machineSyncLogs = pgTable("machine_sync_logs", {
   errorMessage: text("error_message"),
   responseTime: integer("response_time"), // milliseconds
   cardsUpdated: integer("cards_updated").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// UPI Sync Logs - Track all UPI transaction sync operations
+export const upiSyncLogs = pgTable("upi_sync_logs", {
+  id: serial("id").primaryKey(),
+  syncType: varchar("sync_type").notNull(), // 'initial', 'daily', 'manual'
+  startDate: timestamp("start_date").notNull(), // Date range start for sync
+  endDate: timestamp("end_date").notNull(), // Date range end for sync
+  recordsFound: integer("records_found").default(0), // Total records from API
+  recordsProcessed: integer("records_processed").default(0), // Successfully processed
+  recordsSkipped: integer("records_skipped").default(0), // Duplicates/invalid
+  syncStatus: varchar("sync_status").notNull(), // 'success', 'failed', 'partial'
+  errorMessage: text("error_message"),
+  responseTime: integer("response_time"), // milliseconds
+  apiResponse: jsonb("api_response"), // Sample of API response for debugging
+  triggeredBy: varchar("triggered_by"), // 'cron', 'admin', 'manual'
   createdAt: timestamp("created_at").defaultNow(),
 });
 

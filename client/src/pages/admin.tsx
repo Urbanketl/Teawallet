@@ -4585,7 +4585,6 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
           </Button>
         </div>
       </div>
-
       {showCreateForm && (
         <Card>
           <CardHeader>
@@ -4601,7 +4600,7 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
             {/* DESFire EV1 Card Info */}
             <div className="p-4 bg-green-50 rounded-lg border border-green-200">
               <div className="flex items-center space-x-2 mb-2">
-                <span className="font-medium text-green-900">MIFARE DESFire EV1 Cards</span>
+                <span className="font-medium text-green-900">MIFARE DESFire EV2 Cards</span>
                 <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded">Maximum Security</span>
               </div>
               <p className="text-sm text-green-700">
@@ -4755,36 +4754,32 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
           </CardContent>
         </Card>
         )}
-
-        {/* Card Created Success Message */}
-        {!showCreateForm && createdCard && (
-          <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-green-800">
-                  Card Successfully Created
-                </h3>
-                <div className="mt-2 text-sm text-green-700">
-                  <p>Card <strong>{createdCard.cardNumber}</strong> has been created with AES encryption.</p>
-                  <button
-                    onClick={() => setCreatedCard(null)}
-                    className="bg-green-200 hover:bg-green-300 text-green-800 px-3 py-1 rounded text-xs mt-2"
-                  >
-                    Dismiss
-                  </button>
-                </div>
+      {/* Card Created Success Message */}
+      {!showCreateForm && createdCard && (
+        <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-green-800">
+                Card Successfully Created
+              </h3>
+              <div className="mt-2 text-sm text-green-700">
+                <p>Card <strong>{createdCard.cardNumber}</strong> has been created with AES encryption.</p>
+                <button
+                  onClick={() => setCreatedCard(null)}
+                  className="bg-green-200 hover:bg-green-300 text-green-800 px-3 py-1 rounded text-xs mt-2"
+                >
+                  Dismiss
+                </button>
               </div>
             </div>
           </div>
-        )}
-
-
-
+        </div>
+      )}
       {showAssignForm && (
         <Card>
           <CardHeader>
@@ -4846,7 +4841,6 @@ function RfidManagement({ rfidCardsPage, setRfidCardsPage, rfidCardsPerPage }: {
           </CardContent>
         </Card>
       )}
-
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -5327,7 +5321,6 @@ function SystemSettingsManagement() {
           </div>
         </CardContent>
       </Card>
-
       <Card>
         <CardHeader>
           <CardTitle>Current Settings</CardTitle>

@@ -22,6 +22,7 @@ import { registerRechargeRoutes } from "./routes/rechargeRoutes";
 import { machineSyncController } from "./controllers/machineSyncController";
 import { ChallengeResponseController } from "./controllers/challengeResponseController";
 import { AutoSyncController } from "./controllers/autoSyncController";
+import { upiSyncController } from "./controllers/upiSyncController";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize Razorpay
@@ -1947,6 +1948,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/admin/auth/rotate-keys/:businessUnitId', isAuthenticated, requireAdminAuth, challengeResponseController.rotateKeys.bind(challengeResponseController));
   app.get('/api/admin/auth/logs', isAuthenticated, requireAdminAuth, challengeResponseController.getAuthLogs.bind(challengeResponseController));
   app.get('/api/admin/auth/service-status', isAuthenticated, requireAdminAuth, challengeResponseController.getServiceStatus.bind(challengeResponseController));
+
+  // ========== UPI SYNC SYSTEM ROUTES ==========
+  
+  // UPI sync status and management (Admin only)
+  app.get('/api/admin/upi-sync/status', isAuthenticated, requireAdminAuth, upiSyncController.getSyncStatus.bind(upiSyncController));
+  
+  // UPI sync triggers (Admin only)
+  app.post('/api/admin/upi-sync/initial', isAuthenticated, requireAdminAuth, upiSyncController.triggerInitialSync.bind(upiSyncController));
+  app.post('/api/admin/upi-sync/daily', isAuthenticated, requireAdminAuth, upiSyncController.triggerDailySync.bind(upiSyncController));
+  app.post('/api/admin/upi-sync/manual', isAuthenticated, requireAdminAuth, upiSyncController.triggerManualSync.bind(upiSyncController));
+  
+  // UPI sync logs and data (Admin only)
+  app.get('/api/admin/upi-sync/logs', isAuthenticated, requireAdminAuth, upiSyncController.getSyncLogs.bind(upiSyncController));
+  app.get('/api/admin/upi-sync/transactions', isAuthenticated, requireAdminAuth, upiSyncController.getUpiTransactions.bind(upiSyncController));
+  app.get('/api/admin/upi-sync/analytics', isAuthenticated, requireAdminAuth, upiSyncController.getSyncAnalytics.bind(upiSyncController));
 
   const httpServer = createServer(app);
   return httpServer;

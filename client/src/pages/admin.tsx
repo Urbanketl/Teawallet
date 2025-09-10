@@ -582,7 +582,6 @@ export default function AdminPage() {
     maintenanceMode: false,
     autoRecharge: true,
     maxWalletBalance: "5000.00",
-    lowBalanceThreshold: "50.00",
     systemName: "UrbanKetl Tea System",
     criticalBalanceThreshold: "100.00",
     lowBalanceAlertThreshold: "500.00"
@@ -1011,18 +1010,6 @@ export default function AdminPage() {
                         step="0.01"
                         value={settings.maxWalletBalance}
                         onChange={(e) => setSettings({...settings, maxWalletBalance: e.target.value})}
-                        className="w-full"
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="lowBalance">Low Balance Alert (₹)</Label>
-                      <Input
-                        id="lowBalance"
-                        type="number"
-                        step="0.01"
-                        value={settings.lowBalanceThreshold}
-                        onChange={(e) => setSettings({...settings, lowBalanceThreshold: e.target.value})}
                         className="w-full"
                       />
                     </div>

@@ -106,6 +106,29 @@ interface UpiSyncStatus {
   totalUpiTransactions: number;
 }
 
+interface UpiAnalytics {
+  dateRange: {
+    start: string;
+    end: string;
+  };
+  summary: {
+    totalTransactions: number;
+    successfulTransactions: number;
+    failedTransactions: number;
+    successRate: string;
+    totalRevenue: string;
+    totalCups: number;
+    averageRevenuePerTransaction: string;
+  };
+  machineStats: Array<{
+    machineId: string;
+    totalTransactions: number;
+    successfulTransactions: number;
+    revenue: number;
+    cups: number;
+  }>;
+}
+
 export default function MachineSyncDashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -166,6 +189,15 @@ export default function MachineSyncDashboard() {
     refetch: refetchUpiTransactions
   } = useQuery<UpiTransaction[]>({
     queryKey: ['/api/admin/upi-sync/transactions'],
+  });
+
+  // Fetch UPI analytics
+  const { 
+    data: upiAnalytics, 
+    isLoading: isLoadingUpiAnalytics,
+    refetch: refetchUpiAnalytics
+  } = useQuery<UpiAnalytics>({
+    queryKey: ['/api/admin/upi-sync/analytics'],
   });
 
   // Individual machine sync mutation
@@ -249,6 +281,7 @@ export default function MachineSyncDashboard() {
       refetchUpiSync();
       refetchUpiSyncLogs();
       refetchUpiTransactions();
+      refetchUpiAnalytics();
     },
     onError: (error) => {
       toast({
@@ -272,6 +305,7 @@ export default function MachineSyncDashboard() {
       refetchUpiSync();
       refetchUpiSyncLogs();
       refetchUpiTransactions();
+      refetchUpiAnalytics();
     },
     onError: (error) => {
       toast({
@@ -295,6 +329,7 @@ export default function MachineSyncDashboard() {
       refetchUpiSync();
       refetchUpiSyncLogs();
       refetchUpiTransactions();
+      refetchUpiAnalytics();
     },
     onError: (error) => {
       toast({
@@ -594,6 +629,117 @@ export default function MachineSyncDashboard() {
         </TabsContent>
 
         <TabsContent value="upi-sync" className="space-y-4">
+          {/* UPI Analytics Overview */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Activity className="w-5 h-5 mr-2" />
+                UPI Transaction Analytics (Last 30 Days)
+              </CardTitle>
+              <CardDescription>Comprehensive overview of all UPI transactions across all machines</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingUpiAnalytics ? (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCw className="w-6 h-6 animate-spin mr-2" />
+                  Loading analytics...
+                </div>
+              ) : upiAnalytics ? (
+                <div className="space-y-6">
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <Card className="bg-blue-50 border-blue-200">
+                      <CardContent className="p-4 text-center">
+                        <div className="text-2xl font-bold text-blue-700">{upiAnalytics.summary.totalTransactions}</div>
+                        <div className="text-sm text-blue-600">Total Transactions</div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-green-50 border-green-200">
+                      <CardContent className="p-4 text-center">
+                        <div className="text-2xl font-bold text-green-700">₹{upiAnalytics.summary.totalRevenue}</div>
+                        <div className="text-sm text-green-600">Total Revenue</div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-purple-50 border-purple-200">
+                      <CardContent className="p-4 text-center">
+                        <div className="text-2xl font-bold text-purple-700">{upiAnalytics.summary.totalCups}</div>
+                        <div className="text-sm text-purple-600">Cups Dispensed</div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-orange-50 border-orange-200">
+                      <CardContent className="p-4 text-center">
+                        <div className="text-2xl font-bold text-orange-700">{upiAnalytics.summary.successRate}%</div>
+                        <div className="text-sm text-orange-600">Success Rate</div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  {/* Machine Performance Breakdown */}
+                  {upiAnalytics.machineStats && upiAnalytics.machineStats.length > 0 && (
+                    <div>
+                      <h4 className="text-lg font-semibold mb-4">Machine Performance</h4>
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Machine ID</TableHead>
+                              <TableHead>Total Transactions</TableHead>
+                              <TableHead>Successful</TableHead>
+                              <TableHead>Success Rate</TableHead>
+                              <TableHead>Revenue</TableHead>
+                              <TableHead>Cups</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {upiAnalytics.machineStats.map((machine) => (
+                              <TableRow key={machine.machineId}>
+                                <TableCell className="font-mono">{machine.machineId}</TableCell>
+                                <TableCell>{machine.totalTransactions}</TableCell>
+                                <TableCell>
+                                  <span className="text-green-600">{machine.successfulTransactions}</span>
+                                  <span className="text-gray-400">/{machine.totalTransactions}</span>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">
+                                    {machine.totalTransactions > 0 
+                                      ? `${Math.round((machine.successfulTransactions / machine.totalTransactions) * 100)}%`
+                                      : '0%'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="font-semibold">₹{machine.revenue.toFixed(2)}</TableCell>
+                                <TableCell>{machine.cups}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Additional Summary Stats */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
+                    <div className="text-center">
+                      <div className="text-lg font-semibold text-gray-700">Avg Revenue/Transaction</div>
+                      <div className="text-xl text-green-600">₹{upiAnalytics.summary.averageRevenuePerTransaction}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-semibold text-gray-700">Failed Transactions</div>
+                      <div className="text-xl text-red-600">{upiAnalytics.summary.failedTransactions}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-semibold text-gray-700">Successful Transactions</div>
+                      <div className="text-xl text-green-600">{upiAnalytics.summary.successfulTransactions}</div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No UPI analytics data available. Perform initial sync to populate analytics.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* UPI Sync Controls */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>

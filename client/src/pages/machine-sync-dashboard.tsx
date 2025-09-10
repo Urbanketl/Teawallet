@@ -67,6 +67,45 @@ interface AuthLog {
   createdAt: string;
 }
 
+interface UpiSyncLog {
+  id: number;
+  syncType: string;
+  startDate: string;
+  endDate: string;
+  recordsFound: number;
+  recordsProcessed: number;
+  recordsSkipped: number;
+  syncStatus: string;
+  errorMessage?: string;
+  responseTime: number;
+  triggeredBy: string;
+  createdAt: string;
+}
+
+interface UpiTransaction {
+  id: number;
+  machineId: string;
+  amount: string;
+  cups: number;
+  success: boolean;
+  upiPaymentId?: string;
+  upiVpa?: string;
+  externalTransactionId?: string;
+  createdAt: string;
+  externalCreatedAt?: string;
+}
+
+interface UpiSyncStatus {
+  stats: {
+    totalSyncs: number;
+    successfulSyncs: number;
+    lastSyncDate: string | null;
+    totalTransactionsProcessed: number;
+  };
+  recentLogs: UpiSyncLog[];
+  totalUpiTransactions: number;
+}
+
 export default function MachineSyncDashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -100,6 +139,33 @@ export default function MachineSyncDashboard() {
     refetch: refetchAuthLogs
   } = useQuery<AuthLog[]>({
     queryKey: ['/api/admin/sync/auth-logs'],
+  });
+
+  // Fetch UPI sync status
+  const { 
+    data: upiSyncStatus, 
+    isLoading: isLoadingUpiSync,
+    refetch: refetchUpiSync
+  } = useQuery<UpiSyncStatus>({
+    queryKey: ['/api/admin/upi-sync/status'],
+  });
+
+  // Fetch UPI sync logs
+  const { 
+    data: upiSyncLogs = [], 
+    isLoading: isLoadingUpiSyncLogs,
+    refetch: refetchUpiSyncLogs
+  } = useQuery<UpiSyncLog[]>({
+    queryKey: ['/api/admin/upi-sync/logs'],
+  });
+
+  // Fetch UPI transactions
+  const { 
+    data: upiTransactions = [], 
+    isLoading: isLoadingUpiTransactions,
+    refetch: refetchUpiTransactions
+  } = useQuery<UpiTransaction[]>({
+    queryKey: ['/api/admin/upi-sync/transactions'],
   });
 
   // Individual machine sync mutation
@@ -163,6 +229,76 @@ export default function MachineSyncDashboard() {
     onError: (error) => {
       toast({
         title: "Key Rotation Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // UPI sync mutations
+  const upiInitialSyncMutation = useMutation({
+    mutationFn: async (daysBack: number = 90) => {
+      const res = await apiRequest('POST', '/api/admin/upi-sync/initial', { daysBack });
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "UPI Initial Sync Success",
+        description: data.message,
+      });
+      refetchUpiSync();
+      refetchUpiSyncLogs();
+      refetchUpiTransactions();
+    },
+    onError: (error) => {
+      toast({
+        title: "UPI Initial Sync Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const upiDailySyncMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest('POST', '/api/admin/upi-sync/daily');
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "UPI Daily Sync Success",
+        description: data.message,
+      });
+      refetchUpiSync();
+      refetchUpiSyncLogs();
+      refetchUpiTransactions();
+    },
+    onError: (error) => {
+      toast({
+        title: "UPI Daily Sync Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const upiManualSyncMutation = useMutation({
+    mutationFn: async ({ startDate, endDate }: { startDate: string; endDate: string }) => {
+      const res = await apiRequest('POST', '/api/admin/upi-sync/manual', { startDate, endDate });
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "UPI Manual Sync Success",
+        description: data.message,
+      });
+      refetchUpiSync();
+      refetchUpiSyncLogs();
+      refetchUpiTransactions();
+    },
+    onError: (error) => {
+      toast({
+        title: "UPI Manual Sync Failed",
         description: error.message,
         variant: "destructive",
       });
@@ -277,6 +413,7 @@ export default function MachineSyncDashboard() {
           <TabsTrigger value="overview">Machine Status</TabsTrigger>
           <TabsTrigger value="sync-logs">Sync Logs</TabsTrigger>
           <TabsTrigger value="auth-logs">Auth Logs</TabsTrigger>
+          <TabsTrigger value="upi-sync">UPI Sync</TabsTrigger>
           <TabsTrigger value="security">Security & Keys</TabsTrigger>
         </TabsList>
 
@@ -449,6 +586,238 @@ export default function MachineSyncDashboard() {
                         <TableCell>{format(new Date(log.createdAt), 'MMM d, HH:mm:ss')}</TableCell>
                       </TableRow>
                     ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="upi-sync" className="space-y-4">
+          {/* UPI Sync Controls */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Activity className="w-5 h-5 mr-2" />
+                  UPI Sync Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoadingUpiSync ? (
+                  <div className="flex items-center">
+                    <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                    Loading...
+                  </div>
+                ) : upiSyncStatus ? (
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm">Total Syncs:</span>
+                      <span className="font-medium">{upiSyncStatus.stats.totalSyncs}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Success Rate:</span>
+                      <span className="font-medium">
+                        {upiSyncStatus.stats.totalSyncs > 0 
+                          ? `${Math.round((upiSyncStatus.stats.successfulSyncs / upiSyncStatus.stats.totalSyncs) * 100)}%`
+                          : 'N/A'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Last Sync:</span>
+                      <span className="font-medium">
+                        {upiSyncStatus.stats.lastSyncDate 
+                          ? format(new Date(upiSyncStatus.stats.lastSyncDate), 'MMM d, HH:mm')
+                          : 'Never'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Total Transactions:</span>
+                      <span className="font-medium">{upiSyncStatus.stats.totalTransactionsProcessed}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500">No sync data available</div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Initial Sync</CardTitle>
+                <CardDescription>Pull historical UPI transaction data</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button
+                  onClick={() => upiInitialSyncMutation.mutate(90)}
+                  disabled={upiInitialSyncMutation.isPending}
+                  className="w-full"
+                >
+                  <History className="w-4 h-4 mr-2" />
+                  {upiInitialSyncMutation.isPending ? 'Syncing...' : 'Sync Last 90 Days'}
+                </Button>
+                <Button
+                  onClick={() => upiInitialSyncMutation.mutate(30)}
+                  disabled={upiInitialSyncMutation.isPending}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <History className="w-4 h-4 mr-2" />
+                  {upiInitialSyncMutation.isPending ? 'Syncing...' : 'Sync Last 30 Days'}
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Manual Sync</CardTitle>
+                <CardDescription>Trigger sync operations</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button
+                  onClick={() => upiDailySyncMutation.mutate()}
+                  disabled={upiDailySyncMutation.isPending}
+                  className="w-full"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  {upiDailySyncMutation.isPending ? 'Syncing...' : 'Trigger Daily Sync'}
+                </Button>
+                <Button
+                  onClick={() => refetchUpiSync()}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <Activity className="w-4 h-4 mr-2" />
+                  Refresh Status
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* UPI Sync Logs */}
+          <Card>
+            <CardHeader>
+              <CardTitle>UPI Sync Logs</CardTitle>
+              <CardDescription>History of UPI transaction synchronization operations</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Sync Type</TableHead>
+                      <TableHead>Date Range</TableHead>
+                      <TableHead>Records</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Response Time</TableHead>
+                      <TableHead>Triggered By</TableHead>
+                      <TableHead>Created</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoadingUpiSyncLogs ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8">
+                          <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-2" />
+                          Loading UPI sync logs...
+                        </TableCell>
+                      </TableRow>
+                    ) : upiSyncLogs.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                          No UPI sync operations yet. Click "Sync Last 90 Days" to begin.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      upiSyncLogs.map((log) => (
+                        <TableRow key={log.id}>
+                          <TableCell>
+                            <Badge variant="outline">{log.syncType}</Badge>
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {format(new Date(log.startDate), 'MMM d')} - {format(new Date(log.endDate), 'MMM d')}
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              <div>Found: {log.recordsFound}</div>
+                              <div>Processed: <span className="text-green-600">{log.recordsProcessed}</span></div>
+                              <div>Skipped: <span className="text-yellow-600">{log.recordsSkipped}</span></div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {log.syncStatus === 'success' ? (
+                              <Badge variant="default" className="bg-green-500">Success</Badge>
+                            ) : (
+                              <Badge variant="destructive">Failed</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>{log.responseTime}ms</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{log.triggeredBy}</Badge>
+                          </TableCell>
+                          <TableCell>{format(new Date(log.createdAt), 'MMM d, HH:mm')}</TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* UPI Transactions */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent UPI Transactions</CardTitle>
+              <CardDescription>Latest UPI transactions synced from external system</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Machine ID</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Cups</TableHead>
+                      <TableHead>UPI VPA</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>External ID</TableHead>
+                      <TableHead>Created</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoadingUpiTransactions ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8">
+                          <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-2" />
+                          Loading UPI transactions...
+                        </TableCell>
+                      </TableRow>
+                    ) : upiTransactions.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                          No UPI transactions found. Perform initial sync to populate data.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      upiTransactions.slice(0, 10).map((transaction) => (
+                        <TableRow key={transaction.id}>
+                          <TableCell className="font-mono">{transaction.machineId}</TableCell>
+                          <TableCell>₹{transaction.amount}</TableCell>
+                          <TableCell>{transaction.cups}</TableCell>
+                          <TableCell className="font-mono text-sm">{transaction.upiVpa || 'N/A'}</TableCell>
+                          <TableCell>
+                            {transaction.success ? (
+                              <Badge variant="default" className="bg-green-500">Paid</Badge>
+                            ) : (
+                              <Badge variant="destructive">Failed</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="font-mono text-xs">{transaction.externalTransactionId}</TableCell>
+                          <TableCell>{format(new Date(transaction.createdAt), 'MMM d, HH:mm')}</TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </div>

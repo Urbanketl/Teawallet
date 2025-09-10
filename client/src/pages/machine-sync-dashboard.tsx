@@ -18,7 +18,11 @@ import {
   Shield,
   Key,
   Activity,
-  History
+  History,
+  Download,
+  FileText,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -95,6 +99,18 @@ interface UpiTransaction {
   externalCreatedAt?: string;
 }
 
+interface UpiTransactionsResponse {
+  transactions: UpiTransaction[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
+
 interface UpiSyncStatus {
   stats: {
     totalSyncs: number;
@@ -135,6 +151,8 @@ export default function MachineSyncDashboard() {
   const [selectedTab, setSelectedTab] = useState('overview');
   const [syncFilter, setSyncFilter] = useState('all');
   const [authFilter, setAuthFilter] = useState('all');
+  const [upiTransactionsPage, setUpiTransactionsPage] = useState(1);
+  const [upiTransactionsLimit] = useState(20);
 
   // Fetch all machine statuses
   const { 
@@ -182,14 +200,78 @@ export default function MachineSyncDashboard() {
     queryKey: ['/api/admin/upi-sync/logs'],
   });
 
-  // Fetch UPI transactions
+  // Fetch UPI transactions with pagination
   const { 
-    data: upiTransactions = [], 
+    data: upiTransactionsData, 
     isLoading: isLoadingUpiTransactions,
     refetch: refetchUpiTransactions
-  } = useQuery<UpiTransaction[]>({
-    queryKey: ['/api/admin/upi-sync/transactions'],
+  } = useQuery<UpiTransactionsResponse>({
+    queryKey: ['/api/admin/upi-sync/transactions', upiTransactionsPage, upiTransactionsLimit],
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/admin/upi-sync/transactions?page=${upiTransactionsPage}&limit=${upiTransactionsLimit}`);
+      return response.json();
+    }
   });
+  
+  const upiTransactions = upiTransactionsData?.transactions || [];
+  const upiPagination = upiTransactionsData?.pagination;
+
+  // Export functions
+  const handleExportExcel = async () => {
+    try {
+      const response = await apiRequest('GET', '/api/admin/upi-sync/export/excel');
+      
+      // Create blob and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `UPI-Transactions-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Export Successful",
+        description: "UPI transactions exported to Excel file",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Failed to export UPI transactions",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExportPdf = async () => {
+    try {
+      const response = await apiRequest('GET', '/api/admin/upi-sync/export/pdf');
+      
+      // Create blob and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `UPI-Transactions-${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Export Successful",
+        description: "UPI transactions exported to PDF file",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Failed to export UPI transactions",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Fetch UPI analytics
   const { 
@@ -914,10 +996,64 @@ export default function MachineSyncDashboard() {
           {/* UPI Transactions */}
           <Card>
             <CardHeader>
-              <CardTitle>Recent UPI Transactions</CardTitle>
-              <CardDescription>Latest UPI transactions synced from external system</CardDescription>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>UPI Transactions</CardTitle>
+                  <CardDescription>All UPI transactions synced from external system</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleExportExcel}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Export Excel
+                  </Button>
+                  <Button
+                    onClick={handleExportPdf}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Export PDF
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
+              {/* Pagination info */}
+              {upiPagination && (
+                <div className="flex justify-between items-center mb-4">
+                  <div className="text-sm text-gray-600">
+                    Showing {((upiPagination.page - 1) * upiPagination.limit) + 1} to {Math.min(upiPagination.page * upiPagination.limit, upiPagination.total)} of {upiPagination.total} transactions
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={() => setUpiTransactionsPage(upiPagination.page - 1)}
+                      disabled={!upiPagination.hasPrev}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Previous
+                    </Button>
+                    <span className="text-sm">
+                      Page {upiPagination.page} of {upiPagination.totalPages}
+                    </span>
+                    <Button
+                      onClick={() => setUpiTransactionsPage(upiPagination.page + 1)}
+                      disabled={!upiPagination.hasNext}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Next
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -946,7 +1082,7 @@ export default function MachineSyncDashboard() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      upiTransactions.slice(0, 10).map((transaction) => (
+                      upiTransactions.map((transaction) => (
                         <TableRow key={transaction.id}>
                           <TableCell className="font-mono">{transaction.machineId}</TableCell>
                           <TableCell>₹{transaction.amount}</TableCell>
@@ -967,6 +1103,47 @@ export default function MachineSyncDashboard() {
                   </TableBody>
                 </Table>
               </div>
+              
+              {/* Bottom pagination controls */}
+              {upiPagination && upiPagination.totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2 mt-4">
+                  <Button
+                    onClick={() => setUpiTransactionsPage(1)}
+                    disabled={upiPagination.page === 1}
+                    variant="outline"
+                    size="sm"
+                  >
+                    First
+                  </Button>
+                  <Button
+                    onClick={() => setUpiTransactionsPage(upiPagination.page - 1)}
+                    disabled={!upiPagination.hasPrev}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <span className="text-sm px-4">
+                    Page {upiPagination.page} of {upiPagination.totalPages}
+                  </span>
+                  <Button
+                    onClick={() => setUpiTransactionsPage(upiPagination.page + 1)}
+                    disabled={!upiPagination.hasNext}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    onClick={() => setUpiTransactionsPage(upiPagination.totalPages)}
+                    disabled={upiPagination.page === upiPagination.totalPages}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Last
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

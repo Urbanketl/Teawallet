@@ -627,9 +627,211 @@ function AdminReports() {
         </CardContent>
         </Card>
       )}
+      
+      {activeReportTab === 'upi' && (
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle>UPI Consumer Transactions</CardTitle>
+                <p className="text-sm text-gray-600 mt-1">
+                  All UPI transactions from direct consumer payments
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleUpiExportExcel}
+                  variant="outline"
+                  size="sm"
+                  className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                >
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  Export Excel
+                </Button>
+                <Button
+                  onClick={handleUpiExportPdf}
+                  variant="outline"
+                  size="sm"
+                  className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Export PDF
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {/* UPI Filters */}
+            <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <Label htmlFor="upi-machine-filter">Machine ID</Label>
+                <Input
+                  id="upi-machine-filter"
+                  placeholder="Filter by machine..."
+                  value={upiMachineFilter}
+                  onChange={(e) => setUpiMachineFilter(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="upi-status-filter">Status</Label>
+                <select
+                  id="upi-status-filter"
+                  value={upiStatusFilter}
+                  onChange={(e) => setUpiStatusFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-tea-green"
+                >
+                  <option value="">All statuses</option>
+                  <option value="success">Success</option>
+                  <option value="failed">Failed</option>
+                  <option value="pending">Pending</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="upi-date-from">From Date</Label>
+                <Input
+                  id="upi-date-from"
+                  type="date"
+                  value={upiDateFrom}
+                  onChange={(e) => setUpiDateFrom(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="upi-date-to">To Date</Label>
+                <Input
+                  id="upi-date-to"
+                  type="date"
+                  value={upiDateTo}
+                  onChange={(e) => setUpiDateTo(e.target.value)}
+                />
+              </div>
+            </div>
+            
+            {/* UPI Transactions Table */}
+            <div className="border rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Machine ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Amount
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Cups
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        UPI VPA
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        External ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Created
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {isLoadingUpiTransactions ? (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                          <div className="flex items-center justify-center">
+                            <div className="w-4 h-4 border-2 border-tea-green border-t-transparent rounded-full animate-spin mr-2"></div>
+                            Loading UPI transactions...
+                          </div>
+                        </td>
+                      </tr>
+                    ) : upiTransactions.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                          No UPI transactions found with current filters.
+                        </td>
+                      </tr>
+                    ) : (
+                      upiTransactions.map((transaction: any) => (
+                        <tr key={transaction.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {transaction.machineId}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ₹{parseFloat(transaction.amount).toFixed(2)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {transaction.cupCount}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {transaction.upiVpa || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              transaction.status === 'success' 
+                                ? 'bg-green-100 text-green-800'
+                                : transaction.status === 'failed'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {transaction.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
+                            {transaction.externalTransactionId}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(transaction.createdAt).toLocaleDateString('en-IN', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            {/* UPI Pagination */}
+            {upiTotal > upiLimit && (
+              <div className="mt-6 flex items-center justify-between">
+                <div className="text-sm text-gray-700">
+                  Showing {((upiPage - 1) * upiLimit) + 1} to {Math.min(upiPage * upiLimit, upiTotal)} of {upiTotal} transactions
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setUpiPage(Math.max(1, upiPage - 1))}
+                    disabled={upiPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-sm text-gray-700">
+                    Page {upiPage} of {Math.ceil(upiTotal / upiLimit)}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setUpiPage(upiPage + 1)}
+                    disabled={upiPage >= Math.ceil(upiTotal / upiLimit)}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Excel Export Confirmation Dialog */}
-      {showExportConfirmation && summaryData && (
+      {activeReportTab === 'rfid' && showExportConfirmation && summaryData && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold mb-4">Confirm Excel Export</h3>
@@ -668,7 +870,7 @@ function AdminReports() {
       )}
 
       {/* PDF Invoice Confirmation Dialog */}
-      {showPdfConfirmation && summaryData && (
+      {activeReportTab === 'rfid' && showPdfConfirmation && summaryData && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold mb-4">Confirm PDF Invoice Generation</h3>

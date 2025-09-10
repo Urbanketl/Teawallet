@@ -579,7 +579,6 @@ export default function AdminPage() {
   const [pseudoUserId, setPseudoUserId] = useState<string | null>(null);
   const [currentTab, setCurrentTab] = useState("overview");
   const [settings, setSettings] = useState({
-    teaPrice: "5.00",
     maintenanceMode: false,
     autoRecharge: true,
     maxWalletBalance: "5000.00",
@@ -1000,18 +999,6 @@ export default function AdminPage() {
                         id="systemName"
                         value={settings.systemName}
                         onChange={(e) => setSettings({...settings, systemName: e.target.value})}
-                        className="w-full"
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="teaPrice">Tea Price (₹)</Label>
-                      <Input
-                        id="teaPrice"
-                        type="number"
-                        step="0.01"
-                        value={settings.teaPrice}
-                        onChange={(e) => setSettings({...settings, teaPrice: e.target.value})}
                         className="w-full"
                       />
                     </div>

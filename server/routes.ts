@@ -1963,6 +1963,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/admin/upi-sync/logs', isAuthenticated, requireAdminAuth, upiSyncController.getSyncLogs.bind(upiSyncController));
   app.get('/api/admin/upi-sync/transactions', isAuthenticated, requireAdminAuth, upiSyncController.getUpiTransactions.bind(upiSyncController));
   app.get('/api/admin/upi-sync/analytics', isAuthenticated, requireAdminAuth, upiSyncController.getSyncAnalytics.bind(upiSyncController));
+  
+  // UPI export endpoints (Admin only)
+  app.get('/api/admin/upi-sync/export/excel', isAuthenticated, requireAdminAuth, upiSyncController.exportToExcel.bind(upiSyncController));
+  app.get('/api/admin/upi-sync/export/pdf', isAuthenticated, requireAdminAuth, upiSyncController.exportToPdf.bind(upiSyncController));
 
   const httpServer = createServer(app);
   return httpServer;

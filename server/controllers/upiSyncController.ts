@@ -2,7 +2,11 @@ import { Request, Response } from 'express';
 import { upiSyncService } from '../services/upiSyncService';
 import { db } from '../db';
 import { upiSyncLogs, dispensingLogs } from '@shared/schema';
-import { eq, and, gte, lte, desc } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, sql } from 'drizzle-orm';
+import { createObjectCsvWriter } from 'csv-writer';
+import * as fs from 'fs';
+import PDFDocument from 'pdfkit';
+import * as path from 'path';
 
 export class UpiSyncController {
 
@@ -194,7 +198,7 @@ export class UpiSyncController {
     }
   }
 
-  // Get UPI transactions with optional filtering
+  // Get UPI transactions with optional filtering and pagination
   async getUpiTransactions(req: Request, res: Response) {
     try {
       const { 
@@ -203,7 +207,8 @@ export class UpiSyncController {
         startDate, 
         endDate, 
         limit = 50, 
-        offset = 0 
+        offset = 0,
+        page = 1 
       } = req.query;
       
       // Build conditions array
@@ -227,15 +232,37 @@ export class UpiSyncController {
         conditions.push(lte(dispensingLogs.createdAt, new Date(endDate as string)));
       }
       
+      // Get total count for pagination
+      const [countResult] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(dispensingLogs)
+        .where(and(...conditions));
+      
+      const totalCount = countResult.count || 0;
+      const limitNum = parseInt(limit as string);
+      const pageNum = parseInt(page as string);
+      const offsetNum = (pageNum - 1) * limitNum;
+      const totalPages = Math.ceil(totalCount / limitNum);
+      
       const transactions = await db
         .select()
         .from(dispensingLogs)
         .where(and(...conditions))
         .orderBy(desc(dispensingLogs.createdAt))
-        .limit(parseInt(limit as string))
-        .offset(parseInt(offset as string));
+        .limit(limitNum)
+        .offset(offsetNum);
       
-      res.json(transactions);
+      res.json({
+        transactions,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: totalCount,
+          totalPages,
+          hasNext: pageNum < totalPages,
+          hasPrev: pageNum > 1
+        }
+      });
     } catch (error) {
       console.error('Error fetching UPI transactions:', error);
       res.status(500).json({ error: 'Failed to fetch UPI transactions' });
@@ -313,6 +340,219 @@ export class UpiSyncController {
     } catch (error) {
       console.error('Error fetching UPI sync analytics:', error);
       res.status(500).json({ error: 'Failed to fetch UPI sync analytics' });
+    }
+  }
+
+  // Export UPI transactions to Excel
+  async exportToExcel(req: Request, res: Response) {
+    try {
+      const { 
+        machineId, 
+        status, 
+        startDate, 
+        endDate 
+      } = req.query;
+
+      // Build conditions array (same as getUpiTransactions)
+      const conditions = [eq(dispensingLogs.paymentType, 'upi')];
+      
+      if (machineId) {
+        conditions.push(eq(dispensingLogs.machineId, machineId as string));
+      }
+      
+      if (status === 'paid') {
+        conditions.push(eq(dispensingLogs.success, true));
+      } else if (status === 'failed') {
+        conditions.push(eq(dispensingLogs.success, false));
+      }
+      
+      if (startDate) {
+        conditions.push(gte(dispensingLogs.createdAt, new Date(startDate as string)));
+      }
+      
+      if (endDate) {
+        conditions.push(lte(dispensingLogs.createdAt, new Date(endDate as string)));
+      }
+
+      // Get all transactions (no limit for export)
+      const transactions = await db
+        .select()
+        .from(dispensingLogs)
+        .where(and(...conditions))
+        .orderBy(desc(dispensingLogs.createdAt));
+
+      // Prepare data for CSV
+      const csvData = transactions.map(transaction => ({
+        'Transaction ID': transaction.id,
+        'Machine ID': transaction.machineId,
+        'Amount': transaction.amount,
+        'Cups': transaction.cups,
+        'Status': transaction.success ? 'Paid' : 'Failed',
+        'UPI Payment ID': transaction.upiPaymentId || '',
+        'UPI VPA': transaction.upiVpa || '',
+        'External Transaction ID': transaction.externalTransactionId || '',
+        'Error Message': transaction.errorMessage || '',
+        'Date Created': transaction.createdAt?.toISOString().split('T')[0] || '',
+        'Time Created': transaction.createdAt?.toTimeString().split(' ')[0] || ''
+      }));
+
+      // Create temporary CSV file
+      const fileName = `upi-transactions-${Date.now()}.csv`;
+      const filePath = path.join('/tmp', fileName);
+
+      const csvWriter = createObjectCsvWriter({
+        path: filePath,
+        header: [
+          { id: 'Transaction ID', title: 'Transaction ID' },
+          { id: 'Machine ID', title: 'Machine ID' },
+          { id: 'Amount', title: 'Amount (₹)' },
+          { id: 'Cups', title: 'Cups' },
+          { id: 'Status', title: 'Status' },
+          { id: 'UPI Payment ID', title: 'UPI Payment ID' },
+          { id: 'UPI VPA', title: 'UPI VPA' },
+          { id: 'External Transaction ID', title: 'External Transaction ID' },
+          { id: 'Error Message', title: 'Error Message' },
+          { id: 'Date Created', title: 'Date Created' },
+          { id: 'Time Created', title: 'Time Created' }
+        ]
+      });
+
+      await csvWriter.writeRecords(csvData);
+
+      // Send file
+      res.download(filePath, `UPI-Transactions-${new Date().toISOString().split('T')[0]}.csv`, (err) => {
+        if (err) {
+          console.error('Error sending CSV file:', err);
+        }
+        // Clean up temporary file
+        fs.unlink(filePath, (unlinkErr) => {
+          if (unlinkErr) console.error('Error deleting temp file:', unlinkErr);
+        });
+      });
+
+    } catch (error) {
+      console.error('Error exporting UPI transactions to Excel:', error);
+      res.status(500).json({ error: 'Failed to export transactions to Excel' });
+    }
+  }
+
+  // Export UPI transactions to PDF
+  async exportToPdf(req: Request, res: Response) {
+    try {
+      const { 
+        machineId, 
+        status, 
+        startDate, 
+        endDate 
+      } = req.query;
+
+      // Build conditions array (same as getUpiTransactions)
+      const conditions = [eq(dispensingLogs.paymentType, 'upi')];
+      
+      if (machineId) {
+        conditions.push(eq(dispensingLogs.machineId, machineId as string));
+      }
+      
+      if (status === 'paid') {
+        conditions.push(eq(dispensingLogs.success, true));
+      } else if (status === 'failed') {
+        conditions.push(eq(dispensingLogs.success, false));
+      }
+      
+      if (startDate) {
+        conditions.push(gte(dispensingLogs.createdAt, new Date(startDate as string)));
+      }
+      
+      if (endDate) {
+        conditions.push(lte(dispensingLogs.createdAt, new Date(endDate as string)));
+      }
+
+      // Get all transactions
+      const transactions = await db
+        .select()
+        .from(dispensingLogs)
+        .where(and(...conditions))
+        .orderBy(desc(dispensingLogs.createdAt));
+
+      // Create PDF
+      const doc = new PDFDocument();
+      
+      // Set response headers
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="UPI-Transactions-${new Date().toISOString().split('T')[0]}.pdf"`);
+      
+      doc.pipe(res);
+
+      // Add header
+      doc.fontSize(20).text('UrbanKetl - UPI Transactions Report', { align: 'center' });
+      doc.moveDown();
+      
+      // Add date range
+      const dateRange = startDate && endDate 
+        ? `${startDate} to ${endDate}`
+        : 'Last 30 days';
+      doc.fontSize(12).text(`Period: ${dateRange}`, { align: 'center' });
+      doc.moveDown();
+
+      // Add summary
+      const totalTransactions = transactions.length;
+      const successfulTransactions = transactions.filter(t => t.success).length;
+      const totalRevenue = transactions
+        .filter(t => t.success)
+        .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+
+      doc.text(`Total Transactions: ${totalTransactions}`);
+      doc.text(`Successful Transactions: ${successfulTransactions}`);
+      doc.text(`Total Revenue: ₹${totalRevenue.toFixed(2)}`);
+      doc.moveDown();
+
+      // Add table headers
+      doc.fontSize(10);
+      const tableTop = doc.y;
+      const rowHeight = 20;
+      
+      doc.text('Transaction ID', 50, tableTop);
+      doc.text('Machine ID', 150, tableTop);
+      doc.text('Amount', 220, tableTop);
+      doc.text('Status', 270, tableTop);
+      doc.text('Date', 320, tableTop);
+      doc.text('Time', 400, tableTop);
+
+      // Add horizontal line
+      doc.strokeColor('#000')
+         .lineWidth(1)
+         .moveTo(50, tableTop + 15)
+         .lineTo(500, tableTop + 15)
+         .stroke();
+
+      // Add transaction rows
+      let currentY = tableTop + 25;
+      
+      transactions.slice(0, 50).forEach((transaction, index) => { // Limit to 50 for PDF
+        if (currentY > 700) { // New page if needed
+          doc.addPage();
+          currentY = 50;
+        }
+
+        doc.text(transaction.id.toString(), 50, currentY);
+        doc.text(transaction.machineId || '', 150, currentY);
+        doc.text(`₹${transaction.amount}`, 220, currentY);
+        doc.text(transaction.success ? 'Paid' : 'Failed', 270, currentY);
+        doc.text(transaction.createdAt?.toISOString().split('T')[0] || '', 320, currentY);
+        doc.text(transaction.createdAt?.toTimeString().split(' ')[0] || '', 400, currentY);
+        
+        currentY += rowHeight;
+      });
+
+      if (transactions.length > 50) {
+        doc.text(`... and ${transactions.length - 50} more transactions`, 50, currentY + 20);
+      }
+
+      doc.end();
+
+    } catch (error) {
+      console.error('Error exporting UPI transactions to PDF:', error);
+      res.status(500).json({ error: 'Failed to export transactions to PDF' });
     }
   }
 }

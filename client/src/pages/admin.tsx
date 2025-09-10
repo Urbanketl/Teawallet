@@ -76,6 +76,15 @@ function AdminReports() {
   const [dateRangeMode, setDateRangeMode] = useState<'single' | 'range'>('single');
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+  
+  // UPI Transactions state
+  const [upiPage, setUpiPage] = useState(1);
+  const [upiLimit] = useState(20);
+  const [upiMachineFilter, setUpiMachineFilter] = useState('');
+  const [upiStatusFilter, setUpiStatusFilter] = useState('');
+  const [upiDateFrom, setUpiDateFrom] = useState('');
+  const [upiDateTo, setUpiDateTo] = useState('');
+  const [activeReportTab, setActiveReportTab] = useState<'rfid' | 'upi'>('rfid');
 
   // Generate month options for last 12 months
   const monthOptions = useMemo(() => {
@@ -95,6 +104,25 @@ function AdminReports() {
   const { data: businessUnits = [], isLoading: unitsLoading } = useQuery({
     queryKey: ["/api/admin/business-units"],
   });
+  
+  // Fetch UPI transactions with pagination
+  const { 
+    data: upiTransactionsData, 
+    isLoading: isLoadingUpiTransactions,
+    refetch: refetchUpiTransactions
+  } = useQuery({
+    queryKey: ['/api/admin/upi-sync/transactions', {
+      page: upiPage,
+      limit: upiLimit,
+      machineId: upiMachineFilter,
+      status: upiStatusFilter,
+      dateFrom: upiDateFrom,
+      dateTo: upiDateTo
+    }],
+  });
+  
+  const upiTransactions = (upiTransactionsData as any)?.transactions || [];
+  const upiTotal = (upiTransactionsData as any)?.total || 0;
 
   // Fetch business unit summary when business unit(s) and dates are selected
   const { data: summaryData, isLoading: summaryLoading } = useQuery({
@@ -251,20 +279,129 @@ function AdminReports() {
       setGenerating(false);
     }
   };
+  
+  // UPI Export handlers
+  const handleUpiExportExcel = async () => {
+    try {
+      const params = new URLSearchParams({
+        ...(upiMachineFilter && { machineId: upiMachineFilter }),
+        ...(upiStatusFilter && { status: upiStatusFilter }),
+        ...(upiDateFrom && { dateFrom: upiDateFrom }),
+        ...(upiDateTo && { dateTo: upiDateTo })
+      });
+      
+      const response = await fetch(`/api/admin/upi-sync/export/excel?${params}`, {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) throw new Error('Export failed');
+      
+      // Create blob and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `UPI-Transactions-${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Export Successful",
+        description: "UPI transactions exported to Excel file",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Failed to export UPI transactions",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleUpiExportPdf = async () => {
+    try {
+      const params = new URLSearchParams({
+        ...(upiMachineFilter && { machineId: upiMachineFilter }),
+        ...(upiStatusFilter && { status: upiStatusFilter }),
+        ...(upiDateFrom && { dateFrom: upiDateFrom }),
+        ...(upiDateTo && { dateTo: upiDateTo })
+      });
+      
+      const response = await fetch(`/api/admin/upi-sync/export/pdf?${params}`, {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) throw new Error('Export failed');
+      
+      // Create blob and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `UPI-Transactions-${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Export Successful",
+        description: "UPI transactions exported to PDF file",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Failed to export UPI transactions",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900">Business Unit Reports</h3>
+        <h3 className="text-lg font-semibold text-gray-900">Transaction Reports</h3>
         <p className="text-sm text-gray-600 mt-1">
-          Generate reports for any business unit in Excel or PDF format - single month or custom date range
+          Generate comprehensive reports for RFID corporate transactions and UPI consumer transactions
         </p>
       </div>
+      
+      {/* Report Type Selection */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveReportTab('rfid')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeReportTab === 'rfid'
+                ? 'border-tea-green text-tea-green'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            💳 RFID Corporate Transactions
+          </button>
+          <button
+            onClick={() => setActiveReportTab('upi')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeReportTab === 'upi'
+                ? 'border-tea-green text-tea-green'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            📱 UPI Consumer Transactions
+          </button>
+        </nav>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Report Generation</CardTitle>
-        </CardHeader>
+      {activeReportTab === 'rfid' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>RFID Corporate Transaction Reports</CardTitle>
+            <p className="text-sm text-gray-600 mt-1">
+              Generate reports for business unit RFID transactions - single month or custom date range
+            </p>
+          </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -488,7 +625,8 @@ function AdminReports() {
             </Button>
           </div>
         </CardContent>
-      </Card>
+        </Card>
+      )}
 
       {/* Excel Export Confirmation Dialog */}
       {showExportConfirmation && summaryData && (

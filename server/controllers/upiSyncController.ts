@@ -225,11 +225,11 @@ export class UpiSyncController {
       }
       
       if (startDate) {
-        conditions.push(gte(dispensingLogs.createdAt, new Date(startDate as string)));
+        conditions.push(gte(dispensingLogs.externalCreatedAt, new Date(startDate as string)));
       }
       
       if (endDate) {
-        conditions.push(lte(dispensingLogs.createdAt, new Date(endDate as string)));
+        conditions.push(lte(dispensingLogs.externalCreatedAt, new Date(endDate as string)));
       }
       
       // Get total count for pagination
@@ -248,7 +248,7 @@ export class UpiSyncController {
         .select()
         .from(dispensingLogs)
         .where(and(...conditions))
-        .orderBy(desc(dispensingLogs.createdAt))
+        .orderBy(desc(dispensingLogs.externalCreatedAt))
         .limit(limitNum)
         .offset(offsetNum);
       

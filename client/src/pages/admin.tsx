@@ -779,7 +779,7 @@ function AdminReports() {
                             {transaction.externalTransactionId}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(transaction.createdAt).toLocaleDateString('en-IN', {
+                            {new Date(transaction.externalCreatedAt || transaction.createdAt).toLocaleDateString('en-IN', {
                               year: 'numeric',
                               month: 'short',
                               day: 'numeric',

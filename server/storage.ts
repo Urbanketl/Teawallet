@@ -270,6 +270,11 @@ export interface IStorage {
   getUserBehaviorInsights(startDate?: string, endDate?: string, businessUnitId?: string, machineId?: string): Promise<{ avgTeaPerDay: number; preferredTimes: number[]; topTeaTypes: string[] }>;
   getMachineDispensingData(startDate?: string, endDate?: string, machineId?: string, businessUnitId?: string): Promise<{ date: string; dispensed: number; machineId?: string; [key: string]: any }[]>;
   
+  // UPI Analytics operations
+  getUpiTrends(startDate: string, endDate: string, businessUnitId?: string, machineId?: string, granularity?: 'day' | 'week' | 'month'): Promise<{ date: string; totalAmount: string; txnCount: number; successCount: number }[]>;
+  getUpiMachineSummary(startDate: string, endDate: string, businessUnitId?: string): Promise<{ machineId: string; machineName: string; totalAmount: string; txnCount: number; successCount: number; cups: number }[]>;
+  getCupsTrend(startDate: string, endDate: string, businessUnitId?: string, machineId?: string, granularity?: 'day' | 'week' | 'month'): Promise<{ date: string; cups: number }[]>;
+  
   // System settings operations
   getSystemSetting(key: string): Promise<string | undefined>;
   updateSystemSetting(key: string, value: string, updatedBy: string): Promise<void>;
@@ -3955,6 +3960,145 @@ export class DatabaseStorage implements IStorage {
       machineName: row.machineName,
       businessUnitName: row.businessUnitName
     }));
+  }
+
+  // UPI Analytics Methods
+  async getUpiTrends(startDate: string, endDate: string, businessUnitId?: string, machineId?: string, granularity: 'day' | 'week' | 'month' = 'day'): Promise<{ date: string; totalAmount: string; txnCount: number; successCount: number }[]> {
+    console.log('getUpiTrends called with:', { startDate, endDate, businessUnitId, machineId, granularity });
+    
+    // Build date truncation based on granularity
+    const dateTrunc = granularity === 'week' ? 'week' : granularity === 'month' ? 'month' : 'day';
+    
+    // Build WHERE conditions
+    let whereConditions = [
+      eq(dispensingLogs.paymentType, 'upi'),
+      gte(dispensingLogs.createdAt, new Date(startDate)),
+      lte(dispensingLogs.createdAt, new Date(endDate))
+    ];
+
+    // Add machine filtering
+    if (machineId) {
+      whereConditions.push(eq(dispensingLogs.machineId, machineId));
+    }
+
+    let query;
+    if (businessUnitId) {
+      // With business unit filtering - need JOIN
+      whereConditions.push(eq(teaMachines.businessUnitId, businessUnitId));
+      query = db
+        .select({
+          date: sql<string>`DATE(date_trunc('${sql.raw(dateTrunc)}', ${dispensingLogs.createdAt}))`,
+          totalAmount: sql<string>`COALESCE(SUM(${dispensingLogs.amount}), 0)::text`,
+          txnCount: sql<number>`COUNT(*)::int`,
+          successCount: sql<number>`SUM(CASE WHEN ${dispensingLogs.success} THEN 1 ELSE 0 END)::int`
+        })
+        .from(dispensingLogs)
+        .innerJoin(teaMachines, eq(dispensingLogs.machineId, teaMachines.id))
+        .where(and(...whereConditions));
+    } else {
+      // Without business unit filtering - no JOIN needed
+      query = db
+        .select({
+          date: sql<string>`DATE(date_trunc('${sql.raw(dateTrunc)}', ${dispensingLogs.createdAt}))`,
+          totalAmount: sql<string>`COALESCE(SUM(${dispensingLogs.amount}), 0)::text`,
+          txnCount: sql<number>`COUNT(*)::int`,
+          successCount: sql<number>`SUM(CASE WHEN ${dispensingLogs.success} THEN 1 ELSE 0 END)::int`
+        })
+        .from(dispensingLogs)
+        .where(and(...whereConditions));
+    }
+
+    const result = await query
+      .groupBy(sql`date_trunc('${sql.raw(dateTrunc)}', ${dispensingLogs.createdAt})`)
+      .orderBy(sql`date_trunc('${sql.raw(dateTrunc)}', ${dispensingLogs.createdAt})`);
+
+    console.log('UPI trends raw data:', result);
+    return result;
+  }
+
+  async getUpiMachineSummary(startDate: string, endDate: string, businessUnitId?: string): Promise<{ machineId: string; machineName: string; totalAmount: string; txnCount: number; successCount: number; cups: number }[]> {
+    console.log('getUpiMachineSummary called with:', { startDate, endDate, businessUnitId });
+    
+    // Build WHERE conditions
+    let whereConditions = [
+      eq(dispensingLogs.paymentType, 'upi'),
+      gte(dispensingLogs.createdAt, new Date(startDate)),
+      lte(dispensingLogs.createdAt, new Date(endDate))
+    ];
+
+    // Add business unit filtering
+    if (businessUnitId) {
+      whereConditions.push(eq(teaMachines.businessUnitId, businessUnitId));
+    }
+
+    const query = db
+      .select({
+        machineId: dispensingLogs.machineId,
+        machineName: teaMachines.name,
+        totalAmount: sql<string>`COALESCE(SUM(${dispensingLogs.amount}), 0)::text`,
+        txnCount: sql<number>`COUNT(*)::int`,
+        successCount: sql<number>`SUM(CASE WHEN ${dispensingLogs.success} THEN 1 ELSE 0 END)::int`,
+        cups: sql<number>`SUM(CASE WHEN ${dispensingLogs.success} THEN ${dispensingLogs.cups} ELSE 0 END)::int`
+      })
+      .from(dispensingLogs)
+      .innerJoin(teaMachines, eq(dispensingLogs.machineId, teaMachines.id))
+      .where(and(...whereConditions));
+
+    const result = await query
+      .groupBy(dispensingLogs.machineId, teaMachines.name)
+      .orderBy(teaMachines.name);
+
+    console.log('UPI machine summary:', result);
+    return result;
+  }
+
+  async getCupsTrend(startDate: string, endDate: string, businessUnitId?: string, machineId?: string, granularity: 'day' | 'week' | 'month' = 'day'): Promise<{ date: string; cups: number }[]> {
+    console.log('getCupsTrend called with:', { startDate, endDate, businessUnitId, machineId, granularity });
+    
+    // Build date truncation based on granularity
+    const dateTrunc = granularity === 'week' ? 'week' : granularity === 'month' ? 'month' : 'day';
+    
+    // Build WHERE conditions
+    let whereConditions = [
+      eq(dispensingLogs.paymentType, 'upi'),
+      gte(dispensingLogs.createdAt, new Date(startDate)),
+      lte(dispensingLogs.createdAt, new Date(endDate))
+    ];
+
+    // Add machine filtering
+    if (machineId) {
+      whereConditions.push(eq(dispensingLogs.machineId, machineId));
+    }
+
+    let query;
+    if (businessUnitId) {
+      // With business unit filtering - need JOIN
+      whereConditions.push(eq(teaMachines.businessUnitId, businessUnitId));
+      query = db
+        .select({
+          date: sql<string>`DATE(date_trunc('${sql.raw(dateTrunc)}', ${dispensingLogs.createdAt}))`,
+          cups: sql<number>`SUM(CASE WHEN ${dispensingLogs.success} THEN ${dispensingLogs.cups} ELSE 0 END)::int`
+        })
+        .from(dispensingLogs)
+        .innerJoin(teaMachines, eq(dispensingLogs.machineId, teaMachines.id))
+        .where(and(...whereConditions));
+    } else {
+      // Without business unit filtering - no JOIN needed
+      query = db
+        .select({
+          date: sql<string>`DATE(date_trunc('${sql.raw(dateTrunc)}', ${dispensingLogs.createdAt}))`,
+          cups: sql<number>`SUM(CASE WHEN ${dispensingLogs.success} THEN ${dispensingLogs.cups} ELSE 0 END)::int`
+        })
+        .from(dispensingLogs)
+        .where(and(...whereConditions));
+    }
+
+    const result = await query
+      .groupBy(sql`date_trunc('${sql.raw(dateTrunc)}', ${dispensingLogs.createdAt})`)
+      .orderBy(sql`date_trunc('${sql.raw(dateTrunc)}', ${dispensingLogs.createdAt})`);
+
+    console.log('Cups trend raw data:', result);
+    return result;
   }
 }
 

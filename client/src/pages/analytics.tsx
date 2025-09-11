@@ -52,6 +52,28 @@ interface RevenueTrend {
   avgPerCup: string;
 }
 
+// UPI Analytics type definitions
+interface UpiTrend {
+  date: string;
+  totalAmount: string;
+  txnCount: number;
+  successCount: number;
+}
+
+interface UpiMachineSummary {
+  machineId: string;
+  machineName: string;
+  totalAmount: string;
+  txnCount: number;
+  successCount: number;
+  cups: number;
+}
+
+interface CupsTrend {
+  date: string;
+  cups: number;
+}
+
 export default function AnalyticsPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const typedUser = user as User;
@@ -63,6 +85,7 @@ export default function AnalyticsPage() {
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
+  const [granularity, setGranularity] = useState<'day' | 'week' | 'month'>('day');
 
   // Calculate date range with custom date support
   const getDateRange = () => {
@@ -131,6 +154,9 @@ export default function AnalyticsPage() {
       console.log('Adding machineId to params:', selectedMachine);
       params.set('machineId', selectedMachine);
     }
+    
+    // Add granularity parameter for time-based analytics
+    params.set('granularity', granularity);
     
     const queryString = params.toString();
     console.log('Final query string:', queryString);
@@ -213,6 +239,25 @@ export default function AnalyticsPage() {
   const { data: allBusinessUnits = [] } = useQuery<any[]>({
     queryKey: ['/api/corporate/business-units'],
     enabled: Boolean(typedUser?.isAdmin && typedUser?.isSuperAdmin),
+  });
+
+  // UPI Analytics Queries
+  const { data: upiTrends = [] } = useQuery<UpiTrend[]>({
+    queryKey: ['/api/analytics/upi/trends', dateRange, selectedBusinessUnit, selectedMachine, customStartDate, customEndDate, granularity, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
+    queryFn: () => fetch(`/api/analytics/upi/trends?${buildQueryParams()}`).then(res => res.json()),
+    enabled: Boolean(typedUser?.isAdmin),
+  });
+
+  const { data: upiMachineSummary = [] } = useQuery<UpiMachineSummary[]>({
+    queryKey: ['/api/analytics/upi/machine-summary', dateRange, selectedBusinessUnit, customStartDate, customEndDate, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
+    queryFn: () => fetch(`/api/analytics/upi/machine-summary?${buildQueryParams()}`).then(res => res.json()),
+    enabled: Boolean(typedUser?.isAdmin),
+  });
+
+  const { data: cupsTrend = [] } = useQuery<CupsTrend[]>({
+    queryKey: ['/api/analytics/cups-trend', dateRange, selectedBusinessUnit, selectedMachine, customStartDate, customEndDate, granularity, format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')],
+    queryFn: () => fetch(`/api/analytics/cups-trend?${buildQueryParams()}`).then(res => res.json()),
+    enabled: Boolean(typedUser?.isAdmin),
   });
 
   // Weekly aggregation function for revenue trends
@@ -430,10 +475,25 @@ export default function AnalyticsPage() {
                 </div>
 
                 <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-700">Time Granularity</Label>
+                  <select 
+                    value={granularity} 
+                    onChange={(e) => setGranularity(e.target.value as 'day' | 'week' | 'month')}
+                    className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    data-testid="select-granularity"
+                  >
+                    <option value="day">Daily</option>
+                    <option value="week">Weekly</option>
+                    <option value="month">Monthly</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
                   <Label className="text-sm font-medium text-gray-700">View Mode</Label>
                   <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="grid w-full grid-cols-2">
+                    <TabsList className="grid w-full grid-cols-3">
                       <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
+                      <TabsTrigger value="upi-analytics" className="text-xs">UPI Analytics</TabsTrigger>
                       <TabsTrigger value="detailed" className="text-xs">Detailed</TabsTrigger>
                     </TabsList>
                   </Tabs>
@@ -776,6 +836,110 @@ export default function AnalyticsPage() {
                         name="Usage Count"
                       />
                     </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="upi-analytics">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+              {/* UPI Transaction Trends */}
+              <Card className="border-0 shadow-lg">
+                <CardHeader className="flex flex-row items-center justify-between pb-4">
+                  <div>
+                    <CardTitle className="text-xl font-bold text-gray-800">UPI Transaction Trends</CardTitle>
+                    <p className="text-gray-600 mt-1">Transaction volume and success rates over time</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-blue-600">
+                      ₹{upiTrends.reduce((sum, item) => sum + parseFloat(item.totalAmount), 0).toLocaleString()}
+                    </div>
+                    <div className="text-sm text-gray-500">{upiTrends.reduce((sum, item) => sum + item.txnCount, 0)} transactions</div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={upiTrends}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="date" tick={{fontSize: 12}} />
+                      <YAxis tick={{fontSize: 12}} />
+                      <Tooltip 
+                        contentStyle={{ background: 'white', border: '1px solid #ccc', borderRadius: '8px' }}
+                        formatter={(value, name) => [
+                          name === 'totalAmount' ? `₹${parseFloat(value as string).toLocaleString()}` : value,
+                          name === 'totalAmount' ? 'Revenue' : name === 'txnCount' ? 'Transactions' : 'Success Rate'
+                        ]}
+                      />
+                      <Legend />
+                      <Line type="monotone" dataKey="totalAmount" stroke="#2563eb" strokeWidth={3} name="Revenue (₹)" />
+                      <Line type="monotone" dataKey="txnCount" stroke="#10b981" strokeWidth={2} name="Transactions" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* UPI Machine Summary */}
+              <Card className="border-0 shadow-lg">
+                <CardHeader className="flex flex-row items-center justify-between pb-4">
+                  <div>
+                    <CardTitle className="text-xl font-bold text-gray-800">UPI Revenue by Machine</CardTitle>
+                    <p className="text-gray-600 mt-1">Machine performance and transaction distribution</p>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={upiMachineSummary}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="machineName" tick={{fontSize: 10}} angle={-45} textAnchor="end" height={80} />
+                      <YAxis tick={{fontSize: 12}} />
+                      <Tooltip 
+                        contentStyle={{ background: 'white', border: '1px solid #ccc', borderRadius: '8px' }}
+                        formatter={(value, name) => [
+                          name === 'totalAmount' ? `₹${parseFloat(value as string).toLocaleString()}` : value,
+                          name === 'totalAmount' ? 'Revenue' : name === 'txnCount' ? 'Transactions' : 'Cups'
+                        ]}
+                      />
+                      <Legend />
+                      <Bar dataKey="totalAmount" fill="#3b82f6" name="Revenue (₹)" />
+                      <Bar dataKey="txnCount" fill="#10b981" name="Transactions" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Cups Dispensed Trend */}
+              <Card className="border-0 shadow-lg xl:col-span-2">
+                <CardHeader className="flex flex-row items-center justify-between pb-4">
+                  <div>
+                    <CardTitle className="text-xl font-bold text-gray-800">Cups Dispensed Trend</CardTitle>
+                    <p className="text-gray-600 mt-1">Total cups served over time with {granularity} granularity</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-green-600">
+                      {cupsTrend.reduce((sum, item) => sum + item.cups, 0).toLocaleString()}
+                    </div>
+                    <div className="text-sm text-gray-500">Total cups served</div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <AreaChart data={cupsTrend}>
+                      <defs>
+                        <linearGradient id="cupsGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="date" tick={{fontSize: 12}} />
+                      <YAxis tick={{fontSize: 12}} />
+                      <Tooltip 
+                        contentStyle={{ background: 'white', border: '1px solid #ccc', borderRadius: '8px' }}
+                        formatter={(value) => [`${value} cups`, 'Cups Served']}
+                      />
+                      <Area type="monotone" dataKey="cups" stroke="#10b981" fillOpacity={1} fill="url(#cupsGradient)" />
+                    </AreaChart>
                   </ResponsiveContainer>
                 </CardContent>
               </Card>

@@ -194,4 +194,102 @@ router.get('/machine-dispensing', async (req: any, res) => {
   }
 });
 
+// UPI Analytics Endpoints
+router.get('/upi/trends', async (req: any, res) => {
+  try {
+    const { start, end, businessUnitId, machineId, granularity } = req.query;
+    console.log('UPI trends query params:', { start, end, businessUnitId, machineId, granularity });
+    
+    // SECURITY: Validate business unit access for non-super admins
+    let validatedBusinessUnitId = businessUnitId as string;
+    if (!req.isSuperAdmin) {
+      if (businessUnitId) {
+        // Specific business unit requested - validate access
+        if (!req.accessibleBusinessUnitIds || !req.accessibleBusinessUnitIds.includes(businessUnitId)) {
+          return res.status(403).json({ message: "Access denied to this business unit" });
+        }
+      } else {
+        // No specific business unit - deny access (prevent data exposure)
+        return res.status(400).json({ message: "Business unit ID is required for this endpoint" });
+      }
+    }
+    
+    const trends = await storage.getUpiTrends(
+      start as string, 
+      end as string, 
+      validatedBusinessUnitId,
+      machineId as string,
+      granularity as 'day' | 'week' | 'month'
+    );
+    res.json(trends);
+  } catch (error) {
+    console.error("Error fetching UPI trends:", error);
+    res.status(500).json({ message: "Failed to fetch UPI trends" });
+  }
+});
+
+router.get('/upi/machine-summary', async (req: any, res) => {
+  try {
+    const { start, end, businessUnitId } = req.query;
+    console.log('UPI machine summary query params:', { start, end, businessUnitId });
+    
+    // SECURITY: Validate business unit access for non-super admins
+    let validatedBusinessUnitId = businessUnitId as string;
+    if (!req.isSuperAdmin) {
+      if (businessUnitId) {
+        // Specific business unit requested - validate access
+        if (!req.accessibleBusinessUnitIds || !req.accessibleBusinessUnitIds.includes(businessUnitId)) {
+          return res.status(403).json({ message: "Access denied to this business unit" });
+        }
+      } else {
+        // No specific business unit - deny access (prevent data exposure)
+        return res.status(400).json({ message: "Business unit ID is required for this endpoint" });
+      }
+    }
+    
+    const summary = await storage.getUpiMachineSummary(
+      start as string, 
+      end as string, 
+      validatedBusinessUnitId
+    );
+    res.json(summary);
+  } catch (error) {
+    console.error("Error fetching UPI machine summary:", error);
+    res.status(500).json({ message: "Failed to fetch UPI machine summary" });
+  }
+});
+
+router.get('/cups-trend', async (req: any, res) => {
+  try {
+    const { start, end, businessUnitId, machineId, granularity } = req.query;
+    console.log('Cups trend query params:', { start, end, businessUnitId, machineId, granularity });
+    
+    // SECURITY: Validate business unit access for non-super admins
+    let validatedBusinessUnitId = businessUnitId as string;
+    if (!req.isSuperAdmin) {
+      if (businessUnitId) {
+        // Specific business unit requested - validate access
+        if (!req.accessibleBusinessUnitIds || !req.accessibleBusinessUnitIds.includes(businessUnitId)) {
+          return res.status(403).json({ message: "Access denied to this business unit" });
+        }
+      } else {
+        // No specific business unit - deny access (prevent data exposure)
+        return res.status(400).json({ message: "Business unit ID is required for this endpoint" });
+      }
+    }
+    
+    const trends = await storage.getCupsTrend(
+      start as string, 
+      end as string, 
+      validatedBusinessUnitId,
+      machineId as string,
+      granularity as 'day' | 'week' | 'month'
+    );
+    res.json(trends);
+  } catch (error) {
+    console.error("Error fetching cups trend:", error);
+    res.status(500).json({ message: "Failed to fetch cups trend" });
+  }
+});
+
 export default router;

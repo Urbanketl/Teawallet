@@ -13,7 +13,16 @@ export function registerCorporateRoutes(app: Express) {
   app.get("/api/corporate/business-units", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const businessUnits = await storage.getUserBusinessUnits(userId);
+      let businessUnits: any[] = [];
+      
+      // Super admins see all business units
+      if (req.user.isSuperAdmin) {
+        businessUnits = await storage.getAllBusinessUnits();
+      } else {
+        // Regular users only see their assigned business units
+        businessUnits = await storage.getUserBusinessUnits(userId);
+      }
+      
       res.json(businessUnits);
     } catch (error) {
       console.error("Error fetching user business units:", error);

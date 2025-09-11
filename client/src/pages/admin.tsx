@@ -116,13 +116,14 @@ function AdminReports() {
       limit: upiLimit,
       machineId: upiMachineFilter,
       status: upiStatusFilter,
-      dateFrom: upiDateFrom,
-      dateTo: upiDateTo
+      startDate: upiDateFrom,
+      endDate: upiDateTo
     }],
   });
   
   const upiTransactions = (upiTransactionsData as any)?.transactions || [];
-  const upiTotal = (upiTransactionsData as any)?.total || 0;
+  const upiPagination = (upiTransactionsData as any)?.pagination;
+  const upiTotal = upiPagination?.total || 0;
 
   // Fetch business unit summary when business unit(s) and dates are selected
   const { data: summaryData, isLoading: summaryLoading } = useQuery({
@@ -286,8 +287,8 @@ function AdminReports() {
       const params = new URLSearchParams({
         ...(upiMachineFilter && { machineId: upiMachineFilter }),
         ...(upiStatusFilter && { status: upiStatusFilter }),
-        ...(upiDateFrom && { dateFrom: upiDateFrom }),
-        ...(upiDateTo && { dateTo: upiDateTo })
+        ...(upiDateFrom && { startDate: upiDateFrom }),
+        ...(upiDateTo && { endDate: upiDateTo })
       });
       
       const response = await fetch(`/api/admin/upi-sync/export/excel?${params}`, {
@@ -325,8 +326,8 @@ function AdminReports() {
       const params = new URLSearchParams({
         ...(upiMachineFilter && { machineId: upiMachineFilter }),
         ...(upiStatusFilter && { status: upiStatusFilter }),
-        ...(upiDateFrom && { dateFrom: upiDateFrom }),
-        ...(upiDateTo && { dateTo: upiDateTo })
+        ...(upiDateFrom && { startDate: upiDateFrom }),
+        ...(upiDateTo && { endDate: upiDateTo })
       });
       
       const response = await fetch(`/api/admin/upi-sync/export/pdf?${params}`, {
@@ -681,9 +682,8 @@ function AdminReports() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-tea-green"
                 >
                   <option value="">All statuses</option>
-                  <option value="success">Success</option>
+                  <option value="paid">Success</option>
                   <option value="failed">Failed</option>
-                  <option value="pending">Pending</option>
                 </select>
               </div>
               <div>
@@ -761,20 +761,18 @@ function AdminReports() {
                             ₹{parseFloat(transaction.amount).toFixed(2)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {transaction.cupCount}
+                            {transaction.cups || 1}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {transaction.upiVpa || 'N/A'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              transaction.status === 'success' 
+                              transaction.success 
                                 ? 'bg-green-100 text-green-800'
-                                : transaction.status === 'failed'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-yellow-100 text-yellow-800'
+                                : 'bg-red-100 text-red-800'
                             }`}>
-                              {transaction.status}
+                              {transaction.success ? 'Success' : 'Failed'}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">

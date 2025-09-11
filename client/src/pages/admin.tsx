@@ -119,6 +119,26 @@ function AdminReports() {
       startDate: upiDateFrom,
       endDate: upiDateTo
     }],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        page: upiPage.toString(),
+        limit: upiLimit.toString(),
+        ...(upiMachineFilter && { machineId: upiMachineFilter }),
+        ...(upiStatusFilter && { status: upiStatusFilter }),
+        ...(upiDateFrom && { startDate: upiDateFrom }),
+        ...(upiDateTo && { endDate: upiDateTo })
+      });
+      
+      const url = `/api/admin/upi-sync/transactions?${params}`;
+      console.log('UPI Transactions URL:', url);
+      console.log('UPI Status Filter Value:', upiStatusFilter);
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch UPI transactions');
+      }
+      return response.json();
+    }
   });
   
   const upiTransactions = (upiTransactionsData as any)?.transactions || [];

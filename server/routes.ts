@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import path from "path";
-import { setupAuth, isAuthenticated } from "./auth";
+import { setupAuth, isAuthenticated, attachAccessControl } from "./auth";
 import { initializeRazorpay, createOrder, verifyPayment } from "./razorpay";
 import { storage } from "./storage";
 import { insertDispensingLogSchema } from "@shared/schema";

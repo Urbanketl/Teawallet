@@ -78,6 +78,50 @@ export function requireSuperAdmin(req: any, res: any, next: any) {
   res.status(403).json({ message: "Super admin access required" });
 }
 
+// Access control helper functions
+export async function getAccessibleBusinessUnitIds(userId: string): Promise<string[]> {
+  try {
+    const user = await storage.getUser(userId);
+    
+    // Super admins have access to all business units
+    if (user?.isSuperAdmin) {
+      const allBusinessUnits = await storage.getAllBusinessUnits();
+      return allBusinessUnits.map(unit => unit.id);
+    }
+    
+    // Regular admins only have access to their assigned business units
+    const userBusinessUnits = await storage.getUserBusinessUnits(userId);
+    return userBusinessUnits.map(unit => unit.id);
+  } catch (error) {
+    console.error('Error getting accessible business unit IDs:', error);
+    return [];
+  }
+}
+
+// Middleware to attach accessible business unit IDs to requests
+export async function attachAccessControl(req: any, res: any, next: any) {
+  if (req.user) {
+    try {
+      const accessibleBusinessUnitIds = await getAccessibleBusinessUnitIds(req.user.id);
+      req.accessibleBusinessUnitIds = accessibleBusinessUnitIds;
+      req.isSuperAdmin = req.user.isSuperAdmin || false;
+    } catch (error) {
+      console.error('Error attaching access control:', error);
+      req.accessibleBusinessUnitIds = [];
+      req.isSuperAdmin = false;
+    }
+  }
+  next();
+}
+
+// Helper to validate business unit access
+export function validateBusinessUnitAccess(req: any, businessUnitId: string): boolean {
+  if (req.isSuperAdmin) {
+    return true;
+  }
+  return req.accessibleBusinessUnitIds?.includes(businessUnitId) || false;
+}
+
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "urban-ketl-secret-key-dev",

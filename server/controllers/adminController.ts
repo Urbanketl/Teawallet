@@ -458,7 +458,23 @@ export async function assignRfidCard(req: any, res: Response) {
 
 export async function getBusinessUnits(req: any, res: Response) {
   try {
-    const businessUnits = await storage.getAllBusinessUnits();
+    let businessUnits: any[] = [];
+    
+    if (req.isSuperAdmin) {
+      // Super admins see all business units
+      businessUnits = await storage.getAllBusinessUnits();
+    } else {
+      // Business unit admins only see their assigned business units
+      if (req.accessibleBusinessUnitIds && req.accessibleBusinessUnitIds.length > 0) {
+        const allBusinessUnits = await storage.getAllBusinessUnits();
+        businessUnits = allBusinessUnits.filter(unit => 
+          req.accessibleBusinessUnitIds.includes(unit.id)
+        );
+      } else {
+        businessUnits = []; // No accessible business units
+      }
+    }
+
     res.json(businessUnits);
   } catch (error) {
     console.error('Error fetching business units:', error);

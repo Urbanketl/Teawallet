@@ -39,7 +39,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/auth', authRoutes);
   // Note: /api/transactions is now handled by corporateRoutes with business unit filtering
   app.use('/api/support', supportRoutes);
-  app.use('/api/analytics', analyticsRoutes);
+  // Add access control to analytics routes
+  app.use('/api/analytics', isAuthenticated, attachAccessControl, analyticsRoutes);
   
   // Register B2B Corporate routes
   registerCorporateRoutes(app);
@@ -59,7 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/admin/users/:userId/admin-status', requireAuth, requireAdmin, adminController.updateUserAdminStatus);
   app.get('/api/admin/stats', requireAuth, requireAdmin, adminController.getDashboardStats);
   app.get('/api/admin/business-unit-balances', requireAuth, requireAdmin, adminController.getBusinessUnitBalances);
-  app.get('/api/admin/rfid/cards', requireAuth, requireAdmin, async (req: any, res) => {
+  app.get('/api/admin/rfid/cards', requireAuth, requireAdmin, attachAccessControl, async (req: any, res) => {
     try {
       const page = parseInt(req.query.page as string);
       const limit = parseInt(req.query.limit as string) || 20;
@@ -75,15 +76,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (paginated && page && page > 0) {
         // Paginated response with filters
+        // SECURITY: Validate businessUnitId is within user's accessible business units
+        let validatedBusinessUnitId = businessUnitId;
+        if (businessUnitId && !req.isSuperAdmin) {
+          if (!req.accessibleBusinessUnitIds || !req.accessibleBusinessUnitIds.includes(businessUnitId)) {
+            return res.status(403).json({ message: "Access denied to this business unit" });
+          }
+        }
+        // For non-super admins, if no specific businessUnitId is requested, limit to their accessible business units
+        if (!req.isSuperAdmin && !validatedBusinessUnitId) {
+          // We'll need to modify the storage call to handle multiple business unit filtering
+          validatedBusinessUnitId = undefined; // Will be handled in the storage layer filtering
+        }
+
         const result = await storage.getAllRfidCardsPaginatedWithFilters({
           page,
           limit,
           search,
           status,
           assignment,
-          businessUnitId,
+          businessUnitId: validatedBusinessUnitId,
           sortBy,
-          sortOrder
+          sortOrder,
+          accessibleBusinessUnitIds: req.isSuperAdmin ? undefined : req.accessibleBusinessUnitIds
         });
         res.json(result);
       } else {
@@ -103,7 +118,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // NEW: Single RFID Card Creation (Platform Admin Only)
   app.post('/api/admin/rfid/cards/create', requireAuth, requireAdmin, adminController.createRfidCard);
   app.post('/api/admin/rfid/cards/assign', requireAuth, requireAdmin, adminController.assignRfidCard);
-  app.get('/api/admin/business-units', requireAuth, requireAdmin, adminController.getBusinessUnits);
+  app.get('/api/admin/business-units', requireAuth, requireAdmin, attachAccessControl, adminController.getBusinessUnits);
   
   // Admin support routes
   app.get('/api/admin/support/tickets', requireAuth, requireAdmin, adminController.getSupportTicketsPaginated);
@@ -992,7 +1007,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Admin routes
 
-  app.get('/api/admin/machines', isAuthenticated, async (req: any, res) => {
+  app.get('/api/admin/machines', isAuthenticated, attachAccessControl, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
@@ -1001,7 +1016,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      const machines = await storage.getAllTeaMachines();
+      let machines;
+      if (req.isSuperAdmin) {
+        // Super admins see all machines
+        machines = await storage.getAllTeaMachines();
+      } else {
+        // Business unit admins only see machines from their assigned business units
+        if (req.accessibleBusinessUnitIds && req.accessibleBusinessUnitIds.length > 0) {
+          const allMachines = await storage.getAllTeaMachines();
+          machines = allMachines.filter(machine => 
+            machine.businessUnitId && req.accessibleBusinessUnitIds.includes(machine.businessUnitId)
+          );
+        } else {
+          machines = []; // No accessible business units
+        }
+      }
+
       res.json(machines);
     } catch (error) {
       console.error("Error fetching machines:", error);
@@ -1442,7 +1472,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Business Units routes
-  app.get('/api/admin/business-units', isAuthenticated, async (req: any, res) => {
+  app.get('/api/admin/business-units', isAuthenticated, attachAccessControl, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
@@ -1961,7 +1991,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // UPI sync logs and data (Admin only)
   app.get('/api/admin/upi-sync/logs', isAuthenticated, requireAdminAuth, upiSyncController.getSyncLogs.bind(upiSyncController));
-  app.get('/api/admin/upi-sync/transactions', isAuthenticated, requireAdminAuth, upiSyncController.getUpiTransactions.bind(upiSyncController));
+  app.get('/api/admin/upi-sync/transactions', isAuthenticated, requireAdminAuth, attachAccessControl, upiSyncController.getUpiTransactions.bind(upiSyncController));
   app.get('/api/admin/upi-sync/analytics', isAuthenticated, requireAdminAuth, upiSyncController.getSyncAnalytics.bind(upiSyncController));
   
   // UPI export endpoints (Admin only)

@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import { upiSyncService } from '../services/upiSyncService';
 import { db } from '../db';
-import { upiSyncLogs, dispensingLogs } from '@shared/schema';
-import { eq, and, gte, lte, desc, sql } from 'drizzle-orm';
+import { upiSyncLogs, dispensingLogs, teaMachines } from '@shared/schema';
+import { eq, and, gte, lte, desc, sql, inArray } from 'drizzle-orm';
 import { createObjectCsvWriter } from 'csv-writer';
 import * as fs from 'fs';
 import PDFDocument from 'pdfkit';
@@ -199,7 +199,7 @@ export class UpiSyncController {
   }
 
   // Get UPI transactions with optional filtering and pagination
-  async getUpiTransactions(req: Request, res: Response) {
+  async getUpiTransactions(req: any, res: Response) {
     try {
       const { 
         machineId, 
@@ -231,11 +231,31 @@ export class UpiSyncController {
       if (endDate) {
         conditions.push(lte(dispensingLogs.externalCreatedAt, new Date(endDate as string)));
       }
+
+      // Add business unit filtering for non-super admins
+      if (!req.isSuperAdmin && req.accessibleBusinessUnitIds) {
+        if (req.accessibleBusinessUnitIds.length === 0) {
+          // User has no accessible business units, return empty result
+          return res.json({
+            transactions: [],
+            pagination: {
+              page: 1,
+              limit: parseInt(limit as string),
+              total: 0,
+              totalPages: 0,
+              hasNext: false,
+              hasPrev: false
+            }
+          });
+        }
+        conditions.push(inArray(teaMachines.businessUnitId, req.accessibleBusinessUnitIds));
+      }
       
-      // Get total count for pagination
+      // Get total count for pagination with business unit filtering
       const [countResult] = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(dispensingLogs)
+        .innerJoin(teaMachines, eq(dispensingLogs.machineId, teaMachines.id))
         .where(and(...conditions));
       
       const totalCount = countResult.count || 0;
@@ -244,13 +264,33 @@ export class UpiSyncController {
       const offsetNum = (pageNum - 1) * limitNum;
       const totalPages = Math.ceil(totalCount / limitNum);
       
-      const transactions = await db
-        .select()
+      const transactionResults = await db
+        .select({
+          id: dispensingLogs.id,
+          businessUnitId: dispensingLogs.businessUnitId,
+          rfidCardId: dispensingLogs.rfidCardId,
+          machineId: dispensingLogs.machineId,
+          teaType: dispensingLogs.teaType,
+          amount: dispensingLogs.amount,
+          cups: dispensingLogs.cups,
+          success: dispensingLogs.success,
+          paymentType: dispensingLogs.paymentType,
+          upiVpa: dispensingLogs.upiVpa,
+          externalTransactionId: dispensingLogs.externalTransactionId,
+          createdAt: dispensingLogs.createdAt,
+          externalCreatedAt: dispensingLogs.externalCreatedAt,
+          // Include machine name for reference
+          machineName: teaMachines.name
+        })
         .from(dispensingLogs)
+        .innerJoin(teaMachines, eq(dispensingLogs.machineId, teaMachines.id))
         .where(and(...conditions))
         .orderBy(desc(dispensingLogs.externalCreatedAt))
         .limit(limitNum)
         .offset(offsetNum);
+        
+      // Transform to match expected frontend structure
+      const transactions = transactionResults;
       
       res.json({
         transactions,

@@ -153,6 +153,7 @@ export interface IStorage {
     businessUnitId?: string;
     sortBy?: string;
     sortOrder?: string;
+    accessibleBusinessUnitIds?: string[];
   }): Promise<{ cards: (RfidCard & { businessUnit: BusinessUnit })[], total: number }>;
   
   // NEW: Centralized RFID Card Creation & Assignment (Platform Admin Only)
@@ -332,7 +333,22 @@ export class DatabaseStorage implements IStorage {
 
   // User operations (mandatory for Replit Auth)
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
+    const [user] = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        mobileNumber: users.mobileNumber,
+        isAdmin: users.isAdmin,
+        isSuperAdmin: users.isSuperAdmin,
+        requiresPasswordReset: users.requiresPasswordReset,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt
+        // NOTE: password field explicitly excluded for security
+      })
+      .from(users)
+      .where(eq(users.id, id));
     return user;
   }
 
@@ -347,8 +363,20 @@ export class DatabaseStorage implements IStorage {
           updatedAt: new Date(),
         },
       })
-      .returning();
-    return user;
+      .returning({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        mobileNumber: users.mobileNumber,
+        isAdmin: users.isAdmin,
+        isSuperAdmin: users.isSuperAdmin,
+        requiresPasswordReset: users.requiresPasswordReset,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt
+        // NOTE: password field explicitly excluded for security
+      });
+    return user as User;
   }
 
   async updateUserProfile(id: string, profileData: any): Promise<User> {
@@ -361,13 +389,43 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date(),
       })
       .where(eq(users.id, id))
-      .returning();
-    return user;
+      .returning({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        mobileNumber: users.mobileNumber,
+        isAdmin: users.isAdmin,
+        isSuperAdmin: users.isSuperAdmin,
+        requiresPasswordReset: users.requiresPasswordReset,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt
+        // NOTE: password field explicitly excluded for security
+      });
+    return user as User;
   }
 
   // Password management methods
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
+    const [user] = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        mobileNumber: users.mobileNumber,
+        isAdmin: users.isAdmin,
+        isSuperAdmin: users.isSuperAdmin,
+        requiresPasswordReset: users.requiresPasswordReset,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+        // Include password ONLY for authentication purposes
+        password: users.password,
+        passwordResetToken: users.passwordResetToken,
+        passwordResetExpires: users.passwordResetExpires
+      })
+      .from(users)
+      .where(eq(users.email, email));
     return user;
   }
 
@@ -395,7 +453,22 @@ export class DatabaseStorage implements IStorage {
   async getUserByResetToken(token: string): Promise<User | undefined> {
     const now = new Date();
     const [user] = await db
-      .select()
+      .select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        mobileNumber: users.mobileNumber,
+        isAdmin: users.isAdmin,
+        isSuperAdmin: users.isSuperAdmin,
+        requiresPasswordReset: users.requiresPasswordReset,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+        // Include password fields ONLY for password reset purposes  
+        password: users.password,
+        passwordResetToken: users.passwordResetToken,
+        passwordResetExpires: users.passwordResetExpires
+      })
       .from(users)
       .where(
         and(
@@ -772,8 +845,9 @@ export class DatabaseStorage implements IStorage {
     businessUnitId?: string;
     sortBy?: string;
     sortOrder?: string;
+    accessibleBusinessUnitIds?: string[];
   }): Promise<{ cards: (RfidCard & { businessUnit: BusinessUnit })[], total: number }> {
-    const { page, limit, search, status, assignment, businessUnitId, sortBy = 'createdAt', sortOrder = 'desc' } = params;
+    const { page, limit, search, status, assignment, businessUnitId, sortBy = 'createdAt', sortOrder = 'desc', accessibleBusinessUnitIds } = params;
     const offset = (page - 1) * limit;
     
     // Build where conditions
@@ -806,6 +880,9 @@ export class DatabaseStorage implements IStorage {
     // Business unit filter
     if (businessUnitId && businessUnitId !== 'all') {
       whereConditions.push(eq(rfidCards.businessUnitId, businessUnitId));
+    } else if (accessibleBusinessUnitIds && accessibleBusinessUnitIds.length > 0) {
+      // For non-super admins without specific businessUnitId, filter by accessible business units
+      whereConditions.push(inArray(rfidCards.businessUnitId, accessibleBusinessUnitIds));
     }
     
     const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
@@ -1889,10 +1966,24 @@ export class DatabaseStorage implements IStorage {
 
   // Admin operations
   async getAllUsers(): Promise<User[]> {
-    return await db
-      .select()
+    const usersResult = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        mobileNumber: users.mobileNumber,
+        isAdmin: users.isAdmin,
+        isSuperAdmin: users.isSuperAdmin,
+        requiresPasswordReset: users.requiresPasswordReset,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt
+        // NOTE: password field explicitly excluded for security
+      })
       .from(users)
       .orderBy(desc(users.createdAt));
+    
+    return usersResult as User[];
   }
 
   // Get all users with their business unit assignments for pseudo login
@@ -1959,7 +2050,19 @@ export class DatabaseStorage implements IStorage {
       
     if (search) {
       usersResult = await db
-        .select()
+        .select({
+          id: users.id,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          mobileNumber: users.mobileNumber,
+          isAdmin: users.isAdmin,
+          isSuperAdmin: users.isSuperAdmin,
+          requiresPasswordReset: users.requiresPasswordReset,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt
+          // NOTE: password field explicitly excluded for security
+        })
         .from(users)
         .where(
           or(
@@ -1973,7 +2076,19 @@ export class DatabaseStorage implements IStorage {
         .offset(offset);
     } else {
       usersResult = await db
-        .select()
+        .select({
+          id: users.id,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          mobileNumber: users.mobileNumber,
+          isAdmin: users.isAdmin,
+          isSuperAdmin: users.isSuperAdmin,
+          requiresPasswordReset: users.requiresPasswordReset,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt
+          // NOTE: password field explicitly excluded for security
+        })
         .from(users)
         .orderBy(desc(users.createdAt))
         .limit(limit)
@@ -1981,7 +2096,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     return {
-      users: usersResult,
+      users: usersResult as User[],
       total: countResult.count || 0
     };
   }
@@ -2048,14 +2163,26 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date(),
       })
       .where(eq(users.id, userId))
-      .returning();
+      .returning({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        mobileNumber: users.mobileNumber,
+        isAdmin: users.isAdmin,
+        isSuperAdmin: users.isSuperAdmin,
+        requiresPasswordReset: users.requiresPasswordReset,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt
+        // NOTE: password field explicitly excluded for security
+      });
     
     if (!user) {
       throw new Error('User not found');
     }
     
     console.log(`Admin status updated: User ${userId} admin=${isAdmin} by ${updatedBy}`);
-    return user;
+    return user as User;
   }
 
   // Support operations
@@ -2074,14 +2201,55 @@ export class DatabaseStorage implements IStorage {
 
   async getAllSupportTickets(): Promise<(SupportTicket & { user: User })[]> {
     const ticketsWithUsers = await db
-      .select()
+      .select({
+        // Support ticket fields
+        id: supportTickets.id,
+        userId: supportTickets.userId,
+        subject: supportTickets.subject,
+        description: supportTickets.description,
+        category: supportTickets.category,
+        priority: supportTickets.priority,
+        status: supportTickets.status,
+        assignedTo: supportTickets.assignedTo,
+        createdAt: supportTickets.createdAt,
+        updatedAt: supportTickets.updatedAt,
+        // Safe user fields (NO password or sensitive fields)
+        user_id: users.id,
+        user_firstName: users.firstName,
+        user_lastName: users.lastName,
+        user_email: users.email,
+        user_mobileNumber: users.mobileNumber,
+        user_isAdmin: users.isAdmin,
+        user_isSuperAdmin: users.isSuperAdmin,
+        user_createdAt: users.createdAt,
+        user_updatedAt: users.updatedAt
+      })
       .from(supportTickets)
       .leftJoin(users, eq(supportTickets.userId, users.id))
       .orderBy(desc(supportTickets.createdAt));
 
-    return ticketsWithUsers.map(({ support_tickets, users: user }) => ({
-      ...support_tickets,
-      user: user || { id: '', firstName: 'Unknown', lastName: 'User', email: '' }
+    return ticketsWithUsers.map((row) => ({
+      id: row.id,
+      userId: row.userId,
+      subject: row.subject,
+      description: row.description,
+      category: row.category,
+      priority: row.priority,
+      status: row.status,
+      assignedTo: row.assignedTo,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      user: row.user_id ? {
+        id: row.user_id,
+        firstName: row.user_firstName || '',
+        lastName: row.user_lastName || '',
+        email: row.user_email || '',
+        mobileNumber: row.user_mobileNumber || '',
+        isAdmin: row.user_isAdmin || false,
+        isSuperAdmin: row.user_isSuperAdmin || false,
+        createdAt: row.user_createdAt,
+        updatedAt: row.user_updatedAt
+      } : { id: '', firstName: 'Unknown', lastName: 'User', email: '' }
     })) as any;
   }
 
@@ -2169,9 +2337,31 @@ export class DatabaseStorage implements IStorage {
       }
     }
     
-    // Get paginated tickets with users
+    // Get paginated tickets with users  
     const ticketsWithUsersQuery = db
-      .select()
+      .select({
+        // Support ticket fields
+        id: supportTickets.id,
+        userId: supportTickets.userId,
+        subject: supportTickets.subject,
+        description: supportTickets.description,
+        category: supportTickets.category,
+        priority: supportTickets.priority,
+        status: supportTickets.status,
+        assignedTo: supportTickets.assignedTo,
+        createdAt: supportTickets.createdAt,
+        updatedAt: supportTickets.updatedAt,
+        // Safe user fields (NO password or sensitive fields)
+        user_id: users.id,
+        user_firstName: users.firstName,
+        user_lastName: users.lastName,
+        user_email: users.email,
+        user_mobileNumber: users.mobileNumber,
+        user_isAdmin: users.isAdmin,
+        user_isSuperAdmin: users.isSuperAdmin,
+        user_createdAt: users.createdAt,
+        user_updatedAt: users.updatedAt
+      })
       .from(supportTickets)
       .leftJoin(users, eq(supportTickets.userId, users.id))
       .where(whereClause);
@@ -2187,9 +2377,28 @@ export class DatabaseStorage implements IStorage {
       .limit(limit)
       .offset(offset);
 
-    const tickets = ticketsWithUsers.map(({ support_tickets, users: user }) => ({
-      ...support_tickets,
-      user: user || { id: '', firstName: 'Unknown', lastName: 'User', email: '', walletBalance: '0', isAdmin: false, profileImageUrl: null, createdAt: null, updatedAt: null }
+    const tickets = ticketsWithUsers.map((row) => ({
+      id: row.id,
+      userId: row.userId,
+      subject: row.subject,
+      description: row.description,
+      category: row.category,
+      priority: row.priority,
+      status: row.status,
+      assignedTo: row.assignedTo,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      user: row.user_id ? {
+        id: row.user_id,
+        firstName: row.user_firstName || '',
+        lastName: row.user_lastName || '',
+        email: row.user_email || '',
+        mobileNumber: row.user_mobileNumber || '',
+        isAdmin: row.user_isAdmin || false,
+        isSuperAdmin: row.user_isSuperAdmin || false,
+        createdAt: row.user_createdAt,
+        updatedAt: row.user_updatedAt
+      } : { id: '', firstName: 'Unknown', lastName: 'User', email: '' }
     })) as (SupportTicket & { user: User })[];
 
     // Debug: Log results summary

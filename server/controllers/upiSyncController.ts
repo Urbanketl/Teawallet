@@ -255,7 +255,7 @@ export class UpiSyncController {
       const [countResult] = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(dispensingLogs)
-        .innerJoin(teaMachines, eq(dispensingLogs.machineId, teaMachines.id))
+        .leftJoin(teaMachines, eq(dispensingLogs.machineId, teaMachines.id))
         .where(and(...conditions));
       
       const totalCount = countResult.count || 0;
@@ -279,11 +279,11 @@ export class UpiSyncController {
           externalTransactionId: dispensingLogs.externalTransactionId,
           createdAt: dispensingLogs.createdAt,
           externalCreatedAt: dispensingLogs.externalCreatedAt,
-          // Include machine name for reference
-          machineName: teaMachines.name
+          // Include machine name with fallback
+          machineName: sql<string>`COALESCE(${teaMachines.name}, ${dispensingLogs.machineId})`
         })
         .from(dispensingLogs)
-        .innerJoin(teaMachines, eq(dispensingLogs.machineId, teaMachines.id))
+        .leftJoin(teaMachines, eq(dispensingLogs.machineId, teaMachines.id))
         .where(and(...conditions))
         .orderBy(desc(dispensingLogs.externalCreatedAt))
         .limit(limitNum)

@@ -1,4 +1,4 @@
-import twilio from 'twilio';
+import axios from 'axios';
 
 export interface BalanceAlertData {
   businessUnit: any;
@@ -16,8 +16,10 @@ export interface User {
 }
 
 export class WhatsAppService {
-  private client: any = null;
   private isConfigured: boolean = false;
+  private accessToken: string = '';
+  private phoneNumberId: string = '';
+  private apiVersion: string = 'v20.0';
 
   constructor() {
     this.initializeClient();
@@ -25,19 +27,20 @@ export class WhatsAppService {
 
   private initializeClient() {
     try {
-      const accountSid = process.env.TWILIO_ACCOUNT_SID;
-      const authToken = process.env.TWILIO_AUTH_TOKEN;
+      const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+      const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
       
-      if (accountSid && authToken) {
-        this.client = twilio(accountSid, authToken);
+      if (accessToken && phoneNumberId) {
+        this.accessToken = accessToken;
+        this.phoneNumberId = phoneNumberId;
         this.isConfigured = true;
-        console.log('Twilio WhatsApp service initialized successfully');
+        console.log('MyOperator WhatsApp service initialized successfully');
       } else {
-        console.log('Twilio credentials not configured - WhatsApp service disabled');
+        console.log('MyOperator WhatsApp credentials not configured - WhatsApp service disabled');
         this.isConfigured = false;
       }
     } catch (error) {
-      console.error('Failed to initialize Twilio WhatsApp service:', error);
+      console.error('Failed to initialize MyOperator WhatsApp service:', error);
       this.isConfigured = false;
     }
   }
@@ -56,11 +59,7 @@ export class WhatsAppService {
   async sendBalanceAlert(recipients: User[], data: BalanceAlertData): Promise<{ success: boolean; messageIds?: string[]; error?: string }> {
     try {
       if (!this.isConfigured) {
-        throw new Error('WhatsApp service not configured - Twilio credentials missing');
-      }
-
-      if (!process.env.TWILIO_WHATSAPP_NUMBER) {
-        throw new Error('Twilio WhatsApp number not configured');
+        throw new Error('WhatsApp service not configured - MyOperator credentials missing');
       }
 
       const message = this.generateBalanceAlertMessage(data);
@@ -70,20 +69,16 @@ export class WhatsAppService {
         throw new Error('No valid mobile numbers found for recipients');
       }
 
-      // Send WhatsApp message to each recipient
+      // Send WhatsApp message to each recipient using WhatsApp Cloud API
       const sendPromises = validRecipients.map(async (user) => {
         try {
-          const result = await this.client.messages.create({
-            body: message,
-            from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
-            to: `whatsapp:${user.mobileNumber}`
-          });
+          const result = await this.sendWhatsAppMessage(user.mobileNumber, message);
           
-          console.log(`Balance alert WhatsApp sent to ${user.mobileNumber}:`, result.sid);
+          console.log(`Balance alert WhatsApp sent to ${user.mobileNumber}:`, result.messages[0].id);
           
           return {
             userId: user.id,
-            messageId: result.sid,
+            messageId: result.messages[0].id,
             status: 'sent',
             to: user.mobileNumber
           };
@@ -120,27 +115,39 @@ export class WhatsAppService {
     }
   }
 
+  private async sendWhatsAppMessage(phoneNumber: string, message: string): Promise<any> {
+    const url = `https://graph.facebook.com/${this.apiVersion}/${this.phoneNumberId}/messages`;
+    
+    const payload = {
+      messaging_product: 'whatsapp',
+      to: phoneNumber,
+      text: { body: message }
+    };
+
+    const response = await axios.post(url, payload, {
+      headers: {
+        'Authorization': `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    return response.data;
+  }
+
   async sendTestWhatsApp(phoneNumber: string, message: string = 'Test message from UrbanKetl WhatsApp service'): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
       if (!this.isConfigured) {
         throw new Error('WhatsApp service not configured');
       }
 
-      if (!process.env.TWILIO_WHATSAPP_NUMBER) {
-        throw new Error('Twilio WhatsApp number not configured');
-      }
+      const result = await this.sendWhatsAppMessage(phoneNumber, message);
+      const messageId = result.messages[0].id;
 
-      const result = await this.client.messages.create({
-        body: message,
-        from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
-        to: `whatsapp:${phoneNumber}`
-      });
-
-      console.log(`Test WhatsApp sent to ${phoneNumber}:`, result.sid);
+      console.log(`Test WhatsApp sent to ${phoneNumber}:`, messageId);
       
       return {
         success: true,
-        messageId: result.sid
+        messageId: messageId
       };
     } catch (error) {
       console.error('Failed to send test WhatsApp:', error);
@@ -158,9 +165,16 @@ export class WhatsAppService {
         return false;
       }
 
-      // Test by validating the client configuration
-      const account = await this.client.api.accounts(process.env.TWILIO_ACCOUNT_SID).fetch();
-      console.log(`WhatsApp service connection verified. Account: ${account.friendlyName}`);
+      // Test by making a simple API call to verify credentials
+      const url = `https://graph.facebook.com/${this.apiVersion}/${this.phoneNumberId}`;
+      
+      const response = await axios.get(url, {
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`
+        }
+      });
+
+      console.log(`WhatsApp service connection verified. Phone: ${response.data.display_phone_number}`);
       return true;
     } catch (error) {
       console.error('WhatsApp service connection test failed:', error);

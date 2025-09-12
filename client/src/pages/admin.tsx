@@ -369,9 +369,15 @@ function AdminReports() {
   };
 
   // Updated export handlers to show preview first
-  const handleUpiExportExcel = () => showUpiExportPreview('excel');
+  const handleUpiExportExcel = () => {
+    console.log('Excel export button clicked');
+    showUpiExportPreview('excel');
+  };
 
-  const handleUpiExportPdf = () => showUpiExportPreview('pdf');
+  const handleUpiExportPdf = () => {
+    console.log('PDF export button clicked');
+    showUpiExportPreview('pdf');
+  };
 
   // Actual export execution functions
   const executeUpiExport = async (type: 'excel' | 'pdf') => {
@@ -713,6 +719,7 @@ function AdminReports() {
                   variant="outline"
                   size="sm"
                   className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                  data-testid="button-export-upi-excel"
                 >
                   <FileSpreadsheet className="w-4 h-4 mr-2" />
                   Export Excel
@@ -722,6 +729,7 @@ function AdminReports() {
                   variant="outline"
                   size="sm"
                   className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+                  data-testid="button-export-upi-pdf"
                 >
                   <FileText className="w-4 h-4 mr-2" />
                   Export PDF

@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 import { storage } from '../storage';
-import { emailService, BalanceAlertData } from './emailService';
+import { smsService, BalanceAlertData } from './smsService';
 
 export class NotificationScheduler {
   private isEnabled: boolean = true;
@@ -95,12 +95,12 @@ export class NotificationScheduler {
         return;
       }
 
-      // Check if we already sent critical alert today
-      const lastSent = await storage.getLastEmailLog(businessUnit.id, 'critical_balance');
+      // Check if we already sent critical SMS alert today
+      const lastSent = await storage.getLastEmailLog(businessUnit.id, 'critical_balance_sms');
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      if (lastSent && new Date(lastSent.sentAt) >= today) {
+      if (lastSent && lastSent.sentAt && new Date(lastSent.sentAt) >= today) {
         console.log(`Critical alert already sent today for ${businessUnit.name}`);
         return;
       }
@@ -112,23 +112,23 @@ export class NotificationScheduler {
         alertType: 'critical'
       };
 
-      const result = await emailService.sendBalanceAlert(recipients, alertData);
+      const result = await smsService.sendBalanceAlert(recipients, alertData);
       
       if (result.success) {
-        console.log(`Critical balance alert sent for ${businessUnit.name}`);
+        console.log(`Critical balance SMS alert sent for ${businessUnit.name}`);
         
-        // Log the email for each recipient
+        // Log the SMS for each recipient
         for (const recipient of recipients) {
           await storage.logEmailSent({
             userId: recipient.id,
             businessUnitId: businessUnit.id,
-            emailType: 'critical_balance',
-            subject: `CRITICAL Balance Alert: ${businessUnit.name} - ₹${alertData.currentBalance}`,
+            emailType: 'critical_balance_sms',
+            subject: `CRITICAL SMS Alert: ${businessUnit.name} - ₹${alertData.currentBalance}`,
             deliveryStatus: 'sent'
           });
         }
       } else {
-        console.error(`Failed to send critical balance alert for ${businessUnit.name}:`, result.error);
+        console.error(`Failed to send critical balance SMS alert for ${businessUnit.name}:`, result.error);
       }
     } catch (error) {
       console.error(`Error sending critical balance alert for ${businessUnit.name}:`, error);
@@ -152,23 +152,23 @@ export class NotificationScheduler {
         alertType: 'low'
       };
 
-      const result = await emailService.sendBalanceAlert(recipients, alertData);
+      const result = await smsService.sendBalanceAlert(recipients, alertData);
       
       if (result.success) {
-        console.log(`Low balance alert sent for ${businessUnit.name}`);
+        console.log(`Low balance SMS alert sent for ${businessUnit.name}`);
         
-        // Log the email for each recipient
+        // Log the SMS for each recipient
         for (const recipient of recipients) {
           await storage.logEmailSent({
             userId: recipient.id,
             businessUnitId: businessUnit.id,
-            emailType: 'low_balance',
-            subject: `LOW Balance Alert: ${businessUnit.name} - ₹${alertData.currentBalance}`,
+            emailType: 'low_balance_sms',
+            subject: `LOW SMS Alert: ${businessUnit.name} - ₹${alertData.currentBalance}`,
             deliveryStatus: 'sent'
           });
         }
       } else {
-        console.error(`Failed to send low balance alert for ${businessUnit.name}:`, result.error);
+        console.error(`Failed to send low balance SMS alert for ${businessUnit.name}:`, result.error);
       }
     } catch (error) {
       console.error(`Error sending low balance alert for ${businessUnit.name}:`, error);
@@ -194,11 +194,13 @@ export class NotificationScheduler {
         recipients.push(...platformAdmins);
       }
       
-      // Filter users who have email notifications enabled
+      // Filter users who have SMS notifications enabled and have mobile numbers
       const enabledRecipients = [];
       for (const user of recipients) {
         const preferences = await storage.getNotificationPreferences(user.id);
-        if (preferences?.emailEnabled && preferences?.balanceAlerts) {
+        // For now, use email preferences as SMS preferences aren't implemented in schema yet
+        const smsEnabled = preferences?.emailEnabled;
+        if (smsEnabled && preferences?.balanceAlerts && user.mobileNumber && user.mobileNumber.trim() !== '') {
           enabledRecipients.push(user);
         }
       }
@@ -212,15 +214,15 @@ export class NotificationScheduler {
 
   private async shouldSendLowBalanceAlert(businessUnitId: string): Promise<boolean> {
     try {
-      // Check if we sent low balance alert in last 2 days
-      const lastSent = await storage.getLastEmailLog(businessUnitId, 'low_balance');
+      // Check if we sent low balance SMS alert in last 2 days
+      const lastSent = await storage.getLastEmailLog(businessUnitId, 'low_balance_sms');
       
       if (!lastSent) return true;
       
       const twoDaysAgo = new Date();
       twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
       
-      return new Date(lastSent.sentAt) < twoDaysAgo;
+      return lastSent.sentAt ? new Date(lastSent.sentAt) < twoDaysAgo : true;
     } catch (error) {
       console.error('Error checking if should send low balance alert:', error);
       return false;

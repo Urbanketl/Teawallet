@@ -913,8 +913,8 @@ function AdminReports() {
         </Card>
       )}
 
-      {/* Excel Export Confirmation Dialog - TEMPORARILY DISABLED FOR TESTING */}
-      {false && activeReportTab === 'rfid' && showExportConfirmation && summaryData && (
+      {/* Excel Export Confirmation Dialog */}
+      {activeReportTab === 'rfid' && showExportConfirmation && summaryData && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold mb-4">Confirm Excel Export</h3>
@@ -991,8 +991,8 @@ function AdminReports() {
         </div>
       )}
 
-      {/* UPI Export Confirmation Dialog - TEMPORARILY DISABLED FOR TESTING */}
-      {false && activeReportTab === 'upi' && (
+      {/* UPI Export Confirmation Dialog - Only render when UPI tab is active */}
+      {activeReportTab === 'upi' && (
         <Dialog open={showExportConfirm} onOpenChange={setShowExportConfirm}>
         <DialogContent>
           <DialogHeader>

@@ -973,6 +973,77 @@ function AdminReports() {
           </div>
         </div>
       )}
+
+      {/* UPI Export Confirmation Dialog */}
+      <Dialog open={showExportConfirm} onOpenChange={setShowExportConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Export Preview</DialogTitle>
+            <DialogDescription>
+              Review the data that will be exported before proceeding
+            </DialogDescription>
+          </DialogHeader>
+          
+          {exportPreviewData && (
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-semibold text-blue-900 mb-2">Export Summary</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-blue-700">Export Type:</span>
+                    <span className="font-medium text-blue-900">{pendingExportType?.toUpperCase()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-700">Total Transactions:</span>
+                    <span className="font-medium text-blue-900">{exportPreviewData.totalTransactions}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-700">Date Range:</span>
+                    <span className="font-medium text-blue-900">{exportPreviewData.dateRange}</span>
+                  </div>
+                </div>
+              </div>
+              
+              {exportPreviewData.filters.length > 0 && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900 mb-2">Applied Filters</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {exportPreviewData.filters.map((filter: string, index: number) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {filter}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {exportPreviewData.totalTransactions === 0 && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <AlertCircle className="w-5 h-5 text-yellow-600 mr-2" />
+                    <span className="text-yellow-800 text-sm">
+                      No transactions found with the current filters. The export file will be empty.
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button variant="outline" onClick={cancelExport} data-testid="button-cancel-export">
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={() => pendingExportType && executeUpiExport(pendingExportType)}
+                  disabled={!pendingExportType}
+                  data-testid="button-confirm-export"
+                >
+                  Export {exportPreviewData.totalTransactions} Transactions
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -5748,76 +5819,6 @@ function SystemSettingsManagement() {
         </CardContent>
       </Card>
 
-      {/* UPI Export Confirmation Dialog */}
-      <Dialog open={showExportConfirm} onOpenChange={setShowExportConfirm}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Export Preview</DialogTitle>
-            <DialogDescription>
-              Review the data that will be exported before proceeding
-            </DialogDescription>
-          </DialogHeader>
-          
-          {exportPreviewData && (
-            <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-semibold text-blue-900 mb-2">Export Summary</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-blue-700">Export Type:</span>
-                    <span className="font-medium text-blue-900">{pendingExportType?.toUpperCase()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-blue-700">Total Transactions:</span>
-                    <span className="font-medium text-blue-900">{exportPreviewData.totalTransactions}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-blue-700">Date Range:</span>
-                    <span className="font-medium text-blue-900">{exportPreviewData.dateRange}</span>
-                  </div>
-                </div>
-              </div>
-              
-              {exportPreviewData.filters.length > 0 && (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-gray-900 mb-2">Applied Filters</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {exportPreviewData.filters.map((filter, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
-                        {filter}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {exportPreviewData.totalTransactions === 0 && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <div className="flex items-center">
-                    <AlertCircle className="w-5 h-5 text-yellow-600 mr-2" />
-                    <span className="text-yellow-800 text-sm">
-                      No transactions found with the current filters. The export file will be empty.
-                    </span>
-                  </div>
-                </div>
-              )}
-              
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button variant="outline" onClick={cancelExport} data-testid="button-cancel-export">
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={() => pendingExportType && executeUpiExport(pendingExportType)}
-                  disabled={!pendingExportType}
-                  data-testid="button-confirm-export"
-                >
-                  Export {exportPreviewData.totalTransactions} Transactions
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

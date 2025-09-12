@@ -4034,14 +4034,14 @@ export class DatabaseStorage implements IStorage {
     const query = db
       .select({
         machineId: dispensingLogs.machineId,
-        machineName: teaMachines.name,
+        machineName: sql<string>`COALESCE(${teaMachines.name}, ${dispensingLogs.machineId})`,
         totalAmount: sql<string>`COALESCE(SUM(${dispensingLogs.amount}), 0)::text`,
         txnCount: sql<number>`COUNT(*)::int`,
         successCount: sql<number>`SUM(CASE WHEN ${dispensingLogs.success} THEN 1 ELSE 0 END)::int`,
         cups: sql<number>`SUM(CASE WHEN ${dispensingLogs.success} THEN ${dispensingLogs.cups} ELSE 0 END)::int`
       })
       .from(dispensingLogs)
-      .innerJoin(teaMachines, eq(dispensingLogs.machineId, teaMachines.id))
+      .leftJoin(teaMachines, eq(dispensingLogs.machineId, teaMachines.id))
       .where(and(...whereConditions));
 
     const result = await query

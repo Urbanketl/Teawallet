@@ -84,6 +84,15 @@ function AdminReports() {
   const [upiStatusFilter, setUpiStatusFilter] = useState('');
   const [upiDateFrom, setUpiDateFrom] = useState('');
   const [upiDateTo, setUpiDateTo] = useState('');
+  
+  // Export confirmation dialog state
+  const [showExportConfirm, setShowExportConfirm] = useState(false);
+  const [pendingExportType, setPendingExportType] = useState<'excel' | 'pdf' | null>(null);
+  const [exportPreviewData, setExportPreviewData] = useState<{
+    totalTransactions: number;
+    dateRange: string;
+    filters: string[];
+  } | null>(null);
   const [activeReportTab, setActiveReportTab] = useState<'rfid' | 'upi'>('rfid');
 
   // Generate month options for last 12 months
@@ -302,7 +311,70 @@ function AdminReports() {
   };
   
   // UPI Export handlers
-  const handleUpiExportExcel = async () => {
+  // Helper function to get transaction count for preview
+  const getUpiTransactionCount = async (): Promise<number> => {
+    try {
+      const params = new URLSearchParams({
+        page: '1',
+        limit: '1', // Just get first page to get total count
+        ...(upiMachineFilter && { machineId: upiMachineFilter }),
+        ...(upiStatusFilter && { status: upiStatusFilter }),
+        ...(upiDateFrom && { startDate: upiDateFrom }),
+        ...(upiDateTo && { endDate: upiDateTo })
+      });
+      
+      const response = await fetch(`/api/admin/upi-sync/transactions?${params}`, {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) return 0;
+      
+      const data = await response.json();
+      return data.pagination?.total || 0;
+    } catch (error) {
+      console.error('Error getting transaction count:', error);
+      return 0;
+    }
+  };
+
+  // Show export preview dialog
+  const showUpiExportPreview = async (type: 'excel' | 'pdf') => {
+    const totalTransactions = await getUpiTransactionCount();
+    
+    // Build filter descriptions
+    const filters: string[] = [];
+    if (upiMachineFilter) filters.push(`Machine: ${upiMachineFilter}`);
+    if (upiStatusFilter) {
+      const statusLabel = upiStatusFilter === 'paid' ? 'Paid' : upiStatusFilter === 'failed' ? 'Failed' : upiStatusFilter;
+      filters.push(`Status: ${statusLabel}`);
+    }
+    
+    // Build date range description
+    let dateRange = 'All dates';
+    if (upiDateFrom && upiDateTo) {
+      dateRange = `${upiDateFrom} to ${upiDateTo}`;
+    } else if (upiDateFrom) {
+      dateRange = `From ${upiDateFrom}`;
+    } else if (upiDateTo) {
+      dateRange = `Until ${upiDateTo}`;
+    }
+    
+    setExportPreviewData({
+      totalTransactions,
+      dateRange,
+      filters
+    });
+    setPendingExportType(type);
+    setShowExportConfirm(true);
+  };
+
+  // Updated export handlers to show preview first
+  const handleUpiExportExcel = () => showUpiExportPreview('excel');
+
+  const handleUpiExportPdf = () => showUpiExportPreview('pdf');
+
+  // Actual export execution functions
+  const executeUpiExport = async (type: 'excel' | 'pdf') => {
     try {
       const params = new URLSearchParams({
         ...(upiMachineFilter && { machineId: upiMachineFilter }),
@@ -311,7 +383,10 @@ function AdminReports() {
         ...(upiDateTo && { endDate: upiDateTo })
       });
       
-      const response = await fetch(`/api/admin/upi-sync/export/excel?${params}`, {
+      const endpoint = type === 'excel' ? 'excel' : 'pdf';
+      const fileExtension = type === 'excel' ? 'xlsx' : 'pdf';
+      
+      const response = await fetch(`/api/admin/upi-sync/export/${endpoint}?${params}`, {
         credentials: 'include'
       });
       
@@ -322,15 +397,20 @@ function AdminReports() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `UPI-Transactions-${new Date().toISOString().split('T')[0]}.xlsx`;
+      a.download = `UPI-Transactions-${new Date().toISOString().split('T')[0]}.${fileExtension}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       
+      // Close dialog and reset state
+      setShowExportConfirm(false);
+      setPendingExportType(null);
+      setExportPreviewData(null);
+      
       toast({
         title: "Export Successful",
-        description: "UPI transactions exported to Excel file",
+        description: `UPI transactions exported to ${type.toUpperCase()} file`,
       });
     } catch (error) {
       toast({
@@ -340,44 +420,12 @@ function AdminReports() {
       });
     }
   };
-  
-  const handleUpiExportPdf = async () => {
-    try {
-      const params = new URLSearchParams({
-        ...(upiMachineFilter && { machineId: upiMachineFilter }),
-        ...(upiStatusFilter && { status: upiStatusFilter }),
-        ...(upiDateFrom && { startDate: upiDateFrom }),
-        ...(upiDateTo && { endDate: upiDateTo })
-      });
-      
-      const response = await fetch(`/api/admin/upi-sync/export/pdf?${params}`, {
-        credentials: 'include'
-      });
-      
-      if (!response.ok) throw new Error('Export failed');
-      
-      // Create blob and download
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `UPI-Transactions-${new Date().toISOString().split('T')[0]}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      toast({
-        title: "Export Successful",
-        description: "UPI transactions exported to PDF file",
-      });
-    } catch (error) {
-      toast({
-        title: "Export Failed",
-        description: "Failed to export UPI transactions",
-        variant: "destructive",
-      });
-    }
+
+  // Cancel export function
+  const cancelExport = () => {
+    setShowExportConfirm(false);
+    setPendingExportType(null);
+    setExportPreviewData(null);
   };
 
   return (
@@ -5699,6 +5747,77 @@ function SystemSettingsManagement() {
           </div>
         </CardContent>
       </Card>
+
+      {/* UPI Export Confirmation Dialog */}
+      <Dialog open={showExportConfirm} onOpenChange={setShowExportConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Export Preview</DialogTitle>
+            <DialogDescription>
+              Review the data that will be exported before proceeding
+            </DialogDescription>
+          </DialogHeader>
+          
+          {exportPreviewData && (
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-semibold text-blue-900 mb-2">Export Summary</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-blue-700">Export Type:</span>
+                    <span className="font-medium text-blue-900">{pendingExportType?.toUpperCase()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-700">Total Transactions:</span>
+                    <span className="font-medium text-blue-900">{exportPreviewData.totalTransactions}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-700">Date Range:</span>
+                    <span className="font-medium text-blue-900">{exportPreviewData.dateRange}</span>
+                  </div>
+                </div>
+              </div>
+              
+              {exportPreviewData.filters.length > 0 && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900 mb-2">Applied Filters</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {exportPreviewData.filters.map((filter, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {filter}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {exportPreviewData.totalTransactions === 0 && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <AlertCircle className="w-5 h-5 text-yellow-600 mr-2" />
+                    <span className="text-yellow-800 text-sm">
+                      No transactions found with the current filters. The export file will be empty.
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button variant="outline" onClick={cancelExport} data-testid="button-cancel-export">
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={() => pendingExportType && executeUpiExport(pendingExportType)}
+                  disabled={!pendingExportType}
+                  data-testid="button-confirm-export"
+                >
+                  Export {exportPreviewData.totalTransactions} Transactions
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

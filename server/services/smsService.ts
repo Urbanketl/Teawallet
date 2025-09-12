@@ -15,7 +15,7 @@ export interface User {
   mobileNumber: string;
 }
 
-export class SMSService {
+export class WhatsAppService {
   private client: any = null;
   private isConfigured: boolean = false;
 
@@ -31,13 +31,13 @@ export class SMSService {
       if (accountSid && authToken) {
         this.client = twilio(accountSid, authToken);
         this.isConfigured = true;
-        console.log('Twilio SMS service initialized successfully');
+        console.log('Twilio WhatsApp service initialized successfully');
       } else {
-        console.log('Twilio credentials not configured - SMS service disabled');
+        console.log('Twilio credentials not configured - WhatsApp service disabled');
         this.isConfigured = false;
       }
     } catch (error) {
-      console.error('Failed to initialize Twilio SMS service:', error);
+      console.error('Failed to initialize Twilio WhatsApp service:', error);
       this.isConfigured = false;
     }
   }
@@ -56,11 +56,11 @@ export class SMSService {
   async sendBalanceAlert(recipients: User[], data: BalanceAlertData): Promise<{ success: boolean; messageIds?: string[]; error?: string }> {
     try {
       if (!this.isConfigured) {
-        throw new Error('SMS service not configured - Twilio credentials missing');
+        throw new Error('WhatsApp service not configured - Twilio credentials missing');
       }
 
-      if (!process.env.TWILIO_PHONE_NUMBER) {
-        throw new Error('Twilio phone number not configured');
+      if (!process.env.TWILIO_WHATSAPP_NUMBER) {
+        throw new Error('Twilio WhatsApp number not configured');
       }
 
       const message = this.generateBalanceAlertMessage(data);
@@ -70,16 +70,16 @@ export class SMSService {
         throw new Error('No valid mobile numbers found for recipients');
       }
 
-      // Send SMS to each recipient
+      // Send WhatsApp message to each recipient
       const sendPromises = validRecipients.map(async (user) => {
         try {
           const result = await this.client.messages.create({
             body: message,
-            from: process.env.TWILIO_PHONE_NUMBER,
-            to: user.mobileNumber
+            from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
+            to: `whatsapp:${user.mobileNumber}`
           });
           
-          console.log(`Balance alert SMS sent to ${user.mobileNumber}:`, result.sid);
+          console.log(`Balance alert WhatsApp sent to ${user.mobileNumber}:`, result.sid);
           
           return {
             userId: user.id,
@@ -88,7 +88,7 @@ export class SMSService {
             to: user.mobileNumber
           };
         } catch (error) {
-          console.error(`Failed to send SMS to ${user.mobileNumber}:`, error);
+          console.error(`Failed to send WhatsApp to ${user.mobileNumber}:`, error);
           return {
             userId: user.id,
             messageId: null,
@@ -104,7 +104,7 @@ export class SMSService {
       const failedSends = results.filter(r => r.status === 'failed');
 
       if (failedSends.length > 0) {
-        console.warn(`SMS sending failed for ${failedSends.length} recipients:`, failedSends);
+        console.warn(`WhatsApp sending failed for ${failedSends.length} recipients:`, failedSends);
       }
 
       return {
@@ -112,7 +112,7 @@ export class SMSService {
         messageIds: successfulSends.map(r => r.messageId).filter(Boolean) as string[]
       };
     } catch (error) {
-      console.error('Failed to send balance alert SMS:', error);
+      console.error('Failed to send balance alert WhatsApp:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -120,30 +120,30 @@ export class SMSService {
     }
   }
 
-  async sendTestSMS(phoneNumber: string, message: string = 'Test message from UrbanKetl SMS service'): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  async sendTestWhatsApp(phoneNumber: string, message: string = 'Test message from UrbanKetl WhatsApp service'): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
       if (!this.isConfigured) {
-        throw new Error('SMS service not configured');
+        throw new Error('WhatsApp service not configured');
       }
 
-      if (!process.env.TWILIO_PHONE_NUMBER) {
-        throw new Error('Twilio phone number not configured');
+      if (!process.env.TWILIO_WHATSAPP_NUMBER) {
+        throw new Error('Twilio WhatsApp number not configured');
       }
 
       const result = await this.client.messages.create({
         body: message,
-        from: process.env.TWILIO_PHONE_NUMBER,
-        to: phoneNumber
+        from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
+        to: `whatsapp:${phoneNumber}`
       });
 
-      console.log(`Test SMS sent to ${phoneNumber}:`, result.sid);
+      console.log(`Test WhatsApp sent to ${phoneNumber}:`, result.sid);
       
       return {
         success: true,
         messageId: result.sid
       };
     } catch (error) {
-      console.error('Failed to send test SMS:', error);
+      console.error('Failed to send test WhatsApp:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -151,19 +151,19 @@ export class SMSService {
     }
   }
 
-  async testSMSConnection(): Promise<boolean> {
+  async testWhatsAppConnection(): Promise<boolean> {
     try {
       if (!this.isConfigured) {
-        console.log('SMS service not configured');
+        console.log('WhatsApp service not configured');
         return false;
       }
 
       // Test by validating the client configuration
       const account = await this.client.api.accounts(process.env.TWILIO_ACCOUNT_SID).fetch();
-      console.log(`SMS service connection verified. Account: ${account.friendlyName}`);
+      console.log(`WhatsApp service connection verified. Account: ${account.friendlyName}`);
       return true;
     } catch (error) {
-      console.error('SMS service connection test failed:', error);
+      console.error('WhatsApp service connection test failed:', error);
       return false;
     }
   }
@@ -173,4 +173,4 @@ export class SMSService {
   }
 }
 
-export const smsService = new SMSService();
+export const whatsAppService = new WhatsAppService();

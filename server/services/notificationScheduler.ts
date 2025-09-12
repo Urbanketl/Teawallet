@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 import { storage } from '../storage';
-import { smsService, BalanceAlertData } from './smsService';
+import { whatsAppService, BalanceAlertData } from './smsService';
 
 export class NotificationScheduler {
   private isEnabled: boolean = true;
@@ -95,8 +95,8 @@ export class NotificationScheduler {
         return;
       }
 
-      // Check if we already sent critical SMS alert today
-      const lastSent = await storage.getLastEmailLog(businessUnit.id, 'critical_balance_sms');
+      // Check if we already sent critical WhatsApp alert today
+      const lastSent = await storage.getLastEmailLog(businessUnit.id, 'critical_balance_whatsapp');
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
@@ -112,23 +112,23 @@ export class NotificationScheduler {
         alertType: 'critical'
       };
 
-      const result = await smsService.sendBalanceAlert(recipients, alertData);
+      const result = await whatsAppService.sendBalanceAlert(recipients, alertData);
       
       if (result.success) {
-        console.log(`Critical balance SMS alert sent for ${businessUnit.name}`);
+        console.log(`Critical balance WhatsApp alert sent for ${businessUnit.name}`);
         
-        // Log the SMS for each recipient
+        // Log the WhatsApp message for each recipient
         for (const recipient of recipients) {
           await storage.logEmailSent({
             userId: recipient.id,
             businessUnitId: businessUnit.id,
-            emailType: 'critical_balance_sms',
-            subject: `CRITICAL SMS Alert: ${businessUnit.name} - ₹${alertData.currentBalance}`,
+            emailType: 'critical_balance_whatsapp',
+            subject: `CRITICAL WhatsApp Alert: ${businessUnit.name} - ₹${alertData.currentBalance}`,
             deliveryStatus: 'sent'
           });
         }
       } else {
-        console.error(`Failed to send critical balance SMS alert for ${businessUnit.name}:`, result.error);
+        console.error(`Failed to send critical balance WhatsApp alert for ${businessUnit.name}:`, result.error);
       }
     } catch (error) {
       console.error(`Error sending critical balance alert for ${businessUnit.name}:`, error);
@@ -152,23 +152,23 @@ export class NotificationScheduler {
         alertType: 'low'
       };
 
-      const result = await smsService.sendBalanceAlert(recipients, alertData);
+      const result = await whatsAppService.sendBalanceAlert(recipients, alertData);
       
       if (result.success) {
-        console.log(`Low balance SMS alert sent for ${businessUnit.name}`);
+        console.log(`Low balance WhatsApp alert sent for ${businessUnit.name}`);
         
-        // Log the SMS for each recipient
+        // Log the WhatsApp message for each recipient
         for (const recipient of recipients) {
           await storage.logEmailSent({
             userId: recipient.id,
             businessUnitId: businessUnit.id,
-            emailType: 'low_balance_sms',
-            subject: `LOW SMS Alert: ${businessUnit.name} - ₹${alertData.currentBalance}`,
+            emailType: 'low_balance_whatsapp',
+            subject: `LOW WhatsApp Alert: ${businessUnit.name} - ₹${alertData.currentBalance}`,
             deliveryStatus: 'sent'
           });
         }
       } else {
-        console.error(`Failed to send low balance SMS alert for ${businessUnit.name}:`, result.error);
+        console.error(`Failed to send low balance WhatsApp alert for ${businessUnit.name}:`, result.error);
       }
     } catch (error) {
       console.error(`Error sending low balance alert for ${businessUnit.name}:`, error);
@@ -194,13 +194,13 @@ export class NotificationScheduler {
         recipients.push(...platformAdmins);
       }
       
-      // Filter users who have SMS notifications enabled and have mobile numbers
+      // Filter users who have WhatsApp notifications enabled and have mobile numbers
       const enabledRecipients = [];
       for (const user of recipients) {
         const preferences = await storage.getNotificationPreferences(user.id);
-        // For now, use email preferences as SMS preferences aren't implemented in schema yet
-        const smsEnabled = preferences?.emailEnabled;
-        if (smsEnabled && preferences?.balanceAlerts && user.mobileNumber && user.mobileNumber.trim() !== '') {
+        // For now, use email preferences as WhatsApp preferences aren't implemented in schema yet
+        const whatsAppEnabled = preferences?.emailEnabled;
+        if (whatsAppEnabled && preferences?.balanceAlerts && user.mobileNumber && user.mobileNumber.trim() !== '') {
           enabledRecipients.push(user);
         }
       }
@@ -214,8 +214,8 @@ export class NotificationScheduler {
 
   private async shouldSendLowBalanceAlert(businessUnitId: string): Promise<boolean> {
     try {
-      // Check if we sent low balance SMS alert in last 2 days
-      const lastSent = await storage.getLastEmailLog(businessUnitId, 'low_balance_sms');
+      // Check if we sent low balance WhatsApp alert in last 2 days
+      const lastSent = await storage.getLastEmailLog(businessUnitId, 'low_balance_whatsapp');
       
       if (!lastSent) return true;
       

@@ -313,6 +313,7 @@ function AdminReports() {
   // UPI Export handlers
   // Helper function to get transaction count for preview
   const getUpiTransactionCount = async (): Promise<number> => {
+    console.log('getUpiTransactionCount called');
     try {
       const params = new URLSearchParams({
         page: '1',
@@ -327,7 +328,10 @@ function AdminReports() {
         credentials: 'include'
       });
       
-      if (!response.ok) return 0;
+      if (!response.ok) {
+        console.log('API response not ok:', response.status, response.statusText);
+        return 0;
+      }
       
       const data = await response.json();
       return data.pagination?.total || 0;
@@ -339,7 +343,10 @@ function AdminReports() {
 
   // Show export preview dialog
   const showUpiExportPreview = async (type: 'excel' | 'pdf') => {
-    const totalTransactions = await getUpiTransactionCount();
+    console.log('showUpiExportPreview called with type:', type);
+    try {
+      const totalTransactions = await getUpiTransactionCount();
+      console.log('Got transaction count:', totalTransactions);
     
     // Build filter descriptions
     const filters: string[] = [];
@@ -366,6 +373,10 @@ function AdminReports() {
     });
     setPendingExportType(type);
     setShowExportConfirm(true);
+    console.log('Preview dialog should now be visible');
+    } catch (error) {
+      console.error('Error in showUpiExportPreview:', error);
+    }
   };
 
   // Updated export handlers to show preview first

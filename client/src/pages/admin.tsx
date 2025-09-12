@@ -725,26 +725,24 @@ function AdminReports() {
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button
+                <button
                   onClick={handleUpiExportExcel}
-                  variant="outline"
-                  size="sm"
-                  className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                  className="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md border bg-green-50 border-green-200 text-green-700 hover:bg-green-100 transition-colors cursor-pointer"
                   data-testid="button-export-upi-excel"
+                  type="button"
                 >
                   <FileSpreadsheet className="w-4 h-4 mr-2" />
                   Export Excel
-                </Button>
-                <Button
+                </button>
+                <button
                   onClick={handleUpiExportPdf}
-                  variant="outline"
-                  size="sm"
-                  className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+                  className="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md border bg-red-50 border-red-200 text-red-700 hover:bg-red-100 transition-colors cursor-pointer"
                   data-testid="button-export-upi-pdf"
+                  type="button"
                 >
                   <FileText className="w-4 h-4 mr-2" />
                   Export PDF
-                </Button>
+                </button>
               </div>
             </div>
           </CardHeader>

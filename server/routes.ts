@@ -1998,47 +1998,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/admin/upi-sync/export/excel', isAuthenticated, requireAdminAuth, upiSyncController.exportToExcel.bind(upiSyncController));
   app.get('/api/admin/upi-sync/export/pdf', isAuthenticated, requireAdminAuth, upiSyncController.exportToPdf.bind(upiSyncController));
 
-  // Test WhatsApp notification route (temporary)
-  app.post('/api/test/whatsapp-alert', isAuthenticated, requireAdminAuth, async (req: any, res) => {
-    try {
-      const { whatsAppService } = await import('./services/smsService');
-      
-      // Get Thirtha Prasad's user data
-      const user = await storage.getUser('44064328');
-      if (!user || !user.mobileNumber) {
-        return res.status(404).json({ message: 'User not found or mobile number not set' });
-      }
-
-      // Get Ikea business unit
-      const businessUnit = {
-        id: 'BU_mdi9vg8x_hjmixfnbbxt',
-        name: 'Ikea',
-        walletBalance: '1750.00'
-      };
-
-      // Create alert data
-      const alertData = {
-        businessUnit,
-        currentBalance: '1750.00',
-        threshold: '3000.00',
-        alertType: 'low' as const
-      };
-
-      // Send WhatsApp alert
-      const result = await whatsAppService.sendBalanceAlert([user], alertData);
-      
-      res.json({ 
-        success: result.success, 
-        message: result.success ? 'WhatsApp notification sent successfully' : 'Failed to send notification',
-        error: result.error,
-        messageIds: result.messageIds,
-        recipient: user.mobileNumber
-      });
-    } catch (error) {
-      console.error('Error sending test WhatsApp alert:', error);
-      res.status(500).json({ message: 'Failed to send test alert', error: error instanceof Error ? error.message : 'Unknown error' });
-    }
-  });
 
   const httpServer = createServer(app);
   return httpServer;

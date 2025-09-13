@@ -391,6 +391,7 @@ export class DatabaseStorage implements IStorage {
         firstName: profileData.firstName,
         lastName: profileData.lastName,
         email: profileData.email,
+        mobileNumber: profileData.mobileNumber,
         updatedAt: new Date(),
       })
       .where(eq(users.id, id))

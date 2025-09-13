@@ -115,23 +115,47 @@ export class WhatsAppService {
     }
   }
 
+  private normalizePhoneNumber(phoneNumber: string): string {
+    // Remove all non-digit characters (spaces, +, -, etc.)
+    return phoneNumber.replace(/\D/g, '');
+  }
+
   private async sendWhatsAppMessage(phoneNumber: string, message: string): Promise<any> {
     const url = `https://graph.facebook.com/${this.apiVersion}/${this.phoneNumberId}/messages`;
+    const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
     
     const payload = {
       messaging_product: 'whatsapp',
-      to: phoneNumber,
+      to: normalizedPhone,
       text: { body: message }
     };
 
-    const response = await axios.post(url, payload, {
-      headers: {
-        'Authorization': `Bearer ${this.accessToken}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    console.log('=== WHATSAPP API CALL ===');
+    console.log('URL:', url);
+    console.log('Original phone:', phoneNumber);
+    console.log('Normalized phone:', normalizedPhone);
+    console.log('Payload:', JSON.stringify(payload, null, 2));
+    console.log('Access Token length:', this.accessToken.length);
+    console.log('Phone Number ID:', this.phoneNumberId);
 
-    return response.data;
+    try {
+      const response = await axios.post(url, payload, {
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('WhatsApp API SUCCESS:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('=== WHATSAPP API ERROR ===');
+      console.error('Status:', error.response?.status);
+      console.error('Status Text:', error.response?.statusText);
+      console.error('Error Data:', JSON.stringify(error.response?.data, null, 2));
+      console.error('Full error response:', error.response);
+      throw error;
+    }
   }
 
   async sendTestWhatsApp(phoneNumber: string, message: string = 'Test message from UrbanKetl WhatsApp service'): Promise<{ success: boolean; messageId?: string; error?: string }> {

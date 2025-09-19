@@ -127,7 +127,7 @@ export class MachineController {
 
       // Create dispensing log
       const dispensingLog = await storage.createDispensingLog({
-        cardId: card.id,
+        rfidCardId: card.id,
         machineId: machineId,
         teaType: teaType || 'Regular Tea',
         amount: dispensingAmount.toString(),
@@ -137,7 +137,7 @@ export class MachineController {
 
       // Deduct amount from business unit wallet
       const newBalance = currentBalance - dispensingAmount;
-      await storage.updateBusinessUnitBalance(businessUnitId, newBalance.toString());
+      await storage.updateBusinessUnitWallet(businessUnitId, newBalance.toString());
 
       // Log successful dispensing
       console.log(`Tea dispensed: ${teaType || 'Regular Tea'} for ₹${dispensingAmount} from machine ${machineId}`);
@@ -180,12 +180,8 @@ export class MachineController {
         });
       }
 
-      // Update machine last seen and status
-      await storage.updateTeaMachine(machineId, {
-        lastSeen: timestamp ? new Date(timestamp) : new Date(),
-        status: status || 'online',
-        isOnline: status === 'online'
-      });
+      // Update machine ping time
+      await storage.updateMachinePing(machineId);
 
       // Log heartbeat
       console.log(`Heartbeat from ${machineId}: ${status}, dispensed today: ${dailyDispensed}`);
@@ -221,7 +217,7 @@ export class MachineController {
       }
 
       // Get business unit details
-      const businessUnit = await storage.getBusinessUnit(machine.businessUnitId);
+      const businessUnit = machine.businessUnitId ? await storage.getBusinessUnit(machine.businessUnitId) : null;
 
       return res.status(200).json({
         success: true,
@@ -229,7 +225,7 @@ export class MachineController {
           id: machine.id,
           name: machine.name,
           location: machine.location,
-          teaPrice: machine.teaPrice || '5.00',
+          teaPrice: machine.price || '5.00',
           businessUnit: businessUnit ? {
             id: businessUnit.id,
             name: businessUnit.name

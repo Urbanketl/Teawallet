@@ -869,7 +869,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // RFID validation endpoint for tea machines
+  // RFID validation endpoint for tea machines (VALIDATION ONLY - NO DISPENSING)
   app.post('/api/rfid/validate', async (req, res) => {
     try {
       const { cardNumber, machineId } = req.body;
@@ -930,7 +930,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const balance = parseFloat(businessUnit.walletBalance || "0");
 
-      // CRITICAL: Use atomic transaction for billing accuracy
+      // Check if sufficient balance (validation only - no deduction)
+      if (balance < teaAmount) {
+        return res.status(400).json({
+          success: false,
+          message: "Insufficient balance"
+        });
+      }
+
+      // VALIDATION SUCCESS - Return card/machine info (NO DISPENSING OR BALANCE DEDUCTION)
+      res.json({
+        success: true,
+        valid: true,
+        message: "Card validation successful",
+        cardNumber: card.cardNumber,
+        businessUnitId: businessUnit.id,
+        businessUnitName: businessUnit.name,
+        currentBalance: balance,
+        teaAmount: teaAmount,
+        machineId: machine.id,
+        machineName: machine.name,
+        machineLocation: machine.location
+      });
+
+    } catch (error) {
+      console.error("Error validating RFID:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Internal server error" 
+      });
+    }
+  });
+
+  // RFID dispensing endpoint for tea machines (ACTUAL DISPENSING WITH BALANCE DEDUCTION)
+  app.post('/api/rfid/dispense', async (req, res) => {
+    try {
+      const { cardNumber, machineId } = req.body;
+
+      if (!cardNumber || !machineId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Missing required parameters" 
+        });
+      }
+
+      // Get machine details to validate and get price
+      const machine = await storage.getTeaMachine(machineId);
+      if (!machine || !machine.isActive) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Machine not found or disabled" 
+        });
+      }
+
+      // Get price from machine's single price field (simplified pricing system)
+      const teaAmount = parseFloat(machine.price || "5.00");
+
+      // Get RFID card
+      const card = await storage.getRfidCardByNumber(cardNumber);
+      if (!card) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Invalid RFID card" 
+        });
+      }
+
+      // CRITICAL: Validate business unit ownership BEFORE checking balance
+      if (card.businessUnitId !== machine.businessUnitId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid card for this machine" 
+        });
+      }
+
+      // Get business unit and check balance (cards belong to business units)
+      const businessUnit = await storage.getBusinessUnit(card.businessUnitId);
+      if (!businessUnit) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Business unit not found" 
+        });
+      }
+
+      // CRITICAL: Use atomic transaction for billing accuracy (ACTUAL DISPENSING)
       const result = await storage.processRfidTransaction({
         businessUnitId: businessUnit.id,
         cardId: card.id,
@@ -953,7 +1035,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
     } catch (error) {
-      console.error("Error validating RFID:", error);
+      console.error("Error dispensing tea:", error);
       res.status(500).json({ 
         success: false, 
         message: "Internal server error" 

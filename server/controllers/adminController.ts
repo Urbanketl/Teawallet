@@ -386,6 +386,21 @@ export async function createRfidCard(req: any, res: Response) {
   try {
     const { businessUnitId, cardNumber, cardName, hardwareUid } = req.body;
     
+    // Validate business unit ID
+    if (!businessUnitId || businessUnitId.trim() === '') {
+      return res.status(400).json({ 
+        message: 'Business Unit ID is required' 
+      });
+    }
+    
+    // Verify business unit exists
+    const businessUnit = await storage.getBusinessUnit(businessUnitId);
+    if (!businessUnit) {
+      return res.status(400).json({ 
+        message: 'Invalid business unit - business unit not found' 
+      });
+    }
+    
     // Validate card number format
     if (!cardNumber || cardNumber.length < 6 || cardNumber.length > 20) {
       return res.status(400).json({ 

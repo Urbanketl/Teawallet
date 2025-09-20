@@ -86,7 +86,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // For non-super admins, if no specific businessUnitId is requested, limit to their accessible business units
         if (!req.isSuperAdmin && !validatedBusinessUnitId) {
           // We'll need to modify the storage call to handle multiple business unit filtering
-          validatedBusinessUnitId = undefined; // Will be handled in the storage layer filtering
+          validatedBusinessUnitId = undefined as any; // Will be handled in the storage layer filtering
         }
 
         const result = await storage.getAllRfidCardsPaginatedWithFilters({
@@ -1098,7 +1098,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      let machines;
+      let machines: any[];
       if (req.isSuperAdmin) {
         // Super admins see all machines
         machines = await storage.getAllTeaMachines();

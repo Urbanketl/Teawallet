@@ -194,13 +194,29 @@ class ChallengeResponseService {
   }
 
   /**
-   * Decrypt stored AES key (placeholder implementation)
+   * Decrypt stored AES key with proper IV handling
    */
   private async decryptAESKey(encryptedKey: string): Promise<string> {
-    // In production, this would use proper key management system
-    // For now, simulate by returning a consistent key based on encrypted data
-    const hash = crypto.createHash('sha256').update(encryptedKey).digest('hex');
-    return hash.substring(0, 32); // 32-byte AES key
+    try {
+      const encryptedBuffer = Buffer.from(encryptedKey, 'hex');
+      
+      // Extract IV (first 16 bytes) and encrypted data (rest)
+      const iv = encryptedBuffer.subarray(0, 16);
+      const encrypted = encryptedBuffer.subarray(16);
+      
+      const masterKey = crypto.createHash('sha256').update(process.env.MASTER_KEY || 'default-master-key').digest();
+      
+      const decipher = crypto.createDecipheriv('aes-256-cbc', masterKey, iv);
+      let decrypted = decipher.update(encrypted);
+      decrypted = Buffer.concat([decrypted, decipher.final()]);
+      
+      return decrypted.toString('hex');
+    } catch (error) {
+      // Fallback for legacy data: generate consistent key based on encrypted data
+      console.warn('Failed to decrypt AES key, using fallback method:', error);
+      const hash = crypto.createHash('sha256').update(encryptedKey).digest('hex');
+      return hash.substring(0, 32); // 32-byte AES key
+    }
   }
 
   /**
@@ -212,12 +228,15 @@ class ChallengeResponseService {
       const challengeBuffer = Buffer.from(challenge, 'hex');
       const keyBuffer = Buffer.from(aesKey, 'hex');
       
-      // AES-128 ECB encryption (simplified for demonstration)
-      const cipher = crypto.createCipher('aes-128-ecb', keyBuffer);
+      // Use AES-128-CBC with random IV for proper security
+      const iv = crypto.randomBytes(16);
+      const cipher = crypto.createCipheriv('aes-128-cbc', keyBuffer.subarray(0, 16), iv);
       let encrypted = cipher.update(challengeBuffer);
       encrypted = Buffer.concat([encrypted, cipher.final()]);
       
-      return encrypted.toString('hex').toUpperCase();
+      // Prepend IV to encrypted data for decryption
+      const result = Buffer.concat([iv, encrypted]);
+      return result.toString('hex').toUpperCase();
       
     } catch (error) {
       console.error('AES challenge encryption error:', error);
@@ -277,14 +296,20 @@ class ChallengeResponseService {
   }
 
   /**
-   * Encrypt AES key for storage (placeholder implementation)
+   * Encrypt AES key for storage with proper IV handling
    */
   private async encryptAESKey(aesKey: string): Promise<string> {
-    // In production, use proper encryption with master key
-    const cipher = crypto.createCipher('aes-256-cbc', process.env.MASTER_KEY || 'default-master-key');
-    let encrypted = cipher.update(aesKey, 'hex', 'hex');
-    encrypted += cipher.final('hex');
-    return encrypted;
+    // Generate random IV for each encryption
+    const iv = crypto.randomBytes(16);
+    const masterKey = crypto.createHash('sha256').update(process.env.MASTER_KEY || 'default-master-key').digest();
+    
+    const cipher = crypto.createCipheriv('aes-256-cbc', masterKey, iv);
+    let encrypted = cipher.update(aesKey, 'hex');
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
+    
+    // Prepend IV to encrypted data for decryption
+    const result = Buffer.concat([iv, encrypted]);
+    return result.toString('hex');
   }
 
   /**

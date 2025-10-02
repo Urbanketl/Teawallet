@@ -355,7 +355,19 @@ export function useRazorpay() {
 
       console.log("Opening Razorpay checkout...");
       
-      // Disable popup blocking fallback - Razorpay handles this natively
+      // Safety timeout to reset loading state if modal doesn't open
+      const safetyTimeout = setTimeout(() => {
+        console.warn("Modal may not have opened - check browser settings");
+        setLoading(false);
+      }, 5000);
+      
+      // Clear timeout when any event fires
+      const clearSafety = () => clearTimeout(safetyTimeout);
+      razorpay.on("payment.success", clearSafety);
+      razorpay.on("payment.failed", clearSafety);
+      razorpay.on("payment.cancelled", clearSafety);
+      razorpay.on("payment.closed", clearSafety);
+      
       try {
         console.log("Attempting to open Razorpay modal...");
         razorpay.open();
@@ -363,6 +375,7 @@ export function useRazorpay() {
         
       } catch (openError) {
         console.error("Error opening Razorpay:", openError);
+        clearTimeout(safetyTimeout);
         setLoading(false);
         toast({
           title: "Payment Error",

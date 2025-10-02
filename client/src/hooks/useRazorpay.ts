@@ -32,7 +32,9 @@ interface RazorpayOptions {
 
 export function useRazorpay() {
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
+  const [preparing, setPreparing] = useState(false);
+  const [preparedOrder, setPreparedOrder] = useState<any>(null);
+  const { toast} = useToast();
   const queryClient = useQueryClient();
   
   // Prevent multiple simultaneous payment attempts
@@ -179,85 +181,114 @@ export function useRazorpay() {
     });
   };
 
-  const initiatePayment = async (amount: number, userDetails?: { name?: string; email?: string; businessUnitId?: string }) => {
-    // Prevent rapid-fire requests (debounce)
-    const now = Date.now();
-    if (now - lastAttemptTime < 2000) { // 2 second cooldown
-      console.warn("Payment attempt too soon, ignoring");
-      toast({
-        title: "Please Wait",
-        description: "Please wait a moment before trying again",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (loading) {
-      console.warn("Payment already in progress, ignoring");
-      return;
-    }
+  // Phase 1: Prepare payment (create order, cache it)
+  const preparePayment = async (amount: number, businessUnitId?: string, userDetails?: { name?: string; email?: string }) => {
+    if (preparing) return;
     
     try {
-      setLoading(true);
-      setLastAttemptTime(now);
-      console.log("=== PAYMENT INITIATION START ===");
-      console.log("Amount:", amount);
-      console.log("User details:", userDetails);
-      console.log("Loading state set to true");
-
-      // Create order first
-      console.log("Creating order...");
+      setPreparing(true);
+      console.log("=== PREPARING PAYMENT ===");
+      console.log("Amount:", amount, "Business Unit:", businessUnitId);
+      
+      // Pre-load Razorpay script
+      await loadRazorpayScript();
+      
+      // Create order
       const orderData = { 
         amount,
-        ...(userDetails?.businessUnitId && { businessUnitId: userDetails.businessUnitId })
+        ...(businessUnitId && { businessUnitId })
       };
       const orderRes = await apiRequest("POST", "/api/wallet/create-order", orderData);
       
       if (!orderRes.ok) {
         const errorData = await orderRes.json();
-        console.log("Order creation error:", errorData);
-        
         if (orderRes.status === 429) {
           throw new Error("Too many payment requests. Please wait a moment and try again.");
         }
         if (orderRes.status === 400 && errorData.message) {
-          // This will catch max wallet limit errors
           throw new Error(errorData.message);
         }
         throw new Error(`Failed to create order: ${orderRes.status}`);
       }
       
       const orderResponse = await orderRes.json();
-      console.log("Order response:", orderResponse);
-      
       if (!orderResponse.success) {
         throw new Error(orderResponse.message || "Failed to create payment order");
       }
-
-      // Store order details for manual fallback
-      localStorage.setItem('lastPaymentOrder', JSON.stringify({
-        id: orderResponse.order.id,
-        amount: orderResponse.order.amount,
-        key: orderResponse.keyId,
-        businessUnitId: userDetails?.businessUnitId
-      }));
-
-      const { order, keyId } = orderResponse;
-      console.log("Order created successfully:", order);
-
-      // Load Razorpay script
-      console.log("Loading Razorpay script...");
-      const scriptLoaded = await loadRazorpayScript();
-      console.log("Script loaded result:", scriptLoaded);
       
-      if (!scriptLoaded) {
-        throw new Error("Failed to load Razorpay script. Please check your internet connection.");
-      }
+      // Cache the prepared order
+      const preparedData = {
+        order: orderResponse.order,
+        keyId: orderResponse.keyId,
+        amount,
+        businessUnitId,
+        userDetails,
+        preparedAt: Date.now(),
+        expiresAt: Date.now() + (10 * 60 * 1000), // 10 minutes
+      };
+      
+      setPreparedOrder(preparedData);
+      localStorage.setItem('preparedPaymentOrder', JSON.stringify(preparedData));
+      
+      console.log("Payment prepared successfully:", preparedData);
+      return preparedData;
+    } catch (error: any) {
+      console.error("Error preparing payment:", error);
+      toast({
+        title: "Preparation Failed",
+        description: error.message || "Failed to prepare payment",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setPreparing(false);
+    }
+  };
 
+  // Legacy: Combines both phases (for backwards compatibility, but may be blocked)
+  const initiatePayment = async (amount: number, userDetails?: { name?: string; email?: string; businessUnitId?: string }) => {
+    // Just call the two-phase approach
+    await preparePayment(amount, userDetails?.businessUnitId, userDetails);
+    // Note: executePayment must be called separately from a synchronous click handler
+  };
+
+  // Phase 2: Execute payment (open modal synchronously)
+  const executePayment = () => {
+    // Check for prepared order
+    const cached = preparedOrder || JSON.parse(localStorage.getItem('preparedPaymentOrder') || 'null');
+    
+    if (!cached) {
+      toast({
+        title: "Payment Not Ready",
+        description: "Please wait for payment to be prepared",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Check if expired
+    if (Date.now() > cached.expiresAt) {
+      toast({
+        title: "Payment Expired",
+        description: "Please try again to create a new payment",
+        variant: "destructive",
+      });
+      setPreparedOrder(null);
+      localStorage.removeItem('preparedPaymentOrder');
+      return;
+    }
+    
+    // Synchronously open Razorpay modal
+    try {
       if (!window.Razorpay) {
-        throw new Error("Razorpay SDK not available");
+        throw new Error("Razorpay not loaded. Please refresh the page.");
       }
-
+      
+      setLoading(true);
+      console.log("=== EXECUTING PAYMENT (SYNCHRONOUS) ===");
+      
+      const { order, keyId, amount, businessUnitId, userDetails } = cached;
+      
       const options: RazorpayOptions = {
         key: keyId,
         amount: order.amount,
@@ -267,45 +298,34 @@ export function useRazorpay() {
         order_id: order.id,
         modal: {
           ondismiss: () => {
-            console.log("Modal dismissed by user or failed to open");
+            console.log("Modal dismissed");
             setLoading(false);
           },
         },
         handler: async (response: any) => {
           try {
-            console.log("Payment successful, verifying...", response);
             // Verify payment
             const verifyRes = await apiRequest("POST", "/api/wallet/verify-payment", {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
-              amount: amount,
-              businessUnitId: userDetails?.businessUnitId,
+              amount,
+              businessUnitId,
             });
             const verifyResponse = await verifyRes.json();
 
             if (verifyResponse.success) {
-              // FORCE refetch queries because of staleTime: Infinity
-              await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
-              await queryClient.refetchQueries({ queryKey: ["/api/wallet/balance"] });
-              await queryClient.refetchQueries({ queryKey: ["/api/transactions"] });
+              // Clear cached order
+              setPreparedOrder(null);
+              localStorage.removeItem('preparedPaymentOrder');
               
-              // FORCE refetch ALL business units queries (with or without pseudo params)
+              // Refetch data
+              await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
+              await queryClient.refetchQueries({ queryKey: ["/api/transactions"] });
               await queryClient.refetchQueries({ 
                 predicate: (query) => {
                   const key = query.queryKey[0];
                   return typeof key === 'string' && key.startsWith('/api/corporate/business-units');
-                }
-              });
-              
-              // Also refetch any specific business unit queries
-              await queryClient.refetchQueries({
-                predicate: (query) => {
-                  const key = query.queryKey[0];
-                  return typeof key === 'string' && (
-                    key.startsWith('/api/corporate/monthly-summary') ||
-                    key.startsWith('/api/corporate/business-unit-summary')
-                  );
                 }
               });
 
@@ -319,7 +339,7 @@ export function useRazorpay() {
           } catch (error) {
             console.error("Payment verification error:", error);
             toast({
-              title: "Payment Verification Failed",
+              title: "Verification Failed",
               description: "Please contact support if amount was deducted",
               variant: "destructive",
             });
@@ -332,18 +352,14 @@ export function useRazorpay() {
           email: userDetails?.email || "",
         },
         theme: {
-          color: "#F2A74A", // primary orange color
+          color: "#F2A74A",
         },
       };
 
-      console.log("Opening Razorpay with options:", { ...options, key: "***" });
-
-      console.log("Creating Razorpay instance...");
       const razorpay = new window.Razorpay(options);
-      console.log("Razorpay instance created successfully");
       
       razorpay.on("payment.failed", (response: any) => {
-        console.error("Razorpay payment failed:", response);
+        console.error("Payment failed:", response);
         toast({
           title: "Payment Failed",
           description: response.error?.description || "Payment was not successful",
@@ -351,57 +367,16 @@ export function useRazorpay() {
         });
         setLoading(false);
       });
-
-      razorpay.on("payment.cancelled", () => {
-        console.log("Payment cancelled by user");
-        setLoading(false);
-      });
-
-      // Add modal dismiss event handler
-      razorpay.on("payment.closed", () => {
-        console.log("Payment modal closed");
-        setLoading(false);
-      });
-
-      console.log("Opening Razorpay checkout...");
       
-      // Safety timeout to reset loading state if modal doesn't open
-      const safetyTimeout = setTimeout(() => {
-        console.warn("Modal may not have opened - check browser settings");
-        setLoading(false);
-      }, 5000);
+      console.log("Opening Razorpay synchronously...");
+      razorpay.open();
+      console.log("Razorpay opened successfully");
       
-      // Clear timeout when any event fires
-      const clearSafety = () => clearTimeout(safetyTimeout);
-      razorpay.on("payment.success", clearSafety);
-      razorpay.on("payment.failed", clearSafety);
-      razorpay.on("payment.cancelled", clearSafety);
-      razorpay.on("payment.closed", clearSafety);
-      
-      try {
-        console.log("Attempting to open Razorpay modal...");
-        razorpay.open();
-        console.log("Razorpay.open() called successfully");
-        
-      } catch (openError) {
-        console.error("Error opening Razorpay:", openError);
-        clearTimeout(safetyTimeout);
-        setLoading(false);
-        toast({
-          title: "Payment Error",
-          description: "Please try again",
-          variant: "destructive",
-        });
-        throw openError;
-      }
     } catch (error: any) {
-      console.error("Payment initiation error:", error);
-      console.error("Error stack:", error.stack);
-      console.error("Error details:", JSON.stringify(error, null, 2));
-      
+      console.error("Error executing payment:", error);
       toast({
         title: "Payment Error",
-        description: error.message || "Failed to initiate payment",
+        description: error.message || "Failed to open payment",
         variant: "destructive",
       });
       setLoading(false);
@@ -409,7 +384,11 @@ export function useRazorpay() {
   };
 
   return {
-    initiatePayment,
+    initiatePayment, // Keep for backwards compatibility
+    preparePayment,
+    executePayment,
+    preparing,
+    preparedOrder,
     loading,
   };
 }

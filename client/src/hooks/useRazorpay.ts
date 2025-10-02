@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useQueryClient } from "@tanstack/react-query";
@@ -35,7 +35,7 @@ export function useRazorpay() {
   const [lastAttemptTime, setLastAttemptTime] = useState(0);
 
   // Handle payment success callback
-  const handlePaymentSuccess = async (paymentData: any) => {
+  const handlePaymentSuccess = useCallback(async (paymentData: any) => {
     try {
       console.log("Processing payment verification:", paymentData);
       
@@ -97,7 +97,7 @@ export function useRazorpay() {
         variant: "destructive",
       });
     }
-  };
+  }, [queryClient, toast]);
 
   // Listen for payment success from popup window
   useEffect(() => {

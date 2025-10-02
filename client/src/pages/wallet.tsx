@@ -14,9 +14,10 @@ import { Wallet, Plus, IndianRupee, Building2 } from "lucide-react";
 export default function WalletPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
-  const { initiatePayment, loading } = useRazorpay();
+  const { preparePayment, executePayment, preparing, preparedOrder, loading } = useRazorpay();
   const [customAmount, setCustomAmount] = useState("");
   const [selectedBusinessUnitId, setSelectedBusinessUnitId] = useState<string>("");
+  const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
 
   // Get pseudo parameter for business units query
   const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
@@ -62,6 +63,16 @@ export default function WalletPage() {
     }
   }, [businessUnits, selectedBusinessUnitId]);
 
+  // Auto-prepare payment when amount and business unit are selected
+  useEffect(() => {
+    if (selectedAmount && selectedBusinessUnitId && user) {
+      preparePayment(selectedAmount, selectedBusinessUnitId, {
+        name: `${user.firstName} ${user.lastName}`.trim(),
+        email: user.email || "",
+      });
+    }
+  }, [selectedAmount, selectedBusinessUnitId, user]);
+
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -97,12 +108,22 @@ export default function WalletPage() {
       return;
     }
 
-    initiatePayment(amount, {
-      name: `${user?.firstName} ${user?.lastName}`.trim(),
-      email: user?.email || "",
-      businessUnitId: selectedBusinessUnitId,
-    });
+    // If already prepared for this exact amount, execute immediately
+    if (preparedOrder && preparedOrder.amount === amount && preparedOrder.businessUnitId === selectedBusinessUnitId) {
+      executePayment();
+    } else {
+      // Set amount (this triggers preparation in useEffect)
+      setSelectedAmount(amount);
+    }
   };
+  
+  // Auto-execute payment after preparation completes
+  useEffect(() => {
+    if (preparedOrder && selectedAmount === preparedOrder.amount && !loading && !preparing) {
+      // Automatically execute the payment once prepared
+      setTimeout(() => executePayment(), 100);
+    }
+  }, [preparedOrder, selectedAmount]);
 
   const handleCustomRecharge = () => {
     const amount = parseFloat(customAmount);
@@ -124,13 +145,14 @@ export default function WalletPage() {
       return;
     }
     
-    initiatePayment(amount, {
-      name: `${user?.firstName} ${user?.lastName}`.trim(),
-      email: user?.email || "",
-      businessUnitId: selectedBusinessUnitId,
-    });
-    
-    setCustomAmount("");
+    // If already prepared, execute immediately
+    if (preparedOrder && preparedOrder.amount === amount && preparedOrder.businessUnitId === selectedBusinessUnitId) {
+      executePayment();
+      setCustomAmount("");
+    } else {
+      // Set amount (triggers preparation)
+      setSelectedAmount(amount);
+    }
   };
 
   return (
@@ -270,9 +292,10 @@ export default function WalletPage() {
                 <Button
                   className="w-full bg-tea-green hover:bg-tea-dark"
                   onClick={handleCustomRecharge}
-                  disabled={loading || !customAmount || businessUnits.length === 0 || (businessUnits.length > 1 && !selectedBusinessUnitId)}
+                  disabled={preparing || loading || !customAmount || businessUnits.length === 0 || (businessUnits.length > 1 && !selectedBusinessUnitId)}
+                  data-testid="button-custom-recharge"
                 >
-                  {loading ? "Processing..." : selectedBusinessUnitId ? 
+                  {preparing ? "Preparing..." : loading ? "Processing..." : selectedBusinessUnitId ? 
                     `Recharge ${businessUnits.find((bu: any) => bu.id === selectedBusinessUnitId)?.name || 'Business Unit'}` : 
                     "Recharge Wallet"
                   }

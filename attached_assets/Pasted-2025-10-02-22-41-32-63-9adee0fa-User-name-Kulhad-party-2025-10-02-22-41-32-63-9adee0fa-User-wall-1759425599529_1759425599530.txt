@@ -1,0 +1,140 @@
+2025-10-02 22:41:32.63
+9adee0fa
+User
+name: 'Kulhad party',
+2025-10-02 22:41:32.63
+9adee0fa
+User
+walletBalance: '4624.00'
+2025-10-02 22:41:32.63
+9adee0fa
+User
+},
+2025-10-02 22:41:32.63
+9adee0fa
+User
+{
+2025-10-02 22:41:32.63
+9adee0fa
+User
+id: 'BU_mdsr1flt_ltyb15gupee',
+2025-10-02 22:41:32.63
+9adee0fa
+User
+name: 'APPLE Bangalore',
+2025-10-02 22:41:32.63
+9adee0fa
+User
+walletBalance: '4300.00'
+2025-10-02 22:41:32.63
+9adee0fa
+User
+}
+2025-10-02 22:41:32.63
+9adee0fa
+User
+]
+2025-10-02 22:41:32.68
+9adee0fa
+User
+Found 0 machines for business unit BU_mdsr1flt_ltyb15gupee: []
+2025-10-02 22:41:32.74
+9adee0fa
+User
+5:11:32 PM [express] GET /api/corporate/machines 304 in 299ms :: []
+2025-10-02 22:41:32.74
+9adee0fa
+User
+Found 0 dispensing logs (page 1) for business unit BU_mdsr1flt_ltyb15gupee, total: 0
+2025-10-02 22:41:32.80
+9adee0fa
+User
+5:11:32 PM [express] GET /api/corporate/rfid-cards 304 in 326ms :: []
+2025-10-02 22:41:32.80
+9adee0fa
+User
+5:11:32 PM [express] GET /api/corporate/dispensing-logs 200 in 359ms :: {"logs":[],"total":0}
+2025-10-02 22:41:32.98
+9adee0fa
+User
+Summary data: {
+2025-10-02 22:41:32.98
+9adee0fa
+User
+totalRecharged: '4300.00',
+2025-10-02 22:41:32.98
+9adee0fa
+User
+cupsDispensed: 0,
+2025-10-02 22:41:32.98
+9adee0fa
+User
+totalSpent: '0',
+2025-10-02 22:41:32.98
+9adee0fa
+User
+averagePerCup: '0.00',
+2025-10-02 22:41:32.98
+9adee0fa
+User
+calculatedBalance: '4300.00'
+2025-10-02 22:41:32.98
+9adee0fa
+User
+}
+2025-10-02 22:41:32.98
+9adee0fa
+User
+Summary data: {
+2025-10-02 22:41:32.98
+9adee0fa
+User
+totalRecharged: '4300.00',
+2025-10-02 22:41:32.98
+9adee0fa
+User
+cupsDispensed: 0,
+2025-10-02 22:41:32.98
+9adee0fa
+User
+totalSpent: '0',
+2025-10-02 22:41:32.98
+9adee0fa
+User
+averagePerCup: '0.00'
+2025-10-02 22:41:32.98
+9adee0fa
+User
+}
+2025-10-02 22:41:33.05
+9adee0fa
+User
+5:11:33 PM [express] GET /api/corporate/business-unit-summary/BU_mdsr1flt_ltyb15gupee 304 in 606ms :…
+2025-10-02 22:45:12.48
+9adee0fa
+User
+Starting auto sync for machine UK_0006
+2025-10-02 22:45:13.98
+9adee0fa
+User
+auto sync completed for machine UK_0006: SUCCESS
+2025-10-02 22:45:15.89
+9adee0fa
+User
+Starting auto sync for machine UK_0006
+2025-10-02 22:45:12.48
+9adee0fa
+User
+Retrying sync for machine UK_0006
+2025-10-02 22:45:13.98
+9adee0fa
+User
+Retrying sync for machine UK_0006
+2025-10-02 22:45:13.98
+9adee0fa
+User
+Starting auto sync for machine UK_0006
+2025-10-02 22:45:15.89
+9adee0fa
+User
+auto sync completed for machine UK_0006: SUCCESS

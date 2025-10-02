@@ -586,6 +586,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserBusinessUnits(userId: string): Promise<BusinessUnit[]> {
+    console.log(`[DB READ] Fetching business units for user ${userId}`);
     const units = await db
       .select({ 
         id: businessUnits.id,
@@ -600,15 +601,41 @@ export class DatabaseStorage implements IStorage {
       .from(businessUnits)
       .innerJoin(userBusinessUnits, eq(businessUnits.id, userBusinessUnits.businessUnitId))
       .where(eq(userBusinessUnits.userId, userId));
+    
+    console.log(`[DB READ SUCCESS] Found ${units.length} business units:`, 
+      units.map(u => ({ id: u.id, name: u.name, walletBalance: u.walletBalance }))
+    );
     return units;
   }
 
   async updateBusinessUnitWallet(unitId: string, amount: string): Promise<BusinessUnit> {
-    const [unit] = await db.update(businessUnits).set({
-      walletBalance: amount,
-      updatedAt: new Date(),
-    }).where(eq(businessUnits.id, unitId)).returning();
-    return unit;
+    console.log(`[DB UPDATE] Updating wallet for business unit ${unitId} to ${amount}`);
+    
+    try {
+      const [unit] = await db.update(businessUnits).set({
+        walletBalance: amount,
+        updatedAt: new Date(),
+      }).where(eq(businessUnits.id, unitId)).returning();
+      
+      console.log(`[DB UPDATE SUCCESS] Updated wallet balance:`, {
+        id: unit.id,
+        name: unit.name,
+        oldBalance: 'unknown',
+        newBalance: unit.walletBalance
+      });
+      
+      // Verify the update by reading it back
+      const [verification] = await db.select().from(businessUnits).where(eq(businessUnits.id, unitId));
+      console.log(`[DB VERIFICATION] Read-back after update:`, {
+        id: verification.id,
+        walletBalance: verification.walletBalance
+      });
+      
+      return unit;
+    } catch (error) {
+      console.error(`[DB UPDATE ERROR] Failed to update wallet for ${unitId}:`, error);
+      throw error;
+    }
   }
 
   // User-Business Unit assignments (allows multiple users per business unit with different roles)

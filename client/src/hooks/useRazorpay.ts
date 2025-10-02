@@ -60,20 +60,20 @@ export function useRazorpay() {
           description: `₹${amount / 100} has been added to your wallet.`,
         });
         
-        // Refresh wallet data - invalidate all related queries
-        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+        // Refresh wallet data - FORCE refetch because of staleTime: Infinity
+        await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
+        await queryClient.refetchQueries({ queryKey: ["/api/transactions"] });
         
-        // Invalidate ALL business units queries (with or without pseudo params)
-        queryClient.invalidateQueries({ 
+        // FORCE refetch ALL business units queries (with or without pseudo params)
+        await queryClient.refetchQueries({ 
           predicate: (query) => {
             const key = query.queryKey[0];
             return typeof key === 'string' && key.startsWith('/api/corporate/business-units');
           }
         });
         
-        // Also invalidate any specific business unit queries
-        queryClient.invalidateQueries({
+        // Also refetch any specific business unit queries
+        await queryClient.refetchQueries({
           predicate: (query) => {
             const key = query.queryKey[0];
             return typeof key === 'string' && (
@@ -275,21 +275,21 @@ export function useRazorpay() {
             const verifyResponse = await verifyRes.json();
 
             if (verifyResponse.success) {
-              // Invalidate queries to refresh data
-              queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-              queryClient.invalidateQueries({ queryKey: ["/api/wallet/balance"] });
-              queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+              // FORCE refetch queries because of staleTime: Infinity
+              await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
+              await queryClient.refetchQueries({ queryKey: ["/api/wallet/balance"] });
+              await queryClient.refetchQueries({ queryKey: ["/api/transactions"] });
               
-              // Invalidate ALL business units queries (with or without pseudo params)
-              queryClient.invalidateQueries({ 
+              // FORCE refetch ALL business units queries (with or without pseudo params)
+              await queryClient.refetchQueries({ 
                 predicate: (query) => {
                   const key = query.queryKey[0];
                   return typeof key === 'string' && key.startsWith('/api/corporate/business-units');
                 }
               });
               
-              // Also invalidate any specific business unit queries
-              queryClient.invalidateQueries({
+              // Also refetch any specific business unit queries
+              await queryClient.refetchQueries({
                 predicate: (query) => {
                   const key = query.queryKey[0];
                   return typeof key === 'string' && (

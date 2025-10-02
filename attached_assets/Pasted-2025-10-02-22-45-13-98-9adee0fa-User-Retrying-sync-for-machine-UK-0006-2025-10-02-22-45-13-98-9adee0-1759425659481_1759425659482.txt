@@ -1,0 +1,132 @@
+2025-10-02 22:45:13.98
+9adee0fa
+User
+Retrying sync for machine UK_0006
+2025-10-02 22:45:13.98
+9adee0fa
+User
+Starting auto sync for machine UK_0006
+2025-10-02 22:45:15.89
+9adee0fa
+User
+auto sync completed for machine UK_0006: SUCCESS
+2025-10-02 22:50:00.04
+9adee0fa
+User
+Checking for failed syncs to retry...
+2025-10-02 22:50:00.70
+9adee0fa
+User
+Database pool connected
+2025-10-02 22:50:00.82
+9adee0fa
+User
+Retrying sync for machine UK_0006
+2025-10-02 22:50:00.82
+9adee0fa
+User
+Starting auto sync for machine UK_0006
+2025-10-02 22:50:03.94
+9adee0fa
+User
+auto sync completed for machine UK_0006: SUCCESS
+2025-10-02 22:50:03.94
+9adee0fa
+User
+Retrying sync for machine UK_0010
+2025-10-02 22:50:03.94
+9adee0fa
+User
+Starting auto sync for machine UK_0010
+2025-10-02 22:50:07.14
+9adee0fa
+User
+auto sync completed for machine UK_0010: FAILED
+2025-10-02 22:50:07.14
+9adee0fa
+User
+Retrying sync for machine UK_0006
+2025-10-02 22:50:07.14
+9adee0fa
+User
+Starting auto sync for machine UK_0006
+2025-10-02 22:50:09.71
+9adee0fa
+User
+auto sync completed for machine UK_0006: SUCCESS
+2025-10-02 22:50:09.71
+9adee0fa
+User
+Retrying sync for machine UK_0007
+2025-10-02 22:50:09.71
+9adee0fa
+User
+Starting auto sync for machine UK_0007
+2025-10-02 22:50:12.68
+9adee0fa
+User
+auto sync completed for machine UK_0007: SUCCESS
+2025-10-02 22:50:12.68
+9adee0fa
+User
+Retrying sync for machine UK_0002
+2025-10-02 22:50:12.68
+9adee0fa
+User
+Starting auto sync for machine UK_0002
+2025-10-02 22:50:14.90
+9adee0fa
+User
+auto sync completed for machine UK_0002: SUCCESS
+2025-10-02 22:50:14.90
+9adee0fa
+User
+Retrying sync for machine UK_0006
+2025-10-02 22:50:14.90
+9adee0fa
+User
+Starting auto sync for machine UK_0006
+2025-10-02 22:50:17.55
+9adee0fa
+User
+auto sync completed for machine UK_0006: SUCCESS
+2025-10-02 22:50:17.55
+9adee0fa
+User
+Retrying sync for machine UK_0006
+2025-10-02 22:50:17.55
+9adee0fa
+User
+Starting auto sync for machine UK_0006
+2025-10-02 22:50:20.22
+9adee0fa
+User
+auto sync completed for machine UK_0006: SUCCESS
+2025-10-02 22:50:20.22
+9adee0fa
+User
+Retrying sync for machine UK_0006
+2025-10-02 22:50:20.22
+9adee0fa
+User
+Starting auto sync for machine UK_0006
+2025-10-02 22:50:22.41
+9adee0fa
+User
+auto sync completed for machine UK_0006: SUCCESS
+2025-10-02 22:50:22.41
+9adee0fa
+User
+Retrying sync for machine UK_0002
+2025-10-02 22:50:22.41
+9adee0fa
+User
+Starting auto sync for machine UK_0002
+2025-10-02 22:50:24.04
+9adee0fa
+User
+auto sync completed for machine UK_0002: FAILED
+2025-10-02 22:50:24.04
+9adee0fa
+User
+Retrying sync for machine UK_0002

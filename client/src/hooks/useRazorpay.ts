@@ -60,10 +60,28 @@ export function useRazorpay() {
           description: `₹${amount / 100} has been added to your wallet.`,
         });
         
-        // Refresh wallet data
+        // Refresh wallet data - invalidate all related queries
         queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
         queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/corporate/business-units"] });
+        
+        // Invalidate ALL business units queries (with or without pseudo params)
+        queryClient.invalidateQueries({ 
+          predicate: (query) => {
+            const key = query.queryKey[0];
+            return typeof key === 'string' && key.startsWith('/api/corporate/business-units');
+          }
+        });
+        
+        // Also invalidate any specific business unit queries
+        queryClient.invalidateQueries({
+          predicate: (query) => {
+            const key = query.queryKey[0];
+            return typeof key === 'string' && (
+              key.startsWith('/api/corporate/monthly-summary') ||
+              key.startsWith('/api/corporate/business-unit-summary')
+            );
+          }
+        });
         
         // Clear stored order
         localStorage.removeItem('lastPaymentOrder');
@@ -261,6 +279,25 @@ export function useRazorpay() {
               queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
               queryClient.invalidateQueries({ queryKey: ["/api/wallet/balance"] });
               queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+              
+              // Invalidate ALL business units queries (with or without pseudo params)
+              queryClient.invalidateQueries({ 
+                predicate: (query) => {
+                  const key = query.queryKey[0];
+                  return typeof key === 'string' && key.startsWith('/api/corporate/business-units');
+                }
+              });
+              
+              // Also invalidate any specific business unit queries
+              queryClient.invalidateQueries({
+                predicate: (query) => {
+                  const key = query.queryKey[0];
+                  return typeof key === 'string' && (
+                    key.startsWith('/api/corporate/monthly-summary') ||
+                    key.startsWith('/api/corporate/business-unit-summary')
+                  );
+                }
+              });
 
               toast({
                 title: "Payment Successful!",

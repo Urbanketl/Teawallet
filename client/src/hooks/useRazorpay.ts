@@ -24,6 +24,10 @@ interface RazorpayOptions {
   theme: {
     color: string;
   };
+  modal?: {
+    ondismiss?: () => void;
+    confirm_close?: boolean;
+  };
 }
 
 export function useRazorpay() {
@@ -261,6 +265,12 @@ export function useRazorpay() {
         name: "UrbanKetl",
         description: "Wallet Recharge",
         order_id: order.id,
+        modal: {
+          ondismiss: () => {
+            console.log("Modal dismissed by user or failed to open");
+            setLoading(false);
+          },
+        },
         handler: async (response: any) => {
           try {
             console.log("Payment successful, verifying...", response);

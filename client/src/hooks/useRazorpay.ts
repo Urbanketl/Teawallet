@@ -298,11 +298,14 @@ export function useRazorpay() {
         order_id: order.id,
         modal: {
           ondismiss: () => {
-            console.log("Modal dismissed");
+            console.log("✓ Modal dismissed by user");
+            clearTimeout(safetyTimeout);
             setLoading(false);
           },
         },
         handler: async (response: any) => {
+          console.log("✓ Payment handler triggered");
+          clearTimeout(safetyTimeout);
           try {
             // Verify payment
             const verifyRes = await apiRequest("POST", "/api/wallet/verify-payment", {
@@ -358,7 +361,25 @@ export function useRazorpay() {
 
       const razorpay = new window.Razorpay(options);
       
+      // Safety timeout: If no events fire within 3 seconds, reset
+      const safetyTimeout = setTimeout(() => {
+        console.warn("⚠️ Modal didn't trigger any events - possible Razorpay issue");
+        setLoading(false);
+        toast({
+          title: "Payment Modal Issue",
+          description: "Please try again in a few moments",
+          variant: "destructive",
+        });
+      }, 3000);
+      
+      // Clear timeout when any event fires
+      const clearSafety = () => {
+        console.log("Modal event detected, clearing safety timeout");
+        clearTimeout(safetyTimeout);
+      };
+      
       razorpay.on("payment.failed", (response: any) => {
+        clearSafety();
         console.error("Payment failed:", response);
         toast({
           title: "Payment Failed",
@@ -370,7 +391,7 @@ export function useRazorpay() {
       
       console.log("Opening Razorpay synchronously...");
       razorpay.open();
-      console.log("Razorpay opened successfully");
+      console.log("Razorpay opened successfully - waiting for events...");
       
     } catch (error: any) {
       console.error("Error executing payment:", error);

@@ -252,6 +252,7 @@ export function useRazorpay() {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
               amount: amount,
+              businessUnitId: userDetails?.businessUnitId,
             });
             const verifyResponse = await verifyRes.json();
 

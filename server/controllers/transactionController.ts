@@ -150,11 +150,18 @@ export async function verifyPaymentAndAddFunds(req: any, res: Response) {
     const userId = req.user.id;
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, amount, businessUnitId } = req.body;
 
+    console.log('=== PAYMENT VERIFICATION ===');
+    console.log('User ID:', userId);
+    console.log('Request body:', { razorpay_order_id, razorpay_payment_id, amount, businessUnitId });
+
     const isValid = await verifyPayment(razorpay_order_id, razorpay_payment_id, razorpay_signature);
 
     if (!isValid) {
+      console.error('Payment signature verification failed');
       return res.status(400).json({ message: "Payment verification failed" });
     }
+    
+    console.log('Payment signature verified successfully');
 
     // Handle business unit wallet recharge
     if (businessUnitId) {
@@ -194,12 +201,15 @@ export async function verifyPaymentAndAddFunds(req: any, res: Response) {
         razorpayPaymentId: razorpay_payment_id,
       });
 
+      console.log(`Payment successful: ₹${amount} added to ${businessUnit.name}`);
+      
       res.json({ 
         message: `Payment verified and ₹${amount} added to ${businessUnit.name} wallet successfully`,
         businessUnit: updatedBusinessUnit 
       });
     } else {
       // Business unit ID is required for all payment verification operations
+      console.error('Payment verification failed: businessUnitId missing in request');
       return res.status(400).json({ 
         message: "businessUnitId parameter is required for payment verification" 
       });

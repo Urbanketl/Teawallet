@@ -334,7 +334,6 @@ export function useRazorpay() {
       
       razorpay.on("payment.failed", (response: any) => {
         console.error("Razorpay payment failed:", response);
-        clearTimeout(timeoutId);
         toast({
           title: "Payment Failed",
           description: response.error?.description || "Payment was not successful",
@@ -345,66 +344,22 @@ export function useRazorpay() {
 
       razorpay.on("payment.cancelled", () => {
         console.log("Payment cancelled by user");
-        clearTimeout(timeoutId);
         setLoading(false);
       });
 
       // Add modal dismiss event handler
       razorpay.on("payment.closed", () => {
         console.log("Payment modal closed");
-        clearTimeout(timeoutId);
         setLoading(false);
       });
 
       console.log("Opening Razorpay checkout...");
       
-      // Add a timeout for popup blocking detection
-      let timeoutId: NodeJS.Timeout;
-
+      // Disable popup blocking fallback - Razorpay handles this natively
       try {
         console.log("Attempting to open Razorpay modal...");
         razorpay.open();
         console.log("Razorpay.open() called successfully");
-        
-        // Start popup detection timer immediately
-        timeoutId = setTimeout(() => {
-          console.warn("Payment modal seems blocked, opening fallback...");
-          setLoading(false);
-          
-          // Create a form that redirects to payment
-          const form = document.createElement('form');
-          form.method = 'POST';
-          form.action = `/payment-redirect`;
-          form.target = '_blank';
-          
-          // Add form fields
-          const fields = {
-            order_id: order.id,
-            key: keyId,
-            amount: order.amount,
-            currency: order.currency,
-            name: 'UrbanKetl',
-            description: 'Wallet Recharge'
-          };
-          
-          Object.entries(fields).forEach(([key, value]) => {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = key;
-            input.value = String(value);
-            form.appendChild(input);
-          });
-          
-          document.body.appendChild(form);
-          form.submit();
-          document.body.removeChild(form);
-          
-          toast({
-            title: "Payment Opened",
-            description: "Complete your payment in the new tab",
-            duration: 5000,
-          });
-        }, 2000); // 2 second detection
         
       } catch (openError) {
         console.error("Error opening Razorpay:", openError);

@@ -36,7 +36,11 @@ export async function createOrder(amount: number, currency = "INR") {
     payment_capture: 1,
   };
 
-  return await razorpay.orders.create(options);
+  console.log('Creating Razorpay order with options:', JSON.stringify(options, null, 2));
+  const order = await razorpay.orders.create(options);
+  console.log('Razorpay order created:', JSON.stringify(order, null, 2));
+  
+  return order;
 }
 
 export async function verifyPayment(

@@ -125,6 +125,16 @@ export async function createPaymentOrder(req: any, res: Response) {
 
     try {
       const order = await createOrder(amount); // Amount is already in rupees
+      
+      // Debug: Check order and keyId environment
+      const keyId = process.env.RAZORPAY_KEY_ID;
+      const keyMode = keyId?.startsWith('rzp_test_') ? 'TEST MODE' : keyId?.startsWith('rzp_live_') ? 'LIVE MODE' : 'UNKNOWN';
+      console.log("=== SENDING TO FRONTEND ===");
+      console.log("Order ID:", order.id);
+      console.log("Key ID:", keyId);
+      console.log("Environment:", keyMode);
+      console.log("Order belongs to:", order.id.startsWith('order_') ? 'Razorpay Order' : 'Unknown');
+      
       res.json({ success: true, order, keyId: process.env.RAZORPAY_KEY_ID });
     } catch (razorpayError: any) {
       console.error('Razorpay order creation error:', razorpayError);

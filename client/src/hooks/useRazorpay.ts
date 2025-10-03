@@ -212,7 +212,7 @@ export function useRazorpay() {
       }
       
       const orderResponse = await orderRes.json();
-      if (!orderResponse.success) {
+      if (!orderResponse.success || !orderResponse.order || !orderResponse.keyId) {
         throw new Error(orderResponse.message || "Failed to create payment order");
       }
       

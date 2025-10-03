@@ -420,7 +420,10 @@ export function useRazorpay() {
         setLoading(false);
       });
       
+      // Note: JSON.stringify won't show functions (handler, ondismiss), but they ARE defined
       console.log("Razorpay checkout options:", JSON.stringify(options, null, 2));
+      console.log("Handler callback:", typeof options.handler === 'function' ? '✅ DEFINED' : '❌ MISSING');
+      console.log("Modal ondismiss:", typeof options.modal?.ondismiss === 'function' ? '✅ DEFINED' : '❌ MISSING');
       console.log("Opening Razorpay synchronously...");
       razorpay.open();
       console.log("Razorpay opened successfully - waiting for events...");

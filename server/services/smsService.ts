@@ -152,7 +152,11 @@ export class WhatsAppService {
       console.error('=== WHATSAPP API ERROR ===');
       console.error('Status:', error.response?.status);
       console.error('Status Text:', error.response?.statusText);
-      console.error('Error Data:', JSON.stringify(error.response?.data, null, 2));
+      try {
+        console.error('Error Data:', JSON.stringify(error.response?.data, null, 2));
+      } catch {
+        console.error('Error Data (stringified):', String(error.response?.data));
+      }
       console.error('Full error response:', error.response);
       throw error;
     }

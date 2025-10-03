@@ -16,7 +16,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 export default function WalletPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
-  const { preparePayment, executePayment, preparing, preparedOrder, loading } = useRazorpay();
+  const { preparePayment, executePayment, preparing, loading } = useRazorpay();
   const [customAmount, setCustomAmount] = useState("");
   const [selectedBusinessUnitId, setSelectedBusinessUnitId] = useState<string>("");
   const [testMode, setTestMode] = useState(false);

@@ -30,6 +30,9 @@ interface RazorpayOptions {
   };
 }
 
+// Global flag to prevent duplicate script loads
+let razorpayScriptLoading = false;
+
 export function useRazorpay() {
   const [loading, setLoading] = useState(false);
   const [preparing, setPreparing] = useState(false);
@@ -148,11 +151,37 @@ export function useRazorpay() {
         return;
       }
 
+      // Check if script is already being loaded
+      if (razorpayScriptLoading) {
+        console.log("Razorpay script already loading, waiting...");
+        let attempts = 0;
+        const maxAttempts = 50; // 5 seconds max wait
+        const checkRazorpay = () => {
+          attempts++;
+          if (window.Razorpay) {
+            console.log(`Razorpay loaded after ${attempts} attempts (was loading)`);
+            resolve(true);
+          } else if (attempts >= maxAttempts) {
+            console.error("Razorpay script loading timeout");
+            razorpayScriptLoading = false; // Reset flag on timeout
+            resolve(false);
+          } else {
+            setTimeout(checkRazorpay, 100);
+          }
+        };
+        checkRazorpay();
+        return;
+      }
+
+      // Set loading flag to prevent duplicate loads
+      razorpayScriptLoading = true;
       console.log("Loading Razorpay script dynamically...");
+      
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.onload = () => {
         console.log("Razorpay script loaded successfully");
+        razorpayScriptLoading = false; // Reset flag after successful load
         // Wait a bit for the script to initialize
         setTimeout(() => {
           if (window.Razorpay) {
@@ -166,6 +195,7 @@ export function useRazorpay() {
       };
       script.onerror = (error) => {
         console.error("Failed to load Razorpay script:", error);
+        razorpayScriptLoading = false; // Reset flag on error
         resolve(false);
       };
       
@@ -173,6 +203,7 @@ export function useRazorpay() {
       setTimeout(() => {
         if (!window.Razorpay) {
           console.error("Razorpay script loading timeout");
+          razorpayScriptLoading = false; // Reset flag on timeout
           resolve(false);
         }
       }, 10000); // 10 second timeout for script loading

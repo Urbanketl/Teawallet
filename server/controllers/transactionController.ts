@@ -241,3 +241,67 @@ async function checkAndSendLowBalanceAlert(user: any) {
     }
   }
 }
+
+export async function testPayment(req: any, res: Response) {
+  try {
+    const { amount, businessUnitId } = req.body;
+    const userId = req.user.id;
+    
+    console.log('=== TEST PAYMENT (DEV MODE) ===');
+    console.log('Amount:', amount);
+    console.log('Business Unit ID:', businessUnitId);
+    console.log('User ID:', userId);
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ message: "Valid amount is required" });
+    }
+
+    if (!businessUnitId) {
+      return res.status(400).json({ message: "Business unit ID is required" });
+    }
+
+    const userBusinessUnits = await storage.getUserBusinessUnits(userId);
+    const businessUnit = userBusinessUnits.find(bu => bu.id === businessUnitId);
+    
+    if (!businessUnit) {
+      return res.status(403).json({ message: "Access denied to this business unit" });
+    }
+
+    const maxWalletBalanceStr = await storage.getSystemSetting('max_wallet_balance') || '50000.00';
+    const maxWalletBalance = parseFloat(maxWalletBalanceStr);
+    const currentBalance = parseFloat(businessUnit.walletBalance || '0');
+    const newBalance = currentBalance + amount;
+
+    if (newBalance > maxWalletBalance) {
+      return res.status(400).json({ 
+        message: `Cannot recharge ${businessUnit.name}. Maximum wallet balance is ₹${maxWalletBalance}. Current balance: ₹${currentBalance}`,
+        maxBalance: maxWalletBalance,
+        currentBalance: currentBalance
+      });
+    }
+
+    const updatedBusinessUnit = await storage.updateBusinessUnitWallet(businessUnitId, newBalance.toString());
+    
+    await storage.createTransaction({
+      userId,
+      businessUnitId,
+      type: 'recharge',
+      amount: amount.toString(),
+      description: `TEST: Wallet recharge for ${businessUnit.name} (Dev Mode)`,
+      status: 'completed',
+      razorpayOrderId: `TEST_ORDER_${Date.now()}`,
+      razorpayPaymentId: `TEST_PAY_${Date.now()}`,
+    });
+
+    console.log(`TEST Payment successful: ₹${amount} added to ${businessUnit.name}`);
+    
+    res.json({ 
+      success: true,
+      message: `₹${amount} added to ${businessUnit.name} wallet (Test Mode)`,
+      businessUnit: updatedBusinessUnit 
+    });
+  } catch (error) {
+    console.error("Error processing test payment:", error);
+    res.status(500).json({ message: "Failed to process test payment" });
+  }
+}

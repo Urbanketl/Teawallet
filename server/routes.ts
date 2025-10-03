@@ -736,6 +736,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/wallet/create-order', isAuthenticated, transactionController.createPaymentOrder);
 
   app.post('/api/wallet/verify-payment', isAuthenticated, transactionController.verifyPaymentAndAddFunds);
+  
+  // Test payment endpoint (dev mode - bypasses Razorpay)
+  app.post('/api/wallet/test-payment', isAuthenticated, transactionController.testPayment);
 
   // Legacy recharge endpoint - use /api/wallet/create-order instead
   app.post('/api/wallet/recharge', isAuthenticated, async (req: any, res) => {

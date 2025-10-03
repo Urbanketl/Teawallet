@@ -1,0 +1,91 @@
+Perfect — thanks for sharing the wallet.tsx. Now I can see why your Razorpay modal never opens.
+
+🔍 The Problem
+
+In your code you’re preparing the order in one step, and auto-executing Razorpay later in an effect:
+
+// Auto-execute payment after preparation completes
+useEffect(() => {
+  if (preparedOrder && selectedAmount === preparedOrder.amount && !loading && !preparing) {
+    // Automatically execute the payment once prepared
+    setTimeout(() => executePayment(), 100);
+  }
+}, [preparedOrder, selectedAmount]);
+
+
+That means the actual razorpay.open() call happens inside a setTimeout → useEffect → async context, not inside the original user’s click.
+Browsers treat this as a non-user gesture → popup blocked → your “⚠️ Modal didn’t trigger any events” warning fires.
+
+✅ Fix
+
+You need to make sure executePayment() runs synchronously inside the button click handler.
+Instead of preparing in an effect and then auto-executing, combine them into the click flow:
+
+Fix for Quick Recharge
+const handleQuickRecharge = async (amount: number) => {
+  if (!selectedBusinessUnitId) {
+    toast({ title: "Business Unit Required", description: "Please select a business unit", variant: "destructive" });
+    return;
+  }
+
+  if (testMode) {
+    // test flow unchanged…
+    return;
+  }
+
+  try {
+    // prepare
+    const prepared = await preparePayment(amount, selectedBusinessUnitId, {
+      name: `${user.firstName} ${user.lastName}`.trim(),
+      email: user.email || "",
+    });
+
+    if (prepared) {
+      // 🚀 IMPORTANT: call executePayment synchronously here
+      executePayment();
+    }
+  } catch (err) {
+    console.error("Recharge error:", err);
+  }
+};
+
+Fix for Custom Recharge
+const handleCustomRecharge = async () => {
+  const amount = parseFloat(customAmount);
+  if (isNaN(amount) || amount <= 0) {
+    toast({ title: "Invalid Amount", description: "Enter a valid amount", variant: "destructive" });
+    return;
+  }
+
+  if (!selectedBusinessUnitId) {
+    toast({ title: "Business Unit Required", description: "Please select a business unit", variant: "destructive" });
+    return;
+  }
+
+  if (testMode) {
+    // test flow unchanged…
+    return;
+  }
+
+  try {
+    const prepared = await preparePayment(amount, selectedBusinessUnitId, {
+      name: `${user.firstName} ${user.lastName}`.trim(),
+      email: user.email || "",
+    });
+
+    if (prepared) {
+      executePayment();   // 🚀 directly open modal
+      setCustomAmount("");
+    }
+  } catch (err) {
+    console.error("Custom recharge error:", err);
+  }
+};
+
+And remove this effect
+// ❌ REMOVE this, it's causing the async non-user trigger
+useEffect(() => {
+  if (preparedOrder && selectedAmount === preparedOrder.amount && !loading && !preparing) {
+    setTimeout(() => executePayment(), 100);
+  }
+}, [preparedOrder, selectedAmount]);

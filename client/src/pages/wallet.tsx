@@ -19,7 +19,6 @@ export default function WalletPage() {
   const { preparePayment, executePayment, preparing, preparedOrder, loading } = useRazorpay();
   const [customAmount, setCustomAmount] = useState("");
   const [selectedBusinessUnitId, setSelectedBusinessUnitId] = useState<string>("");
-  const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [testMode, setTestMode] = useState(false);
   const [testLoading, setTestLoading] = useState(false);
 
@@ -66,16 +65,6 @@ export default function WalletPage() {
       setSelectedBusinessUnitId(businessUnits[0].id);
     }
   }, [businessUnits, selectedBusinessUnitId]);
-
-  // Auto-prepare payment when amount and business unit are selected
-  useEffect(() => {
-    if (selectedAmount && selectedBusinessUnitId && user) {
-      preparePayment(selectedAmount, selectedBusinessUnitId, {
-        name: `${user.firstName} ${user.lastName}`.trim(),
-        email: user.email || "",
-      });
-    }
-  }, [selectedAmount, selectedBusinessUnitId, user]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -151,21 +140,21 @@ export default function WalletPage() {
       return;
     }
 
-    // Normal Razorpay flow
-    if (preparedOrder && preparedOrder.amount === amount && preparedOrder.businessUnitId === selectedBusinessUnitId) {
-      executePayment();
-    } else {
-      setSelectedAmount(amount);
+    // Normal Razorpay flow - prepare and execute synchronously
+    try {
+      const prepared = await preparePayment(amount, selectedBusinessUnitId, {
+        name: `${user.firstName} ${user.lastName}`.trim(),
+        email: user.email || "",
+      });
+
+      if (prepared) {
+        // 🚀 Call executePayment synchronously to maintain user gesture chain
+        executePayment();
+      }
+    } catch (err) {
+      console.error("Recharge error:", err);
     }
   };
-  
-  // Auto-execute payment after preparation completes
-  useEffect(() => {
-    if (preparedOrder && selectedAmount === preparedOrder.amount && !loading && !preparing) {
-      // Automatically execute the payment once prepared
-      setTimeout(() => executePayment(), 100);
-    }
-  }, [preparedOrder, selectedAmount]);
 
   const handleCustomRecharge = async () => {
     const amount = parseFloat(customAmount);
@@ -228,12 +217,20 @@ export default function WalletPage() {
       return;
     }
     
-    // Normal Razorpay flow
-    if (preparedOrder && preparedOrder.amount === amount && preparedOrder.businessUnitId === selectedBusinessUnitId) {
-      executePayment();
-      setCustomAmount("");
-    } else {
-      setSelectedAmount(amount);
+    // Normal Razorpay flow - prepare and execute synchronously
+    try {
+      const prepared = await preparePayment(amount, selectedBusinessUnitId, {
+        name: `${user.firstName} ${user.lastName}`.trim(),
+        email: user.email || "",
+      });
+
+      if (prepared) {
+        // 🚀 Call executePayment synchronously to maintain user gesture chain
+        executePayment();
+        setCustomAmount("");
+      }
+    } catch (err) {
+      console.error("Custom recharge error:", err);
     }
   };
 

@@ -420,6 +420,7 @@ export function useRazorpay() {
         setLoading(false);
       });
       
+      console.log("Razorpay checkout options:", JSON.stringify(options, null, 2));
       console.log("Opening Razorpay synchronously...");
       razorpay.open();
       console.log("Razorpay opened successfully - waiting for events...");

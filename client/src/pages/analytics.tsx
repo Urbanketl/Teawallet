@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
+import { Footer } from "@/components/layout/Footer";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart } from 'recharts';
 import { TrendingUp, Clock, Coffee, Activity, Users, DollarSign, Calendar, Download, Building2, Filter, RefreshCw, Maximize2, Eye, BarChart3 } from "lucide-react";
 import React, { useState, useEffect } from "react";
@@ -1304,6 +1305,7 @@ export default function AnalyticsPage() {
 
 
       </div>
+      <Footer />
     </div>
   );
 }

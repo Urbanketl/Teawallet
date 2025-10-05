@@ -15,6 +15,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { MessageCircle, Plus, Search, HelpCircle, FileText, Clock, AlertCircle, CheckCircle, Camera } from "lucide-react";
 import { format } from "date-fns";
 import Navigation from "@/components/Navigation";
+import { Footer } from "@/components/layout/Footer";
 
 interface SupportTicket {
   id: number;
@@ -591,6 +592,7 @@ export default function SupportPage() {
           </TabsContent>
         </Tabs>
       </div>
+      <Footer />
     </div>
   );
 }

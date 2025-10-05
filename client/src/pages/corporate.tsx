@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { apiRequest } from "@/lib/queryClient";
 import Navigation from "@/components/Navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { Footer } from "@/components/layout/Footer";
 import { 
   Coffee, 
   CreditCard, 
@@ -1079,6 +1080,7 @@ export default function Corporate() {
           </Card>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

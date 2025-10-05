@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRazorpay } from "@/hooks/useRazorpay";
 import { useQuery } from "@tanstack/react-query";
 import Navigation from "@/components/Navigation";
+import { Footer } from "@/components/layout/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -476,6 +477,7 @@ export default function WalletPage() {
           </CardContent>
         </Card>
       </main>
+      <Footer />
     </div>
   );
 }

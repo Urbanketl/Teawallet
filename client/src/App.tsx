@@ -21,6 +21,10 @@ import Analytics from "@/pages/analytics";
 import Corporate from "@/pages/corporate";
 import WalletPage from "@/pages/wallet";
 import RechargeHistoryPage from "@/pages/recharge-history";
+import PricingPolicy from "@/pages/policies/pricing";
+import TermsAndConditions from "@/pages/policies/terms";
+import PrivacyPolicy from "@/pages/policies/privacy";
+import RefundPolicy from "@/pages/policies/refund";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -42,20 +46,11 @@ function Router() {
     return <FullPageLoader message="Loading application..." />;
   }
 
-  // Prevent double rendering by using single component instead of Switch
-  if (!isAuthenticated) {
-    return (
-      <Switch>
-        <Route path="/auth" component={AuthPage} />
-        <Route path="*" component={AuthPage} />
-      </Switch>
-    );
-  }
-
+  // Policy pages are always public (Razorpay compliance)
   return (
     <>
       {/* Show pseudo login banner when in test mode */}
-      {pseudoParam && (
+      {isAuthenticated && pseudoParam && (
         <PseudoLoginBanner 
           pseudoUserId={pseudoParam} 
           userName={pseudoUser ? `${(pseudoUser as any).firstName} ${(pseudoUser as any).lastName}` : undefined}
@@ -63,15 +58,30 @@ function Router() {
       )}
       
       <Switch>
-        <Route path="/" component={Corporate} />
+        {/* Public policy pages - accessible without authentication */}
+        <Route path="/policies/pricing" component={PricingPolicy} />
+        <Route path="/policies/terms" component={TermsAndConditions} />
+        <Route path="/policies/privacy" component={PrivacyPolicy} />
+        <Route path="/policies/refund" component={RefundPolicy} />
+        
+        {/* Authentication page */}
         <Route path="/auth" component={AuthPage} />
-        <Route path="/wallet" component={WalletPage} />
-        <Route path="/recharge-history" component={RechargeHistoryPage} />
-        <Route path="/profile" component={Profile} />
-        <Route path="/admin" component={Admin} />
-        <Route path="/support" component={Support} />
-        <Route path="/analytics" component={Analytics} />
-        <Route component={NotFound} />
+        
+        {/* Protected routes - require authentication */}
+        {isAuthenticated ? (
+          <>
+            <Route path="/" component={Corporate} />
+            <Route path="/wallet" component={WalletPage} />
+            <Route path="/recharge-history" component={RechargeHistoryPage} />
+            <Route path="/profile" component={Profile} />
+            <Route path="/admin" component={Admin} />
+            <Route path="/support" component={Support} />
+            <Route path="/analytics" component={Analytics} />
+            <Route component={NotFound} />
+          </>
+        ) : (
+          <Route path="*" component={AuthPage} />
+        )}
       </Switch>
     </>
   );

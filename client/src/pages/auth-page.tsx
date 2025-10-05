@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Lock, Mail, Key, ArrowRight, Coffee, CreditCard, BarChart3, Smartphone } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { Footer } from "@/components/layout/Footer";
 
 export default function AuthPage() {
   const [location, navigate] = useLocation();
@@ -399,7 +400,7 @@ export default function AuthPage() {
 
   // Main login form
   return (
-    <div className="h-screen bg-white flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-white flex flex-col">
       {/* Header with Logo - Top Left */}
       <div className="flex justify-start pt-4 pl-6 pb-2">
         <div className="w-20 h-20 bg-white rounded-lg shadow-md flex items-center justify-center p-2">
@@ -540,6 +541,8 @@ export default function AuthPage() {
           </div>
         </div>
       </div>
+      
+      <Footer />
     </div>
   );
 }

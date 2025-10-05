@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
+import { Footer } from "@/components/layout/Footer";
 import RechargeHistory from "@/components/RechargeHistory";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { History, CreditCard } from "lucide-react";
@@ -35,6 +36,7 @@ export default function RechargeHistoryPage() {
           showExportButton={true}
         />
       </div>
+      <Footer />
     </div>
   );
 }

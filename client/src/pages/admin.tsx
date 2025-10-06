@@ -5854,7 +5854,7 @@ function BalanceAlertTesting() {
   const [alertType, setAlertType] = useState<'critical' | 'low'>('critical');
   const [isSending, setIsSending] = useState(false);
 
-  const { data: businessUnits } = useQuery({
+  const { data: businessUnits, isLoading } = useQuery({
     queryKey: ["/api/admin/business-units"],
     retry: false,
   });
@@ -5921,16 +5921,23 @@ function BalanceAlertTesting() {
               <Select
                 value={selectedBusinessUnit}
                 onValueChange={setSelectedBusinessUnit}
+                disabled={isLoading}
               >
-                <SelectTrigger id="businessUnit" className="mt-1">
-                  <SelectValue placeholder="Choose a business unit" />
+                <SelectTrigger id="businessUnit" className="mt-1" data-testid="select-business-unit">
+                  <SelectValue placeholder={isLoading ? "Loading..." : "Choose a business unit"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {(businessUnits as any[])?.map((unit: any) => (
-                    <SelectItem key={unit.id} value={unit.id}>
-                      {unit.name} - ₹{unit.walletBalance}
+                  {Array.isArray(businessUnits) && businessUnits.length > 0 ? (
+                    businessUnits.map((unit: any) => (
+                      <SelectItem key={unit.id} value={unit.id}>
+                        {unit.name} - ₹{parseFloat(unit.walletBalance || 0).toFixed(2)}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-data" disabled>
+                      No business units available
                     </SelectItem>
-                  ))}
+                  )}
                 </SelectContent>
               </Select>
             </div>

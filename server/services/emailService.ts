@@ -25,7 +25,7 @@ export class EmailService {
   }
 
   private generatePasswordResetTemplate(user: User, resetToken: string): { subject: string, html: string } {
-    const resetUrl = `${process.env.FRONTEND_URL || 'https://ukwallet.com'}/reset-password?token=${resetToken}`;
+    const resetUrl = `${process.env.FRONTEND_URL || 'https://ukteawallet.com'}/reset-password?token=${resetToken}`;
     
     const subject = 'Reset Your UKteawallet Password';
     

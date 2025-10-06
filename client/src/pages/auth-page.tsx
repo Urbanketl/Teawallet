@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,18 @@ export default function AuthPage() {
     confirmPassword: "",
     resetToken: "",
   });
+
+  // Check for reset token in URL on component mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    
+    if (token) {
+      setFormData(prev => ({ ...prev, resetToken: token }));
+      setShowResetPassword(true);
+      setIsLogin(false);
+    }
+  }, []);
 
   // Redirect if already authenticated
   if (user && !requiresPasswordReset) {

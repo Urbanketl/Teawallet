@@ -5918,44 +5918,39 @@ function BalanceAlertTesting() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="businessUnit">Select Business Unit</Label>
-              <Select
+              <select
+                id="businessUnit"
+                className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 value={selectedBusinessUnit}
-                onValueChange={setSelectedBusinessUnit}
+                onChange={(e) => setSelectedBusinessUnit(e.target.value)}
                 disabled={isLoading}
+                data-testid="select-business-unit"
               >
-                <SelectTrigger id="businessUnit" className="mt-1" data-testid="select-business-unit">
-                  <SelectValue placeholder={isLoading ? "Loading..." : "Choose a business unit"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.isArray(businessUnits) && businessUnits.length > 0 ? (
-                    businessUnits.map((unit: any) => (
-                      <SelectItem key={unit.id} value={unit.id}>
-                        {unit.name} - ₹{parseFloat(unit.walletBalance || 0).toFixed(2)}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="no-data" disabled>
-                      No business units available
-                    </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+                <option value="">
+                  {isLoading ? "Loading..." : "Choose a business unit"}
+                </option>
+                {Array.isArray(businessUnits) && businessUnits.length > 0 ? (
+                  businessUnits.map((unit: any) => (
+                    <option key={unit.id} value={unit.id}>
+                      {unit.name} - ₹{parseFloat(unit.walletBalance || 0).toFixed(2)}
+                    </option>
+                  ))
+                ) : null}
+              </select>
             </div>
 
             <div>
               <Label htmlFor="alertType">Alert Type</Label>
-              <Select
+              <select
+                id="alertType"
+                className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 value={alertType}
-                onValueChange={(value: 'critical' | 'low') => setAlertType(value)}
+                onChange={(e) => setAlertType(e.target.value as 'critical' | 'low')}
+                data-testid="select-alert-type"
               >
-                <SelectTrigger id="alertType" className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="critical">🔴 Critical Balance Alert</SelectItem>
-                  <SelectItem value="low">🟡 Low Balance Alert</SelectItem>
-                </SelectContent>
-              </Select>
+                <option value="critical">🔴 Critical Balance Alert</option>
+                <option value="low">🟡 Low Balance Alert</option>
+              </select>
             </div>
           </div>
 

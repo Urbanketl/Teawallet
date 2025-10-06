@@ -403,19 +403,42 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <Helmet>
-        <title>Login - UrbanKetl | Corporate Tea Vending Solutions</title>
-        <meta name="description" content="Access your UrbanKetl corporate tea vending account. Manage RFID cards, recharge wallets, and monitor tea machine usage across your business units." />
-        <meta name="keywords" content="corporate tea vending, RFID tea machine, office tea service, digital wallet, UrbanKetl login" />
+        <title>Login - UKWallet by UrbanKetl | Corporate Tea Vending Solutions</title>
+        <meta name="description" content="Access your UKWallet account by UrbanKetl. Manage RFID cards, recharge wallets, and monitor tea machine usage across your business units." />
+        <meta name="keywords" content="UKWallet, ukwallet.com, UrbanKetl, corporate tea vending, RFID tea machine, office tea service, digital wallet login" />
         <link rel="canonical" href={`${window.location.origin}/login`} />
         
-        <meta property="og:title" content="UrbanKetl - Corporate Tea Vending Login" />
-        <meta property="og:description" content="Smart RFID-based tea vending system for businesses. Manage your corporate tea service with digital wallet functionality." />
+        <meta property="og:site_name" content="UKWallet by UrbanKetl" />
+        <meta property="og:title" content="UKWallet by UrbanKetl - Corporate Tea Vending Login" />
+        <meta property="og:description" content="Smart RFID-based tea vending system for businesses. UKWallet is a product of UrbanKetl - Manage your corporate tea service with digital wallet functionality." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`${window.location.origin}/login`} />
         
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content="UrbanKetl - Corporate Tea Vending" />
-        <meta name="twitter:description" content="Smart RFID tea vending solutions for modern workplaces" />
+        <meta name="twitter:title" content="UKWallet by UrbanKetl - Corporate Tea Vending" />
+        <meta name="twitter:description" content="Smart RFID tea vending solutions by UrbanKetl for modern workplaces" />
+        
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            "name": "UKWallet",
+            "alternateName": "UrbanKetl",
+            "url": window.location.origin,
+            "description": "Corporate tea vending management system with RFID card authentication and digital wallet",
+            "applicationCategory": "BusinessApplication",
+            "author": {
+              "@type": "Organization",
+              "name": "UrbanKetl",
+              "url": window.location.origin
+            },
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "INR"
+            }
+          })}
+        </script>
       </Helmet>
       {/* Header with Logo - Top Left */}
       <div className="flex justify-start pt-4 pl-6 pb-2">

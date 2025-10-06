@@ -415,14 +415,14 @@ export default function AuthPage() {
         <meta property="og:url" content={`${window.location.origin}/login`} />
         
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content="UKWallet by UrbanKetl - Corporate Tea Vending" />
+        <meta name="twitter:title" content="UKteaWallet by UrbanKetl - Corporate Tea Vending" />
         <meta name="twitter:description" content="Smart RFID tea vending solutions by UrbanKetl for modern workplaces" />
         
         <script type="application/ld+json">
           {JSON.stringify({
             "@context": "https://schema.org",
             "@type": "WebApplication",
-            "name": "UKWallet",
+            "name": "UKteawallet",
             "alternateName": "UrbanKetl",
             "url": window.location.origin,
             "description": "Corporate tea vending management system with RFID card authentication and digital wallet",

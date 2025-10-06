@@ -167,7 +167,7 @@ export class EmailService {
             </p>
             
             <div style="text-align: center; margin: 24px 0;">
-              <a href="${process.env.FRONTEND_URL || 'https://your-domain.replit.app'}/wallet" 
+              <a href="${process.env.FRONTEND_URL || 'https://ukteawallet.com'}/wallet" 
                  style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">
                 Recharge Wallet Now
               </a>

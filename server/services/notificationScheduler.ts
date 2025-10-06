@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import { storage } from '../storage';
 import { whatsAppService, BalanceAlertData } from './smsService';
+import { emailService } from './emailService';
 
 export class NotificationScheduler {
   private isEnabled: boolean = true;
@@ -99,8 +100,8 @@ export class NotificationScheduler {
         return;
       }
 
-      // Check if we already sent critical WhatsApp alert today
-      const lastSent = await storage.getLastEmailLog(businessUnit.id, 'critical_balance_whatsapp');
+      // Check if we already sent critical alert today
+      const lastSent = await storage.getLastEmailLog(businessUnit.id, 'critical_balance_email');
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
@@ -116,23 +117,45 @@ export class NotificationScheduler {
         alertType: 'critical'
       };
 
-      const result = await whatsAppService.sendBalanceAlert(recipients, alertData);
+      // Send email to all recipients
+      const emailResult = await emailService.sendBalanceAlert(recipients, alertData);
       
-      if (result.success) {
-        console.log(`Critical balance WhatsApp alert sent for ${businessUnit.name}`);
+      if (emailResult.success) {
+        console.log(`Critical balance emails sent for ${businessUnit.name}`);
         
-        // Log the WhatsApp message for each recipient
+        // Log the email for each recipient
         for (const recipient of recipients) {
           await storage.logEmailSent({
             userId: recipient.id,
             businessUnitId: businessUnit.id,
-            emailType: 'critical_balance_whatsapp',
-            subject: `CRITICAL WhatsApp Alert: ${businessUnit.name} - ₹${alertData.currentBalance}`,
+            emailType: 'critical_balance_email',
+            subject: `CRITICAL Alert: ${businessUnit.name} - ₹${alertData.currentBalance}`,
             deliveryStatus: 'sent'
           });
         }
       } else {
-        console.error(`Failed to send critical balance WhatsApp alert for ${businessUnit.name}:`, result.error);
+        console.error(`Failed to send critical balance emails for ${businessUnit.name}:`, emailResult.error);
+        
+        // Log failed emails
+        for (const recipient of recipients) {
+          await storage.logEmailSent({
+            userId: recipient.id,
+            businessUnitId: businessUnit.id,
+            emailType: 'critical_balance_email',
+            subject: `CRITICAL Alert: ${businessUnit.name} - ₹${alertData.currentBalance}`,
+            deliveryStatus: 'failed'
+          });
+        }
+      }
+
+      // Also try to send WhatsApp if enabled
+      try {
+        const result = await whatsAppService.sendBalanceAlert(recipients, alertData);
+        if (result.success) {
+          console.log(`Critical balance WhatsApp alert sent for ${businessUnit.name}`);
+        }
+      } catch (whatsappError: any) {
+        console.log(`WhatsApp notification skipped (non-critical):`, whatsappError?.message || 'Unknown error');
       }
     } catch (error) {
       console.error(`Error sending critical balance alert for ${businessUnit.name}:`, error);
@@ -156,23 +179,45 @@ export class NotificationScheduler {
         alertType: 'low'
       };
 
-      const result = await whatsAppService.sendBalanceAlert(recipients, alertData);
+      // Send email to all recipients
+      const emailResult = await emailService.sendBalanceAlert(recipients, alertData);
       
-      if (result.success) {
-        console.log(`Low balance WhatsApp alert sent for ${businessUnit.name}`);
+      if (emailResult.success) {
+        console.log(`Low balance emails sent for ${businessUnit.name}`);
         
-        // Log the WhatsApp message for each recipient
+        // Log the email for each recipient
         for (const recipient of recipients) {
           await storage.logEmailSent({
             userId: recipient.id,
             businessUnitId: businessUnit.id,
-            emailType: 'low_balance_whatsapp',
-            subject: `LOW WhatsApp Alert: ${businessUnit.name} - ₹${alertData.currentBalance}`,
+            emailType: 'low_balance_email',
+            subject: `LOW Alert: ${businessUnit.name} - ₹${alertData.currentBalance}`,
             deliveryStatus: 'sent'
           });
         }
       } else {
-        console.error(`Failed to send low balance WhatsApp alert for ${businessUnit.name}:`, result.error);
+        console.error(`Failed to send low balance emails for ${businessUnit.name}:`, emailResult.error);
+        
+        // Log failed emails
+        for (const recipient of recipients) {
+          await storage.logEmailSent({
+            userId: recipient.id,
+            businessUnitId: businessUnit.id,
+            emailType: 'low_balance_email',
+            subject: `LOW Alert: ${businessUnit.name} - ₹${alertData.currentBalance}`,
+            deliveryStatus: 'failed'
+          });
+        }
+      }
+
+      // Also try to send WhatsApp if enabled
+      try {
+        const result = await whatsAppService.sendBalanceAlert(recipients, alertData);
+        if (result.success) {
+          console.log(`Low balance WhatsApp alert sent for ${businessUnit.name}`);
+        }
+      } catch (whatsappError: any) {
+        console.log(`WhatsApp notification skipped (non-critical):`, whatsappError?.message || 'Unknown error');
       }
     } catch (error) {
       console.error(`Error sending low balance alert for ${businessUnit.name}:`, error);

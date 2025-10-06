@@ -299,6 +299,10 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ error: "Current and new passwords are required" });
       }
 
+      if (!req.user) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
       const user = await storage.getUser(req.user.id);
       if (!user || !(await comparePasswords(currentPassword, user.password || ""))) {
         return res.status(400).json({ error: "Current password is incorrect" });

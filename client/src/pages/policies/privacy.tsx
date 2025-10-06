@@ -33,10 +33,7 @@ export default function PrivacyPolicy() {
             
             <h3>2.1 Personal Information</h3>
             <ul>
-              <li>Name and employee ID (provided by your organization)</li>
-              <li>Email address (for account notifications)</li>
-              <li>Phone number (optional, for SMS notifications)</li>
-              <li>RFID card unique identifier</li>
+              <li>No personal information is collected as the RFID card is linked directlyu to the business unit and not to employees. when the card is tapped, the machine checks if the card is valid and checks agains the linked Business unit. If the balance is avaiable, tea will be dispensed.</li>
             </ul>
 
             <h3>2.2 Transaction Data</h3>
@@ -164,7 +161,7 @@ export default function PrivacyPolicy() {
             </p>
             <ul>
               <li>Your organization's administrator</li>
-              <li>UrbanKetl support team</li>
+              <li>UrbanKetl support team contact@urbanketl.com</li>
             </ul>
 
             <h2>13. Consent</h2>

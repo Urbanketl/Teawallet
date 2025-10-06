@@ -84,7 +84,6 @@ export default function RefundPolicy() {
             <ul>
               <li>Beverages already dispensed from the machine</li>
               <li>Accidental beverage dispensing due to user error</li>
-              <li>Change of mind after successful wallet recharge</li>
               <li>Dissatisfaction with beverage taste or quality (machine-related issues should be reported separately)</li>
               <li>Lost or stolen RFID cards (report immediately to prevent unauthorized usage)</li>
             </ul>

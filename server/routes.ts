@@ -23,6 +23,7 @@ import { machineSyncController } from "./controllers/machineSyncController";
 import { ChallengeResponseController } from "./controllers/challengeResponseController";
 import { AutoSyncController } from "./controllers/autoSyncController";
 import { upiSyncController } from "./controllers/upiSyncController";
+import { notificationScheduler } from "./services/notificationScheduler";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize Razorpay
@@ -226,6 +227,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error updating system setting:', error);
       res.status(500).json({ message: 'Failed to update system setting' });
+    }
+  });
+
+  // Manual Balance Alert Testing Route
+  app.post('/api/admin/test-balance-alert', requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { businessUnitId, alertType } = req.body;
+      
+      if (!businessUnitId || !alertType) {
+        return res.status(400).json({ message: 'businessUnitId and alertType are required' });
+      }
+
+      if (alertType !== 'critical' && alertType !== 'low') {
+        return res.status(400).json({ message: 'alertType must be either "critical" or "low"' });
+      }
+
+      const result = await notificationScheduler.manualTriggerBalanceAlert(businessUnitId, alertType);
+      
+      if (result.success) {
+        res.json({ message: result.message });
+      } else {
+        res.status(500).json({ message: result.message, error: result.error });
+      }
+    } catch (error) {
+      console.error('Error testing balance alert:', error);
+      res.status(500).json({ message: 'Failed to send test alert' });
     }
   });
 

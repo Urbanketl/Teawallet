@@ -17,17 +17,21 @@ export class NotificationScheduler {
 
     console.log('Starting notification scheduler...');
 
-    // Check for critical balance alerts every hour
+    // Check for critical balance alerts every hour (IST timezone)
     cron.schedule('0 * * * *', () => {
       this.checkCriticalBalanceAlerts();
+    }, {
+      timezone: 'Asia/Kolkata'
     });
 
-    // Check for low balance alerts every day at 9 AM
+    // Check for low balance alerts every day at 9 AM IST
     cron.schedule('0 9 * * *', () => {
       this.checkLowBalanceAlerts();
+    }, {
+      timezone: 'Asia/Kolkata'
     });
 
-    console.log('Notification scheduler started with cron jobs');
+    console.log('Notification scheduler started with cron jobs (IST timezone)');
   }
 
   async checkCriticalBalanceAlerts() {
@@ -226,6 +230,42 @@ export class NotificationScheduler {
     } catch (error) {
       console.error('Error checking if should send low balance alert:', error);
       return false;
+    }
+  }
+
+  async manualTriggerBalanceAlert(businessUnitId: string, alertType: 'critical' | 'low'): Promise<{ success: boolean; message: string; error?: string }> {
+    try {
+      console.log(`Manual trigger: ${alertType} balance alert for business unit ${businessUnitId}`);
+      
+      // Get the business unit
+      const businessUnit = await storage.getBusinessUnit(businessUnitId);
+      if (!businessUnit) {
+        return { success: false, message: 'Business unit not found' };
+      }
+
+      // Get threshold from settings
+      const settings = await storage.getSystemSettings();
+      const thresholdKey = alertType === 'critical' ? 'critical_balance_threshold' : 'low_balance_threshold';
+      const threshold = settings.find(s => s.key === thresholdKey)?.value || (alertType === 'critical' ? '100' : '500');
+
+      // Send the alert
+      if (alertType === 'critical') {
+        await this.sendCriticalBalanceAlert(businessUnit, threshold);
+      } else {
+        await this.sendLowBalanceAlert(businessUnit, threshold);
+      }
+
+      return { 
+        success: true, 
+        message: `${alertType === 'critical' ? 'Critical' : 'Low'} balance alert sent successfully for ${businessUnit.name}` 
+      };
+    } catch (error) {
+      console.error('Error in manual trigger:', error);
+      return { 
+        success: false, 
+        message: 'Failed to send alert', 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      };
     }
   }
 

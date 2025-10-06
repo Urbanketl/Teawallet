@@ -1484,144 +1484,163 @@ export default function AdminPage() {
 
             {/* Settings Modal */}
             {settingsOpen && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-                  <div className="mb-4">
-                    <h2 className="text-xl font-semibold">System Settings</h2>
-                    <p className="text-gray-600 text-sm">Configure system-wide settings for the UrbanKetl tea dispensing system.</p>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="systemName">System Name</Label>
-                      <Input
-                        id="systemName"
-                        value={settings.systemName}
-                        onChange={(e) => setSettings({...settings, systemName: e.target.value})}
-                        className="w-full"
-                      />
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+                  <Tabs defaultValue="settings" className="w-full">
+                    <div className="sticky top-0 bg-white border-b p-6 pb-0">
+                      <div className="mb-4">
+                        <h2 className="text-xl font-semibold">System Settings</h2>
+                        <p className="text-gray-600 text-sm">Configure system-wide settings and test notifications</p>
+                      </div>
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="settings">⚙️ Settings</TabsTrigger>
+                        <TabsTrigger value="testing">🔔 Alert Testing</TabsTrigger>
+                      </TabsList>
                     </div>
-                    
-                    <div>
-                      <Label htmlFor="maxBalance">Max Wallet (₹)</Label>
-                      <Input
-                        id="maxBalance"
-                        type="number"
-                        step="0.01"
-                        value={settings.maxWalletBalance}
-                        onChange={(e) => setSettings({...settings, maxWalletBalance: e.target.value})}
-                        className="w-full"
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="criticalBalance">Critical Balance Threshold (₹)</Label>
-                      <Input
-                        id="criticalBalance"
-                        type="number"
-                        step="0.01"
-                        value={settings.criticalBalanceThreshold}
-                        onChange={(e) => setSettings({...settings, criticalBalanceThreshold: e.target.value})}
-                        className="w-full"
-                        placeholder="100.00"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Units with balance at or below this amount will be marked as critical</p>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="lowBalanceAlert">Low Balance Warning Threshold (₹)</Label>
-                      <Input
-                        id="lowBalanceAlert"
-                        type="number"
-                        step="0.01"
-                        value={settings.lowBalanceAlertThreshold}
-                        onChange={(e) => setSettings({...settings, lowBalanceAlertThreshold: e.target.value})}
-                        className="w-full"
-                        placeholder="500.00"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Units with balance below this amount (but above critical) will be marked as low balance</p>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="maintenance">Maintenance Mode</Label>
-                      <Switch
-                        id="maintenance"
-                        checked={settings.maintenanceMode}
-                        onCheckedChange={(checked) => setSettings({...settings, maintenanceMode: checked})}
-                      />
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="autoRecharge">Auto Recharge</Label>
-                      <Switch
-                        id="autoRecharge" 
-                        checked={settings.autoRecharge}
-                        onCheckedChange={(checked) => setSettings({...settings, autoRecharge: checked})}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-end space-x-2 mt-6">
-                    <Button variant="outline" onClick={() => setSettingsOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button 
-                      onClick={async () => {
-                        try {
-                          console.log('Saving all settings...');
-                          
-                          // Save all three balance-related settings
-                          const settingsToSave = [
-                            { key: 'max_wallet_balance', value: parseFloat(settings.maxWalletBalance).toFixed(2) },
-                            { key: 'critical_balance_threshold', value: parseFloat(settings.criticalBalanceThreshold).toFixed(2) },
-                            { key: 'low_balance_threshold', value: parseFloat(settings.lowBalanceAlertThreshold).toFixed(2) }
-                          ];
 
-                          // Save each setting
-                          for (const setting of settingsToSave) {
-                            const response = await fetch('/api/admin/settings', {
-                              method: 'PATCH',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify(setting),
-                              credentials: 'include'
-                            });
+                    <TabsContent value="settings" className="p-6">
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="systemName">System Name</Label>
+                          <Input
+                            id="systemName"
+                            value={settings.systemName}
+                            onChange={(e) => setSettings({...settings, systemName: e.target.value})}
+                            className="w-full"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="maxBalance">Max Wallet (₹)</Label>
+                          <Input
+                            id="maxBalance"
+                            type="number"
+                            step="0.01"
+                            value={settings.maxWalletBalance}
+                            onChange={(e) => setSettings({...settings, maxWalletBalance: e.target.value})}
+                            className="w-full"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="criticalBalance">Critical Balance Threshold (₹)</Label>
+                          <Input
+                            id="criticalBalance"
+                            type="number"
+                            step="0.01"
+                            value={settings.criticalBalanceThreshold}
+                            onChange={(e) => setSettings({...settings, criticalBalanceThreshold: e.target.value})}
+                            className="w-full"
+                            placeholder="100.00"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Units with balance at or below this amount will be marked as critical</p>
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="lowBalanceAlert">Low Balance Warning Threshold (₹)</Label>
+                          <Input
+                            id="lowBalanceAlert"
+                            type="number"
+                            step="0.01"
+                            value={settings.lowBalanceAlertThreshold}
+                            onChange={(e) => setSettings({...settings, lowBalanceAlertThreshold: e.target.value})}
+                            className="w-full"
+                            placeholder="500.00"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Units with balance below this amount (but above critical) will be marked as low balance</p>
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="maintenance">Maintenance Mode</Label>
+                          <Switch
+                            id="maintenance"
+                            checked={settings.maintenanceMode}
+                            onCheckedChange={(checked) => setSettings({...settings, maintenanceMode: checked})}
+                          />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="autoRecharge">Auto Recharge</Label>
+                          <Switch
+                            id="autoRecharge" 
+                            checked={settings.autoRecharge}
+                            onCheckedChange={(checked) => setSettings({...settings, autoRecharge: checked})}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-end space-x-2 mt-6">
+                        <Button variant="outline" onClick={() => setSettingsOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button 
+                          onClick={async () => {
+                            try {
+                              console.log('Saving all settings...');
+                              
+                              // Save all three balance-related settings
+                              const settingsToSave = [
+                                { key: 'max_wallet_balance', value: parseFloat(settings.maxWalletBalance).toFixed(2) },
+                                { key: 'critical_balance_threshold', value: parseFloat(settings.criticalBalanceThreshold).toFixed(2) },
+                                { key: 'low_balance_threshold', value: parseFloat(settings.lowBalanceAlertThreshold).toFixed(2) }
+                              ];
 
-                            if (!response.ok) {
-                              const errorData = await response.text();
-                              console.error(`Failed to save ${setting.key}:`, errorData);
-                              throw new Error(`Failed to update ${setting.key}: ${response.status}`);
+                              // Save each setting
+                              for (const setting of settingsToSave) {
+                                const response = await fetch('/api/admin/settings', {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify(setting),
+                                  credentials: 'include'
+                                });
+
+                                if (!response.ok) {
+                                  const errorData = await response.text();
+                                  console.error(`Failed to save ${setting.key}:`, errorData);
+                                  throw new Error(`Failed to update ${setting.key}: ${response.status}`);
+                                }
+                              }
+
+                              console.log('All settings saved successfully, refreshing cache...');
+
+                              // Force refresh all settings-related queries
+                              await queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
+                              await queryClient.refetchQueries({ queryKey: ["/api/admin/settings"] });
+
+                              console.log('Cache refreshed, showing success message...');
+
+                              toast({
+                                title: "Settings Updated Successfully",
+                                description: `All balance thresholds updated: Max Wallet ₹${settings.maxWalletBalance}, Critical ₹${settings.criticalBalanceThreshold}, Low Balance ₹${settings.lowBalanceAlertThreshold}`,
+                              });
+                              
+                              setSettingsOpen(false);
+                              
+                            } catch (error) {
+                              console.error('Settings save error:', error);
+                              toast({
+                                title: "Update Failed",
+                                description: `Failed to save system settings: ${(error as any).message}`,
+                                variant: "destructive",
+                              });
                             }
-                          }
+                          }}
+                          className="bg-tea-green hover:bg-tea-dark"
+                        >
+                          Save Changes
+                        </Button>
+                      </div>
+                    </TabsContent>
 
-                          console.log('All settings saved successfully, refreshing cache...');
-
-                          // Force refresh all settings-related queries
-                          await queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
-                          await queryClient.refetchQueries({ queryKey: ["/api/admin/settings"] });
-
-                          console.log('Cache refreshed, showing success message...');
-
-                          toast({
-                            title: "Settings Updated Successfully",
-                            description: `All balance thresholds updated: Max Wallet ₹${settings.maxWalletBalance}, Critical ₹${settings.criticalBalanceThreshold}, Low Balance ₹${settings.lowBalanceAlertThreshold}`,
-                          });
-                          
-                          setSettingsOpen(false);
-                          
-                        } catch (error) {
-                          console.error('Settings save error:', error);
-                          toast({
-                            title: "Update Failed",
-                            description: `Failed to save system settings: ${(error as any).message}`,
-                            variant: "destructive",
-                          });
-                        }
-                      }}
-                      className="bg-tea-green hover:bg-tea-dark"
-                    >
-                      Save Changes
-                    </Button>
-                  </div>
+                    <TabsContent value="testing" className="p-6">
+                      <BalanceAlertTesting />
+                      <div className="flex justify-end mt-6">
+                        <Button variant="outline" onClick={() => setSettingsOpen(false)}>
+                          Close
+                        </Button>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
                 </div>
               </div>
             )}
@@ -1654,7 +1673,6 @@ export default function AdminPage() {
                 <option value="reports">📊 Reports & Export</option>
                 <option value="faq">❓ FAQ Management</option>
                 <option value="pseudo-login">🔓 Test Login</option>
-                <option value="settings">⚙️ System Settings</option>
               </select>
             </CardContent>
           </Card>
@@ -1774,16 +1792,6 @@ export default function AdminPage() {
                   }`}
                 >
                   🔓 Test
-                </button>
-                <button 
-                  onClick={() => setCurrentTab("settings")}
-                  className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                    currentTab === "settings" 
-                      ? "border-orange-500 text-orange-600 bg-orange-50" 
-                      : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                  }`}
-                >
-                  ⚙️ Settings
                 </button>
               </div>
             </CardContent>
@@ -2557,13 +2565,6 @@ export default function AdminPage() {
           )}
 
           {currentTab === "faq" && <FaqManagement />}
-
-          {currentTab === "settings" && (
-            <div className="space-y-6">
-              <SystemSettingsManagement />
-              <BalanceAlertTesting />
-            </div>
-          )}
 
           {currentTab === "machine-sync" && (
             <MachineSyncDashboard />

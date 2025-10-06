@@ -3,10 +3,26 @@ import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/layout/Footer";
+import { Helmet } from "react-helmet-async";
 
 export default function TermsAndConditions() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <Helmet>
+        <title>Terms and Conditions - UrbanKetl | Service Agreement</title>
+        <meta name="description" content="UrbanKetl terms and conditions for RFID-based corporate tea vending services. Read our service agreement, user responsibilities, and usage policies." />
+        <meta name="keywords" content="terms of service, user agreement, tea vending terms, UrbanKetl terms" />
+        <link rel="canonical" href={`${window.location.origin}/policies/terms`} />
+        
+        <meta property="og:title" content="Terms and Conditions - UrbanKetl" />
+        <meta property="og:description" content="Service agreement and terms of use for UrbanKetl corporate tea vending system." />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={`${window.location.origin}/policies/terms`} />
+        
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="Terms and Conditions - UrbanKetl" />
+        <meta name="twitter:description" content="Service terms for corporate tea vending system" />
+      </Helmet>
       <div className="container mx-auto px-4 py-8 max-w-4xl flex-1">
         <Link href="/">
           <Button variant="ghost" className="mb-6" data-testid="button-back-home">

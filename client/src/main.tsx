@@ -1,4 +1,5 @@
 import { createRoot } from "react-dom/client";
+import { HelmetProvider } from "react-helmet-async";
 import App from "./App";
 import "./index.css";
 
@@ -13,7 +14,11 @@ if (container) {
     container.innerHTML = '';
     
     const root = createRoot(container);
-    root.render(<App />);
+    root.render(
+      <HelmetProvider>
+        <App />
+      </HelmetProvider>
+    );
     console.log("App rendered successfully");
   } catch (error) {
     console.error("Error rendering app:", error);

@@ -3,10 +3,26 @@ import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/layout/Footer";
+import { Helmet } from "react-helmet-async";
 
 export default function RefundPolicy() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <Helmet>
+        <title>Cancellation & Refund Policy - UrbanKetl | Wallet Recharge Returns</title>
+        <meta name="description" content="UrbanKetl cancellation and refund policy for wallet recharges. Learn about failed transaction refunds, cancellation process, and refund timelines (5-7 business days)." />
+        <meta name="keywords" content="refund policy, cancellation policy, wallet refund, tea vending refund, UrbanKetl refund" />
+        <link rel="canonical" href={`${window.location.origin}/policies/refund`} />
+        
+        <meta property="og:title" content="Cancellation & Refund Policy - UrbanKetl" />
+        <meta property="og:description" content="Refund and cancellation policy for wallet recharges and corporate tea vending services." />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={`${window.location.origin}/policies/refund`} />
+        
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="Refund Policy - UrbanKetl" />
+        <meta name="twitter:description" content="Wallet recharge refund and cancellation policy" />
+      </Helmet>
       <div className="container mx-auto px-4 py-8 max-w-4xl flex-1">
         <Link href="/">
           <Button variant="ghost" className="mb-6" data-testid="button-back-home">

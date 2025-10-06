@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -401,6 +402,21 @@ export default function AuthPage() {
   // Main login form
   return (
     <div className="min-h-screen bg-white flex flex-col">
+      <Helmet>
+        <title>Login - UrbanKetl | Corporate Tea Vending Solutions</title>
+        <meta name="description" content="Access your UrbanKetl corporate tea vending account. Manage RFID cards, recharge wallets, and monitor tea machine usage across your business units." />
+        <meta name="keywords" content="corporate tea vending, RFID tea machine, office tea service, digital wallet, UrbanKetl login" />
+        <link rel="canonical" href={`${window.location.origin}/login`} />
+        
+        <meta property="og:title" content="UrbanKetl - Corporate Tea Vending Login" />
+        <meta property="og:description" content="Smart RFID-based tea vending system for businesses. Manage your corporate tea service with digital wallet functionality." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={`${window.location.origin}/login`} />
+        
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="UrbanKetl - Corporate Tea Vending" />
+        <meta name="twitter:description" content="Smart RFID tea vending solutions for modern workplaces" />
+      </Helmet>
       {/* Header with Logo - Top Left */}
       <div className="flex justify-start pt-4 pl-6 pb-2">
         <div className="w-20 h-20 bg-white rounded-lg shadow-md flex items-center justify-center p-2">

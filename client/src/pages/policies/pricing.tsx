@@ -3,10 +3,26 @@ import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/layout/Footer";
+import { Helmet } from "react-helmet-async";
 
 export default function PricingPolicy() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <Helmet>
+        <title>Pricing Policy - UrbanKetl | Wallet Recharge & Tea Pricing</title>
+        <meta name="description" content="UrbanKetl pricing policy for wallet recharges and corporate tea vending services. Transparent pricing with flexible recharge options from ₹1000 to ₹60000." />
+        <meta name="keywords" content="tea vending pricing, wallet recharge, corporate tea service pricing, UrbanKetl pricing" />
+        <link rel="canonical" href={`${window.location.origin}/policies/pricing`} />
+        
+        <meta property="og:title" content="Pricing Policy - UrbanKetl" />
+        <meta property="og:description" content="Transparent pricing for corporate tea vending services with flexible wallet recharge options." />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={`${window.location.origin}/policies/pricing`} />
+        
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="Pricing Policy - UrbanKetl" />
+        <meta name="twitter:description" content="Flexible wallet recharge options for corporate tea vending" />
+      </Helmet>
       <div className="container mx-auto px-4 py-8 max-w-4xl flex-1">
         <Link href="/">
           <Button variant="ghost" className="mb-6" data-testid="button-back-home">

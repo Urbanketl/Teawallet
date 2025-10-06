@@ -9,19 +9,19 @@ export default function RefundPolicy() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Helmet>
-        <title>Cancellation & Refund Policy - UKWallet by UrbanKetl | Wallet Recharge Returns</title>
-        <meta name="description" content="UKWallet by UrbanKetl cancellation and refund policy for wallet recharges. Learn about failed transaction refunds, cancellation process, and refund timelines (5-7 business days)." />
-        <meta name="keywords" content="UKWallet refund, UrbanKetl refund, refund policy, cancellation policy, wallet refund, tea vending refund" />
+        <title>Cancellation & Refund Policy - UKteawallet by UrbanKetl | Wallet Recharge Returns</title>
+        <meta name="description" content="UKteawallet by UrbanKetl cancellation and refund policy for wallet recharges. Learn about failed transaction refunds, cancellation process, and refund timelines (5-7 business days)." />
+        <meta name="keywords" content="UKteawallet refund, UrbanKetl refund, refund policy, cancellation policy, wallet refund, tea vending refund" />
         <link rel="canonical" href={`${window.location.origin}/policies/refund`} />
         
-        <meta property="og:site_name" content="UKWallet by UrbanKetl" />
-        <meta property="og:title" content="Cancellation & Refund Policy - UKWallet by UrbanKetl" />
+        <meta property="og:site_name" content="UKteawallet by UrbanKetl" />
+        <meta property="og:title" content="Cancellation & Refund Policy - UKteawallet by UrbanKetl" />
         <meta property="og:description" content="Refund and cancellation policy for wallet recharges and corporate tea vending services." />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={`${window.location.origin}/policies/refund`} />
         
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content="Refund Policy - UKWallet by UrbanKetl" />
+        <meta name="twitter:title" content="Refund Policy - UKteawallet by UrbanKetl" />
         <meta name="twitter:description" content="Wallet recharge refund and cancellation policy" />
       </Helmet>
       <div className="container mx-auto px-4 py-8 max-w-4xl flex-1">

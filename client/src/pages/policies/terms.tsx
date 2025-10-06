@@ -9,19 +9,19 @@ export default function TermsAndConditions() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Helmet>
-        <title>Terms and Conditions - UKWallet by UrbanKetl | Service Agreement</title>
-        <meta name="description" content="UKWallet by UrbanKetl terms and conditions for RFID-based corporate tea vending services. Read our service agreement, user responsibilities, and usage policies." />
-        <meta name="keywords" content="UKWallet terms, UrbanKetl terms, terms of service, user agreement, tea vending terms" />
+        <title>Terms and Conditions - UKteawallet by UrbanKetl | Service Agreement</title>
+        <meta name="description" content="UKteawallet by UrbanKetl terms and conditions for RFID-based corporate tea vending services. Read our service agreement, user responsibilities, and usage policies." />
+        <meta name="keywords" content="UKteawallet terms, UrbanKetl terms, terms of service, user agreement, tea vending terms" />
         <link rel="canonical" href={`${window.location.origin}/policies/terms`} />
         
-        <meta property="og:site_name" content="UKWallet by UrbanKetl" />
-        <meta property="og:title" content="Terms and Conditions - UKWallet by UrbanKetl" />
-        <meta property="og:description" content="Service agreement and terms of use for UKWallet by UrbanKetl corporate tea vending system." />
+        <meta property="og:site_name" content="UKteawallet by UrbanKetl" />
+        <meta property="og:title" content="Terms and Conditions - UKteawallet by UrbanKetl" />
+        <meta property="og:description" content="Service agreement and terms of use for UKteawallet by UrbanKetl corporate tea vending system." />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={`${window.location.origin}/policies/terms`} />
         
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content="Terms and Conditions - UKWallet by UrbanKetl" />
+        <meta name="twitter:title" content="Terms and Conditions - UKteawallet by UrbanKetl" />
         <meta name="twitter:description" content="Service terms for corporate tea vending system" />
       </Helmet>
       <div className="container mx-auto px-4 py-8 max-w-4xl flex-1">

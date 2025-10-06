@@ -9,19 +9,19 @@ export default function PrivacyPolicy() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Helmet>
-        <title>Privacy Policy - UKWallet by UrbanKetl | Data Protection & Security</title>
-        <meta name="description" content="UKWallet by UrbanKetl privacy policy. Learn how we collect, use, and protect your data in our RFID-based tea vending system. GDPR compliant data practices." />
-        <meta name="keywords" content="UKWallet privacy, UrbanKetl privacy, privacy policy, data protection, RFID security, corporate tea vending privacy" />
+        <title>Privacy Policy - UKteawallet by UrbanKetl | Data Protection & Security</title>
+        <meta name="description" content="UKteawallet by UrbanKetl privacy policy. Learn how we collect, use, and protect your data in our RFID-based tea vending system. GDPR compliant data practices." />
+        <meta name="keywords" content="UKteawallet privacy, UrbanKetl privacy, privacy policy, data protection, RFID security, corporate tea vending privacy" />
         <link rel="canonical" href={`${window.location.origin}/policies/privacy`} />
         
-        <meta property="og:site_name" content="UKWallet by UrbanKetl" />
-        <meta property="og:title" content="Privacy Policy - UKWallet by UrbanKetl" />
-        <meta property="og:description" content="How UKWallet by UrbanKetl protects your data and ensures privacy in our corporate tea vending system." />
+        <meta property="og:site_name" content="UKteawallet by UrbanKetl" />
+        <meta property="og:title" content="Privacy Policy - UKteawallet by UrbanKetl" />
+        <meta property="og:description" content="How UKteawallet by UrbanKetl protects your data and ensures privacy in our corporate tea vending system." />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={`${window.location.origin}/policies/privacy`} />
         
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content="Privacy Policy - UKWallet by UrbanKetl" />
+        <meta name="twitter:title" content="Privacy Policy - UKteawallet by UrbanKetl" />
         <meta name="twitter:description" content="Data protection and privacy practices for corporate tea vending" />
       </Helmet>
       <div className="container mx-auto px-4 py-8 max-w-4xl flex-1">

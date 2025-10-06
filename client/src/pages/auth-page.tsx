@@ -403,19 +403,19 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <Helmet>
-        <title>Login - UKWallet by UrbanKetl | Corporate Tea Vending Solutions</title>
-        <meta name="description" content="Access your UKWallet account by UrbanKetl. Manage RFID cards, recharge wallets, and monitor tea machine usage across your business units." />
-        <meta name="keywords" content="UKWallet, ukwallet.com, UrbanKetl, corporate tea vending, RFID tea machine, office tea service, digital wallet login" />
+        <title>Login - UKteawallet by UrbanKetl | Corporate Tea Vending Solutions</title>
+        <meta name="description" content="Access your UKteawallet account by UrbanKetl. Manage RFID cards, recharge wallets, and monitor tea machine usage across your business units." />
+        <meta name="keywords" content="UKteawallet, ukteawallet.com, UrbanKetl, corporate tea vending, RFID tea machine, office tea service, digital wallet login" />
         <link rel="canonical" href={`${window.location.origin}/login`} />
         
-        <meta property="og:site_name" content="UKWallet by UrbanKetl" />
-        <meta property="og:title" content="UKWallet by UrbanKetl - Corporate Tea Vending Login" />
-        <meta property="og:description" content="Smart RFID-based tea vending system for businesses. UKWallet is a product of UrbanKetl - Manage your corporate tea service with digital wallet functionality." />
+        <meta property="og:site_name" content="UKteawallet by UrbanKetl" />
+        <meta property="og:title" content="UKteawallet by UrbanKetl - Corporate Tea Vending Login" />
+        <meta property="og:description" content="Smart RFID-based tea vending system for businesses. UKteawallet is a product of UrbanKetl - Manage your corporate tea service with digital wallet functionality." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`${window.location.origin}/login`} />
         
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content="UKteaWallet by UrbanKetl - Corporate Tea Vending" />
+        <meta name="twitter:title" content="UKteawallet by UrbanKetl - Corporate Tea Vending" />
         <meta name="twitter:description" content="Smart RFID tea vending solutions by UrbanKetl for modern workplaces" />
         
         <script type="application/ld+json">

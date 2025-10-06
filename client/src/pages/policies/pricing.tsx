@@ -9,19 +9,19 @@ export default function PricingPolicy() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Helmet>
-        <title>Pricing Policy - UKWallet by UrbanKetl | Wallet Recharge & Tea Pricing</title>
-        <meta name="description" content="UKWallet by UrbanKetl pricing policy for wallet recharges and corporate tea vending services. Transparent pricing with flexible recharge options from ₹1000 to ₹60000." />
-        <meta name="keywords" content="UKWallet pricing, UrbanKetl pricing, tea vending pricing, wallet recharge, corporate tea service pricing" />
+        <title>Pricing Policy - UKteawallet by UrbanKetl | Wallet Recharge & Tea Pricing</title>
+        <meta name="description" content="UKteawallet by UrbanKetl pricing policy for wallet recharges and corporate tea vending services. Transparent pricing with flexible recharge options from ₹1000 to ₹60000." />
+        <meta name="keywords" content="UKteawallet pricing, UrbanKetl pricing, tea vending pricing, wallet recharge, corporate tea service pricing" />
         <link rel="canonical" href={`${window.location.origin}/policies/pricing`} />
         
-        <meta property="og:site_name" content="UKWallet by UrbanKetl" />
-        <meta property="og:title" content="Pricing Policy - UKWallet by UrbanKetl" />
+        <meta property="og:site_name" content="UKteawallet by UrbanKetl" />
+        <meta property="og:title" content="Pricing Policy - UKteawallet by UrbanKetl" />
         <meta property="og:description" content="Transparent pricing for corporate tea vending services with flexible wallet recharge options." />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={`${window.location.origin}/policies/pricing`} />
         
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content="Pricing Policy - UKWallet by UrbanKetl" />
+        <meta name="twitter:title" content="Pricing Policy - UKteawallet by UrbanKetl" />
         <meta name="twitter:description" content="Flexible wallet recharge options for corporate tea vending" />
       </Helmet>
       <div className="container mx-auto px-4 py-8 max-w-4xl flex-1">

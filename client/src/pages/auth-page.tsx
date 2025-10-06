@@ -464,7 +464,7 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center px-8 py-2">
         <Card className="w-full max-w-sm shadow-lg border-amber-200">
           <CardHeader className="text-center pb-4">
-            <CardTitle className="text-xl text-gray-800">Welcome to UKWallet</CardTitle>
+            <CardTitle className="text-xl text-gray-800">Welcome to UKteawallet</CardTitle>
             <CardDescription className="text-gray-600 text-sm">
               Sign in to your business unit account
             </CardDescription>

@@ -2,11 +2,28 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Lock, Mail, Key, ArrowRight, Coffee, CreditCard, BarChart3, Smartphone } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  Key,
+  ArrowRight,
+  Coffee,
+  CreditCard,
+  BarChart3,
+  Smartphone,
+} from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Footer } from "@/components/layout/Footer";
 
@@ -19,14 +36,14 @@ export default function AuthPage() {
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [requiresPasswordReset, setRequiresPasswordReset] = useState(false);
   const [userId, setUserId] = useState<string>("");
-  
+
   // Form states
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     newPassword: "",
     confirmPassword: "",
-    resetToken: ""
+    resetToken: "",
   });
 
   // Redirect if already authenticated
@@ -36,12 +53,12 @@ export default function AuthPage() {
   }
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.email || !formData.password) {
       toast({
         title: "Error",
@@ -83,7 +100,7 @@ export default function AuthPage() {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.email) {
       toast({
         title: "Error",
@@ -132,8 +149,12 @@ export default function AuthPage() {
 
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.resetToken || !formData.newPassword || !formData.confirmPassword) {
+
+    if (
+      !formData.resetToken ||
+      !formData.newPassword ||
+      !formData.confirmPassword
+    ) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
@@ -173,7 +194,13 @@ export default function AuthPage() {
       });
 
       // Reset form and go back to login
-      setFormData({ email: "", password: "", newPassword: "", confirmPassword: "", resetToken: "" });
+      setFormData({
+        email: "",
+        password: "",
+        newPassword: "",
+        confirmPassword: "",
+        resetToken: "",
+      });
       setShowResetPassword(false);
       setRequiresPasswordReset(false);
       setIsLogin(true);
@@ -188,7 +215,7 @@ export default function AuthPage() {
 
   const handleFirstTimePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.newPassword || !formData.confirmPassword) {
       toast({
         title: "Error",
@@ -267,7 +294,10 @@ export default function AuthPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleFirstTimePasswordChange} className="space-y-4">
+            <form
+              onSubmit={handleFirstTimePasswordChange}
+              className="space-y-4"
+            >
               <div className="space-y-2">
                 <Label htmlFor="newPassword">New Password</Label>
                 <div className="relative">
@@ -275,7 +305,9 @@ export default function AuthPage() {
                     id="newPassword"
                     type={showPassword ? "text" : "password"}
                     value={formData.newPassword}
-                    onChange={(e) => handleInputChange("newPassword", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("newPassword", e.target.value)
+                    }
                     className="pr-10"
                     required
                   />
@@ -284,7 +316,11 @@ export default function AuthPage() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
                 {getPasswordRequirements()}
@@ -296,7 +332,9 @@ export default function AuthPage() {
                   id="confirmPassword"
                   type="password"
                   value={formData.confirmPassword}
-                  onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("confirmPassword", e.target.value)
+                  }
                   required
                 />
               </div>
@@ -322,7 +360,8 @@ export default function AuthPage() {
             </div>
             <CardTitle>Reset Password</CardTitle>
             <CardDescription>
-              Enter your email to receive reset instructions or use the reset token
+              Enter your email to receive reset instructions or use the reset
+              token
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -352,7 +391,9 @@ export default function AuthPage() {
                     id="resetToken"
                     type="text"
                     value={formData.resetToken}
-                    onChange={(e) => handleInputChange("resetToken", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("resetToken", e.target.value)
+                    }
                     placeholder="Enter reset token"
                   />
                 </div>
@@ -363,18 +404,24 @@ export default function AuthPage() {
                     id="newPasswordReset"
                     type="password"
                     value={formData.newPassword}
-                    onChange={(e) => handleInputChange("newPassword", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("newPassword", e.target.value)
+                    }
                   />
                   {formData.newPassword && getPasswordRequirements()}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPasswordReset">Confirm New Password</Label>
+                  <Label htmlFor="confirmPasswordReset">
+                    Confirm New Password
+                  </Label>
                   <Input
                     id="confirmPasswordReset"
                     type="password"
                     value={formData.confirmPassword}
-                    onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("confirmPassword", e.target.value)
+                    }
                   />
                 </div>
 
@@ -403,58 +450,83 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <Helmet>
-        <title>Login - UKteaWallet by UrbanKetl | Corporate Tea Vending Solutions</title>
-        <meta name="description" content="Access your UKWallet account by UrbanKetl. Manage RFID cards, recharge wallets, and monitor tea machine usage across your business units." />
-        <meta name="keywords" content="UKWallet, ukwallet.com, UrbanKetl, corporate tea vending, RFID tea machine, office tea service, digital wallet login" />
+        <title>
+          Login - UKteaWallet by UrbanKetl | Corporate Tea Vending Solutions
+        </title>
+        <meta
+          name="description"
+          content="Access your UKteaWallet account by UrbanKetl. Manage RFID cards, recharge wallets, and monitor tea machine usage across your business units."
+        />
+        <meta
+          name="keywords"
+          content="UKteaWallet, ukwallet.com, UrbanKetl, corporate tea vending, RFID tea machine, office tea service, digital wallet login"
+        />
         <link rel="canonical" href={`${window.location.origin}/login`} />
-        
+
         <meta property="og:site_name" content="UKteaWallet by UrbanKetl" />
-        <meta property="og:title" content="UKteaWallet by UrbanKetl - Corporate Tea Vending Login" />
-        <meta property="og:description" content="Smart RFID-based tea vending system for businesses. UKWallet is a product of UrbanKetl - Manage your corporate tea service with digital wallet functionality." />
+        <meta
+          property="og:title"
+          content="UKteaWallet by UrbanKetl - Corporate Tea Vending Login"
+        />
+        <meta
+          property="og:description"
+          content="Smart RFID-based tea vending system for businesses. UKteaWallet is a product of UrbanKetl - Manage your corporate tea service with digital wallet functionality."
+        />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`${window.location.origin}/login`} />
-        
+
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content="UKteaWallet by UrbanKetl - Corporate Tea Vending" />
-        <meta name="twitter:description" content="Smart RFID tea vending solutions by UrbanKetl for modern workplaces" />
-        
+        <meta
+          name="twitter:title"
+          content="UKteaWallet by UrbanKetl - Corporate Tea Vending"
+        />
+        <meta
+          name="twitter:description"
+          content="Smart RFID tea vending solutions by UrbanKetl for modern workplaces"
+        />
+
         <script type="application/ld+json">
           {JSON.stringify({
             "@context": "https://schema.org",
             "@type": "WebApplication",
-            "name": "UKteawallet",
-            "alternateName": "UrbanKetl",
-            "url": window.location.origin,
-            "description": "Corporate tea vending management system with RFID card authentication and digital wallet",
-            "applicationCategory": "BusinessApplication",
-            "author": {
+            name: "UKteaWallet",
+            alternateName: "UrbanKetl",
+            url: window.location.origin,
+            description:
+              "Corporate tea vending management system with RFID card authentication and digital wallet",
+            applicationCategory: "BusinessApplication",
+            author: {
               "@type": "Organization",
-              "name": "UrbanKetl",
-              "url": window.location.origin
+              name: "UrbanKetl",
+              url: window.location.origin,
             },
-            "offers": {
+            offers: {
               "@type": "Offer",
-              "price": "0",
-              "priceCurrency": "INR"
-            }
+              price: "0",
+              priceCurrency: "INR",
+            },
           })}
         </script>
       </Helmet>
       {/* Header with Logo - Top Left */}
       <div className="flex justify-start pt-4 pl-6 pb-2">
         <div className="w-20 h-20 bg-white rounded-lg shadow-md flex items-center justify-center p-2">
-          <img 
-            src="/logo.jpg" 
-            alt="UrbanKetl Logo" 
+          <img
+            src="/logo.jpg"
+            alt="UrbanKetl Logo"
             className="w-full h-full object-contain"
             onError={(e) => {
-              console.log('Logo failed to load, showing fallback');
-              e.currentTarget.style.display = 'none';
-              const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-              if (fallback) fallback.style.display = 'flex';
+              console.log("Logo failed to load, showing fallback");
+              e.currentTarget.style.display = "none";
+              const fallback = e.currentTarget
+                .nextElementSibling as HTMLElement;
+              if (fallback) fallback.style.display = "flex";
             }}
           />
-          <div className="w-full h-full bg-amber-600 rounded-lg flex items-center justify-center" style={{display: 'none'}}>
+          <div
+            className="w-full h-full bg-amber-600 rounded-lg flex items-center justify-center"
+            style={{ display: "none" }}
+          >
             <Coffee className="w-8 h-8 text-white" />
           </div>
         </div>
@@ -464,7 +536,9 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center px-8 py-2">
         <Card className="w-full max-w-sm shadow-lg border-amber-200">
           <CardHeader className="text-center pb-4">
-            <CardTitle className="text-xl text-gray-800">Welcome to UKteawallet</CardTitle>
+            <CardTitle className="text-xl text-gray-800">
+              Welcome to UKteawallet
+            </CardTitle>
             <CardDescription className="text-gray-600 text-sm">
               Sign in to your business unit account
             </CardDescription>
@@ -472,7 +546,9 @@ export default function AuthPage() {
           <CardContent className="pt-0">
             <form onSubmit={handleLogin} className="space-y-3">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-gray-700">Email Address</Label>
+                <Label htmlFor="email" className="text-gray-700">
+                  Email Address
+                </Label>
                 <Input
                   id="email"
                   type="email"
@@ -485,13 +561,17 @@ export default function AuthPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-gray-700">Password</Label>
+                <Label htmlFor="password" className="text-gray-700">
+                  Password
+                </Label>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     value={formData.password}
-                    onChange={(e) => handleInputChange("password", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("password", e.target.value)
+                    }
                     className="pr-10 border-amber-200 focus:border-amber-400"
                     required
                   />
@@ -500,12 +580,27 @@ export default function AuthPage() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
               </div>
 
-              <Button type="submit" className="w-full text-white" style={{backgroundColor: 'hsl(35, 95%, 54%)'}} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(35, 95%, 48%)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(35, 95%, 54%)'} disabled={isLoading}>
+              <Button
+                type="submit"
+                className="w-full text-white"
+                style={{ backgroundColor: "hsl(35, 95%, 54%)" }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor = "hsl(35, 95%, 48%)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = "hsl(35, 95%, 54%)")
+                }
+                disabled={isLoading}
+              >
                 {isLoading ? (
                   <div className="flex items-center space-x-2">
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -524,7 +619,8 @@ export default function AuthPage() {
               <Button
                 variant="ghost"
                 onClick={() => setShowResetPassword(true)}
-                className="text-xs hover:text-gray-800 p-1" style={{color: 'hsl(35, 95%, 54%)'}}
+                className="text-xs hover:text-gray-800 p-1"
+                style={{ color: "hsl(35, 95%, 54%)" }}
               >
                 Forgot your password?
               </Button>
@@ -541,46 +637,83 @@ export default function AuthPage() {
       <div className="px-6 pb-4 bg-amber-50">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-4 pt-4">
-            <h2 className="text-xl font-bold text-gray-800 mb-1">Premium Tea at Your Fingertips</h2>
-            <p className="text-sm text-gray-600">Experience seamless tea dispensing with our digital wallet and RFID card system</p>
+            <h2 className="text-xl font-bold text-gray-800 mb-1">
+              Premium Tea at Your Fingertips
+            </h2>
+            <p className="text-sm text-gray-600">
+              Experience seamless tea dispensing with our digital wallet and
+              RFID card system
+            </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white rounded-lg p-4 shadow-md border border-amber-100">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{backgroundColor: 'hsl(35, 95%, 54%)'}}>
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center mb-3"
+                style={{ backgroundColor: "hsl(35, 95%, 54%)" }}
+              >
                 <CreditCard className="w-5 h-5 text-white" />
               </div>
-              <h3 className="font-semibold text-base mb-1 text-gray-800">RFID Card Technology</h3>
-              <p className="text-xs text-gray-600 leading-relaxed">Simply tap your card and enjoy instant tea dispensing with automatic payment</p>
-            </div>
-            
-            <div className="bg-white rounded-lg p-4 shadow-md border border-amber-100">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{backgroundColor: 'hsl(35, 95%, 54%)'}}>
-                <Smartphone className="w-5 h-5 text-white" />
-              </div>
-              <h3 className="font-semibold text-base mb-1 text-gray-800">Digital Wallet System</h3>
-              <p className="text-xs text-gray-600 leading-relaxed">Secure online recharge with Razorpay integration and real-time balance tracking</p>
-            </div>
-            
-            <div className="bg-white rounded-lg p-4 shadow-md border border-amber-100">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{backgroundColor: 'hsl(35, 95%, 54%)'}}>
-                <BarChart3 className="w-5 h-5 text-white" />
-              </div>
-              <h3 className="font-semibold text-base mb-1 text-gray-800">Business Intelligence</h3>
-              <p className="text-xs text-gray-600 leading-relaxed">Complete usage analytics, reporting, and expense management for corporate teams</p>
+              <h3 className="font-semibold text-base mb-1 text-gray-800">
+                RFID Card Technology
+              </h3>
+              <p className="text-xs text-gray-600 leading-relaxed">
+                Simply tap your card and enjoy instant tea dispensing with
+                automatic payment
+              </p>
             </div>
 
             <div className="bg-white rounded-lg p-4 shadow-md border border-amber-100">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{backgroundColor: 'hsl(35, 95%, 54%)'}}>
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center mb-3"
+                style={{ backgroundColor: "hsl(35, 95%, 54%)" }}
+              >
+                <Smartphone className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="font-semibold text-base mb-1 text-gray-800">
+                Digital Wallet System
+              </h3>
+              <p className="text-xs text-gray-600 leading-relaxed">
+                Secure online recharge with Razorpay integration and real-time
+                balance tracking
+              </p>
+            </div>
+
+            <div className="bg-white rounded-lg p-4 shadow-md border border-amber-100">
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center mb-3"
+                style={{ backgroundColor: "hsl(35, 95%, 54%)" }}
+              >
+                <BarChart3 className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="font-semibold text-base mb-1 text-gray-800">
+                Business Intelligence
+              </h3>
+              <p className="text-xs text-gray-600 leading-relaxed">
+                Complete usage analytics, reporting, and expense management for
+                corporate teams
+              </p>
+            </div>
+
+            <div className="bg-white rounded-lg p-4 shadow-md border border-amber-100">
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center mb-3"
+                style={{ backgroundColor: "hsl(35, 95%, 54%)" }}
+              >
                 <Coffee className="w-5 h-5 text-white" />
               </div>
-              <h3 className="font-semibold text-base mb-1 text-gray-800">Corporate Solutions</h3>
-              <p className="text-xs text-gray-600 leading-relaxed">Join thousands of companies using smart corporate tea solutions for your workforce</p>
+              <h3 className="font-semibold text-base mb-1 text-gray-800">
+                Corporate Solutions
+              </h3>
+              <p className="text-xs text-gray-600 leading-relaxed">
+                Join thousands of companies using smart corporate tea solutions
+                for your workforce
+              </p>
             </div>
           </div>
         </div>
       </div>
-      
+
       <Footer />
     </div>
   );

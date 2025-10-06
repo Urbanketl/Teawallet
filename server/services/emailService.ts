@@ -205,7 +205,7 @@ export class EmailService {
         const mailOptions = {
           from: {
             name: 'UrbanKetl Team',
-            address: process.env.EMAIL_USER!
+            address: 'contact@urbanketl.com'
           },
           to: user.email,
           subject,

@@ -53,7 +53,10 @@ import {
   Edit,
   X,
   FileSpreadsheet,
-  FileText
+  FileText,
+  Bell,
+  Loader2,
+  Send
 } from "lucide-react";
 import { format } from "date-fns";
 import Pagination from "@/components/Pagination";
@@ -2556,9 +2559,9 @@ export default function AdminPage() {
           {currentTab === "faq" && <FaqManagement />}
 
           {currentTab === "settings" && (
-            <div className="text-center py-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">System Settings</h3>
-              <p className="text-gray-600">Configure system settings using the button above</p>
+            <div className="space-y-6">
+              <SystemSettingsManagement />
+              <BalanceAlertTesting />
             </div>
           )}
 
@@ -5840,6 +5843,143 @@ function SystemSettingsManagement() {
         </CardContent>
       </Card>
 
+    </div>
+  );
+}
+
+// Balance Alert Testing Component
+function BalanceAlertTesting() {
+  const { toast } = useToast();
+  const [selectedBusinessUnit, setSelectedBusinessUnit] = useState('');
+  const [alertType, setAlertType] = useState<'critical' | 'low'>('critical');
+  const [isSending, setIsSending] = useState(false);
+
+  const { data: businessUnits } = useQuery({
+    queryKey: ["/api/admin/business-units"],
+    retry: false,
+  });
+
+  const handleSendTestAlert = async () => {
+    if (!selectedBusinessUnit) {
+      toast({
+        title: "Error",
+        description: "Please select a business unit",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      const response = await fetch('/api/admin/test-balance-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessUnitId: selectedBusinessUnit,
+          alertType: alertType,
+        }),
+        credentials: 'include'
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to send test alert');
+      }
+
+      toast({
+        title: "Success",
+        description: data.message || "Test alert sent successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send test alert",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="w-5 h-5" />
+            Manual Balance Alert Testing
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Manually trigger balance alert emails for testing purposes
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="businessUnit">Select Business Unit</Label>
+              <Select
+                value={selectedBusinessUnit}
+                onValueChange={setSelectedBusinessUnit}
+              >
+                <SelectTrigger id="businessUnit" className="mt-1">
+                  <SelectValue placeholder="Choose a business unit" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(businessUnits as any[])?.map((unit: any) => (
+                    <SelectItem key={unit.id} value={unit.id}>
+                      {unit.name} - ₹{unit.walletBalance}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="alertType">Alert Type</Label>
+              <Select
+                value={alertType}
+                onValueChange={(value: 'critical' | 'low') => setAlertType(value)}
+              >
+                <SelectTrigger id="alertType" className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="critical">🔴 Critical Balance Alert</SelectItem>
+                  <SelectItem value="low">🟡 Low Balance Alert</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex items-start space-x-2 p-3 bg-blue-50 rounded-lg">
+            <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+            <div className="text-sm text-blue-800">
+              <strong>Note:</strong> This will send a real email to the business unit owner and platform admins. 
+              Make sure you want to test this before clicking send.
+            </div>
+          </div>
+
+          <Button 
+            onClick={handleSendTestAlert}
+            disabled={isSending || !selectedBusinessUnit}
+            className="w-full bg-purple-600 hover:bg-purple-700"
+            data-testid="button-send-test-alert"
+          >
+            {isSending ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Sending Test Alert...
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4 mr-2" />
+                Send Test Alert
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

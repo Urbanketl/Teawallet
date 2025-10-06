@@ -13,12 +13,85 @@ export class EmailService {
 
   constructor() {
     this.transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: process.env.EMAIL_HOST || 'smtp.hostinger.com',
+      port: parseInt(process.env.EMAIL_PORT || '587'),
+      secure: false,
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_APP_PASSWORD
+        pass: process.env.EMAIL_PASSWORD
       }
     });
+  }
+
+  private generatePasswordResetTemplate(user: User, resetToken: string): { subject: string, html: string } {
+    const resetUrl = `${process.env.FRONTEND_URL || 'https://ukwallet.com'}/reset-password?token=${resetToken}`;
+    
+    const subject = 'Reset Your UKteawallet Password';
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Password Reset</title>
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          <!-- Header -->
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 24px; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 24px; font-weight: 600;">Password Reset Request</h1>
+            <p style="margin: 8px 0 0 0; opacity: 0.9;">UKteawallet by UrbanKetl</p>
+          </div>
+          
+          <!-- Content -->
+          <div style="padding: 32px 24px;">
+            <h2 style="color: #1e293b; margin: 0 0 16px 0; font-size: 20px;">Hello ${user.firstName},</h2>
+            
+            <p style="color: #475569; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+              We received a request to reset the password for your UKteawallet account. Click the button below to create a new password:
+            </p>
+            
+            <div style="text-align: center; margin: 32px 0;">
+              <a href="${resetUrl}" 
+                 style="background-color: #3b82f6; color: white; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block; font-size: 16px;">
+                Reset Password
+              </a>
+            </div>
+            
+            <p style="color: #64748b; font-size: 14px; line-height: 1.5; margin: 24px 0 0 0;">
+              Or copy and paste this link into your browser:
+            </p>
+            <p style="color: #3b82f6; font-size: 13px; word-break: break-all; margin: 8px 0 0 0;">
+              ${resetUrl}
+            </p>
+          </div>
+          
+          <!-- Security Notice -->
+          <div style="margin: 0 24px; background-color: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 4px; padding: 16px;">
+            <p style="color: #92400e; font-size: 14px; margin: 0; line-height: 1.5;">
+              <strong>⚠️ Security Notice:</strong><br>
+              This link will expire in <strong>1 hour</strong> for your security.<br>
+              If you didn't request this reset, please ignore this email or contact support if you have concerns.
+            </p>
+          </div>
+          
+          <!-- Footer -->
+          <div style="background-color: #f8fafc; padding: 20px 24px; margin-top: 24px; border-radius: 0 0 8px 8px; border-top: 1px solid #e2e8f0;">
+            <p style="color: #64748b; font-size: 12px; margin: 0; text-align: center;">
+              This is an automated email from UKteawallet by UrbanKetl.
+              <br>Please do not reply to this email.
+            </p>
+            <p style="color: #94a3b8; font-size: 11px; margin: 8px 0 0 0; text-align: center;">
+              © ${new Date().getFullYear()} UrbanKetl. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    return { subject, html };
   }
 
   private generateBalanceAlertTemplate(data: BalanceAlertData, user: User): { subject: string, html: string } {
@@ -120,7 +193,7 @@ export class EmailService {
 
   async sendBalanceAlert(recipients: User[], data: BalanceAlertData): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
-      if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
+      if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
         throw new Error('Email credentials not configured');
       }
 
@@ -156,6 +229,40 @@ export class EmailService {
       };
     } catch (error) {
       console.error('Failed to send balance alert:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  async sendPasswordResetEmail(user: User, resetToken: string): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    try {
+      if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+        throw new Error('Email credentials not configured');
+      }
+
+      const { subject, html } = this.generatePasswordResetTemplate(user, resetToken);
+      
+      const mailOptions = {
+        from: {
+          name: process.env.EMAIL_FROM_NAME || 'UKteawallet Support',
+          address: process.env.EMAIL_USER!
+        },
+        to: user.email,
+        subject,
+        html
+      };
+      
+      const info = await this.transporter.sendMail(mailOptions);
+      console.log(`Password reset email sent to ${user.email}:`, info.messageId);
+      
+      return {
+        success: true,
+        messageId: info.messageId
+      };
+    } catch (error) {
+      console.error('Failed to send password reset email:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'

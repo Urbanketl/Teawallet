@@ -232,7 +232,6 @@ export function setupAuth(app: Express) {
 
       const user = await storage.getUserByEmail(email);
       if (!user) {
-        // Don't reveal if user exists or not
         return res.json({ message: "If an account exists, a reset email will be sent" });
       }
 
@@ -248,7 +247,15 @@ export function setupAuth(app: Express) {
           resetToken,
         });
       } else {
-        // In production, this would send an email
+        // In production, send email
+        const { emailService } = await import('./services/emailService');
+        const emailResult = await emailService.sendPasswordResetEmail(user, resetToken);
+        
+        if (!emailResult.success) {
+          console.error('Failed to send password reset email:', emailResult.error);
+          return res.status(500).json({ error: "Failed to send reset email. Please contact support." });
+        }
+        
         res.json({
           message: "Password reset instructions sent to your email",
         });

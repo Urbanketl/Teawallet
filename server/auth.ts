@@ -221,6 +221,25 @@ export function setupAuth(app: Express) {
     });
   });
 
+  // Email configuration check endpoint (for debugging)
+  app.get("/api/auth/email-status", isAuthenticated, async (req, res) => {
+    if (!req.user?.isSuperAdmin) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+    
+    const status = {
+      configured: !!(process.env.EMAIL_USER && process.env.EMAIL_PASSWORD),
+      host: process.env.EMAIL_HOST || 'Not set',
+      port: process.env.EMAIL_PORT || 'Not set',
+      user: process.env.EMAIL_USER ? '✓ Set' : '✗ Not set',
+      password: process.env.EMAIL_PASSWORD ? '✓ Set' : '✗ Not set',
+      fromName: process.env.EMAIL_FROM_NAME || 'Not set',
+      nodeEnv: process.env.NODE_ENV || 'Not set'
+    };
+    
+    res.json(status);
+  });
+
   // Password management routes
   app.post("/api/auth/forgot-password", async (req, res) => {
     try {
@@ -242,23 +261,49 @@ export function setupAuth(app: Express) {
 
       // In development, return the token directly
       if (process.env.NODE_ENV === "development") {
+        console.log('Development mode - returning reset token directly');
         res.json({
           message: "Password reset token generated (development mode)",
           resetToken,
         });
       } else {
         // In production, send email
-        const { emailService } = await import('./services/emailService');
-        const emailResult = await emailService.sendPasswordResetEmail(user, resetToken);
+        console.log('Production mode - attempting to send password reset email to:', user.email);
         
-        if (!emailResult.success) {
-          console.error('Failed to send password reset email:', emailResult.error);
-          return res.status(500).json({ error: "Failed to send reset email. Please contact support." });
+        // Check if email is configured
+        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+          console.error('Email credentials not configured in production');
+          return res.status(500).json({ 
+            error: "Email service not configured. Please contact support." 
+          });
         }
         
-        res.json({
-          message: "Password reset instructions sent to your email",
-        });
+        try {
+          const { emailService } = await import('./services/emailService');
+          console.log('Email service imported successfully');
+          
+          const emailResult = await emailService.sendPasswordResetEmail(user, resetToken);
+          console.log('Email send result:', emailResult);
+          
+          if (!emailResult.success) {
+            console.error('Failed to send password reset email:', emailResult.error);
+            return res.status(500).json({ 
+              error: "Failed to send reset email. Please contact support.",
+              details: process.env.NODE_ENV === "development" ? emailResult.error : undefined
+            });
+          }
+          
+          console.log('Password reset email sent successfully to:', user.email);
+          res.json({
+            message: "Password reset instructions sent to your email",
+          });
+        } catch (emailError) {
+          console.error('Error sending password reset email:', emailError);
+          return res.status(500).json({ 
+            error: "Failed to send reset email. Please contact support.",
+            details: process.env.NODE_ENV === "development" ? String(emailError) : undefined
+          });
+        }
       }
     } catch (error) {
       console.error("Forgot password error:", error);

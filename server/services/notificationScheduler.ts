@@ -90,7 +90,7 @@ export class NotificationScheduler {
     }
   }
 
-  private async sendCriticalBalanceAlert(businessUnit: any, threshold: string) {
+  private async sendCriticalBalanceAlert(businessUnit: any, threshold: string, forceBypassDuplicateCheck: boolean = false) {
     try {
       // Get business unit admin and platform admins
       const recipients = await this.getAlertRecipients(businessUnit.id, true);
@@ -100,14 +100,18 @@ export class NotificationScheduler {
         return;
       }
 
-      // Check if we already sent critical alert today
-      const lastSent = await storage.getLastEmailLog(businessUnit.id, 'critical_balance_email');
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      if (lastSent && lastSent.sentAt && new Date(lastSent.sentAt) >= today) {
-        console.log(`Critical alert already sent today for ${businessUnit.name}`);
-        return;
+      // Check if we already sent critical alert today (skip check if forced for testing)
+      if (!forceBypassDuplicateCheck) {
+        const lastSent = await storage.getLastEmailLog(businessUnit.id, 'critical_balance_email');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (lastSent && lastSent.sentAt && new Date(lastSent.sentAt) >= today) {
+          console.log(`Critical alert already sent today for ${businessUnit.name}`);
+          return;
+        }
+      } else {
+        console.log(`Force bypass enabled - sending test email regardless of duplicate check`);
       }
 
       const alertData: BalanceAlertData = {
@@ -162,7 +166,7 @@ export class NotificationScheduler {
     }
   }
 
-  private async sendLowBalanceAlert(businessUnit: any, threshold: string) {
+  private async sendLowBalanceAlert(businessUnit: any, threshold: string, forceBypassDuplicateCheck: boolean = false) {
     try {
       // Get business unit admin only (not platform admins for low balance)
       const recipients = await this.getAlertRecipients(businessUnit.id, false);
@@ -170,6 +174,10 @@ export class NotificationScheduler {
       if (recipients.length === 0) {
         console.log(`No recipients found for low balance alert: ${businessUnit.name}`);
         return;
+      }
+      
+      if (forceBypassDuplicateCheck) {
+        console.log(`Force bypass enabled - sending test email regardless of duplicate check`);
       }
 
       const alertData: BalanceAlertData = {
@@ -293,11 +301,11 @@ export class NotificationScheduler {
       const thresholdKey = alertType === 'critical' ? 'critical_balance_threshold' : 'low_balance_threshold';
       const threshold = settings.find(s => s.key === thresholdKey)?.value || (alertType === 'critical' ? '100' : '500');
 
-      // Send the alert
+      // Send the alert (force bypass duplicate check for manual testing)
       if (alertType === 'critical') {
-        await this.sendCriticalBalanceAlert(businessUnit, threshold);
+        await this.sendCriticalBalanceAlert(businessUnit, threshold, true);
       } else {
-        await this.sendLowBalanceAlert(businessUnit, threshold);
+        await this.sendLowBalanceAlert(businessUnit, threshold, true);
       }
 
       return { 

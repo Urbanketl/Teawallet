@@ -29,7 +29,7 @@ export default function PricingPolicy() {
 
             <h3>Available Recharge Denominations</h3>
             <ul>
-              <li>₹100 - Basic recharge</li>
+              <li>₹1000 - Basic recharge</li>
               <li>₹200 - Standard recharge</li>
               <li>₹500 - Premium recharge</li>
               <li>₹1000 - Maximum single recharge</li>

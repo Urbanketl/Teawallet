@@ -17,9 +17,10 @@ export interface User {
 
 export class WhatsAppService {
   private isConfigured: boolean = false;
-  private accessToken: string = '';
-  private phoneNumberId: string = '';
-  private apiVersion: string = 'v20.0';
+  private apiToken: string = '';
+  private xApiKey: string = '';
+  private companyId: string = '';
+  private apiUrl: string = 'https://api.myoperator.co/whatsapp/send';
 
   constructor() {
     this.initializeClient();
@@ -27,12 +28,14 @@ export class WhatsAppService {
 
   private initializeClient() {
     try {
-      const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
-      const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+      const apiToken = process.env.MYOPERATOR_API_TOKEN;
+      const xApiKey = process.env.MYOPERATOR_X_API_KEY;
+      const companyId = process.env.MYOPERATOR_COMPANY_ID;
       
-      if (accessToken && phoneNumberId) {
-        this.accessToken = accessToken;
-        this.phoneNumberId = phoneNumberId;
+      if (apiToken && xApiKey && companyId) {
+        this.apiToken = apiToken;
+        this.xApiKey = xApiKey;
+        this.companyId = companyId;
         this.isConfigured = true;
         console.log('MyOperator WhatsApp service initialized successfully');
       } else {
@@ -56,6 +59,30 @@ export class WhatsAppService {
     }
   }
 
+  private extractTemplateParameters(data: BalanceAlertData): Record<string, string> {
+    const { businessUnit, currentBalance, threshold, alertType } = data;
+    
+    return {
+      business_unit_name: businessUnit.name,
+      current_balance: currentBalance,
+      threshold: threshold,
+      alert_type: alertType
+    };
+  }
+
+  private getTemplateId(alertType: 'critical' | 'low'): string {
+    // Template IDs must be configured in environment variables and created in MyOperator dashboard
+    const templateId = alertType === 'critical' 
+      ? process.env.MYOPERATOR_CRITICAL_BALANCE_TEMPLATE_ID
+      : process.env.MYOPERATOR_LOW_BALANCE_TEMPLATE_ID;
+    
+    if (!templateId) {
+      throw new Error(`Missing template ID configuration for ${alertType} balance alert. Please set MYOPERATOR_${alertType.toUpperCase()}_BALANCE_TEMPLATE_ID environment variable.`);
+    }
+    
+    return templateId;
+  }
+
   async sendBalanceAlert(recipients: User[], data: BalanceAlertData): Promise<{ success: boolean; messageIds?: string[]; error?: string }> {
     try {
       if (!this.isConfigured) {
@@ -63,33 +90,40 @@ export class WhatsAppService {
       }
 
       const message = this.generateBalanceAlertMessage(data);
+      console.log('Generated balance alert message (for logging):', message);
+      
+      const templateId = this.getTemplateId(data.alertType);
+      const templateParameters = this.extractTemplateParameters(data);
+      
       const validRecipients = recipients.filter(user => user.mobileNumber && user.mobileNumber.trim() !== '');
       
       if (validRecipients.length === 0) {
         throw new Error('No valid mobile numbers found for recipients');
       }
 
-      // Send WhatsApp message to each recipient using WhatsApp Cloud API
+      // Send WhatsApp message to each recipient using MyOperator API
       const sendPromises = validRecipients.map(async (user) => {
         try {
-          const result = await this.sendWhatsAppMessage(user.mobileNumber, message);
+          const result = await this.sendWhatsAppMessage(user.mobileNumber, templateId, templateParameters);
           
-          console.log(`Balance alert WhatsApp sent to ${user.mobileNumber}:`, result.messages[0].id);
+          const messageId = result.message_id || result.id || 'sent';
+          console.log(`Balance alert WhatsApp sent to ${user.mobileNumber}:`, messageId);
           
           return {
             userId: user.id,
-            messageId: result.messages[0].id,
+            messageId: messageId,
             status: 'sent',
             to: user.mobileNumber
           };
         } catch (error) {
-          console.error(`Failed to send WhatsApp to ${user.mobileNumber}:`, error);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          console.error(`Failed to send WhatsApp to ${user.mobileNumber}:`, errorMessage);
           return {
             userId: user.id,
             messageId: null,
             status: 'failed',
             to: user.mobileNumber,
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: errorMessage
           };
         }
       });
@@ -107,10 +141,11 @@ export class WhatsAppService {
         messageIds: successfulSends.map(r => r.messageId).filter(Boolean) as string[]
       };
     } catch (error) {
-      console.error('Failed to send balance alert WhatsApp:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Failed to send balance alert WhatsApp:', errorMessage);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: errorMessage
       };
     }
   }
@@ -120,45 +155,62 @@ export class WhatsAppService {
     return phoneNumber.replace(/\D/g, '');
   }
 
-  private async sendWhatsAppMessage(phoneNumber: string, message: string): Promise<any> {
-    const url = `https://graph.facebook.com/${this.apiVersion}/${this.phoneNumberId}/messages`;
+  private async sendWhatsAppMessage(phoneNumber: string, templateId: string, parameters: Record<string, string>): Promise<any> {
     const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
     
     const payload = {
-      messaging_product: 'whatsapp',
+      company_id: this.companyId,
       to: normalizedPhone,
-      text: { body: message }
+      template_id: templateId,
+      parameters: parameters
     };
 
-    console.log('=== WHATSAPP API CALL ===');
-    console.log('URL:', url);
+    console.log('=== MYOPERATOR WHATSAPP API CALL ===');
+    console.log('URL:', this.apiUrl);
     console.log('Original phone:', phoneNumber);
     console.log('Normalized phone:', normalizedPhone);
+    console.log('Template ID:', templateId);
     console.log('Payload:', JSON.stringify(payload, null, 2));
-    console.log('Access Token length:', this.accessToken.length);
-    console.log('Phone Number ID:', this.phoneNumberId);
 
     try {
-      const response = await axios.post(url, payload, {
+      const response = await axios.post(this.apiUrl, payload, {
         headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
+          'Authorization': `Bearer ${this.apiToken}`,
+          'x-api-key': this.xApiKey,
           'Content-Type': 'application/json'
         }
       });
 
-      console.log('WhatsApp API SUCCESS:', response.data);
+      console.log('MyOperator WhatsApp API SUCCESS:', response.data);
       return response.data;
     } catch (error: any) {
-      console.error('=== WHATSAPP API ERROR ===');
-      console.error('Status:', error.response?.status);
-      console.error('Status Text:', error.response?.statusText);
-      try {
-        console.error('Error Data:', JSON.stringify(error.response?.data, null, 2));
-      } catch {
-        console.error('Error Data (stringified):', String(error.response?.data));
+      console.error('=== MYOPERATOR WHATSAPP API ERROR ===');
+      
+      if (error.response) {
+        // API returned an error response
+        console.error('Status:', error.response.status);
+        console.error('Status Text:', error.response.statusText);
+        
+        // Log only error data, NOT the full response (which contains sensitive headers/credentials)
+        if (error.response.data) {
+          try {
+            console.error('Error Data:', JSON.stringify(error.response.data, null, 2));
+          } catch {
+            console.error('Error Data (stringified):', String(error.response.data));
+          }
+        }
+        
+        throw new Error(`MyOperator API error: ${error.response.status} - ${error.response.statusText}`);
+      } else if (error.request) {
+        // Request was made but no response received
+        console.error('No response received from MyOperator API');
+        throw new Error('MyOperator API error: No response received');
+      } else {
+        // Error in request setup
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error('Request setup error:', errorMessage);
+        throw new Error(`MyOperator API error: ${errorMessage}`);
       }
-      console.error('Full error response:', error.response);
-      throw error;
     }
   }
 
@@ -168,8 +220,20 @@ export class WhatsAppService {
         throw new Error('WhatsApp service not configured');
       }
 
-      const result = await this.sendWhatsAppMessage(phoneNumber, message);
-      const messageId = result.messages[0].id;
+      // Use a test template ID - must be configured in MyOperator dashboard
+      const testTemplateId = process.env.MYOPERATOR_TEST_TEMPLATE_ID;
+      
+      if (!testTemplateId) {
+        throw new Error('Missing test template ID configuration. Please set MYOPERATOR_TEST_TEMPLATE_ID environment variable.');
+      }
+      
+      const testParameters = {
+        message: message,
+        service_name: 'UrbanKetl'
+      };
+
+      const result = await this.sendWhatsAppMessage(phoneNumber, testTemplateId, testParameters);
+      const messageId = result.message_id || result.id || 'sent';
 
       console.log(`Test WhatsApp sent to ${phoneNumber}:`, messageId);
       
@@ -178,10 +242,11 @@ export class WhatsAppService {
         messageId: messageId
       };
     } catch (error) {
-      console.error('Failed to send test WhatsApp:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Failed to send test WhatsApp:', errorMessage);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: errorMessage
       };
     }
   }
@@ -189,20 +254,20 @@ export class WhatsAppService {
   async testWhatsAppConnection(): Promise<boolean> {
     try {
       if (!this.isConfigured) {
-        console.log('WhatsApp service not configured');
+        console.log('WhatsApp service not configured - MyOperator credentials missing');
         return false;
       }
 
-      // Test by making a simple API call to verify credentials
-      const url = `https://graph.facebook.com/${this.apiVersion}/${this.phoneNumberId}`;
-      
-      const response = await axios.get(url, {
-        headers: {
-          'Authorization': `Bearer ${this.accessToken}`
-        }
-      });
+      // MyOperator doesn't have a dedicated health check endpoint
+      // Verify that all required credentials are present
+      if (!this.apiToken || !this.xApiKey || !this.companyId) {
+        console.log('WhatsApp service connection test failed: Missing required credentials');
+        return false;
+      }
 
-      console.log(`WhatsApp service connection verified. Phone: ${response.data.display_phone_number}`);
+      console.log('MyOperator WhatsApp service connection verified - All credentials present');
+      console.log('Company ID:', this.companyId);
+      console.log('API configured with:', this.apiUrl);
       return true;
     } catch (error) {
       console.error('WhatsApp service connection test failed:', error);

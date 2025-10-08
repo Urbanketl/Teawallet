@@ -4,9 +4,9 @@ import { Link } from "wouter";
 import { Footer } from "@/components/layout/Footer";
 import logoImage from "@assets/URBAN KETL Logo small_1750439431697.jpg";
 import teaFieldsHero from "@assets/stock_images/green_tea_plantation_b7e990d9.jpg";
-import teamMember1 from "@assets/stock_images/professional_busines_b4bbd55a.jpg";
-import teamMember2 from "@assets/stock_images/professional_busines_10476893.jpg";
-import teamMember3 from "@assets/stock_images/professional_busines_85fbb2e7.jpg";
+import gunadeepPhoto from "@assets/Gunadeep Round pic_1759948898072.avif";
+import samarPhoto from "@assets/samarpic-round_1759948898076.avif";
+import thirthaPhoto from "@assets/thirtha round pic_1759948898078.avif";
 
 export default function AboutUs() {
   return (
@@ -87,12 +87,12 @@ export default function AboutUs() {
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Team Member 1 */}
+            {/* Team Member 1 - Samarjit */}
             <Card className="shadow-lg hover:shadow-xl transition-shadow">
               <CardContent className="p-0">
                 <div className="aspect-square overflow-hidden">
                   <img 
-                    src={teamMember1} 
+                    src={samarPhoto} 
                     alt="Samarjit Banerjea" 
                     className="w-full h-full object-cover"
                   />
@@ -104,12 +104,12 @@ export default function AboutUs() {
               </CardContent>
             </Card>
 
-            {/* Team Member 2 */}
+            {/* Team Member 2 - Thirtha */}
             <Card className="shadow-lg hover:shadow-xl transition-shadow">
               <CardContent className="p-0">
                 <div className="aspect-square overflow-hidden">
                   <img 
-                    src={teamMember2} 
+                    src={thirthaPhoto} 
                     alt="Thirtha Prasad" 
                     className="w-full h-full object-cover"
                   />
@@ -121,12 +121,12 @@ export default function AboutUs() {
               </CardContent>
             </Card>
 
-            {/* Team Member 3 */}
+            {/* Team Member 3 - Gunadeep */}
             <Card className="shadow-lg hover:shadow-xl transition-shadow">
               <CardContent className="p-0">
                 <div className="aspect-square overflow-hidden">
                   <img 
-                    src={teamMember3} 
+                    src={gunadeepPhoto} 
                     alt="Gunadeep P N" 
                     className="w-full h-full object-cover"
                   />

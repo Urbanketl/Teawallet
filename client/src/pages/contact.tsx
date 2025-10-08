@@ -43,15 +43,15 @@ export default function ContactUs() {
             {/* Company Information Card */}
             <Card className="shadow-lg">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-tea-green" />
+                <CardTitle className="flex items-center gap-2 text-tea-green">
+                  <Building2 className="h-5 w-5" />
                   Company Information
                 </CardTitle>
                 <CardDescription>Official business details</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1">Company Name</p>
+                  <p className="text-sm font-medium text-tea-green mb-1">Company Name</p>
                   <p className="text-base font-semibold text-gray-900">{companyName}</p>
                 </div>
               </CardContent>
@@ -60,18 +60,18 @@ export default function ContactUs() {
             {/* Contact Information Card */}
             <Card className="shadow-lg">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Phone className="h-5 w-5 text-tea-green" />
+                <CardTitle className="flex items-center gap-2 text-tea-green">
+                  <Phone className="h-5 w-5" />
                   Get in Touch
                 </CardTitle>
                 <CardDescription>Reach us through these channels</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 mb-2">Phone</p>
+                  <p className="text-sm font-medium text-tea-green mb-2">Phone</p>
                   <a 
                     href={`tel:${phoneNumber}`}
-                    className="flex items-center gap-2 text-base text-tea-green hover:text-tea-dark transition-colors"
+                    className="flex items-center gap-2 text-base font-semibold text-tea-green hover:text-tea-dark transition-colors"
                     data-testid="link-phone"
                   >
                     <Phone className="h-4 w-4" />
@@ -80,10 +80,10 @@ export default function ContactUs() {
                 </div>
 
                 <div>
-                  <p className="text-sm font-medium text-gray-500 mb-2">Email</p>
+                  <p className="text-sm font-medium text-tea-green mb-2">Email</p>
                   <a 
                     href={`mailto:${email}`}
-                    className="flex items-center gap-2 text-base text-tea-green hover:text-tea-dark transition-colors"
+                    className="flex items-center gap-2 text-base font-semibold text-tea-green hover:text-tea-dark transition-colors"
                     data-testid="link-email"
                   >
                     <Mail className="h-4 w-4" />
@@ -96,8 +96,8 @@ export default function ContactUs() {
             {/* Address Card - Full Width */}
             <Card className="shadow-lg md:col-span-2">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-tea-green" />
+                <CardTitle className="flex items-center gap-2 text-tea-green">
+                  <MapPin className="h-5 w-5" />
                   Office Address
                 </CardTitle>
                 <CardDescription>Visit us at our office</CardDescription>
@@ -110,7 +110,7 @@ export default function ContactUs() {
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-4 inline-flex items-center gap-2 text-tea-green hover:text-tea-dark transition-colors"
+                  className="mt-4 inline-flex items-center gap-2 font-semibold text-tea-green hover:text-tea-dark transition-colors"
                   data-testid="link-map"
                 >
                   <ExternalLink className="h-4 w-4" />
@@ -122,7 +122,7 @@ export default function ContactUs() {
             {/* Business Hours Card */}
             <Card className="shadow-lg md:col-span-2">
               <CardHeader>
-                <CardTitle>Business Hours</CardTitle>
+                <CardTitle className="text-tea-green">Business Hours</CardTitle>
                 <CardDescription>We're available during these times</CardDescription>
               </CardHeader>
               <CardContent>

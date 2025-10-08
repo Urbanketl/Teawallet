@@ -27,7 +27,7 @@ export default function PricingPolicy() {
       </Helmet>
       <div className="container mx-auto px-4 py-8 max-w-4xl flex-1">
         {/* Logo */}
-        <div className="flex justify-center mb-6">
+        <div className="mb-6">
           <Link href="/">
             <img 
               src={logoImage} 

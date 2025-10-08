@@ -21,7 +21,7 @@ export default function ContactUs() {
       <div className="min-h-screen bg-gradient-to-br from-tea-light via-white to-tea-lighter">
         <div className="container mx-auto px-4 py-12">
           {/* Logo */}
-          <div className="flex justify-center mb-8">
+          <div className="mb-8">
             <Link href="/">
               <img 
                 src={logoImage} 

@@ -89,15 +89,15 @@ export default function AboutUs() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Team Member 1 - Samarjit */}
             <Card className="shadow-lg hover:shadow-xl transition-shadow">
-              <CardContent className="p-0">
-                <div className="aspect-square overflow-hidden">
+              <CardContent className="p-6 flex flex-col items-center">
+                <div className="w-48 h-48 rounded-full overflow-hidden mb-4">
                   <img 
                     src={samarPhoto} 
                     alt="Samarjit Banerjea" 
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <div className="p-6">
+                <div className="text-center">
                   <h3 className="text-xl font-bold text-tea-green mb-1">Samarjit Banerjea</h3>
                   <p className="text-gray-600">Co-founder, CEO</p>
                 </div>
@@ -106,15 +106,15 @@ export default function AboutUs() {
 
             {/* Team Member 2 - Thirtha */}
             <Card className="shadow-lg hover:shadow-xl transition-shadow">
-              <CardContent className="p-0">
-                <div className="aspect-square overflow-hidden">
+              <CardContent className="p-6 flex flex-col items-center">
+                <div className="w-48 h-48 rounded-full overflow-hidden mb-4">
                   <img 
                     src={thirthaPhoto} 
                     alt="Thirtha Prasad" 
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <div className="p-6">
+                <div className="text-center">
                   <h3 className="text-xl font-bold text-tea-green mb-1">Thirtha Prasad</h3>
                   <p className="text-gray-600">CO-Founder, CTO</p>
                 </div>
@@ -123,15 +123,15 @@ export default function AboutUs() {
 
             {/* Team Member 3 - Gunadeep */}
             <Card className="shadow-lg hover:shadow-xl transition-shadow">
-              <CardContent className="p-0">
-                <div className="aspect-square overflow-hidden">
+              <CardContent className="p-6 flex flex-col items-center">
+                <div className="w-48 h-48 rounded-full overflow-hidden mb-4">
                   <img 
                     src={gunadeepPhoto} 
                     alt="Gunadeep P N" 
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <div className="p-6">
+                <div className="text-center">
                   <h3 className="text-xl font-bold text-tea-green mb-1">Gunadeep P N</h3>
                   <p className="text-gray-600">Director - Growth & Investment</p>
                 </div>

@@ -4,7 +4,6 @@ import { Link } from "wouter";
 import { Footer } from "@/components/layout/Footer";
 import logoImage from "@assets/URBAN KETL Logo small_1750439431697.jpg";
 import teaFieldsHero from "@assets/stock_images/green_tea_plantation_b7e990d9.jpg";
-import teaFieldsSecondary from "@assets/stock_images/green_tea_plantation_0615b5c5.jpg";
 import teamMember1 from "@assets/stock_images/professional_busines_b4bbd55a.jpg";
 import teamMember2 from "@assets/stock_images/professional_busines_10476893.jpg";
 import teamMember3 from "@assets/stock_images/professional_busines_85fbb2e7.jpg";
@@ -51,15 +50,6 @@ export default function AboutUs() {
               src={teaFieldsHero} 
               alt="Tea plantation fields" 
               className="w-full h-[400px] object-cover"
-            />
-          </div>
-
-          {/* Secondary image */}
-          <div className="rounded-xl overflow-hidden shadow-lg max-w-md">
-            <img 
-              src={teaFieldsSecondary} 
-              alt="Tea plantation landscape" 
-              className="w-full h-[280px] object-cover"
             />
           </div>
         </section>

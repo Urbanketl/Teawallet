@@ -356,8 +356,13 @@ export function setupAuth(app: Express) {
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      const user = await storage.getUser(req.user.id);
-      if (!user || !(await comparePasswords(currentPassword, user.password || ""))) {
+      // Use getUserByEmail to get the password field (getUser excludes it for security)
+      const user = await storage.getUserByEmail(req.user.email);
+      if (!user || !user.password) {
+        return res.status(400).json({ error: "User not found" });
+      }
+
+      if (!(await comparePasswords(currentPassword, user.password))) {
         return res.status(400).json({ error: "Current password is incorrect" });
       }
 

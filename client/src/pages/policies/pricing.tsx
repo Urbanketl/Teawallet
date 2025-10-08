@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/layout/Footer";
 import { Helmet } from "react-helmet-async";
+import logoImage from "@assets/URBAN KETL Logo small_1750439431697.jpg";
 
 export default function PricingPolicy() {
   return (
@@ -25,6 +26,18 @@ export default function PricingPolicy() {
         <meta name="twitter:description" content="Flexible wallet recharge options for corporate tea vending" />
       </Helmet>
       <div className="container mx-auto px-4 py-8 max-w-4xl flex-1">
+        {/* Logo */}
+        <div className="flex justify-center mb-6">
+          <Link href="/">
+            <img 
+              src={logoImage} 
+              alt="UrbanKetl Logo" 
+              className="h-16 w-auto object-contain border border-gray-200 rounded-lg p-1 bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+              style={{ minWidth: '80px', height: '64px', maxWidth: '120px' }}
+            />
+          </Link>
+        </div>
+
         <Link href="/">
           <Button variant="ghost" className="mb-6" data-testid="button-back-home">
             <ArrowLeft className="mr-2 h-4 w-4" />

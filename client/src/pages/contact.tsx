@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Mail, Phone, MapPin, Building2, ExternalLink } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "wouter";
+import logoImage from "@assets/URBAN KETL Logo small_1750439431697.jpg";
 
 export default function ContactUs() {
   const phoneNumber = "9620963007";
@@ -19,6 +20,17 @@ export default function ContactUs() {
 
       <div className="min-h-screen bg-gradient-to-br from-tea-light via-white to-tea-lighter">
         <div className="container mx-auto px-4 py-12">
+          {/* Logo */}
+          <div className="flex justify-center mb-8">
+            <Link href="/">
+              <img 
+                src={logoImage} 
+                alt="UrbanKetl Logo" 
+                className="h-16 w-auto object-contain border border-gray-200 rounded-lg p-1 bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                style={{ minWidth: '80px', height: '64px', maxWidth: '120px' }}
+              />
+            </Link>
+          </div>
           {/* Header */}
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-gray-900 mb-4">Contact Us</h1>

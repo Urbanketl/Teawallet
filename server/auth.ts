@@ -188,11 +188,19 @@ export function setupAuth(app: Express) {
 
         // Check if user needs to reset password
         if (user.requiresPasswordReset) {
-          return res.json({
-            requiresPasswordReset: true,
-            userId: user.id,
-            message: "Password reset required",
+          // Explicitly save the session before responding
+          req.session.save((err) => {
+            if (err) {
+              console.error("Session save error:", err);
+              return res.status(500).json({ error: "Session error" });
+            }
+            return res.json({
+              requiresPasswordReset: true,
+              userId: user.id,
+              message: "Password reset required",
+            });
           });
+          return;
         }
 
         res.json({

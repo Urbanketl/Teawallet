@@ -358,13 +358,6 @@ export function setupAuth(app: Express) {
 
       // Use getUserByEmail to get the password field (getUser excludes it for security)
       const user = await storage.getUserByEmail(req.user.email);
-      console.log("User retrieved for password change:", {
-        found: !!user,
-        hasPassword: !!user?.password,
-        passwordLength: user?.password?.length,
-        hasDot: user?.password?.includes('.')
-      });
-      
       if (!user || !user.password) {
         return res.status(400).json({ error: "User not found or password not set" });
       }

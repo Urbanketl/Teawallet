@@ -25,6 +25,7 @@ import PricingPolicy from "@/pages/policies/pricing";
 import TermsAndConditions from "@/pages/policies/terms";
 import PrivacyPolicy from "@/pages/policies/privacy";
 import RefundPolicy from "@/pages/policies/refund";
+import ContactUs from "@/pages/contact";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -58,7 +59,8 @@ function Router() {
       )}
       
       <Switch>
-        {/* Public policy pages - accessible without authentication */}
+        {/* Public pages - accessible without authentication */}
+        <Route path="/contact" component={ContactUs} />
         <Route path="/policies/pricing" component={PricingPolicy} />
         <Route path="/policies/terms" component={TermsAndConditions} />
         <Route path="/policies/privacy" component={PrivacyPolicy} />

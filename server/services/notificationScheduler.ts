@@ -236,13 +236,19 @@ export class NotificationScheduler {
     try {
       const recipients = [];
       
-      // Get business unit admin
+      // Get business unit admin - find users who have this business unit assigned
       const businessUnitUsers = await storage.getUsersWithBusinessUnits();
-      const unitAdmins = businessUnitUsers.filter(user => 
-        user.businessUnitId === businessUnitId && user.isAdmin
-      );
-      
-      recipients.push(...unitAdmins);
+      for (const user of businessUnitUsers) {
+        // Check if user has this business unit in their businessUnits array
+        const matchingBU = user.businessUnits?.find((bu: any) => bu.id === businessUnitId);
+        if (matchingBU && matchingBU.role === 'Business Unit Admin') {
+          // Get full user details with mobile number
+          const fullUser = await storage.getUser(user.id);
+          if (fullUser) {
+            recipients.push(fullUser);
+          }
+        }
+      }
       
       // Add platform admins for critical alerts
       if (includePlatformAdmins) {

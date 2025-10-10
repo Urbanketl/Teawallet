@@ -2,6 +2,19 @@ import Razorpay from "razorpay";
 
 let razorpayInstance: Razorpay | null = null;
 
+// Razorpay API timeout (30 seconds for payment gateway operations)
+const RAZORPAY_TIMEOUT = 30000;
+
+// Utility function to add timeout to promises
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`Razorpay ${operation} timed out after ${timeoutMs}ms`)), timeoutMs)
+    )
+  ]);
+}
+
 export function initializeRazorpay() {
   if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
     console.warn("Razorpay credentials not found. Payment processing will be disabled.");
@@ -37,7 +50,14 @@ export async function createOrder(amount: number, currency = "INR") {
   };
 
   console.log('Creating Razorpay order with options:', JSON.stringify(options, null, 2));
-  const order = await razorpay.orders.create(options);
+  
+  // Wrap Razorpay API call with timeout
+  const order = await withTimeout(
+    razorpay.orders.create(options),
+    RAZORPAY_TIMEOUT,
+    'order creation'
+  );
+  
   console.log('Razorpay order created:', JSON.stringify(order, null, 2));
   
   return order;

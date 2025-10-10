@@ -176,7 +176,7 @@ export class WhatsAppService {
     try {
       const response = await axios.post(this.apiUrl, payload, {
         headers: {
-          'Authorization': `api_key=${this.apiToken}`,
+          'Authorization': this.apiToken,
           'x-api-key': this.xApiKey,
           'Content-Type': 'application/json'
         }

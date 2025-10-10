@@ -100,6 +100,24 @@ app.use((req, res, next) => {
     console.log('✅ Challenge-Response Service initialized');
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      // Handle timeout errors specifically
+      if (err.code === 'ETIMEDOUT' || err.code === 'ECONNABORTED' || err.message?.includes('timed out')) {
+        console.error('Timeout error:', {
+          url: _req.originalUrl,
+          method: _req.method,
+          error: err.message,
+          code: err.code
+        });
+        
+        if (!res.headersSent) {
+          return res.status(504).json({ 
+            error: 'Gateway Timeout',
+            message: 'The operation took too long to complete. Please try again.'
+          });
+        }
+      }
+
+      // Handle other errors
       const status = err.status || err.statusCode || 500;
       const message = err.message || "Internal Server Error";
 

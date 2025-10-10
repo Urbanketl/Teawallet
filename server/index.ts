@@ -129,6 +129,20 @@ app.use((req, res, next) => {
     }, () => {
       log(`serving on port ${port}`);
     });
+
+    // Configure server-level timeouts for production resilience
+    server.timeout = 30000;              // 30s socket inactivity timeout
+    server.requestTimeout = 40000;       // 40s max request time
+    server.headersTimeout = 35000;       // 35s headers timeout
+    server.keepAliveTimeout = 65000;     // 65s keep-alive (higher than load balancer)
+
+    // Handle timeout events
+    server.on('timeout', (socket) => {
+      console.error('Server timeout: Socket connection timed out');
+      socket.destroy();
+    });
+
+    log('Server timeouts configured: request=40s, headers=35s, socket=30s, keepAlive=65s');
   } catch (error) {
     console.error("Failed to start server:", error);
     process.exit(1);

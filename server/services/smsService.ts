@@ -20,7 +20,7 @@ export class WhatsAppService {
   private apiToken: string = '';
   private xApiKey: string = '';
   private companyId: string = '';
-  private apiUrl: string = 'https://api.myoperator.co/whatsapp/send';
+  private apiUrl: string = 'https://publicapi.myoperator.co/whatsapp/send';
 
   constructor() {
     this.initializeClient();

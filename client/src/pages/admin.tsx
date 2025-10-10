@@ -5912,7 +5912,7 @@ function BalanceAlertTesting() {
             Manual Balance Alert Testing
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Manually trigger balance alert emails for testing purposes
+            Manually trigger balance alert emails and WhatsApp messages for testing purposes
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -5958,7 +5958,7 @@ function BalanceAlertTesting() {
           <div className="flex items-start space-x-2 p-3 bg-blue-50 rounded-lg">
             <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
             <div className="text-sm text-blue-800">
-              <strong>Note:</strong> This will send a real email to the business unit owner and platform admins. 
+              <strong>Note:</strong> This will send real notifications (email + WhatsApp) to the business unit owner and platform admins. 
               Make sure you want to test this before clicking send.
             </div>
           </div>

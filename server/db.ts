@@ -19,13 +19,14 @@ if (!process.env.DATABASE_URL) {
 
 const connectionString = process.env.DATABASE_URL;
 
-// Create a simpler, more stable pool configuration
+// Create a simpler, more stable pool configuration with query timeouts
 export const pool = new Pool({ 
   connectionString,
   ssl: true,
-  connectionTimeoutMillis: 20000,
-  idleTimeoutMillis: 30000,
-  max: 20
+  connectionTimeoutMillis: 30000,   // 30s to acquire connection from pool
+  idleTimeoutMillis: 10000,         // 10s idle connection timeout
+  max: 20,                          // Maximum 20 connections
+  statement_timeout: 10000,         // 10s query execution timeout (normal queries)
 });
 
 // Add error handling for the pool
@@ -35,7 +36,7 @@ pool.on('error', (err) => {
 
 // Add connection event handlers
 pool.on('connect', () => {
-  console.log('Database pool connected');
+  console.log('Database pool connected with timeouts: connection=30s, query=10s, idle=10s');
 });
 
 export const db = drizzle({ client: pool, schema });

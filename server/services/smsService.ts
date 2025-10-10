@@ -176,10 +176,10 @@ export class WhatsAppService {
     try {
       const headers = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.xApiKey}` // WhatsApp API Key as Bearer token
+        'Authorization': this.xApiKey // Direct API key without Bearer prefix
       };
       
-      console.log('Using Bearer token authentication with WhatsApp API Key');
+      console.log('Using direct API key authentication (no Bearer prefix)');
       
       const response = await axios.post(this.apiUrl, payload, {
         headers

@@ -60,13 +60,14 @@ export class WhatsAppService {
   }
 
   private extractTemplateParameters(data: BalanceAlertData): Record<string, string> {
-    const { businessUnit, currentBalance, threshold, alertType } = data;
+    const { businessUnit, currentBalance, threshold } = data;
     
+    // MyOperator template parameters matching the approved templates:
+    // uk_critical_balance_template and uk_low_balance_template
     return {
-      business_unit_name: businessUnit.name,
+      business_unit: businessUnit.name || businessUnit.code,
       current_balance: currentBalance,
-      threshold: threshold,
-      alert_type: alertType
+      threshold: threshold
     };
   }
 

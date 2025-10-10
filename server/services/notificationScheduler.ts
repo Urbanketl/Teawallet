@@ -235,6 +235,7 @@ export class NotificationScheduler {
   private async getAlertRecipients(businessUnitId: string, includePlatformAdmins: boolean = false) {
     try {
       const recipients = [];
+      const userIdSet = new Set<string>(); // Track unique user IDs to prevent duplicates
       
       // Get business unit admin - find users who have this business unit assigned
       const businessUnitUsers = await storage.getUsersWithBusinessUnits();
@@ -244,8 +245,9 @@ export class NotificationScheduler {
         if (matchingBU && matchingBU.role === 'Business Unit Admin') {
           // Get full user details with mobile number
           const fullUser = await storage.getUser(user.id);
-          if (fullUser) {
+          if (fullUser && !userIdSet.has(fullUser.id)) {
             recipients.push(fullUser);
+            userIdSet.add(fullUser.id);
           }
         }
       }
@@ -254,7 +256,12 @@ export class NotificationScheduler {
       if (includePlatformAdmins) {
         const allUsers = await storage.getAllUsers();
         const platformAdmins = allUsers.filter(user => user.isSuperAdmin);
-        recipients.push(...platformAdmins);
+        for (const admin of platformAdmins) {
+          if (!userIdSet.has(admin.id)) {
+            recipients.push(admin);
+            userIdSet.add(admin.id);
+          }
+        }
       }
       
       // Filter users who have WhatsApp notifications enabled and have mobile numbers

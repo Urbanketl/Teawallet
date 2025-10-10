@@ -1500,6 +1500,55 @@ export default function AdminPage() {
 
                     <TabsContent value="settings" className="p-6">
                       <div className="space-y-4">
+                        {/* Tech Stack Download Section */}
+                        <div className="bg-gradient-to-r from-[#D4AF37]/10 to-transparent border border-[#D4AF37]/20 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="font-semibold text-gray-900">Technology Stack Documentation</h3>
+                              <p className="text-sm text-gray-600 mt-1">Download complete technical documentation in PDF format</p>
+                            </div>
+                            <Button
+                              data-testid="button-download-tech-stack"
+                              onClick={async () => {
+                                try {
+                                  const response = await fetch('/api/admin/tech-stack-pdf', {
+                                    credentials: 'include'
+                                  });
+                                  
+                                  if (!response.ok) {
+                                    throw new Error('Failed to generate PDF');
+                                  }
+                                  
+                                  const blob = await response.blob();
+                                  const url = window.URL.createObjectURL(blob);
+                                  const a = document.createElement('a');
+                                  a.href = url;
+                                  a.download = 'UrbanKetl-Tech-Stack.pdf';
+                                  document.body.appendChild(a);
+                                  a.click();
+                                  window.URL.revokeObjectURL(url);
+                                  document.body.removeChild(a);
+                                  
+                                  toast({
+                                    title: "Download Started",
+                                    description: "Tech stack PDF is downloading...",
+                                  });
+                                } catch (error) {
+                                  toast({
+                                    title: "Download Failed",
+                                    description: "Failed to generate tech stack PDF",
+                                    variant: "destructive",
+                                  });
+                                }
+                              }}
+                              className="bg-[#D4AF37] hover:bg-[#B8941F] text-white"
+                            >
+                              <Download className="w-4 h-4 mr-2" />
+                              Download PDF
+                            </Button>
+                          </div>
+                        </div>
+                        
                         <div>
                           <Label htmlFor="systemName">System Name</Label>
                           <Input

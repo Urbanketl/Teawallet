@@ -123,6 +123,199 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Admin support routes
   app.get('/api/admin/support/tickets', requireAuth, requireAdmin, adminController.getSupportTicketsPaginated);
+  
+  // Tech Stack PDF Download
+  app.get('/api/admin/tech-stack-pdf', requireAuth, requireAdmin, async (req: any, res) => {
+    try {
+      const doc = new PDFDocument({ margin: 50 });
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename="UrbanKetl-Tech-Stack.pdf"');
+      doc.pipe(res);
+
+      // Title
+      doc.fontSize(24).fillColor('#D4AF37').text('UrbanKetl Tea Wallet System', { align: 'center' });
+      doc.fontSize(16).fillColor('#000000').text('Technology Stack Documentation', { align: 'center' });
+      doc.moveDown(2);
+
+      // Frontend Section
+      doc.fontSize(18).fillColor('#D4AF37').text('Frontend (User Interface)', { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(11).fillColor('#000000');
+      
+      const frontend = [
+        '• React 18 with TypeScript - Modern JavaScript framework for building the web interface',
+        '• Vite - Lightning-fast development server and build tool',
+        '• Tailwind CSS - Utility-first styling framework for responsive design',
+        '• Radix UI Components - Accessible, unstyled UI components (dialogs, dropdowns, etc.)',
+        '• Wouter - Lightweight routing for navigation between pages',
+        '• TanStack Query - Data fetching and caching for smooth user experience',
+        '• React Hook Form - Form handling with validation',
+        '• Zod - Type-safe schema validation'
+      ];
+      frontend.forEach(item => {
+        doc.text(item, { lineGap: 3 });
+      });
+      doc.moveDown(1.5);
+
+      // Backend Section
+      doc.fontSize(18).fillColor('#D4AF37').text('Backend (Server)', { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(11).fillColor('#000000');
+      
+      const backend = [
+        '• Node.js with Express.js - JavaScript runtime and web framework',
+        '• TypeScript - Type-safe JavaScript for better code quality',
+        '• Custom Authentication - Email/password system with role-based access control',
+        '• Session Management - Server-side sessions stored in PostgreSQL',
+        '• RESTful APIs - Clean API endpoints for frontend communication'
+      ];
+      backend.forEach(item => {
+        doc.text(item, { lineGap: 3 });
+      });
+      doc.moveDown(1.5);
+
+      // Database Section
+      doc.fontSize(18).fillColor('#D4AF37').text('Database', { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(11).fillColor('#000000');
+      
+      const database = [
+        '• PostgreSQL (Neon Serverless) - Primary database for all data storage',
+        '• Drizzle ORM - Type-safe database queries and schema management',
+        '• Performance Indexes - Optimized for handling 100,000+ daily transactions'
+      ];
+      database.forEach(item => {
+        doc.text(item, { lineGap: 3 });
+      });
+      doc.moveDown(1.5);
+
+      // Payment & Integrations
+      doc.fontSize(18).fillColor('#D4AF37').text('Payment & Integrations', { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(11).fillColor('#000000');
+      
+      const integrations = [
+        '• Razorpay - Payment gateway for wallet recharges (India-focused)',
+        '• Email Notifications - SMTP integration via Hostinger (support@urbanketl.com)',
+        '• WhatsApp Alerts - MyOperator API integration for balance notifications'
+      ];
+      integrations.forEach(item => {
+        doc.text(item, { lineGap: 3 });
+      });
+      doc.moveDown(1.5);
+
+      // RFID & Hardware
+      doc.fontSize(18).fillColor('#D4AF37').text('RFID & Hardware', { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(11).fillColor('#000000');
+      
+      const rfid = [
+        '• MIFARE DESFire EV1 Cards - Cryptographic RFID cards with AES encryption',
+        '• Challenge-Response Authentication - Secure card validation protocol',
+        '• Machine Sync System - Automated synchronization across tea machines',
+        '• WebSocket Communication - Real-time updates between machines and server'
+      ];
+      rfid.forEach(item => {
+        doc.text(item, { lineGap: 3 });
+      });
+      doc.moveDown(1.5);
+
+      // New Page for Security and remaining sections
+      doc.addPage();
+
+      // Security Features
+      doc.fontSize(18).fillColor('#D4AF37').text('Security Features', { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(11).fillColor('#000000');
+      
+      const security = [
+        '• AES Encryption - For RFID card authentication',
+        '• CSRF Protection - Prevents cross-site request forgery attacks',
+        '• Secure Cookies - HTTPOnly, SameSite cookies for session security',
+        '• Automatic Key Rotation - Regular security key updates for machines',
+        '• Audit Logging - Complete transaction and authentication history'
+      ];
+      security.forEach(item => {
+        doc.text(item, { lineGap: 3 });
+      });
+      doc.moveDown(1.5);
+
+      // Automation & Scheduling
+      doc.fontSize(18).fillColor('#D4AF37').text('Automation & Scheduling', { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(11).fillColor('#000000');
+      
+      const automation = [
+        '• Node-Cron - Automated background tasks',
+        '• Auto-Sync Service - RFID card synchronization every 30 minutes (6 AM - 10 PM IST)',
+        '• UPI Daily Sync - Automated payment reconciliation at 8 PM IST',
+        '• Balance Alert System - Automated email/WhatsApp notifications'
+      ];
+      automation.forEach(item => {
+        doc.text(item, { lineGap: 3 });
+      });
+      doc.moveDown(1.5);
+
+      // Deployment & Hosting
+      doc.fontSize(18).fillColor('#D4AF37').text('Deployment & Hosting', { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(11).fillColor('#000000');
+      
+      const deployment = [
+        '• Replit Platform - Development environment and production hosting',
+        '• Environment Secrets - Secure API key and credential management',
+        '• Single-Port Architecture - Frontend and backend on same port (5000)'
+      ];
+      deployment.forEach(item => {
+        doc.text(item, { lineGap: 3 });
+      });
+      doc.moveDown(1.5);
+
+      // Development Tools
+      doc.fontSize(18).fillColor('#D4AF37').text('Development Tools', { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(11).fillColor('#000000');
+      
+      const devTools = [
+        '• ESBuild - Fast JavaScript bundler',
+        '• Drizzle Kit - Database schema migration tool',
+        '• TypeScript Compiler - Type checking and compilation'
+      ];
+      devTools.forEach(item => {
+        doc.text(item, { lineGap: 3 });
+      });
+      doc.moveDown(2);
+
+      // Key Architectural Decisions
+      doc.fontSize(18).fillColor('#D4AF37').text('Key Architectural Decisions', { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(11).fillColor('#000000');
+      
+      const architecture = [
+        '1. B2B Corporate Model - Designed for business unit administrators managing employee access',
+        '2. Wallet-Based System - Prepaid digital wallets for each business unit',
+        '3. Generic RFID Cards - Cards linked to business units, not individual employees',
+        '4. Centralized Management - Platform admins control users, machines, and cards',
+        '5. Real-time Analytics - Comprehensive dashboards for usage tracking and revenue monitoring'
+      ];
+      architecture.forEach(item => {
+        doc.text(item, { lineGap: 5 });
+      });
+      doc.moveDown(2);
+
+      // Footer
+      doc.fontSize(10).fillColor('#666666').text(
+        `Generated on ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })} | UrbanKetl Tea Wallet System`,
+        { align: 'center' }
+      );
+
+      doc.end();
+    } catch (error) {
+      console.error('Error generating tech stack PDF:', error);
+      res.status(500).json({ message: 'Failed to generate PDF' });
+    }
+  });
 
   // Admin support ticket history
   app.get('/api/admin/support/tickets/:ticketId/history', requireAuth, requireAdmin, async (req, res) => {

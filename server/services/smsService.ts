@@ -1,5 +1,4 @@
 import axios from 'axios';
-import * as crypto from 'crypto';
 
 export interface BalanceAlertData {
   businessUnit: any;
@@ -157,69 +156,6 @@ export class WhatsAppService {
     return phoneNumber.replace(/\D/g, '');
   }
 
-  private signRequestAWSv4(method: string, path: string, payload: any, headers: Record<string, string>): Record<string, string> {
-    // AWS Signature Version 4 signing for MyOperator
-    // Access Key ID = MYOPERATOR_X_API_KEY
-    // Secret Access Key = MYOPERATOR_API_TOKEN
-    const accessKeyId = this.xApiKey;
-    const secretAccessKey = this.apiToken;
-    const region = 'ap-south-1';
-    const service = 'execute-api';
-    
-    const now = new Date();
-    const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
-    const dateStamp = amzDate.slice(0, 8);
-    
-    const host = 'publicapi.myoperator.co';
-    const canonicalUri = path;
-    const canonicalQueryString = '';
-    
-    const payloadHash = crypto.createHash('sha256').update(JSON.stringify(payload)).digest('hex');
-    
-    const canonicalHeaders = `host:${host}\nx-amz-date:${amzDate}\n`;
-    const signedHeaders = 'host;x-amz-date';
-    
-    const canonicalRequest = [
-      method,
-      canonicalUri,
-      canonicalQueryString,
-      canonicalHeaders,
-      signedHeaders,
-      payloadHash
-    ].join('\n');
-    
-    const algorithm = 'AWS4-HMAC-SHA256';
-    const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
-    const canonicalRequestHash = crypto.createHash('sha256').update(canonicalRequest).digest('hex');
-    
-    const stringToSign = [
-      algorithm,
-      amzDate,
-      credentialScope,
-      canonicalRequestHash
-    ].join('\n');
-    
-    const getSignatureKey = (key: string, dateStamp: string, regionName: string, serviceName: string) => {
-      const kDate = crypto.createHmac('sha256', 'AWS4' + key).update(dateStamp).digest();
-      const kRegion = crypto.createHmac('sha256', kDate).update(regionName).digest();
-      const kService = crypto.createHmac('sha256', kRegion).update(serviceName).digest();
-      const kSigning = crypto.createHmac('sha256', kService).update('aws4_request').digest();
-      return kSigning;
-    };
-    
-    const signingKey = getSignatureKey(secretAccessKey, dateStamp, region, service);
-    const signature = crypto.createHmac('sha256', signingKey).update(stringToSign).digest('hex');
-    
-    const authorizationHeader = `${algorithm} Credential=${accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
-    
-    return {
-      ...headers,
-      'Host': host,
-      'X-Amz-Date': amzDate,
-      'Authorization': authorizationHeader
-    };
-  }
-
   private async sendWhatsAppMessage(phoneNumber: string, templateId: string, parameters: Record<string, string>): Promise<any> {
     const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
     
@@ -238,18 +174,15 @@ export class WhatsAppService {
     console.log('Payload:', JSON.stringify(payload, null, 2));
 
     try {
-      const baseHeaders = {
-        'Content-Type': 'application/json'
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.xApiKey}` // WhatsApp API Key as Bearer token
       };
       
-      // Sign request using AWS Signature v4
-      // Access Key ID = MYOPERATOR_X_API_KEY, Secret Key = MYOPERATOR_API_TOKEN
-      const signedHeaders = this.signRequestAWSv4('POST', '/whatsapp/send', payload, baseHeaders);
-      
-      console.log('Using AWS Signature v4 authentication (Access Key ID from X_API_KEY, Secret from API_TOKEN)');
+      console.log('Using Bearer token authentication with WhatsApp API Key');
       
       const response = await axios.post(this.apiUrl, payload, {
-        headers: signedHeaders
+        headers
       });
 
       console.log('MyOperator WhatsApp API SUCCESS:', response.data);

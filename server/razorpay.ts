@@ -5,13 +5,19 @@ let razorpayInstance: Razorpay | null = null;
 // Razorpay API timeout (30 seconds for payment gateway operations)
 const RAZORPAY_TIMEOUT = 30000;
 
-// Utility function to add timeout to promises
+// Utility function to add timeout to promises with proper cleanup
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> {
+  let timeoutHandle: NodeJS.Timeout;
+  
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeoutHandle = setTimeout(() => {
+      reject(new Error(`Razorpay ${operation} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+  
   return Promise.race([
-    promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(`Razorpay ${operation} timed out after ${timeoutMs}ms`)), timeoutMs)
-    )
+    promise.finally(() => clearTimeout(timeoutHandle)),
+    timeoutPromise
   ]);
 }
 

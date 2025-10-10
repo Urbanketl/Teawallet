@@ -25,7 +25,7 @@ export const pool = new Pool({
   ssl: true,
   connectionTimeoutMillis: 20000,
   idleTimeoutMillis: 30000,
-  max: 3
+  max: 20
 });
 
 // Add error handling for the pool

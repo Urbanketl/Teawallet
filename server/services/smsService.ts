@@ -175,13 +175,14 @@ export class WhatsAppService {
     console.log('Payload:', JSON.stringify(payload, null, 2));
 
     try {
-      // MyOperator uses simple custom header authentication
+      // Try different authentication approaches
       const headers = {
         'Content-Type': 'application/json',
-        'X-Api-Key': this.xApiKey  // WhatsApp API Key from MyOperator portal
+        'Authorization': this.apiToken,  // Try API Token in Authorization header
+        'X-Api-Key': this.xApiKey         // Also include X-Api-Key
       };
       
-      console.log('Using MyOperator custom header authentication (X-Api-Key)');
+      console.log('Using MyOperator authentication with both Authorization and X-Api-Key headers');
       
       const response = await axios.post(this.apiUrl, payload, {
         headers: headers

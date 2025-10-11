@@ -698,7 +698,7 @@ export default function Corporate() {
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
                 <div className="mb-4 md:mb-0">
                   <h2 className="text-2xl md:text-3xl font-inter font-bold mb-2 drop-shadow-sm text-[#A67C52]">
-                    Welcome back, {user.firstName || "Tea Lover"}!
+                    Welcome back, {testUser?.firstName || user.firstName || "Tea Lover"}!
                   </h2>
                   <div className="bg-white/20 rounded-lg px-3 py-2 mt-2 inline-block">
                     <p className="text-lg font-semibold">Business Unit Management</p>

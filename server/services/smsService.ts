@@ -1,4 +1,8 @@
 import axios from 'axios';
+import { timeoutMonitor } from './timeoutMonitor';
+
+// WhatsApp API timeout (30 seconds)
+const WHATSAPP_TIMEOUT = 30000;
 
 export interface BalanceAlertData {
   businessUnit: any;
@@ -181,8 +185,19 @@ export class WhatsAppService {
       
       console.log('Using direct API key authentication (no Bearer prefix)');
       
+      const startTime = Date.now();
       const response = await axios.post(this.apiUrl, payload, {
-        headers
+        headers,
+        timeout: WHATSAPP_TIMEOUT
+      });
+      
+      const duration = Date.now() - startTime;
+      timeoutMonitor.logTimeout({
+        service: 'WhatsApp',
+        operation: 'sendMessage',
+        duration,
+        timeout: WHATSAPP_TIMEOUT,
+        details: { phoneNumber: normalizedPhone, templateId }
       });
 
       console.log('MyOperator WhatsApp API SUCCESS:', response.data);

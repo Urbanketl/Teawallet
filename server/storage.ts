@@ -551,7 +551,7 @@ export class DatabaseStorage implements IStorage {
           .where(
             and(
               eq(userBusinessUnits.businessUnitId, unit.id),
-              eq(userBusinessUnits.role, 'Business Unit Admin')
+              eq(userBusinessUnits.role, 'business_unit_admin')
             )
           )
           .limit(1);

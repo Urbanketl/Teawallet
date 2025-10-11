@@ -3,7 +3,15 @@
 ## Overview
 UrbanKetl is a B2B corporate tea dispensing system integrating RFID technology with a web application. It enables business unit administrators to manage multiple tea machines, issue generic RFID cards to employees, and monitor dispensing activity charged to a corporate wallet. The project aims to provide a comprehensive solution for corporate tea services, streamlining management and billing.
 
-## Recent Changes (August 17, 2025)
+## Recent Changes (October 11, 2025)
+- **Completed Phase 5: Comprehensive Timeout Strategy** - Implemented multi-layered timeout system with route-specific timeouts, external API timeouts, and timeout monitoring
+- **Route-Specific Timeouts**: RFID validation (5s), Machine authentication (5s), Analytics (60s), File exports (120s)
+- **External API Timeouts**: WhatsApp/MyOperator (30s), Email/Nodemailer (30s), Razorpay (30s)
+- **Timeout Monitoring**: Real-time tracking of timeout events with statistics and admin dashboard endpoint (/api/admin/timeout-stats)
+- **Server-Level Timeouts**: Request (40s), Headers (35s), Socket (30s), Keep-alive (65s)
+- **Database Timeouts**: Connection (30s), Query execution (10s), Idle (10s)
+
+## Previous Changes (August 17, 2025)
 - **Completed Phase 3: Machine Auto-Sync System** - Implemented automated synchronization scheduling with cron-based background service running every 30 minutes during business hours (6 AM - 10 PM IST)
 - **Completed Phase 4: Challenge-Response Authentication** - Full MIFARE DESFire EV1 cryptographic authentication system with AES challenge-response protocol and automatic key rotation
 - **Updated RFID Card System to DESFire EV1 Only** - Removed basic RFID card option, standardized on MIFARE DESFire EV1 cards with AES encryption for all new card creation
@@ -43,6 +51,7 @@ UI/UX preferences: Clean, simplified interfaces without unnecessary elements lik
 - **Wallet System**: Business unit-specific digital wallets with recharge capabilities, designed to handle multiple business units per user.
 - **Auto-Sync System (Phase 3)**: Automated RFID card synchronization across all tea machines with cron scheduling, retry mechanisms, manual triggers, and comprehensive monitoring.
 - **Challenge-Response Authentication (Phase 4)**: MIFARE DESFire EV1 cryptographic authentication with AES encryption, automatic key rotation, and secure dispensing authorization.
+- **Timeout Management (Phase 5)**: Multi-layered timeout strategy protecting against hung connections and slow operations. Route-specific timeouts (RFID 5s, Analytics 60s, Exports 120s), external API timeouts (WhatsApp, Email, Razorpay 30s), server-level timeouts (request 40s, socket 30s), and database query timeouts (10s execution). Includes comprehensive monitoring service tracking timeout events with admin dashboard.
 
 ### System Design Choices
 - **Data Model**: B2B corporate model where each user is a business unit administrator. Generic RFID cards are linked to business units, not individual employees, with all usage charged to the corporate wallet.

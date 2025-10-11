@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { timeoutMonitor } from '../services/timeoutMonitor';
 
 export interface TimeoutOptions {
   timeoutMs: number;
@@ -21,13 +22,26 @@ export function timeoutMiddleware(options: TimeoutOptions) {
       timedOut = true;
       const duration = Date.now() - startTime;
       
-      // Log timeout event
+      // Log to console
       console.error(`[TIMEOUT] ${routeName} exceeded ${timeoutMs}ms limit (${duration}ms)`, {
         method: req.method,
         url: req.originalUrl,
         ip: req.ip,
         timeout: timeoutMs,
         duration
+      });
+
+      // Log to timeout monitor
+      timeoutMonitor.logTimeout({
+        service: 'Route',
+        operation: routeName,
+        duration,
+        timeout: timeoutMs,
+        details: {
+          method: req.method,
+          url: req.originalUrl,
+          ip: req.ip
+        }
       });
 
       // Send timeout response if not already sent
@@ -54,6 +68,18 @@ export function timeoutMiddleware(options: TimeoutOptions) {
           url: req.originalUrl,
           duration,
           timeout: timeoutMs
+        });
+
+        // Log to timeout monitor
+        timeoutMonitor.logTimeout({
+          service: 'Route',
+          operation: routeName,
+          duration,
+          timeout: timeoutMs,
+          details: {
+            method: req.method,
+            url: req.originalUrl
+          }
         });
       }
       

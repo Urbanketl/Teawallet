@@ -12,15 +12,19 @@ interface User {
 export function useAuth() {
   const queryClient = useQueryClient();
 
-  // Check for pseudo login parameter
-  const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-  const pseudoParam = urlParams?.get('pseudo');
+  // Check for pseudo login parameter from URL
+  const pseudoParam = typeof window !== 'undefined' 
+    ? new URLSearchParams(window.location.search).get('pseudo') 
+    : null;
+
+  console.log('useAuth: pseudoParam =', pseudoParam, 'from URL:', window?.location?.search);
 
   // Check authentication status
   const { data: user, isLoading, error } = useQuery<User | null>({
     queryKey: ["/api/auth/user", pseudoParam],
     queryFn: async () => {
       const url = pseudoParam ? `/api/auth/user?pseudo=${pseudoParam}` : "/api/auth/user";
+      console.log('useAuth: Fetching user from:', url);
       const response = await fetch(url, {
         credentials: "include",
       });

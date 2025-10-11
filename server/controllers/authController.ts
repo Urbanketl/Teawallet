@@ -3,9 +3,9 @@ import { storage } from "../storage";
 
 export async function getCurrentUser(req: any, res: Response) {
   try {
-    // Check for pseudo login parameter first
-    const pseudoUserId = req.query.pseudo;
-    const userId = req.user.id;
+    // Check for pseudo login parameter first - use pseudo user if provided
+    const pseudoUserId = req.query.pseudo as string;
+    const userId = pseudoUserId || req.user.id;
     
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });

@@ -12,14 +12,17 @@ export function registerCorporateRoutes(app: Express) {
   // Get user's assigned business units (with pseudo login support)
   app.get("/api/corporate/business-units", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      // Support pseudo login - use pseudo user ID if provided
+      const pseudoUserId = req.query.pseudo as string;
+      const userId = pseudoUserId || req.user.id;
+      
       let businessUnits: any[] = [];
       
-      // Super admins see all business units
-      if (req.user.isSuperAdmin) {
+      // Super admins see all business units (only when NOT in pseudo mode)
+      if (req.user.isSuperAdmin && !pseudoUserId) {
         businessUnits = await storage.getAllBusinessUnits();
       } else {
-        // Regular users only see their assigned business units
+        // Regular users or pseudo mode only see their assigned business units
         businessUnits = await storage.getUserBusinessUnits(userId);
       }
       
@@ -33,7 +36,9 @@ export function registerCorporateRoutes(app: Express) {
   // Dashboard stats endpoint with business unit filtering
   app.get('/api/dashboard/stats', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      // Support pseudo login - use pseudo user ID if provided
+      const pseudoUserId = req.query.pseudo as string;
+      const userId = pseudoUserId || req.user.id;
       const businessUnitId = req.query.businessUnitId as string;
 
       if (businessUnitId) {

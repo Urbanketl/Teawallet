@@ -9,7 +9,7 @@ import { FullPageLoader } from "@/components/ui/loading-spinner";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 
 // Import pages directly to avoid lazy loading issues during debugging
-import { Suspense } from "react";
+import { Suspense, useState, useEffect } from "react";
 
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
@@ -30,12 +30,19 @@ import AboutUs from "@/pages/about";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
+  const [pseudoParam, setPseudoParam] = useState<string | null>(null);
 
   console.log("Router state:", { isAuthenticated, isLoading });
 
-  // Check for pseudo login parameter
-  const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-  const pseudoParam = urlParams?.get('pseudo');
+  // Read pseudo parameter from URL after component mounts
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const pseudo = searchParams.get('pseudo');
+      console.log('Router: Reading pseudo from URL:', window.location.search, '-> pseudo =', pseudo);
+      setPseudoParam(pseudo);
+    }
+  }, []);
 
   // Get pseudo user info for banner
   const { data: pseudoUser } = useQuery({

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 
 interface User {
   id: string;
@@ -12,12 +13,18 @@ interface User {
 export function useAuth() {
   const queryClient = useQueryClient();
 
-  // Check for pseudo login parameter from URL
-  const pseudoParam = typeof window !== 'undefined' 
-    ? new URLSearchParams(window.location.search).get('pseudo') 
-    : null;
+  // Use state to track pseudo parameter - ensures it updates after window loads
+  const [pseudoParam, setPseudoParam] = useState<string | null>(null);
 
-  console.log('useAuth: pseudoParam =', pseudoParam, 'from URL:', window?.location?.search);
+  // Read pseudo parameter from URL after component mounts
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const pseudo = searchParams.get('pseudo');
+      console.log('useAuth: Reading pseudo from URL:', window.location.search, '-> pseudo =', pseudo);
+      setPseudoParam(pseudo);
+    }
+  }, []); // Run once on mount
 
   // Check authentication status
   const { data: user, isLoading, error } = useQuery<User | null>({
@@ -41,6 +48,7 @@ export function useAuth() {
     },
     retry: false,
     staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: pseudoParam !== null || typeof window === 'undefined' || !window.location.search.includes('pseudo'), // Only run when pseudo is loaded or not needed
   });
 
   const loginMutation = useMutation({

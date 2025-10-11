@@ -1,5 +1,9 @@
 import nodemailer from 'nodemailer';
 import { BusinessUnit, User } from '@shared/schema';
+import { timeoutMonitor } from './timeoutMonitor';
+
+// Email operation timeout (30 seconds for sending)
+const EMAIL_TIMEOUT = 30000;
 
 export interface BalanceAlertData {
   businessUnit: BusinessUnit;
@@ -20,8 +24,55 @@ export class EmailService {
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASSWORD
-      }
+      },
+      // Connection and socket timeouts
+      connectionTimeout: 30000,
+      socketTimeout: 30000,
+      greetingTimeout: 10000
     });
+  }
+
+  /**
+   * Send email with timeout monitoring
+   */
+  private async sendWithTimeout(mailOptions: any, operation: string): Promise<any> {
+    const startTime = Date.now();
+    let timeoutHandle: NodeJS.Timeout;
+    
+    try {
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutHandle = setTimeout(
+          () => reject(new Error(`Email ${operation} timed out after ${EMAIL_TIMEOUT}ms`)), 
+          EMAIL_TIMEOUT
+        );
+      });
+      
+      const result = await Promise.race([
+        this.transporter.sendMail(mailOptions).finally(() => clearTimeout(timeoutHandle)),
+        timeoutPromise
+      ]);
+      
+      const duration = Date.now() - startTime;
+      timeoutMonitor.logTimeout({
+        service: 'Email',
+        operation,
+        duration,
+        timeout: EMAIL_TIMEOUT,
+        details: { to: mailOptions.to }
+      });
+      
+      return result;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      timeoutMonitor.logTimeout({
+        service: 'Email',
+        operation,
+        duration,
+        timeout: EMAIL_TIMEOUT,
+        details: { to: mailOptions.to, error: (error as Error).message }
+      });
+      throw error;
+    }
   }
 
   private generatePasswordResetTemplate(user: User, resetToken: string): { subject: string, html: string } {
@@ -212,7 +263,7 @@ export class EmailService {
           html
         };
         
-        const info = await this.transporter.sendMail(mailOptions);
+        const info = await this.sendWithTimeout(mailOptions, 'balanceAlert');
         console.log(`Balance alert sent to ${user.email}:`, info.messageId);
         
         return {
@@ -255,7 +306,7 @@ export class EmailService {
         html
       };
       
-      const info = await this.transporter.sendMail(mailOptions);
+      const info = await this.sendWithTimeout(mailOptions, 'passwordReset');
       console.log(`Password reset email sent to ${user.email}:`, info.messageId);
       
       return {

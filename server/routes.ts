@@ -24,6 +24,7 @@ import { ChallengeResponseController } from "./controllers/challengeResponseCont
 import { AutoSyncController } from "./controllers/autoSyncController";
 import { upiSyncController } from "./controllers/upiSyncController";
 import { notificationScheduler } from "./services/notificationScheduler";
+import { timeoutMiddleware, TIMEOUT_CONFIGS } from "./middleware/timeoutMiddleware";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize Razorpay
@@ -900,7 +901,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // RFID validation endpoint for tea machines (VALIDATION ONLY - NO DISPENSING)
-  app.post('/api/rfid/validate', async (req, res) => {
+  app.post('/api/rfid/validate', timeoutMiddleware(TIMEOUT_CONFIGS.RFID), async (req, res) => {
     try {
       const { cardNumber, machineId } = req.body;
 
@@ -993,7 +994,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // RFID dispensing endpoint for tea machines (ACTUAL DISPENSING WITH BALANCE DEDUCTION)
-  app.post('/api/rfid/dispense', async (req, res) => {
+  app.post('/api/rfid/dispense', timeoutMiddleware(TIMEOUT_CONFIGS.RFID), async (req, res) => {
     try {
       const { cardNumber, machineId } = req.body;
 
@@ -1420,7 +1421,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Analytics routes for admin (removed popular tea types - only serve Regular Tea)
 
-  app.get('/api/analytics/peak-hours', isAuthenticated, async (req: any, res) => {
+  app.get('/api/analytics/peak-hours', isAuthenticated, timeoutMiddleware(TIMEOUT_CONFIGS.ANALYTICS), async (req: any, res) => {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
@@ -1442,7 +1443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/analytics/machine-performance', isAuthenticated, async (req: any, res) => {
+  app.get('/api/analytics/machine-performance', isAuthenticated, timeoutMiddleware(TIMEOUT_CONFIGS.ANALYTICS), async (req: any, res) => {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
@@ -1464,7 +1465,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/analytics/user-behavior', isAuthenticated, async (req: any, res) => {
+  app.get('/api/analytics/user-behavior', isAuthenticated, timeoutMiddleware(TIMEOUT_CONFIGS.ANALYTICS), async (req: any, res) => {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
@@ -1486,7 +1487,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/analytics/machine-dispensing', isAuthenticated, async (req: any, res) => {
+  app.get('/api/analytics/machine-dispensing', isAuthenticated, timeoutMiddleware(TIMEOUT_CONFIGS.ANALYTICS), async (req: any, res) => {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
@@ -1509,7 +1510,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Enhanced Analytics Routes
-  app.get('/api/analytics/business-unit-comparison', isAuthenticated, async (req: any, res) => {
+  app.get('/api/analytics/business-unit-comparison', isAuthenticated, timeoutMiddleware(TIMEOUT_CONFIGS.ANALYTICS), async (req: any, res) => {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
@@ -1532,7 +1533,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/analytics/revenue-trends', isAuthenticated, async (req: any, res) => {
+  app.get('/api/analytics/revenue-trends', isAuthenticated, timeoutMiddleware(TIMEOUT_CONFIGS.ANALYTICS), async (req: any, res) => {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
@@ -1554,7 +1555,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/analytics/usage-trends/:businessUnitId', isAuthenticated, async (req: any, res) => {
+  app.get('/api/analytics/usage-trends/:businessUnitId', isAuthenticated, timeoutMiddleware(TIMEOUT_CONFIGS.ANALYTICS), async (req: any, res) => {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
@@ -2082,9 +2083,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const challengeResponseController = new ChallengeResponseController();
   
   // Machine authentication endpoints (No auth required - used by tea machines)
-  app.post('/api/machine/auth/challenge', challengeResponseController.generateChallenge.bind(challengeResponseController));
-  app.post('/api/machine/auth/validate', challengeResponseController.validateResponse.bind(challengeResponseController));
-  app.post('/api/machine/auth/dispense', challengeResponseController.processDispensing.bind(challengeResponseController));
+  app.post('/api/machine/auth/challenge', timeoutMiddleware(TIMEOUT_CONFIGS.MACHINE_AUTH), challengeResponseController.generateChallenge.bind(challengeResponseController));
+  app.post('/api/machine/auth/validate', timeoutMiddleware(TIMEOUT_CONFIGS.MACHINE_AUTH), challengeResponseController.validateResponse.bind(challengeResponseController));
+  app.post('/api/machine/auth/dispense', timeoutMiddleware(TIMEOUT_CONFIGS.MACHINE_AUTH), challengeResponseController.processDispensing.bind(challengeResponseController));
   
   // Admin authentication management
   app.post('/api/admin/auth/rotate-keys/:businessUnitId', isAuthenticated, requireAdminAuth, challengeResponseController.rotateKeys.bind(challengeResponseController));
@@ -2107,8 +2108,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/admin/upi-sync/analytics', isAuthenticated, requireAdminAuth, upiSyncController.getSyncAnalytics.bind(upiSyncController));
   
   // UPI export endpoints (Admin only)
-  app.get('/api/admin/upi-sync/export/excel', isAuthenticated, requireAdminAuth, upiSyncController.exportToExcel.bind(upiSyncController));
-  app.get('/api/admin/upi-sync/export/pdf', isAuthenticated, requireAdminAuth, upiSyncController.exportToPdf.bind(upiSyncController));
+  app.get('/api/admin/upi-sync/export/excel', isAuthenticated, requireAdminAuth, timeoutMiddleware(TIMEOUT_CONFIGS.EXPORT), upiSyncController.exportToExcel.bind(upiSyncController));
+  app.get('/api/admin/upi-sync/export/pdf', isAuthenticated, requireAdminAuth, timeoutMiddleware(TIMEOUT_CONFIGS.EXPORT), upiSyncController.exportToPdf.bind(upiSyncController));
 
 
 

@@ -2164,7 +2164,7 @@ export default function AdminPage() {
             <PseudoLogin onLogin={(userId) => {
               setPseudoUserId(userId);
               // Navigate to a business unit user view
-              window.open(`${window.location.origin}/corporate?pseudo=${userId}`, '_blank');
+              window.open(`${window.location.origin}/?pseudo=${userId}`, '_blank');
             }} />
           )}
 

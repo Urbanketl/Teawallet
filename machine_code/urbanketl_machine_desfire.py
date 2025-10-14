@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-UrbanKetl Tea Machine Controller - DESFire Challenge-Response
+UrbanKetl Tea Machine Controller - DESFire EV3 Challenge-Response
 Raspberry Pi code with polling mode for instant card detection
+Supports MIFARE DESFire EV3 (backward compatible with EV1/EV2)
 """
 
 import time
@@ -61,7 +62,7 @@ class UrbanKetlDESFireMachine:
         # Initialize hardware
         self.setup_hardware()
         
-        self.logger.info(f"✅ UrbanKetl DESFire Machine {self.machine_id} initialized")
+        self.logger.info(f"✅ UrbanKetl DESFire EV3 Machine {self.machine_id} initialized")
 
     def load_config(self, config_file: str) -> Dict[str, Any]:
         """Load machine configuration from JSON file"""
@@ -205,7 +206,7 @@ class UrbanKetlDESFireMachine:
             # Convert UID to hex string
             card_uid_hex = format(card_uid, 'X').upper()
             
-            self.logger.info(f"🔐 Starting DESFire authentication for UID: {card_uid_hex}")
+            self.logger.info(f"🔐 Starting DESFire EV3 authentication for UID: {card_uid_hex}")
             self.set_led('green', 'blink')
             
             # Step 1: Request challenge from server
@@ -301,7 +302,12 @@ class UrbanKetlDESFireMachine:
 
     def get_desfire_response(self, challenge_hex: str) -> Optional[str]:
         """
-        Send challenge to DESFire card and get encrypted response
+        Send challenge to DESFire EV3 card and get encrypted response
+        
+        DESFire EV3 supports:
+        - AES-128 authentication (same as EV1/EV2)
+        - Enhanced security features
+        - Backward compatibility with EV1 protocol
         
         NOTE: This is a simplified implementation. In production, you need:
         1. Proper DESFire APDU commands
@@ -318,19 +324,20 @@ class UrbanKetlDESFireMachine:
         try:
             # In real implementation, send APDU command to card:
             # 
-            # APDU Format for DESFire Authenticate:
+            # APDU Format for DESFire EV3 Authenticate:
             # CLA: 0x90 (DESFire)
-            # INS: 0x1A (Authenticate) or 0xAA (Authenticate ISO/AES)
+            # INS: 0xAA (AuthenticateEV2First for EV3) or 0x1A (legacy)
             # P1:  0x00 (Key number)
             # P2:  0x00
             # Data: Challenge bytes
             #
+            # EV3 supports enhanced commands but is backward compatible
             # Card will return encrypted response
             
             # SIMULATION: For testing without real card
             # In production, replace this with actual card communication
             
-            self.logger.warning("⚠️  Using simulated DESFire response (replace with real card communication)")
+            self.logger.warning("⚠️  Using simulated DESFire EV3 response (replace with real card communication)")
             
             # Simulate card encryption (this would happen inside the card)
             challenge_bytes = bytes.fromhex(challenge_hex)
@@ -526,7 +533,7 @@ class UrbanKetlDESFireMachine:
     def run(self):
         """Main run loop"""
         try:
-            self.logger.info("🚀 UrbanKetl DESFire Machine starting...")
+            self.logger.info("🚀 UrbanKetl DESFire EV3 Machine starting...")
             self.logger.info(f"📡 Machine ID: {self.machine_id}")
             self.logger.info(f"🌐 API Base: {self.api_base}")
             

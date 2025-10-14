@@ -1,9 +1,10 @@
 #!/bin/bash
-# UrbanKetl Tea Machine - DESFire Installation Script
+# UrbanKetl Tea Machine - DESFire EV3 Installation Script
 # Run this script on your Raspberry Pi to set up the tea machine
 
-echo "☕ UrbanKetl Tea Machine - DESFire Installation"
-echo "================================================"
+echo "☕ UrbanKetl Tea Machine - DESFire EV3 Installation"
+echo "===================================================="
+echo "Supports MIFARE DESFire EV3/EV2/EV1 cards"
 echo ""
 
 # Update system

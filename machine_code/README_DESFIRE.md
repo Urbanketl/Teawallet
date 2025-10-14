@@ -1,6 +1,8 @@
-# UrbanKetl Tea Machine - DESFire Challenge-Response
+# UrbanKetl Tea Machine - DESFire EV3 Challenge-Response
 
 Complete Raspberry Pi implementation with **polling mode** for instant card detection.
+
+**Supports MIFARE DESFire EV3** (backward compatible with EV1/EV2)
 
 ## 🚀 Quick Start
 

@@ -145,40 +145,6 @@ export class ChallengeResponseController {
     }
   }
 
-  // Rotate AES keys for business unit (Admin only)
-  async rotateKeys(req: Request, res: Response) {
-    try {
-      const { businessUnitId } = req.params;
-      
-      if (!businessUnitId) {
-        return res.status(400).json({ error: 'Business unit ID is required' });
-      }
-
-      // Verify business unit exists
-      const businessUnit = await storage.getBusinessUnit(businessUnitId);
-      if (!businessUnit) {
-        return res.status(404).json({ error: 'Business unit not found' });
-      }
-
-      const rotationResult = await challengeResponseService.rotateBusinessUnitKeys(businessUnitId);
-
-      res.json({
-        success: true,
-        businessUnitId,
-        rotatedCards: rotationResult.rotatedCards,
-        newKeyVersion: rotationResult.newKeyVersion,
-        message: `Successfully rotated keys for ${rotationResult.rotatedCards} cards`
-      });
-
-    } catch (error) {
-      console.error('Key rotation error:', error);
-      res.status(500).json({ 
-        error: 'Failed to rotate keys',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
-  }
-
   // Get authentication logs for monitoring
   async getAuthLogs(req: Request, res: Response) {
     try {

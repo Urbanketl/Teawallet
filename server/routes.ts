@@ -2080,9 +2080,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get RFID authentication logs
   app.get('/api/admin/sync/auth-logs', isAuthenticated, requireAdminAuth, machineSyncController.getAuthLogs.bind(machineSyncController));
   
-  // Rotate DESFire keys for business unit
-  app.post('/api/admin/sync/rotate-keys/:businessUnitId', isAuthenticated, requireAdminAuth, machineSyncController.rotateKeys.bind(machineSyncController));
-  
   // Machine heartbeat endpoint for sync monitoring (no auth required - used by machines)
   app.post('/api/sync/heartbeat', machineSyncController.heartbeat.bind(machineSyncController));
 
@@ -2111,7 +2108,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/machine/auth/dispense', timeoutMiddleware(TIMEOUT_CONFIGS.MACHINE_AUTH), challengeResponseController.processDispensing.bind(challengeResponseController));
   
   // Admin authentication management
-  app.post('/api/admin/auth/rotate-keys/:businessUnitId', isAuthenticated, requireAdminAuth, challengeResponseController.rotateKeys.bind(challengeResponseController));
   app.get('/api/admin/auth/logs', isAuthenticated, requireAdminAuth, challengeResponseController.getAuthLogs.bind(challengeResponseController));
   app.get('/api/admin/auth/service-status', isAuthenticated, requireAdminAuth, challengeResponseController.getServiceStatus.bind(challengeResponseController));
 

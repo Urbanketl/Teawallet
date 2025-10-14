@@ -328,27 +328,6 @@ export default function MachineSyncDashboard() {
     },
   });
 
-  // Key rotation mutation
-  const rotateKeysMutation = useMutation({
-    mutationFn: async (businessUnitId: string) => {
-      const res = await apiRequest('POST', `/api/admin/sync/rotate-keys/${businessUnitId}`);
-      return await res.json();
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Key Rotation Success",
-        description: data.message,
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Key Rotation Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
   // UPI sync mutations
   const upiInitialSyncMutation = useMutation({
     mutationFn: async (daysBack: number = 90) => {
@@ -531,7 +510,6 @@ export default function MachineSyncDashboard() {
           <TabsTrigger value="sync-logs">Sync Logs</TabsTrigger>
           <TabsTrigger value="auth-logs">Auth Logs</TabsTrigger>
           <TabsTrigger value="upi-sync">UPI Sync</TabsTrigger>
-          <TabsTrigger value="security">Security & Keys</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -993,54 +971,6 @@ export default function MachineSyncDashboard() {
             </CardContent>
           </Card>
 
-        </TabsContent>
-
-        <TabsContent value="security" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>DESFire Key Management</CardTitle>
-              <CardDescription>Manage encryption keys for challenge-response authentication</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 border rounded-lg bg-yellow-50 dark:bg-yellow-900/20">
-                <div className="flex items-center">
-                  <Key className="w-5 h-5 text-yellow-600 mr-2" />
-                  <div>
-                    <h4 className="font-medium">Key Rotation Schedule</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      DESFire keys should be rotated every 30 days for maximum security. 
-                      This operation will generate new AES keys for all cards in a business unit.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <h4 className="font-medium">Business Unit Key Rotation</h4>
-                {Array.from(new Set(machineStatuses.map(m => m.machine.businessUnitId).filter(Boolean))).map(businessUnitId => {
-                  const businessUnit = machineStatuses.find(m => m.machine.businessUnitId === businessUnitId);
-                  return (
-                    <div key={businessUnitId} className="flex justify-between items-center p-3 border rounded-lg">
-                      <div>
-                        <div className="font-medium">{businessUnit?.businessUnitName}</div>
-                        <div className="text-sm text-gray-500">
-                          Cards: {machineStatuses.filter(m => m.machine.businessUnitId === businessUnitId).reduce((sum, m) => sum + m.cardsCount, 0)}
-                        </div>
-                      </div>
-                      <Button
-                        onClick={() => rotateKeysMutation.mutate(businessUnitId!)}
-                        disabled={rotateKeysMutation.isPending}
-                        variant="outline"
-                      >
-                        <Key className="w-4 h-4 mr-2" />
-                        Rotate Keys
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>

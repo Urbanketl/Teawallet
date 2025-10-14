@@ -56,9 +56,7 @@ export const rfidCards = pgTable("rfid_cards", {
   cardName: varchar("card_name"), // Optional name/label for the card (e.g., "Office Card #1")
   hardwareUid: varchar("hardware_uid").unique(), // DESFire factory UID (7-byte hex)
   aesKeyEncrypted: text("aes_key_encrypted"), // Encrypted AES key for challenge-response
-  keyVersion: integer("key_version").default(1), // Key rotation version
   cardType: varchar("card_type").default("basic"), // 'basic', 'desfire'
-  lastKeyRotation: timestamp("last_key_rotation"),
   isActive: boolean("is_active").default(true),
   lastUsed: timestamp("last_used"),
   lastUsedMachineId: varchar("last_used_machine_id"),

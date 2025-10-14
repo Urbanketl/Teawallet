@@ -208,29 +208,6 @@ export class MachineSyncController {
     }
   }
 
-  // Rotate keys for a business unit's DESFire cards
-  async rotateKeys(req: Request, res: Response) {
-    try {
-      const { businessUnitId } = req.params;
-      
-      const businessUnit = await storage.getBusinessUnit(businessUnitId);
-      if (!businessUnit) {
-        return res.status(404).json({ error: 'Business unit not found' });
-      }
-
-      const result = await storage.rotateCardKeys(businessUnitId);
-      
-      res.json({
-        success: true,
-        message: `Key rotation completed for ${businessUnit.name}: ${result.updated} cards updated`,
-        ...result
-      });
-    } catch (error) {
-      console.error('Error rotating keys:', error);
-      res.status(500).json({ error: 'Failed to rotate keys' });
-    }
-  }
-
   // Machine heartbeat endpoint (for machines to report status)
   async heartbeat(req: Request, res: Response) {
     try {

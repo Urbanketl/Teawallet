@@ -13,14 +13,15 @@ UrbanKetl is a B2B corporate tea dispensing system integrating RFID technology w
 
 ## Previous Changes (August 17, 2025)
 - **Completed Phase 3: Machine Auto-Sync System** - Implemented automated synchronization scheduling with cron-based background service running every 30 minutes during business hours (6 AM - 10 PM IST)
-- **Completed Phase 4: Challenge-Response Authentication** - Full MIFARE DESFire EV1 cryptographic authentication system with AES challenge-response protocol and automatic key rotation
+- **Completed Phase 4: Challenge-Response Authentication** - Full MIFARE DESFire EV1 cryptographic authentication system with AES challenge-response protocol
 - **Updated RFID Card System to DESFire EV1 Only** - Removed basic RFID card option, standardized on MIFARE DESFire EV1 cards with AES encryption for all new card creation
 - **System Stability Confirmed** - Current architecture stable and performant with no refactoring needs identified. 5,379-line admin interface working efficiently for single-developer workflow
+- **Removed Key Rotation Feature (October 14, 2025)** - Removed automatic key rotation as it's incompatible with physical MIFARE DESFire EV1 hardware cards. Keys are programmed once at card issuance and cannot be remotely changed.
 - Added comprehensive auto-sync service with retry mechanisms, manual triggers, bulk operations, and detailed performance statistics
 - Implemented secure challenge-response authentication for DESFire cards with 30-second challenge timeout and audit logging
 - Created new API endpoints for machine authentication (challenge generation, response validation, dispensing authorization)
-- Added admin controls for auto-sync management, key rotation, and authentication monitoring
-- Enhanced security with encrypted AES key storage, automatic key versioning, and comprehensive audit trails
+- Added admin controls for auto-sync management and authentication monitoring
+- Enhanced security with encrypted AES key storage and comprehensive audit trails
 - Integrated both systems with existing Machine Sync Dashboard for unified management interface
 - Enhanced RFID card creation UI with DESFire-specific fields (Hardware UID, AES key management)
 - Previous Phase 2 completion: Machine Sync Dashboard with real-time monitoring and security key management
@@ -50,7 +51,7 @@ UI/UX preferences: Clean, simplified interfaces without unnecessary elements lik
 - **Machine Management**: Platform admins can create, edit, assign, and control tea machines, enforcing mandatory business unit assignment for all machines and transactions.
 - **Wallet System**: Business unit-specific digital wallets with recharge capabilities, designed to handle multiple business units per user.
 - **Auto-Sync System (Phase 3)**: Automated RFID card synchronization across all tea machines with cron scheduling, retry mechanisms, manual triggers, and comprehensive monitoring.
-- **Challenge-Response Authentication (Phase 4)**: MIFARE DESFire EV1 cryptographic authentication with AES encryption, automatic key rotation, and secure dispensing authorization.
+- **Challenge-Response Authentication (Phase 4)**: MIFARE DESFire EV1 cryptographic authentication with AES encryption and secure dispensing authorization. AES keys are programmed once at card issuance and stored encrypted in the database using a master key.
 - **Timeout Management (Phase 5)**: Multi-layered timeout strategy protecting against hung connections and slow operations. Route-specific timeouts (RFID 5s, Analytics 60s, Exports 120s), external API timeouts (WhatsApp, Email, Razorpay 30s), server-level timeouts (request 40s, socket 30s), and database query timeouts (10s execution). Includes comprehensive monitoring service tracking timeout events with admin dashboard.
 
 ### System Design Choices

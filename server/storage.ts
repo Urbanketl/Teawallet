@@ -75,8 +75,6 @@ export interface IStorage {
     hardwareUid: string;
     aesKeyEncrypted: string;
   }): Promise<RfidCard>;
-  updateCardAESKey(cardId: number, aesKeyEncrypted: string, keyVersion: number): Promise<void>;
-  rotateCardKeys(businessUnitId: string): Promise<{ updated: number; errors: string[] }>;
   getCardsForMachineSync(businessUnitId: string): Promise<{
     businessUnit: string;
     cards: {
@@ -3744,52 +3742,10 @@ export class DatabaseStorage implements IStorage {
         hardwareUid: cardData.hardwareUid,
         aesKeyEncrypted: cardData.aesKeyEncrypted,
         cardType: 'desfire',
-        keyVersion: 1,
-        lastKeyRotation: new Date(),
         isActive: true
       })
       .returning();
     return card;
-  }
-
-  async updateCardAESKey(cardId: number, aesKeyEncrypted: string, keyVersion: number): Promise<void> {
-    await db
-      .update(rfidCards)
-      .set({ 
-        aesKeyEncrypted, 
-        keyVersion, 
-        lastKeyRotation: new Date() 
-      })
-      .where(eq(rfidCards.id, cardId));
-  }
-
-  async rotateCardKeys(businessUnitId: string): Promise<{ updated: number; errors: string[] }> {
-    const cards = await db
-      .select()
-      .from(rfidCards)
-      .where(and(
-        eq(rfidCards.businessUnitId, businessUnitId),
-        eq(rfidCards.cardType, 'desfire')
-      ));
-
-    let updated = 0;
-    const errors: string[] = [];
-
-    for (const card of cards) {
-      try {
-        // In a real implementation, you would:
-        // 1. Generate new AES key
-        // 2. Encrypt with machine's master key
-        // 3. Update card in database
-        const newKeyVersion = (card.keyVersion || 1) + 1;
-        await this.updateCardAESKey(card.id, card.aesKeyEncrypted!, newKeyVersion);
-        updated++;
-      } catch (error) {
-        errors.push(`Card ${card.cardNumber}: ${error}`);
-      }
-    }
-
-    return { updated, errors };
   }
 
   async getCardsForMachineSync(businessUnitId: string): Promise<{

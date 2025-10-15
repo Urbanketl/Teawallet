@@ -1,0 +1,43 @@
+Logo loaded successfully: /assets/URBAN%20KETL%20Logo%20small_1750439431697-6lEOm0oT.jpg
+index-T6pCzVVS.js:531 Frontend: Building request with params: Object
+index-T6pCzVVS.js:531 Wallet page debug: Object
+index-T6pCzVVS.js:418 useAuth: Reading pseudo from URL:  -> pseudo = null
+index-T6pCzVVS.js:418 useAuth: Reading pseudo from URL:  -> pseudo = null
+index-T6pCzVVS.js:418 Logo loaded successfully: /assets/URBAN%20KETL%20Logo%20small_1750439431697-6lEOm0oT.jpg
+index-T6pCzVVS.js:531 Wallet page debug: Object
+index-T6pCzVVS.js:531 Wallet page debug: Object
+index-T6pCzVVS.js:531 Wallet page debug: Object
+index-T6pCzVVS.js:531 Wallet page debug: Object
+index-T6pCzVVS.js:531 === PREPARING PAYMENT ===
+index-T6pCzVVS.js:531 Amount: 1 Business Unit: BU_mdiaars4_e4dawr8lvqq
+index-T6pCzVVS.js:531 Razorpay already available
+index-T6pCzVVS.js:531 Wallet page debug: Object
+index-T6pCzVVS.js:531 Payment prepared successfully: Object
+index-T6pCzVVS.js:531 === EXECUTING PAYMENT (SYNCHRONOUS) ===
+index-T6pCzVVS.js:531 Razorpay checkout options: {
+  "key": "rzp_live_ROfJAmNxRlw6u0",
+  "amount": 100,
+  "currency": "INR",
+  "name": "UrbanKetl",
+  "description": "Wallet Recharge",
+  "order_id": "order_RTklTyHsGUlu2i",
+  "modal": {},
+  "prefill": {
+    "name": "Thirtha Prasad JC",
+    "email": "prasad.thirtha@gmail.com"
+  },
+  "theme": {
+    "color": "#F2A74A"
+  }
+}
+index-T6pCzVVS.js:531 Handler callback: ✅ DEFINED
+index-T6pCzVVS.js:531 Modal ondismiss: ✅ DEFINED
+index-T6pCzVVS.js:531 Opening Razorpay synchronously...
+index-T6pCzVVS.js:531 Razorpay opened successfully - waiting for events...
+index-T6pCzVVS.js:531 Wallet page debug: Object
+v2-entry.modern.js:1 Refused to get unsafe header "x-rtb-fingerprint-id"
+U.d.onreadystatechange @ v2-entry.modern.js:1Understand this error
+index-T6pCzVVS.js:531 ⚠️ Modal didn't trigger any events - possible Razorpay issue
+(anonymous) @ index-T6pCzVVS.js:531Understand this warning
+index-T6pCzVVS.js:531 Wallet page debug: Object
+index-T6pCzVVS.js:531 Wallet page debug: {pseudoParam: null, pseudoQuery: '', userIdentifier: '44064328', queryKey: '/api/corporate/business-units', businessUnits: Array(6), …}

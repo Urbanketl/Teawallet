@@ -3,7 +3,12 @@
 ## Overview
 UrbanKetl is a B2B corporate tea dispensing system integrating RFID technology with a web application. It enables business unit administrators to manage multiple tea machines, issue generic RFID cards to employees, and monitor dispensing activity charged to a corporate wallet. The project aims to provide a comprehensive solution for corporate tea services, streamlining management and billing.
 
-## Recent Changes (October 11, 2025)
+## Recent Changes (October 15, 2025)
+- **MCRN2 Reader Compatibility** - Created proper implementation for MCRN2 (PN532-based) RFID readers with Adafruit CircuitPython PN532 library. Previous code incorrectly used MFRC522 library which is incompatible with MCRN2 hardware.
+- **DESFire EV3 APDU Support** - Implemented correct APDU command handling for DESFire EV3 authentication via PN532's InDataExchange, properly handling status byte prepending.
+- **New Machine Files**: Created `urbanketl_machine_mcrn2.py`, `install_mcrn2.sh`, and `README_MCRN2.md` for MCRN2-specific deployment.
+
+## Previous Changes (October 11, 2025)
 - **Completed Phase 5: Comprehensive Timeout Strategy** - Implemented multi-layered timeout system with route-specific timeouts, external API timeouts, and timeout monitoring
 - **Route-Specific Timeouts**: RFID validation (5s), Machine authentication (5s), Analytics (60s), File exports (120s)
 - **External API Timeouts**: WhatsApp/MyOperator (30s), Email/Nodemailer (30s), Razorpay (30s)
@@ -43,7 +48,7 @@ UI/UX preferences: Clean, simplified interfaces without unnecessary elements lik
 - **Backend**: Node.js with Express.js, written in TypeScript, providing RESTful APIs.
 - **Authentication**: Custom email/password authentication system replacing Replit Auth, featuring admin-controlled user creation and secure session management with PostgreSQL persistence. Role-based access control with two user types: Platform Admin (full system access) and Business Unit Admin (analytics access).
 - **Session Management**: Server-side sessions persisted in PostgreSQL.
-- **RFID Integration**: Centralized RFID card management system using MIFARE DESFire EV1 cards exclusively with AES encryption. Platform admins can batch create and assign cards to business units with automatic cryptographic key generation. Machine-facing API endpoints validate cards using challenge-response authentication and process transactions with automatic wallet deduction.
+- **RFID Integration**: Centralized RFID card management system using MIFARE DESFire EV3 cards (backward compatible with EV1/EV2) with AES encryption. Platform admins can batch create and assign cards to business units with automatic cryptographic key generation. Plain AES keys are shown once during creation and must be saved for physical card programming. Machine-facing API endpoints validate cards using challenge-response authentication and process transactions with automatic wallet deduction. Raspberry Pi tea machines support MCRN2 (PN532-based) RFID readers with proper DESFire APDU command handling.
 - **Payment Processing**: Razorpay integration for digital wallet recharges, supporting recharge, deduction, and refund operations. Includes payment verification and webhook handling.
 - **Tea Pricing**: Simplified to a single "Regular Tea" variety with machine-specific pricing configurable by admins.
 - **Reporting & Analytics**: Comprehensive administrative dashboards for user management, revenue tracking, usage patterns, and machine monitoring. Features include custom date range selection for reports, Excel/PDF export functionality, and graphical business insights for cross-business unit comparisons.

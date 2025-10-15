@@ -1,16 +1,12 @@
 {
   "machine_id": "UK_0001",
-  "machine_secret": "your-secure-machine-secret-here",
   "api_base_url": "https://your-domain.replit.app",
   "tea_price": 5.0,
   "dispense_time": 3.0,
   "heartbeat_interval": 60,
   "offline_mode": false,
   "gpio_pins": {
-    "dispenser": 18,
-    "led_green": 16,
-    "led_red": 20,
-    "buzzer": 21
+    "dispenser": 18
   },
   "machine_info": {
     "name": "Tea Machine 1",

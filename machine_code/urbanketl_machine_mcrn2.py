@@ -79,10 +79,7 @@ class UrbanKetlMCRN2Machine:
             "card_removal_delay": 0.5,  # Wait 500ms after card removal
             "api_timeout": 5,
             "gpio_pins": {
-                "dispenser": 18,
-                "led_green": 16,
-                "led_red": 20,
-                "buzzer": 21
+                "dispenser": 18
             },
             "spi_pins": {
                 "cs": 8,    # CE0 (Pin 24)
@@ -142,15 +139,20 @@ class UrbanKetlMCRN2Machine:
                 # Initialize GPIO pins for outputs
                 pins = self.config['gpio_pins']
                 GPIO.setup(pins['dispenser'], GPIO.OUT)
-                GPIO.setup(pins['led_green'], GPIO.OUT)
-                GPIO.setup(pins['led_red'], GPIO.OUT)
-                GPIO.setup(pins['buzzer'], GPIO.OUT)
+                GPIO.output(pins['dispenser'], GPIO.LOW)
                 
-                # Initialize all pins to LOW
-                for pin in pins.values():
-                    GPIO.output(pin, GPIO.LOW)
+                # Initialize optional pins (LED, buzzer) if configured
+                if 'led_green' in pins:
+                    GPIO.setup(pins['led_green'], GPIO.OUT)
+                    GPIO.output(pins['led_green'], GPIO.LOW)
+                if 'led_red' in pins:
+                    GPIO.setup(pins['led_red'], GPIO.OUT)
+                    GPIO.output(pins['led_red'], GPIO.LOW)
+                if 'buzzer' in pins:
+                    GPIO.setup(pins['buzzer'], GPIO.OUT)
+                    GPIO.output(pins['buzzer'], GPIO.LOW)
                 
-                self.logger.info("✅ GPIO pins initialized")
+                self.logger.info(f"✅ GPIO pins initialized: {list(pins.keys())}")
                 
             except Exception as e:
                 self.logger.error(f"❌ Failed to initialize hardware: {e}")
@@ -436,15 +438,19 @@ class UrbanKetlMCRN2Machine:
                 
                 self.logger.info(f"☕ Dispensing tea for {dispense_time} seconds...")
                 
-                # Activate dispenser and green LED
+                # Activate dispenser
                 GPIO.output(pins['dispenser'], GPIO.HIGH)
-                GPIO.output(pins['led_green'], GPIO.HIGH)
+                
+                # Activate green LED if available
+                if 'led_green' in pins:
+                    GPIO.output(pins['led_green'], GPIO.HIGH)
                 
                 time.sleep(dispense_time)
                 
                 # Deactivate
                 GPIO.output(pins['dispenser'], GPIO.LOW)
-                GPIO.output(pins['led_green'], GPIO.LOW)
+                if 'led_green' in pins:
+                    GPIO.output(pins['led_green'], GPIO.LOW)
             else:
                 self.logger.info(f"🔧 [SIMULATION] Dispensing tea for {dispense_time} seconds...")
                 time.sleep(dispense_time)
@@ -455,13 +461,19 @@ class UrbanKetlMCRN2Machine:
             self.logger.error(f"❌ Dispensing error: {e}")
 
     def set_led(self, color: str, mode: str = 'on'):
-        """Control LED indicators"""
+        """Control LED indicators (optional)"""
         if not HARDWARE_AVAILABLE:
             return
         
         try:
             pins = self.config['gpio_pins']
-            led_pin = pins[f'led_{color}']
+            led_key = f'led_{color}'
+            
+            # Skip if LED not configured
+            if led_key not in pins:
+                return
+            
+            led_pin = pins[led_key]
             
             if mode == 'on':
                 GPIO.output(led_pin, GPIO.HIGH)
@@ -475,21 +487,26 @@ class UrbanKetlMCRN2Machine:
                     time.sleep(0.1)
         
         except Exception as e:
-            self.logger.error(f"❌ LED error: {e}")
+            self.logger.debug(f"LED not available: {e}")
 
     def beep(self, duration: float = 0.1):
-        """Sound buzzer"""
+        """Sound buzzer (optional)"""
         if not HARDWARE_AVAILABLE:
             return
         
         try:
             pins = self.config['gpio_pins']
+            
+            # Skip if buzzer not configured
+            if 'buzzer' not in pins:
+                return
+            
             GPIO.output(pins['buzzer'], GPIO.HIGH)
             time.sleep(duration)
             GPIO.output(pins['buzzer'], GPIO.LOW)
         
         except Exception as e:
-            self.logger.error(f"❌ Buzzer error: {e}")
+            self.logger.debug(f"Buzzer not available: {e}")
 
     def show_success(self):
         """Show success indication"""

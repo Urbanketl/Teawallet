@@ -82,12 +82,29 @@ sudo systemctl start urbanketl
 
 ### Other Components
 
-| Component | GPIO | Pin | Description |
-|-----------|------|-----|-------------|
-| Tea Dispenser | GPIO 18 | Pin 12 | Relay/Solenoid |
-| Green LED | GPIO 16 | Pin 36 | Success indicator |
-| Red LED | GPIO 20 | Pin 38 | Error indicator |
-| Buzzer | GPIO 21 | Pin 40 | Audio feedback |
+| Component | GPIO | Pin | Description | Required |
+|-----------|------|-----|-------------|----------|
+| Tea Dispenser | GPIO 18 | Pin 12 | Relay/Solenoid | ✅ **Yes** |
+| Green LED | GPIO 16 | Pin 36 | Success indicator | ⭕ Optional |
+| Red LED | GPIO 20 | Pin 38 | Error indicator | ⭕ Optional |
+| Buzzer | GPIO 21 | Pin 40 | Audio feedback | ⭕ Optional |
+
+**Minimal Setup:** Only GPIO 18 (tea dispenser) is required. LEDs and buzzer are optional for visual/audio feedback.
+
+### Adding Optional Components (LEDs/Buzzer)
+
+If you want to add visual or audio feedback later, simply update your `machine_config.json`:
+
+```json
+"gpio_pins": {
+  "dispenser": 18,
+  "led_green": 16,    // Optional: Add if you have green LED
+  "led_red": 20,      // Optional: Add if you have red LED  
+  "buzzer": 21        // Optional: Add if you have buzzer
+}
+```
+
+The code will automatically detect and use any optional pins you configure. No code changes needed!
 
 ---
 

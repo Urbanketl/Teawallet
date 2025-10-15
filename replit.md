@@ -7,6 +7,7 @@ UrbanKetl is a B2B corporate tea dispensing system integrating RFID technology w
 - **MCRN2 Reader Compatibility** - Created proper implementation for MCRN2 (PN532-based) RFID readers with Adafruit CircuitPython PN532 library. Previous code incorrectly used MFRC522 library which is incompatible with MCRN2 hardware.
 - **DESFire EV3 APDU Support** - Implemented correct APDU command handling for DESFire EV3 authentication via PN532's InDataExchange, properly handling status byte prepending.
 - **New Machine Files**: Created `urbanketl_machine_mcrn2.py`, `install_mcrn2.sh`, and `README_MCRN2.md` for MCRN2-specific deployment.
+- **Simplified GPIO Configuration** - Updated machine code to use only GPIO 18 (tea dispenser) as required pin. LEDs (GPIO 16, 20) and buzzer (GPIO 21) are now optional and can be added via config without code changes.
 
 ## Previous Changes (October 11, 2025)
 - **Completed Phase 5: Comprehensive Timeout Strategy** - Implemented multi-layered timeout system with route-specific timeouts, external API timeouts, and timeout monitoring

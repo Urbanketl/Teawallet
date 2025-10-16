@@ -43,83 +43,7 @@ export function useRazorpay() {
   // Prevent multiple simultaneous payment attempts
   const [lastAttemptTime, setLastAttemptTime] = useState(0);
 
-  // Handle payment success callback
-  const handlePaymentSuccess = useCallback(async (paymentData: any) => {
-    try {
-      console.log("Processing payment verification:", paymentData);
-      
-      const amount = JSON.parse(localStorage.getItem('lastPaymentOrder') || '{}').amount;
-      
-      const lastOrder = JSON.parse(localStorage.getItem('lastPaymentOrder') || '{}');
-      const verifyRes = await apiRequest("POST", "/api/wallet/verify-payment", {
-        razorpay_order_id: paymentData.razorpay_order_id,
-        razorpay_payment_id: paymentData.razorpay_payment_id,
-        razorpay_signature: paymentData.razorpay_signature,
-        amount: amount / 100, // Convert from paise to rupees
-        businessUnitId: lastOrder.businessUnitId,
-      });
-
-      if (verifyRes.ok) {
-        const result = await verifyRes.json();
-        console.log("Payment verified successfully:", result);
-        
-        setLoading(false);
-        toast({
-          title: "Payment Successful!",
-          description: `₹${amount / 100} has been added to your wallet.`,
-        });
-        
-        // Refresh wallet data - FORCE refetch because of staleTime: Infinity
-        await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
-        await queryClient.refetchQueries({ queryKey: ["/api/transactions"] });
-        
-        // FORCE refetch ALL business units queries (with or without pseudo params)
-        await queryClient.refetchQueries({ 
-          predicate: (query) => {
-            const key = query.queryKey[0];
-            return typeof key === 'string' && key.startsWith('/api/corporate/business-units');
-          }
-        });
-        
-        // Also refetch any specific business unit queries
-        await queryClient.refetchQueries({
-          predicate: (query) => {
-            const key = query.queryKey[0];
-            return typeof key === 'string' && (
-              key.startsWith('/api/corporate/monthly-summary') ||
-              key.startsWith('/api/corporate/business-unit-summary')
-            );
-          }
-        });
-        
-        // Clear stored order
-        localStorage.removeItem('lastPaymentOrder');
-      } else {
-        throw new Error("Payment verification failed");
-      }
-    } catch (error) {
-      console.error("Error verifying payment:", error);
-      setLoading(false);
-      toast({
-        title: "Payment Verification Failed",
-        description: "Please contact support if amount was deducted.",
-        variant: "destructive",
-      });
-    }
-  }, [queryClient, toast]);
-
-  // Listen for payment success from popup window
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data.type === 'PAYMENT_SUCCESS') {
-        console.log("Payment success received from popup:", event.data.data);
-        handlePaymentSuccess(event.data.data);
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [handlePaymentSuccess]);
+  // Removed: window message listener (not needed for modal implementation)
 
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
@@ -284,28 +208,17 @@ export function useRazorpay() {
   };
 
   // Phase 2: Execute payment (open modal synchronously)
-  const executePayment = () => {
-    // Check for prepared order
-    const cached = preparedOrder || JSON.parse(localStorage.getItem('preparedPaymentOrder') || 'null');
+  // Accept prepared order directly to maintain click gesture chain
+  const executePayment = (cached?: any) => {
+    // Use passed parameter or fallback to state/localStorage
+    const orderData = cached || preparedOrder || JSON.parse(localStorage.getItem('preparedPaymentOrder') || 'null');
     
-    if (!cached) {
+    if (!orderData) {
       toast({
         title: "Payment Not Ready",
-        description: "Please wait for payment to be prepared",
+        description: "Please try again",
         variant: "destructive",
       });
-      return;
-    }
-    
-    // Check if expired
-    if (Date.now() > cached.expiresAt) {
-      toast({
-        title: "Payment Expired",
-        description: "Please try again to create a new payment",
-        variant: "destructive",
-      });
-      setPreparedOrder(null);
-      localStorage.removeItem('preparedPaymentOrder');
       return;
     }
     
@@ -316,12 +229,60 @@ export function useRazorpay() {
       }
       
       setLoading(true);
-      console.log("=== EXECUTING PAYMENT (SYNCHRONOUS) ===");
+      console.log("=== OPENING RAZORPAY MODAL ===");
       
-      const { order, keyId, amount, businessUnitId, userDetails } = cached;
+      const { order, keyId, amount, businessUnitId, userDetails } = orderData;
       
       // Define safety timeout variable BEFORE using it
       let safetyTimeout: NodeJS.Timeout;
+      
+      // Verify payment function
+      const verifyPayment = (response: any) => {
+        console.log("✓ Verifying payment:", response);
+        
+        apiRequest("POST", "/api/wallet/verify-payment", {
+          razorpay_order_id: response.razorpay_order_id,
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_signature: response.razorpay_signature,
+          amount,
+          businessUnitId,
+        })
+        .then(verifyRes => verifyRes.json())
+        .then(verifyResponse => {
+          if (verifyResponse.success) {
+            // Clear cached order
+            setPreparedOrder(null);
+            localStorage.removeItem('preparedPaymentOrder');
+            
+            // Refetch data
+            queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
+            queryClient.refetchQueries({ queryKey: ["/api/transactions"] });
+            queryClient.refetchQueries({ 
+              predicate: (query) => {
+                const key = query.queryKey[0];
+                return typeof key === 'string' && key.startsWith('/api/corporate/business-units');
+              }
+            });
+
+            toast({
+              title: "Payment Successful!",
+              description: `₹${amount} added to your wallet successfully`,
+            });
+            setLoading(false);
+          } else {
+            throw new Error("Payment verification failed");
+          }
+        })
+        .catch(error => {
+          console.error("Payment verification error:", error);
+          toast({
+            title: "Verification Failed",
+            description: "Please contact support if amount was deducted",
+            variant: "destructive",
+          });
+          setLoading(false);
+        });
+      };
       
       // Build options object with all callbacks properly defined
       const options: RazorpayOptions = {
@@ -332,52 +293,9 @@ export function useRazorpay() {
         description: "Wallet Recharge",
         order_id: order.id,
         handler: function(response: any) {
-          console.log("✓ Payment handler triggered:", response);
+          console.log("✓ Payment success:", response);
           clearTimeout(safetyTimeout);
-          
-          // Verify payment
-          apiRequest("POST", "/api/wallet/verify-payment", {
-            razorpay_order_id: response.razorpay_order_id,
-            razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_signature: response.razorpay_signature,
-            amount,
-            businessUnitId,
-          })
-          .then(verifyRes => verifyRes.json())
-          .then(verifyResponse => {
-            if (verifyResponse.success) {
-              // Clear cached order
-              setPreparedOrder(null);
-              localStorage.removeItem('preparedPaymentOrder');
-              
-              // Refetch data
-              queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
-              queryClient.refetchQueries({ queryKey: ["/api/transactions"] });
-              queryClient.refetchQueries({ 
-                predicate: (query) => {
-                  const key = query.queryKey[0];
-                  return typeof key === 'string' && key.startsWith('/api/corporate/business-units');
-                }
-              });
-
-              toast({
-                title: "Payment Successful!",
-                description: `₹${amount} added to your wallet successfully`,
-              });
-              setLoading(false);
-            } else {
-              throw new Error("Payment verification failed");
-            }
-          })
-          .catch(error => {
-            console.error("Payment verification error:", error);
-            toast({
-              title: "Verification Failed",
-              description: "Please contact support if amount was deducted",
-              variant: "destructive",
-            });
-            setLoading(false);
-          });
+          verifyPayment(response);
         },
         modal: {
           ondismiss: function() {
@@ -395,12 +313,10 @@ export function useRazorpay() {
         },
       };
 
-      console.log("Razorpay options built:", {
+      console.log("Razorpay options:", {
         key: keyId,
         amount: order.amount,
         order_id: order.id,
-        handler: typeof options.handler,
-        ondismiss: typeof options.modal?.ondismiss
       });
 
       // Create Razorpay instance
@@ -418,20 +334,15 @@ export function useRazorpay() {
         setLoading(false);
       });
       
-      // Safety timeout AFTER everything is set up
+      // Safety timeout - 2 minutes (users need time to complete payment)
       safetyTimeout = setTimeout(() => {
-        console.warn("⚠️ Modal timeout - no response in 10 seconds");
-        setLoading(false);
-        toast({
-          title: "Payment Modal Timeout",
-          description: "Please try again or check your internet connection",
-          variant: "destructive",
-        });
-      }, 10000);
+        console.warn("⚠️ Modal still open after 2 minutes");
+        // Don't close or show error - user might still be paying
+      }, 120000);
       
       console.log("Opening Razorpay modal...");
       razorpay.open();
-      console.log("Razorpay modal opened - waiting for user action");
+      console.log("Razorpay modal opened successfully");
       
     } catch (error: any) {
       console.error("Error executing payment:", error);

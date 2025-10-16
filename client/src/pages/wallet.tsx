@@ -149,8 +149,8 @@ export default function WalletPage() {
       });
 
       if (prepared) {
-        // 🚀 Call executePayment synchronously to maintain user gesture chain
-        executePayment();
+        // 🚀 Pass order directly to maintain user gesture chain
+        executePayment(prepared);
       }
     } catch (err) {
       console.error("Recharge error:", err);
@@ -226,8 +226,8 @@ export default function WalletPage() {
       });
 
       if (prepared) {
-        // 🚀 Call executePayment synchronously to maintain user gesture chain
-        executePayment();
+        // 🚀 Pass order directly to maintain user gesture chain
+        executePayment(prepared);
         setCustomAmount("");
       }
     } catch (err) {

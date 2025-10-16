@@ -1,0 +1,103 @@
+✅ Fixes
+
+Inline the modal open into the button click handler
+Instead of:
+
+const prepared = await preparePayment(...);
+if (prepared) executePayment();
+
+
+Do:
+
+const order = await preparePayment(...);
+if (order) {
+  // Open immediately inside same click gesture
+  executePayment(order);
+}
+
+
+And update executePayment to accept preparedOrder as a parameter instead of pulling from state/localStorage.
+
+Increase / remove modal timeout
+Change the 10s timeout to something like 120s, or only use it if the modal fails to open.
+Right now, a user taking longer than 10s to pay will trigger a false failure.
+
+safetyTimeout = setTimeout(() => {
+  console.warn("⚠️ Modal still open after 2 minutes");
+}, 120000);
+
+
+Simplify verification
+Since you already verify in handler, you don’t need the window.addEventListener('message', ...) fallback (unless you’re embedding Razorpay in a popup).
+
+🔧 Suggested Refactor
+
+Update executePayment to accept the prepared order directly:
+
+const executePayment = (cached: any) => {
+  if (!cached) {
+    toast({ title: "Payment Not Ready", description: "Please try again" });
+    return;
+  }
+
+  let safetyTimeout: NodeJS.Timeout;
+
+  const options: RazorpayOptions = {
+    key: cached.keyId,
+    amount: cached.order.amount,
+    currency: cached.order.currency,
+    name: "UrbanKetl",
+    description: "Wallet Recharge",
+    order_id: cached.order.id,
+    handler: function (response: any) {
+      console.log("✓ Payment success:", response);
+      clearTimeout(safetyTimeout);
+      // ✅ Verify payment
+      verifyPayment(response, cached);
+    },
+    modal: {
+      ondismiss: function () {
+        console.log("✓ Payment popup closed by user");
+        clearTimeout(safetyTimeout);
+        setLoading(false);
+      },
+    },
+    prefill: cached.userDetails,
+    theme: { color: "#F2A74A" },
+  };
+
+  const razorpay = new window.Razorpay(options);
+
+  razorpay.on("payment.failed", function (response: any) {
+    clearTimeout(safetyTimeout);
+    toast({
+      title: "Payment Failed",
+      description: response.error?.description || "Payment was not successful",
+      variant: "destructive",
+    });
+    setLoading(false);
+  });
+
+  safetyTimeout = setTimeout(() => {
+    console.warn("⚠️ Modal still open after 2 minutes");
+  }, 120000);
+
+  razorpay.open();
+};
+
+
+And in your button handler:
+
+const prepared = await preparePayment(amount, selectedBusinessUnitId, {...});
+if (prepared) {
+  executePayment(prepared); // pass order directly
+}
+
+
+✅ This way:
+
+Modal always opens in the same click gesture.
+
+You avoid the “no events triggered” warning.
+
+Timeout is user-friendly.

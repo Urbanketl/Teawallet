@@ -20,6 +20,7 @@ import Support from "@/pages/support";
 import Analytics from "@/pages/analytics";
 import Corporate from "@/pages/corporate";
 import WalletPage from "@/pages/wallet";
+import PaymentCallback from "@/pages/payment-callback";
 import RechargeHistoryPage from "@/pages/recharge-history";
 import PricingPolicy from "@/pages/policies/pricing";
 import TermsAndConditions from "@/pages/policies/terms";
@@ -83,6 +84,7 @@ function Router() {
           <>
             <Route path="/" component={Corporate} />
             <Route path="/wallet" component={WalletPage} />
+            <Route path="/wallet/payment-callback" component={PaymentCallback} />
             <Route path="/recharge-history" component={RechargeHistoryPage} />
             <Route path="/profile" component={Profile} />
             <Route path="/admin" component={Admin} />

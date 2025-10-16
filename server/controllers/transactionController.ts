@@ -135,7 +135,24 @@ export async function createPaymentOrder(req: any, res: Response) {
       console.log("Environment:", keyMode);
       console.log("Order belongs to:", order.id.startsWith('order_') ? 'Razorpay Order' : 'Unknown');
       
-      res.json({ success: true, order, keyId: process.env.RAZORPAY_KEY_ID });
+      // Build callback URLs for redirect flow
+      const baseUrl = process.env.REPLIT_DOMAINS 
+        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
+        : `http://localhost:${process.env.PORT || 5000}`;
+      
+      const callbackUrl = `${baseUrl}/wallet/payment-callback`;
+      const cancelUrl = `${baseUrl}/wallet`;
+      
+      console.log("Redirect URLs:", { callbackUrl, cancelUrl });
+      
+      res.json({ 
+        success: true, 
+        order, 
+        keyId: process.env.RAZORPAY_KEY_ID,
+        callbackUrl,
+        cancelUrl,
+        businessUnitId // Include for callback processing
+      });
     } catch (razorpayError: any) {
       console.error('Razorpay order creation error:', razorpayError);
       

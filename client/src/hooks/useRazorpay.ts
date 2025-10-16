@@ -341,8 +341,20 @@ export function useRazorpay() {
       }, 120000);
       
       console.log("Opening Razorpay modal...");
-      razorpay.open();
-      console.log("Razorpay modal opened successfully");
+      
+      // Check if Razorpay is truly ready
+      if (typeof razorpay.open !== 'function') {
+        throw new Error("Razorpay modal not ready");
+      }
+      
+      // Try to open modal with error catching
+      try {
+        razorpay.open();
+        console.log("Razorpay modal opened successfully");
+      } catch (openError: any) {
+        console.error("Razorpay open() failed:", openError);
+        throw new Error(`Failed to open Razorpay: ${openError.message}`);
+      }
       
     } catch (error: any) {
       console.error("Error executing payment:", error);

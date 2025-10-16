@@ -51,6 +51,16 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
   
+  // CSP headers to allow Razorpay scripts and frames
+  res.setHeader(
+    'Content-Security-Policy',
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://*.razorpay.com; " +
+    "frame-src 'self' https://api.razorpay.com https://*.razorpay.com; " +
+    "connect-src 'self' https://*.razorpay.com https://api.razorpay.com; " +
+    "img-src 'self' data: https: blob:; " +
+    "style-src 'self' 'unsafe-inline' https:;"
+  );
+  
   next();
 });
 

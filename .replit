@@ -8,16 +8,12 @@ packages = ["jq"]
 
 [deployment]
 deploymentTarget = "gce"
-build = ["npm", "run", "build"]
+build = ["sh", "-c", "sh build.sh"]
 run = ["npm", "run", "start"]
 
 [[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 32867
-externalPort = 8008
 
 [[ports]]
 localPort = 34743

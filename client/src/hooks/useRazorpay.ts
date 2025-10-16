@@ -224,58 +224,43 @@ export function useRazorpay() {
       return;
     }
     
-    // Use REDIRECT flow instead of modal (fixes CORS header issue)
+    // Use REDIRECT flow to Razorpay preview URL (simpler approach)
     try {
       setLoading(true);
       console.log("=== REDIRECTING TO RAZORPAY CHECKOUT ===");
       
-      const { order, keyId, amount, businessUnitId, userDetails, callbackUrl, cancelUrl } = orderData;
+      const { order, keyId, amount, businessUnitId, userDetails } = orderData;
       
       console.log("Payment data:", {
         order_id: order.id,
         amount: order.amount,
         keyId,
-        callbackUrl,
-        cancelUrl
       });
       
-      // Create hidden form to POST to Razorpay Hosted Checkout
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = 'https://api.razorpay.com/v1/checkout/embedded';
+      // Build callback URL for Razorpay to redirect after payment
+      const callbackUrl = `${window.location.origin}/api/wallet/payment-callback`;
+      const cancelUrl = `${window.location.origin}/wallet`;
       
-      // Add form fields for Razorpay Standard Checkout
-      const fields = {
-        key_id: keyId,
-        amount: order.amount.toString(),
-        currency: order.currency,
-        name: 'UrbanKetl',
-        description: 'Wallet Recharge',
-        order_id: order.id,
-        callback_url: `${window.location.origin}/api/wallet/payment-callback`,
-        cancel_url: `${window.location.origin}/wallet`,
-        'prefill[name]': userDetails?.name || '',
-        'prefill[email]': userDetails?.email || '',
-        'prefill[contact]': userDetails?.phone || '',
-        'theme[color]': '#F2A74A',
-      };
+      // Build Razorpay preview URL with query parameters
+      const razorpayUrl = new URL('https://api.razorpay.com/v1/checkout/preview');
+      razorpayUrl.searchParams.set('order_id', order.id);
+      razorpayUrl.searchParams.set('key_id', keyId);
+      razorpayUrl.searchParams.set('callback_url', callbackUrl);
+      razorpayUrl.searchParams.set('cancel_url', cancelUrl);
       
-      // Add all fields to form
-      Object.entries(fields).forEach(([key, value]) => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        input.value = typeof value === 'object' ? JSON.stringify(value) : value;
-        form.appendChild(input);
-      });
+      if (userDetails?.name) {
+        razorpayUrl.searchParams.set('prefill[name]', userDetails.name);
+      }
+      if (userDetails?.email) {
+        razorpayUrl.searchParams.set('prefill[email]', userDetails.email);
+      }
       
-      // Append form to body and submit
-      document.body.appendChild(form);
-      console.log("📤 Submitting form to Razorpay...");
-      form.submit();
+      console.log("📤 Redirecting to Razorpay preview URL:", razorpayUrl.toString());
       
-      // Form submission will navigate away, so we don't need to handle response here
-      // The callback page will handle the payment response
+      // Redirect to Razorpay hosted checkout
+      window.location.href = razorpayUrl.toString();
+      
+      // Window navigates away, callback page will handle the payment response
       
     } catch (error: any) {
       console.error("Error executing payment:", error);

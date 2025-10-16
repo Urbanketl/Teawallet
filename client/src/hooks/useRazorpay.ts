@@ -420,14 +420,14 @@ export function useRazorpay() {
       
       // Safety timeout AFTER everything is set up
       safetyTimeout = setTimeout(() => {
-        console.warn("⚠️ Modal timeout - no response in 5 seconds");
+        console.warn("⚠️ Modal timeout - no response in 10 seconds");
         setLoading(false);
         toast({
           title: "Payment Modal Timeout",
           description: "Please try again or check your internet connection",
           variant: "destructive",
         });
-      }, 5000);
+      }, 10000);
       
       console.log("Opening Razorpay modal...");
       razorpay.open();

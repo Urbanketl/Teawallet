@@ -239,10 +239,10 @@ export function useRazorpay() {
         cancelUrl
       });
       
-      // Create hidden form to POST to Razorpay Standard Checkout
+      // Create hidden form to POST to Razorpay Hosted Checkout
       const form = document.createElement('form');
       form.method = 'POST';
-      form.action = 'https://api.razorpay.com/v1/checkout/pay';
+      form.action = 'https://api.razorpay.com/v1/checkout/embedded';
       
       // Add form fields for Razorpay Standard Checkout
       const fields = {

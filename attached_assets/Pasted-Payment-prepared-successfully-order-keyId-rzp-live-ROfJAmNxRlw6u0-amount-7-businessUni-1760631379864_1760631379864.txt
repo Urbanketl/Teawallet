@@ -1,0 +1,85 @@
+Payment prepared successfully: {order: {…}, keyId: 'rzp_live_ROfJAmNxRlw6u0', amount: 7, businessUnitId: 'BU_mdiaars4_e4dawr8lvqq', userDetails: {…}, …}
+index-Dw3eFTS8.js:531 === OPENING RAZORPAY MODAL ===
+index-Dw3eFTS8.js:531 Razorpay options: {key: 'rzp_live_ROfJAmNxRlw6u0', amount: 700, order_id: 'order_RUCtUWfbj1e0mr'}
+index-Dw3eFTS8.js:531 🚀 Opening Razorpay modal...
+index-Dw3eFTS8.js:531 Razorpay instance: se {_evts: {…}, _defs: {…}, id: 'RUCtUuT0JE7iFJ', get: ƒ, set: ƒ, …}
+index-Dw3eFTS8.js:531 Razorpay.open type: function
+index-Dw3eFTS8.js:531 ✅ Razorpay.open() returned: se {_evts: {…}, _defs: {…}, id: 'RUCtUuT0JE7iFJ', get: ƒ, set: ƒ, …}
+index-Dw3eFTS8.js:531 ✅ Modal should now be visible on screen
+index-Dw3eFTS8.js:531 Wallet page debug: {pseudoParam: null, pseudoQuery: '', userIdentifier: '44064328', queryKey: '/api/corporate/business-units', businessUnits: Array(6), …}
+index-Dw3eFTS8.js:531 🔍 Razorpay container in DOM: <div class=​"razorpay-container" style=​"z-index:​ 2147483647;​ position:​ fixed;​ top:​ 0px;​ display:​ block;​ left:​ 0px;​ height:​ 100%;​ width:​ 100%;​ max-height:​ 100dvh;​ backface-visibility:​ hidden;​ overflow-y:​ visible;​">​…​</div>​
+index-Dw3eFTS8.js:531 🔍 Any Razorpay elements: <div class=​"razorpay-container" style=​"z-index:​ 2147483647;​ position:​ fixed;​ top:​ 0px;​ display:​ block;​ left:​ 0px;​ height:​ 100%;​ width:​ 100%;​ max-height:​ 100dvh;​ backface-visibility:​ hidden;​ overflow-y:​ visible;​">​…​</div>​
+v2-entry.modern.js:1 Refused to get unsafe header "x-rtb-fingerprint-id"
+U.d.onreadystatechange @ v2-entry.modern.js:1
+(anonymous) @ instrument.js:269
+XMLHttpRequest.send
+(anonymous) @ trycatch.ts:180
+(anonymous) @ instrument.js:310
+(anonymous) @ v2-entry.modern.js:1
+U @ v2-entry.modern.js:1
+C @ v2-entry-app-5530762f.modern.js:1
+await in C
+t @ v2-entry-app-5530762f.modern.js:1
+(anonymous) @ v2-entry-app-5530762f.modern.js:1
+await in (anonymous)
+(anonymous) @ v2-entry-app-5530762f.modern.js:1
+await in (anonymous)
+(anonymous) @ v2-entry-app-5530762f.modern.js:1
+sentryWrapped @ helpers.ts:98
+setTimeout
+(anonymous) @ trycatch.ts:120
+(anonymous) @ v2-entry-app-5530762f.modern.js:1
+(anonymous) @ v2-entry.modern.js:1
+sentryWrapped @ helpers.ts:98
+setTimeout
+(anonymous) @ trycatch.ts:120
+c @ v2-entry.modern.js:1
+i @ v2-entry.modern.js:1
+g @ v2-entry-app-5530762f.modern.js:1
+(anonymous) @ v2-entry-BuyerProtectWrapper-2a165596.modern.js:1
+s @ v2-entry-4183ea99.modern.js:1
+(anonymous) @ v2-entry-4183ea99.modern.js:1
+Vt @ v2-entry-4183ea99.modern.js:1
+o @ v2-entry-4183ea99.modern.js:1
+(anonymous) @ v2-entry-4183ea99.modern.js:1
+Promise.then
+ln @ v2-entry-4183ea99.modern.js:1
+C @ v2-entry-app-5530762f.modern.js:1
+S @ v2-entry-app-5530762f.modern.js:1
+_n @ v2-entry-4183ea99.modern.js:1
+O @ v2-entry-app-5530762f.modern.js:1
+_ @ v2-entry-app-5530762f.modern.js:1
+_n @ v2-entry-4183ea99.modern.js:1
+h @ v2-entry-app-5530762f.modern.js:1
+oe @ v2-entry-app-5530762f.modern.js:1
+p @ v2-entry-app-5530762f.modern.js:1
+p @ v2-entry-app-5530762f.modern.js:1
+Kt @ v2-entry-4183ea99.modern.js:1
+Vt @ v2-entry-4183ea99.modern.js:1
+Promise.then
+Bt @ v2-entry-4183ea99.modern.js:1
+(anonymous) @ v2-entry-4183ea99.modern.js:1
+(anonymous) @ v2-entry-4183ea99.modern.js:1
+(anonymous) @ v2-entry-app-5530762f.modern.js:1
+(anonymous) @ v2-entry.modern.js:1
+r @ v2-entry.modern.js:1
+(anonymous) @ v2-entry-50a8d3b0.modern.js:1
+_ @ v2-entry-50a8d3b0.modern.js:1
+v @ v2-entry-50a8d3b0.modern.js:1
+await in v
+st @ v2-entry-app-5530762f.modern.js:1
+Vn @ v2-entry-app-5530762f.modern.js:1
+_n @ v2-entry-4183ea99.modern.js:1
+Hn @ v2-entry-app-5530762f.modern.js:1
+(anonymous) @ v2-entry-app-5530762f.modern.js:1
+Promise.then
+h @ v2-entry-app-5530762f.modern.js:1
+(anonymous) @ v2-entry.modern.js:1
+Promise.then
+p @ v2-entry.modern.js:1
+(anonymous) @ v2-entry.modern.js:1
+Promise.finally
+u @ v2-entry.modern.js:1
+(anonymous) @ v2-entry.modern.js:1
+n @ v2-entry.modern.js:1
+(anonymous) @ v2-entry.modern.js:1Understand this error

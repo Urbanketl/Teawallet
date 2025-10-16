@@ -8,6 +8,7 @@ import { initializeServices } from "./services";
 import { autoSyncService } from "./services/autoSyncService";
 import { challengeResponseService } from "./services/challengeResponseService";
 import { upiSyncService } from "./services/upiSyncService";
+import { runMigrations } from "./migrate";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -92,6 +93,11 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
+    // Run database migrations before starting the server
+    if (process.env.NODE_ENV === 'production') {
+      await runMigrations();
+    }
+    
     const server = await registerRoutes(app);
 
     // Initialize background services (email notifications, etc.)

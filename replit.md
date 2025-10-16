@@ -4,6 +4,8 @@
 UrbanKetl is a B2B corporate tea dispensing system integrating RFID technology with a web application. It enables business unit administrators to manage multiple tea machines, issue generic RFID cards to employees, and monitor dispensing activity charged to a corporate wallet. The project aims to provide a comprehensive solution for corporate tea services, streamlining management and billing.
 
 ## Recent Changes (October 16, 2025)
+- **Database Migration System Fixed** - Resolved publishing failure by implementing proper Drizzle migrations. Generated migration files from schema and created automatic migration runner that executes on production startup. This fixes the "failed to validate database migrations" error during publishing.
+- **Migration Runner Implementation** - Created `server/migrate.ts` that automatically applies pending database migrations when the app starts in production mode, ensuring schema changes are properly deployed.
 - **Razorpay Redirect Flow Implementation** - Switched from modal-based checkout to redirect-based hosted checkout due to production CORS header restrictions (`x-rtb-fingerprint-id` blocked by edge layer). Modal container rendered but content failed to load due to Razorpay's fraud detection being blocked.
 - **Payment Callback Handler** - Created `/wallet/payment-callback` page to process payment responses from Razorpay's hosted checkout. Handles payment verification, wallet updates, and user feedback.
 - **Enhanced Payment Flow** - Updated `useRazorpay` hook to create hidden form that POSTs to Razorpay's checkout URL (`https://api.razorpay.com/v1/checkout/embedded`) with callback URLs for success/cancel scenarios.

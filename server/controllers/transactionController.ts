@@ -321,15 +321,30 @@ export async function verifyPaymentLinkAndAddFunds(req: any, res: Response) {
       const updatedBusinessUnit = await storage.updateBusinessUnitWallet(businessUnitId, newBalance.toString());
       
       // Create transaction record for business unit
-      await storage.createTransaction({
-        userId,
-        businessUnitId,
-        type: 'recharge',
-        amount: amount.toString(),
-        description: `Business unit wallet recharge via Razorpay Payment Link for ${businessUnit.name} (Link: ${razorpay_payment_link_id})`,
-        status: 'completed',
-        razorpayPaymentId: razorpay_payment_id,
-      });
+      try {
+        const transaction = await storage.createTransaction({
+          userId,
+          businessUnitId,
+          type: 'recharge',
+          amount: amount.toString(),
+          description: `Business unit wallet recharge via Razorpay Payment Link for ${businessUnit.name} (Link: ${razorpay_payment_link_id})`,
+          status: 'completed',
+          razorpayPaymentId: razorpay_payment_id,
+        });
+        console.log('Transaction created successfully:', transaction);
+      } catch (txnError) {
+        console.error('ERROR creating transaction record:', txnError);
+        console.error('Transaction data that failed:', {
+          userId,
+          businessUnitId,
+          type: 'recharge',
+          amount: amount.toString(),
+          description: `Business unit wallet recharge via Razorpay Payment Link for ${businessUnit.name} (Link: ${razorpay_payment_link_id})`,
+          status: 'completed',
+          razorpayPaymentId: razorpay_payment_id,
+        });
+        // Don't throw - wallet is already updated, just log the error
+      }
 
       console.log(`Payment successful: ₹${amount} added to ${businessUnit.name}`);
       

@@ -83,10 +83,12 @@ export const transactions = pgTable("transactions", {
   machineId: varchar("machine_id").references(() => teaMachines.id), // Machine involved (for dispensing transactions)
   type: varchar("type").notNull(), // 'recharge', 'deduction', 'refund', 'dispensing'
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  description: text("description"),
+  description: text("description").notNull(), // Required field
+  method: varchar("method"), // Payment method (if applicable)
   status: varchar("status").default("completed"), // 'pending', 'completed', 'failed'
   razorpayOrderId: varchar("razorpay_order_id"),
   razorpayPaymentId: varchar("razorpay_payment_id"),
+  rfidCardId: integer("rfid_card_id").references(() => rfidCards.id), // RFID card used (for dispensing)
   createdAt: timestamp("created_at").defaultNow(),
 });
 

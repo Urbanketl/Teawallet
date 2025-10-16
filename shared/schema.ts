@@ -63,6 +63,18 @@ export const rfidCards = pgTable("rfid_cards", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Pending Payment Orders - Server-side storage for Razorpay orders
+export const pendingPaymentOrders = pgTable("pending_payment_orders", {
+  id: serial("id").primaryKey(),
+  orderId: varchar("order_id").notNull().unique(), // Razorpay order_id
+  userId: varchar("user_id").notNull().references(() => users.id),
+  businessUnitId: varchar("business_unit_id").notNull().references(() => businessUnits.id),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  status: varchar("status").default("pending"), // 'pending', 'completed', 'failed', 'expired'
+  expiresAt: timestamp("expires_at").notNull(), // Orders expire after 10 minutes
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Transactions
 export const transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),

@@ -3,7 +3,13 @@
 ## Overview
 UrbanKetl is a B2B corporate tea dispensing system integrating RFID technology with a web application. It enables business unit administrators to manage multiple tea machines, issue generic RFID cards to employees, and monitor dispensing activity charged to a corporate wallet. The project aims to provide a comprehensive solution for corporate tea services, streamlining management and billing.
 
-## Recent Changes (October 15, 2025)
+## Recent Changes (October 16, 2025)
+- **Razorpay Redirect Flow Implementation** - Switched from modal-based checkout to redirect-based hosted checkout due to production CORS header restrictions (`x-rtb-fingerprint-id` blocked by edge layer). Modal container rendered but content failed to load due to Razorpay's fraud detection being blocked.
+- **Payment Callback Handler** - Created `/wallet/payment-callback` page to process payment responses from Razorpay's hosted checkout. Handles payment verification, wallet updates, and user feedback.
+- **Enhanced Payment Flow** - Updated `useRazorpay` hook to create hidden form that POSTs to Razorpay's checkout URL (`https://api.razorpay.com/v1/checkout/embedded`) with callback URLs for success/cancel scenarios.
+- **Production-Ready Payment Integration** - Resolves modal rendering issues on www.ukteawallet.com by using Razorpay's recommended redirect approach for environments with restrictive security policies.
+
+## Previous Changes (October 15, 2025)
 - **MCRN2 Reader Compatibility** - Created proper implementation for MCRN2 (PN532-based) RFID readers with Adafruit CircuitPython PN532 library. Previous code incorrectly used MFRC522 library which is incompatible with MCRN2 hardware.
 - **DESFire EV3 APDU Support** - Implemented correct APDU command handling for DESFire EV3 authentication via PN532's InDataExchange, properly handling status byte prepending.
 - **New Machine Files**: Created `urbanketl_machine_mcrn2.py`, `install_mcrn2.sh`, and `README_MCRN2.md` for MCRN2-specific deployment.

@@ -1,0 +1,28 @@
+The order is created because the Order Creation is a server-side process that successfully completed before the network blockage occurred.
+
+Here is a breakdown of the Razorpay workflow and how your situation fits:
+
+1. Razorpay Order Creation Flow
+The process of creating an order is a two-step sequence involving your server and the Razorpay API.
+
+Step A: Server-Side Creation (Success) 🟢
+Your Frontend Request: When the user clicks the "Pay" button on your website, your frontend code makes an API request to your backend server (e.g., /api/create-order).
+
+Your Backend Executes: Your server receives this request and uses the Razorpay SDK (or a direct HTTPS call) to communicate with the main Razorpay API endpoint: https://api.razorpay.com/v1/orders.
+
+Authentication: This server-to-server call is authenticated using your Live Key ID and Live Key Secret (which you confirmed is correct).
+
+Order Creation: Razorpay's server validates the keys, creates the order entity (order_RU8XEqxvK852TE), sets its status to created, and sends the Order ID back to your server.
+
+Frontend Receives ID: Your server then passes this generated order_id back to your frontend JavaScript.
+
+Result: This process succeeded, which is why you see the order_RU8XEqxvK852TE in the created status in your Razorpay Dashboard, and why your logs show Payment prepared successfully with the order_id.
+
+Step B: Frontend Checkout Execution (Failure) 🔴
+Checkout Initialization: Your frontend code uses the received order_id to initialize the Razorpay Checkout script (rzp1.open()).
+
+Resource Fetch (The Failure Point): When the Razorpay modal initializes, it tries to fetch several critical JavaScript and utility resources from domains like checkout.razorpay.com, lumberjack.razorpay.com, and sentry-cdn.com. This communication is necessary to load the payment page, handle real-time logic, and monitor its execution.
+
+Network Blockage: The net::ERR_BLOCKED_BY_CLIENT error and the failing ping command prove that your network (router/firewall/DNS) is blocking access to these secondary Razorpay domains.
+
+Modal Timeout: Because the necessary scripts and resources cannot be loaded, the Razorpay modal cannot render the actual payment options (cards, UPI, etc.). After 5 seconds of failing to initialize or communicate, the checkout script automatically triggers a timeout and closes (or attempts to close) the modal, as observed in your logs.

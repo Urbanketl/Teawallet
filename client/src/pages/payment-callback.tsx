@@ -16,10 +16,12 @@ export default function PaymentCallback() {
   useEffect(() => {
     const processCallback = async () => {
       try {
-        // Get payment details from URL query params
+        // Get payment details from URL query params (Payment Link callback)
         const urlParams = new URLSearchParams(window.location.search);
         const razorpay_payment_id = urlParams.get('razorpay_payment_id');
-        const razorpay_order_id = urlParams.get('razorpay_order_id');
+        const razorpay_payment_link_id = urlParams.get('razorpay_payment_link_id');
+        const razorpay_payment_link_reference_id = urlParams.get('razorpay_payment_link_reference_id');
+        const razorpay_payment_link_status = urlParams.get('razorpay_payment_link_status');
         const razorpay_signature = urlParams.get('razorpay_signature');
         
         // Get stored payment data
@@ -29,21 +31,28 @@ export default function PaymentCallback() {
         }
         
         const paymentData = JSON.parse(storedData);
-        const { amount, businessUnitId } = paymentData;
+        const { amount, businessUnitId, referenceId } = paymentData;
         
-        console.log('=== PROCESSING PAYMENT CALLBACK ===');
+        console.log('=== PROCESSING PAYMENT LINK CALLBACK ===');
         console.log('Payment ID:', razorpay_payment_id);
-        console.log('Order ID:', razorpay_order_id);
+        console.log('Payment Link ID:', razorpay_payment_link_id);
+        console.log('Reference ID:', razorpay_payment_link_reference_id);
+        console.log('Status:', razorpay_payment_link_status);
         console.log('Amount:', amount);
         console.log('Business Unit:', businessUnitId);
 
-        if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
+        if (!razorpay_payment_id || !razorpay_payment_link_id || !razorpay_signature) {
           throw new Error('Invalid payment response');
         }
 
-        // Verify payment
-        const verifyRes = await apiRequest("POST", "/api/wallet/verify-payment", {
-          razorpay_order_id,
+        // Check payment status
+        if (razorpay_payment_link_status !== 'paid') {
+          throw new Error(`Payment status: ${razorpay_payment_link_status}`);
+        }
+
+        // Verify payment link
+        const verifyRes = await apiRequest("POST", "/api/wallet/verify-payment-link", {
+          razorpay_payment_link_id,
           razorpay_payment_id,
           razorpay_signature,
           amount,

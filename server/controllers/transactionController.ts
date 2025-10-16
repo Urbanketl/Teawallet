@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { storage } from "../storage";
 import { insertTransactionSchema } from "@shared/schema";
-import { createOrder, verifyPayment } from "../razorpay";
+import { createOrder, verifyPayment, createPaymentLink, verifyPaymentLink } from "../razorpay";
 
 export async function getUserTransactions(req: any, res: Response) {
   try {
@@ -169,6 +169,183 @@ export async function createPaymentOrder(req: any, res: Response) {
   } catch (error) {
     console.error("Error creating payment order:", error);
     res.status(500).json({ message: "Failed to create payment order" });
+  }
+}
+
+export async function createPaymentLinkForWallet(req: any, res: Response) {
+  try {
+    const { amount, businessUnitId } = req.body;
+    const userId = req.user.id;
+    
+    console.log('=== CREATE PAYMENT LINK ===');
+    console.log('Amount:', amount);
+    console.log('User ID:', userId);
+    console.log('Business Unit ID:', businessUnitId);
+    
+    if (!amount || amount <= 0) {
+      console.log('Invalid amount, returning error');
+      return res.status(400).json({ message: "Invalid amount" });
+    }
+
+    // Validate business unit access and wallet limit
+    if (businessUnitId) {
+      const userBusinessUnits = await storage.getUserBusinessUnits(userId);
+      const businessUnit = userBusinessUnits.find(bu => bu.id === businessUnitId);
+      
+      if (!businessUnit) {
+        return res.status(403).json({ message: "Access denied to this business unit" });
+      }
+
+      const maxWalletBalanceStr = await storage.getSystemSetting('max_wallet_balance') || '5000.00';
+      const maxWalletBalance = parseFloat(maxWalletBalanceStr);
+      const currentBalance = parseFloat(businessUnit.walletBalance || '0');
+      const newBalance = currentBalance + amount;
+
+      if (newBalance > maxWalletBalance) {
+        return res.status(400).json({ 
+          message: `Cannot recharge ${businessUnit.name}. Maximum wallet balance is ₹${maxWalletBalance}. Current balance: ₹${currentBalance}. You can add up to ₹${(maxWalletBalance - currentBalance).toFixed(2)} more.`,
+          maxBalance: maxWalletBalance,
+          currentBalance: currentBalance,
+          maxAllowedRecharge: maxWalletBalance - currentBalance
+        });
+      }
+    } else {
+      return res.status(400).json({ 
+        message: "businessUnitId parameter is required for wallet recharge operations" 
+      });
+    }
+
+    try {
+      // Build callback URL
+      const baseUrl = process.env.REPLIT_DOMAINS 
+        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
+        : `http://localhost:${process.env.PORT || 5000}`;
+      
+      const callbackUrl = `${baseUrl}/wallet/payment-callback`;
+      
+      // Get user details for prefill
+      const user = await storage.getUser(userId);
+      const customerDetails = {
+        name: user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.firstName || undefined,
+        email: user?.email,
+      };
+      
+      // Create reference ID to store metadata
+      const referenceId = `bu_${businessUnitId}_${Date.now()}`;
+      
+      // Create payment link
+      const paymentLink = await createPaymentLink(
+        amount,
+        customerDetails,
+        callbackUrl,
+        referenceId
+      );
+      
+      console.log("=== PAYMENT LINK CREATED ===");
+      console.log("Link ID:", paymentLink.id);
+      console.log("Short URL:", paymentLink.short_url);
+      console.log("Reference ID:", referenceId);
+      
+      res.json({ 
+        success: true, 
+        paymentLink: {
+          id: paymentLink.id,
+          short_url: paymentLink.short_url,
+          amount: paymentLink.amount,
+          reference_id: paymentLink.reference_id,
+        },
+        amount,
+        businessUnitId,
+        referenceId
+      });
+    } catch (razorpayError: any) {
+      console.error('Razorpay payment link creation error:', razorpayError);
+      
+      if (razorpayError.statusCode === 400 && razorpayError.error?.description?.includes('Amount exceeds maximum')) {
+        return res.status(400).json({ 
+          message: `Payment amount ₹${amount} exceeds Razorpay's maximum limit. Please try a smaller amount (maximum ₹5000 for demo accounts).`,
+          maxSuggestedAmount: 5000
+        });
+      }
+      
+      throw razorpayError;
+    }
+  } catch (error) {
+    console.error("Error creating payment link:", error);
+    res.status(500).json({ message: "Failed to create payment link" });
+  }
+}
+
+export async function verifyPaymentLinkAndAddFunds(req: any, res: Response) {
+  try {
+    const userId = req.user.id;
+    const { razorpay_payment_link_id, razorpay_payment_id, razorpay_signature, amount, businessUnitId } = req.body;
+
+    console.log('=== PAYMENT LINK VERIFICATION ===');
+    console.log('User ID:', userId);
+    console.log('Request body:', { razorpay_payment_link_id, razorpay_payment_id, amount, businessUnitId });
+
+    const isValid = await verifyPaymentLink(razorpay_payment_link_id, razorpay_payment_id, razorpay_signature);
+
+    if (!isValid) {
+      console.error('Payment link signature verification failed');
+      return res.status(400).json({ message: "Payment verification failed" });
+    }
+    
+    console.log('Payment link signature verified successfully');
+
+    // Handle business unit wallet recharge
+    if (businessUnitId) {
+      // Verify user has access to this business unit
+      const userBusinessUnits = await storage.getUserBusinessUnits(userId);
+      const businessUnit = userBusinessUnits.find(bu => bu.id === businessUnitId);
+      
+      if (!businessUnit) {
+        return res.status(403).json({ message: "Access denied to this business unit" });
+      }
+
+      const maxWalletBalanceStr = await storage.getSystemSetting('max_wallet_balance') || '5000.00';
+      const maxWalletBalance = parseFloat(maxWalletBalanceStr);
+      const currentBalance = parseFloat(businessUnit.walletBalance || '0');
+      const newBalance = currentBalance + amount;
+
+      if (newBalance > maxWalletBalance) {
+        return res.status(400).json({ 
+          message: `Cannot recharge ${businessUnit.name}. Maximum wallet balance is ₹${maxWalletBalance}. Current balance: ₹${currentBalance}`,
+          maxBalance: maxWalletBalance,
+          currentBalance: currentBalance
+        });
+      }
+
+      // Add funds to business unit wallet
+      const updatedBusinessUnit = await storage.updateBusinessUnitWallet(businessUnitId, newBalance.toString());
+      
+      // Create transaction record for business unit
+      await storage.createTransaction({
+        userId,
+        businessUnitId,
+        type: 'recharge',
+        amount: amount.toString(),
+        description: `Business unit wallet recharge via Razorpay Payment Link for ${businessUnit.name} (Link: ${razorpay_payment_link_id})`,
+        status: 'completed',
+        razorpayPaymentId: razorpay_payment_id,
+      });
+
+      console.log(`Payment successful: ₹${amount} added to ${businessUnit.name}`);
+      
+      res.json({ 
+        message: `Payment verified and ₹${amount} added to ${businessUnit.name} wallet successfully`,
+        businessUnit: updatedBusinessUnit 
+      });
+    } else {
+      console.error('Payment verification failed: businessUnitId missing in request');
+      return res.status(400).json({ 
+        message: "businessUnitId parameter is required for payment verification" 
+      });
+    }
+  } catch (error) {
+    console.error("Error verifying payment link:", error);
+    res.status(500).json({ message: "Failed to verify payment" });
   }
 }
 

@@ -69,6 +69,51 @@ export async function createOrder(amount: number, currency = "INR") {
   return order;
 }
 
+export async function createPaymentLink(
+  amount: number,
+  customerDetails?: { name?: string; email?: string; contact?: string },
+  callbackUrl?: string,
+  referenceId?: string
+) {
+  const razorpay = initializeRazorpay();
+  
+  if (!razorpay) {
+    throw new Error("Razorpay not initialized. Please check your credentials.");
+  }
+
+  const options: any = {
+    amount: Math.round(amount * 100), // Convert to paisa
+    currency: "INR",
+    description: "Wallet Recharge - UrbanKetl",
+    reference_id: referenceId || `ref_${Date.now()}`,
+  };
+
+  if (customerDetails) {
+    options.customer = {};
+    if (customerDetails.name) options.customer.name = customerDetails.name;
+    if (customerDetails.email) options.customer.email = customerDetails.email;
+    if (customerDetails.contact) options.customer.contact = customerDetails.contact;
+  }
+
+  if (callbackUrl) {
+    options.callback_url = callbackUrl;
+    options.callback_method = "get"; // Required when callback_url is provided
+  }
+
+  console.log('Creating Razorpay payment link with options:', JSON.stringify(options, null, 2));
+  
+  // Wrap Razorpay API call with timeout
+  const paymentLink = await withTimeout(
+    razorpay.paymentLink.create(options),
+    RAZORPAY_TIMEOUT,
+    'payment link creation'
+  );
+  
+  console.log('Razorpay payment link created:', JSON.stringify(paymentLink, null, 2));
+  
+  return paymentLink;
+}
+
 export async function verifyPayment(
   orderId: string,
   paymentId: string,
@@ -82,6 +127,27 @@ export async function verifyPayment(
 
   const crypto = require("crypto");
   const body = orderId + "|" + paymentId;
+  const expectedSignature = crypto
+    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
+    .update(body.toString())
+    .digest("hex");
+
+  return expectedSignature === signature;
+}
+
+export async function verifyPaymentLink(
+  paymentLinkId: string,
+  paymentId: string,
+  signature: string
+) {
+  const razorpay = initializeRazorpay();
+  
+  if (!razorpay) {
+    throw new Error("Razorpay not initialized. Please check your credentials.");
+  }
+
+  const crypto = require("crypto");
+  const body = paymentLinkId + "|" + paymentId;
   const expectedSignature = crypto
     .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
     .update(body.toString())

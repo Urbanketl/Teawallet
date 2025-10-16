@@ -136,7 +136,7 @@ export function useRazorpay() {
     });
   };
 
-  // Phase 1: Prepare payment (create order, cache it)
+  // Phase 1: Prepare payment (create payment link, cache it)
   const preparePayment = async (amount: number, businessUnitId?: string, userDetails?: { name?: string; email?: string }) => {
     if (preparing) return;
     
@@ -145,40 +145,35 @@ export function useRazorpay() {
       console.log("=== PREPARING PAYMENT ===");
       console.log("Amount:", amount, "Business Unit:", businessUnitId);
       
-      // Pre-load Razorpay script
-      await loadRazorpayScript();
-      
-      // Create order
-      const orderData = { 
+      // Create payment link
+      const linkData = { 
         amount,
         ...(businessUnitId && { businessUnitId })
       };
-      const orderRes = await apiRequest("POST", "/api/wallet/create-order", orderData);
+      const linkRes = await apiRequest("POST", "/api/wallet/create-payment-link", linkData);
       
-      if (!orderRes.ok) {
-        const errorData = await orderRes.json();
-        if (orderRes.status === 429) {
+      if (!linkRes.ok) {
+        const errorData = await linkRes.json();
+        if (linkRes.status === 429) {
           throw new Error("Too many payment requests. Please wait a moment and try again.");
         }
-        if (orderRes.status === 400 && errorData.message) {
+        if (linkRes.status === 400 && errorData.message) {
           throw new Error(errorData.message);
         }
-        throw new Error(`Failed to create order: ${orderRes.status}`);
+        throw new Error(`Failed to create payment link: ${linkRes.status}`);
       }
       
-      const orderResponse = await orderRes.json();
-      if (!orderResponse.success || !orderResponse.order || !orderResponse.keyId) {
-        throw new Error(orderResponse.message || "Failed to create payment order");
+      const linkResponse = await linkRes.json();
+      if (!linkResponse.success || !linkResponse.paymentLink) {
+        throw new Error(linkResponse.message || "Failed to create payment link");
       }
       
-      // Cache the prepared order (including callback URLs from backend)
+      // Cache the prepared payment link
       const preparedData = {
-        order: orderResponse.order,
-        keyId: orderResponse.keyId,
-        callbackUrl: orderResponse.callbackUrl,
-        cancelUrl: orderResponse.cancelUrl,
+        paymentLink: linkResponse.paymentLink,
         amount,
         businessUnitId,
+        referenceId: linkResponse.referenceId,
         userDetails,
         preparedAt: Date.now(),
         expiresAt: Date.now() + (10 * 60 * 1000), // 10 minutes
@@ -187,7 +182,7 @@ export function useRazorpay() {
       setPreparedOrder(preparedData);
       localStorage.setItem('preparedPaymentOrder', JSON.stringify(preparedData));
       
-      console.log("Payment prepared successfully:", preparedData);
+      console.log("Payment link prepared successfully:", preparedData);
       return preparedData;
     } catch (error: any) {
       console.error("Error preparing payment:", error);
@@ -224,41 +219,28 @@ export function useRazorpay() {
       return;
     }
     
-    // Use REDIRECT flow to Razorpay preview URL (simpler approach)
+    // Use Razorpay Payment Link (proper redirect flow)
     try {
       setLoading(true);
-      console.log("=== REDIRECTING TO RAZORPAY CHECKOUT ===");
+      console.log("=== REDIRECTING TO RAZORPAY PAYMENT LINK ===");
       
-      const { order, keyId, amount, businessUnitId, userDetails } = orderData;
+      const { paymentLink, amount, businessUnitId, referenceId } = orderData;
       
-      console.log("Payment data:", {
-        order_id: order.id,
-        amount: order.amount,
-        keyId,
+      if (!paymentLink || !paymentLink.short_url) {
+        throw new Error("Invalid payment link data");
+      }
+      
+      console.log("Payment link data:", {
+        link_id: paymentLink.id,
+        short_url: paymentLink.short_url,
+        amount,
+        reference_id: referenceId,
       });
       
-      // Build callback URL for Razorpay to redirect after payment
-      const callbackUrl = `${window.location.origin}/api/wallet/payment-callback`;
-      const cancelUrl = `${window.location.origin}/wallet`;
+      console.log("📤 Redirecting to Razorpay Payment Link:", paymentLink.short_url);
       
-      // Build Razorpay preview URL with query parameters
-      const razorpayUrl = new URL('https://api.razorpay.com/v1/checkout/preview');
-      razorpayUrl.searchParams.set('order_id', order.id);
-      razorpayUrl.searchParams.set('key_id', keyId);
-      razorpayUrl.searchParams.set('callback_url', callbackUrl);
-      razorpayUrl.searchParams.set('cancel_url', cancelUrl);
-      
-      if (userDetails?.name) {
-        razorpayUrl.searchParams.set('prefill[name]', userDetails.name);
-      }
-      if (userDetails?.email) {
-        razorpayUrl.searchParams.set('prefill[email]', userDetails.email);
-      }
-      
-      console.log("📤 Redirecting to Razorpay preview URL:", razorpayUrl.toString());
-      
-      // Redirect to Razorpay hosted checkout
-      window.location.href = razorpayUrl.toString();
+      // Redirect to Razorpay payment link
+      window.location.href = paymentLink.short_url;
       
       // Window navigates away, callback page will handle the payment response
       

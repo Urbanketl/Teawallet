@@ -785,25 +785,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Wallet routes - supports both legacy user wallet and business unit wallet operations
   app.post('/api/wallet/create-order', isAuthenticated, transactionController.createPaymentOrder);
+  app.post('/api/wallet/create-payment-link', isAuthenticated, transactionController.createPaymentLinkForWallet);
 
   app.post('/api/wallet/verify-payment', isAuthenticated, transactionController.verifyPaymentAndAddFunds);
+  app.post('/api/wallet/verify-payment-link', isAuthenticated, transactionController.verifyPaymentLinkAndAddFunds);
   
-  // Razorpay payment callback handler (receives POST from Razorpay, redirects to frontend)
-  app.post('/api/wallet/payment-callback', async (req, res) => {
+  // Razorpay payment callback handler (receives GET from Razorpay Payment Link)
+  app.get('/wallet/payment-callback', async (req, res) => {
     try {
-      console.log('=== RAZORPAY CALLBACK RECEIVED ===');
-      console.log('Body:', req.body);
+      console.log('=== RAZORPAY PAYMENT LINK CALLBACK RECEIVED ===');
+      console.log('Query params:', req.query);
       
-      const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
+      const { razorpay_payment_id, razorpay_payment_link_id, razorpay_payment_link_reference_id, razorpay_payment_link_status, razorpay_signature } = req.query;
       
-      // Razorpay sends payment data via POST, redirect to frontend with query params
-      const callbackUrl = `/wallet/payment-callback?razorpay_payment_id=${razorpay_payment_id}&razorpay_order_id=${razorpay_order_id}&razorpay_signature=${razorpay_signature}`;
-      
-      console.log('Redirecting to:', callbackUrl);
-      res.redirect(callbackUrl);
+      // Payment link sends these params in GET request
+      // Just serve the frontend page - it will handle verification
+      res.sendFile('index.html', { root: path.join(__dirname, 'public') });
     } catch (error) {
       console.error('Payment callback error:', error);
-      // Redirect to wallet with error
       res.redirect('/wallet?payment_error=true');
     }
   });

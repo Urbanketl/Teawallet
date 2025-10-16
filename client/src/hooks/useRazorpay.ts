@@ -340,7 +340,9 @@ export function useRazorpay() {
         // Don't close or show error - user might still be paying
       }, 120000);
       
-      console.log("Opening Razorpay modal...");
+      console.log("🚀 Opening Razorpay modal...");
+      console.log("Razorpay instance:", razorpay);
+      console.log("Razorpay.open type:", typeof razorpay.open);
       
       // Check if Razorpay is truly ready
       if (typeof razorpay.open !== 'function') {
@@ -349,10 +351,29 @@ export function useRazorpay() {
       
       // Try to open modal with error catching
       try {
-        razorpay.open();
-        console.log("Razorpay modal opened successfully");
+        const result = razorpay.open();
+        console.log("✅ Razorpay.open() returned:", result);
+        console.log("✅ Modal should now be visible on screen");
+        
+        // Check if modal actually rendered (DOM check)
+        setTimeout(() => {
+          const razorpayContainer = document.querySelector('.razorpay-container');
+          const razorpayBackdrop = document.querySelector('[class*="razorpay"]');
+          console.log("🔍 Razorpay container in DOM:", razorpayContainer);
+          console.log("🔍 Any Razorpay elements:", razorpayBackdrop);
+          
+          if (!razorpayContainer && !razorpayBackdrop) {
+            console.error("❌ MODAL NOT IN DOM! Razorpay failed to render.");
+            toast({
+              title: "Payment Modal Failed",
+              description: "The payment window could not open. Please try refreshing the page.",
+              variant: "destructive",
+            });
+            setLoading(false);
+          }
+        }, 500);
       } catch (openError: any) {
-        console.error("Razorpay open() failed:", openError);
+        console.error("❌ Razorpay.open() threw error:", openError);
         throw new Error(`Failed to open Razorpay: ${openError.message}`);
       }
       

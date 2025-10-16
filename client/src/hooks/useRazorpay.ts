@@ -320,6 +320,10 @@ export function useRazorpay() {
       
       const { order, keyId, amount, businessUnitId, userDetails } = cached;
       
+      // Define safety timeout variable BEFORE using it
+      let safetyTimeout: NodeJS.Timeout;
+      
+      // Build options object with all callbacks properly defined
       const options: RazorpayOptions = {
         key: keyId,
         amount: order.amount,
@@ -327,36 +331,29 @@ export function useRazorpay() {
         name: "UrbanKetl",
         description: "Wallet Recharge",
         order_id: order.id,
-        modal: {
-          ondismiss: () => {
-            console.log("✓ Modal dismissed by user");
-            clearTimeout(safetyTimeout);
-            setLoading(false);
-          },
-        },
-        handler: async (response: any) => {
-          console.log("✓ Payment handler triggered");
+        handler: function(response: any) {
+          console.log("✓ Payment handler triggered:", response);
           clearTimeout(safetyTimeout);
-          try {
-            // Verify payment
-            const verifyRes = await apiRequest("POST", "/api/wallet/verify-payment", {
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              amount,
-              businessUnitId,
-            });
-            const verifyResponse = await verifyRes.json();
-
+          
+          // Verify payment
+          apiRequest("POST", "/api/wallet/verify-payment", {
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+            amount,
+            businessUnitId,
+          })
+          .then(verifyRes => verifyRes.json())
+          .then(verifyResponse => {
             if (verifyResponse.success) {
               // Clear cached order
               setPreparedOrder(null);
               localStorage.removeItem('preparedPaymentOrder');
               
               // Refetch data
-              await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
-              await queryClient.refetchQueries({ queryKey: ["/api/transactions"] });
-              await queryClient.refetchQueries({ 
+              queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
+              queryClient.refetchQueries({ queryKey: ["/api/transactions"] });
+              queryClient.refetchQueries({ 
                 predicate: (query) => {
                   const key = query.queryKey[0];
                   return typeof key === 'string' && key.startsWith('/api/corporate/business-units');
@@ -367,17 +364,25 @@ export function useRazorpay() {
                 title: "Payment Successful!",
                 description: `₹${amount} added to your wallet successfully`,
               });
+              setLoading(false);
             } else {
               throw new Error("Payment verification failed");
             }
-          } catch (error) {
+          })
+          .catch(error => {
             console.error("Payment verification error:", error);
             toast({
               title: "Verification Failed",
               description: "Please contact support if amount was deducted",
               variant: "destructive",
             });
-          } finally {
+            setLoading(false);
+          });
+        },
+        modal: {
+          ondismiss: function() {
+            console.log("✓ Payment popup closed by user");
+            clearTimeout(safetyTimeout);
             setLoading(false);
           }
         },
@@ -390,28 +395,21 @@ export function useRazorpay() {
         },
       };
 
+      console.log("Razorpay options built:", {
+        key: keyId,
+        amount: order.amount,
+        order_id: order.id,
+        handler: typeof options.handler,
+        ondismiss: typeof options.modal?.ondismiss
+      });
+
+      // Create Razorpay instance
       const razorpay = new window.Razorpay(options);
       
-      // Safety timeout: If no events fire within 3 seconds, reset
-      const safetyTimeout = setTimeout(() => {
-        console.warn("⚠️ Modal didn't trigger any events - possible Razorpay issue");
-        setLoading(false);
-        toast({
-          title: "Payment Modal Issue",
-          description: "Please try again in a few moments",
-          variant: "destructive",
-        });
-      }, 3000);
-      
-      // Clear timeout when any event fires
-      const clearSafety = () => {
-        console.log("Modal event detected, clearing safety timeout");
-        clearTimeout(safetyTimeout);
-      };
-      
-      razorpay.on("payment.failed", (response: any) => {
-        clearSafety();
+      // Add payment.failed listener
+      razorpay.on("payment.failed", function(response: any) {
         console.error("Payment failed:", response);
+        clearTimeout(safetyTimeout);
         toast({
           title: "Payment Failed",
           description: response.error?.description || "Payment was not successful",
@@ -420,13 +418,20 @@ export function useRazorpay() {
         setLoading(false);
       });
       
-      // Note: JSON.stringify won't show functions (handler, ondismiss), but they ARE defined
-      console.log("Razorpay checkout options:", JSON.stringify(options, null, 2));
-      console.log("Handler callback:", typeof options.handler === 'function' ? '✅ DEFINED' : '❌ MISSING');
-      console.log("Modal ondismiss:", typeof options.modal?.ondismiss === 'function' ? '✅ DEFINED' : '❌ MISSING');
-      console.log("Opening Razorpay synchronously...");
+      // Safety timeout AFTER everything is set up
+      safetyTimeout = setTimeout(() => {
+        console.warn("⚠️ Modal timeout - no response in 5 seconds");
+        setLoading(false);
+        toast({
+          title: "Payment Modal Timeout",
+          description: "Please try again or check your internet connection",
+          variant: "destructive",
+        });
+      }, 5000);
+      
+      console.log("Opening Razorpay modal...");
       razorpay.open();
-      console.log("Razorpay opened successfully - waiting for events...");
+      console.log("Razorpay modal opened - waiting for user action");
       
     } catch (error: any) {
       console.error("Error executing payment:", error);

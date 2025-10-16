@@ -4,11 +4,13 @@
 UrbanKetl is a B2B corporate tea dispensing system integrating RFID technology with a web application. It enables business unit administrators to manage multiple tea machines, issue generic RFID cards to employees, and monitor dispensing activity charged to a corporate wallet. The project aims to provide a comprehensive solution for corporate tea services, streamlining management and billing.
 
 ## Recent Changes (October 16, 2025)
+- **Razorpay Callback Flow Fixed** - Resolved payment callback error by implementing proper POST callback handler. Razorpay hosted checkout sends payment data via POST to backend (`/api/wallet/payment-callback`), which then redirects to frontend with query parameters. Changed checkout URL from `/v1/checkout/embedded` to `/v1/checkout/pay` (standard hosted checkout).
+- **Backend Callback Handler** - Created `/api/wallet/payment-callback` POST endpoint that receives payment data from Razorpay and redirects to frontend payment-callback page with `razorpay_payment_id`, `razorpay_order_id`, and `razorpay_signature` as query parameters.
 - **Database Migration System Fixed** - Resolved publishing failure by implementing proper Drizzle migrations. Generated migration files from schema and created automatic migration runner that executes on production startup. This fixes the "failed to validate database migrations" error during publishing.
 - **Migration Runner Implementation** - Created `server/migrate.ts` that automatically applies pending database migrations when the app starts in production mode, ensuring schema changes are properly deployed.
 - **Razorpay Redirect Flow Implementation** - Switched from modal-based checkout to redirect-based hosted checkout due to production CORS header restrictions (`x-rtb-fingerprint-id` blocked by edge layer). Modal container rendered but content failed to load due to Razorpay's fraud detection being blocked.
 - **Payment Callback Handler** - Created `/wallet/payment-callback` page to process payment responses from Razorpay's hosted checkout. Handles payment verification, wallet updates, and user feedback.
-- **Enhanced Payment Flow** - Updated `useRazorpay` hook to create hidden form that POSTs to Razorpay's checkout URL (`https://api.razorpay.com/v1/checkout/embedded`) with callback URLs for success/cancel scenarios.
+- **Enhanced Payment Flow** - Updated `useRazorpay` hook to create hidden form that POSTs to Razorpay's standard checkout URL with callback URLs for success/cancel scenarios.
 - **Production-Ready Payment Integration** - Resolves modal rendering issues on www.ukteawallet.com by using Razorpay's recommended redirect approach for environments with restrictive security policies.
 
 ## Previous Changes (October 15, 2025)

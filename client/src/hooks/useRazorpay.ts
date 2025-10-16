@@ -239,10 +239,10 @@ export function useRazorpay() {
         cancelUrl
       });
       
-      // Create hidden form to POST to Razorpay
+      // Create hidden form to POST to Razorpay Standard Checkout
       const form = document.createElement('form');
       form.method = 'POST';
-      form.action = 'https://api.razorpay.com/v1/checkout/embedded';
+      form.action = 'https://api.razorpay.com/v1/checkout/pay';
       
       // Add form fields
       const fields = {
@@ -252,8 +252,8 @@ export function useRazorpay() {
         name: 'UrbanKetl',
         description: 'Wallet Recharge',
         order_id: order.id,
-        callback_url: callbackUrl || `${window.location.origin}/wallet/payment-callback`,
-        cancel_url: cancelUrl || `${window.location.origin}/wallet`,
+        callback_url: `${window.location.origin}/api/wallet/payment-callback`,
+        cancel_url: `${window.location.origin}/wallet`,
         prefill: {
           name: userDetails?.name || '',
           email: userDetails?.email || '',

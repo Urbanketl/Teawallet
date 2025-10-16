@@ -788,6 +788,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/wallet/verify-payment', isAuthenticated, transactionController.verifyPaymentAndAddFunds);
   
+  // Razorpay payment callback handler (receives POST from Razorpay, redirects to frontend)
+  app.post('/api/wallet/payment-callback', async (req, res) => {
+    try {
+      console.log('=== RAZORPAY CALLBACK RECEIVED ===');
+      console.log('Body:', req.body);
+      
+      const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
+      
+      // Razorpay sends payment data via POST, redirect to frontend with query params
+      const callbackUrl = `/wallet/payment-callback?razorpay_payment_id=${razorpay_payment_id}&razorpay_order_id=${razorpay_order_id}&razorpay_signature=${razorpay_signature}`;
+      
+      console.log('Redirecting to:', callbackUrl);
+      res.redirect(callbackUrl);
+    } catch (error) {
+      console.error('Payment callback error:', error);
+      // Redirect to wallet with error
+      res.redirect('/wallet?payment_error=true');
+    }
+  });
+  
   // Test payment endpoint (dev mode - bypasses Razorpay)
   app.post('/api/wallet/test-payment', isAuthenticated, transactionController.testPayment);
 

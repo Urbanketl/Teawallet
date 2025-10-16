@@ -3580,6 +3580,7 @@ export class DatabaseStorage implements IStorage {
         .insert(users)
         .values({
           id: userData.id,
+          email: userData.email,
           password: defaultPassword,
           firstName: userData.firstName,
           lastName: userData.lastName,

@@ -33,7 +33,6 @@ export default function RechargeHistoryPage() {
         {/* Recharge History Component */}
         <RechargeHistory 
           showBusinessUnitFilter={true}
-          showExportButton={true}
         />
       </div>
       <Footer />

@@ -146,6 +146,7 @@ export default function WalletPage() {
       const prepared = await preparePayment(amount, selectedBusinessUnitId, {
         name: `${user.firstName} ${user.lastName}`.trim(),
         email: user.email || "",
+        userId: user.id,  // Include userId for verification without auth session
       });
 
       if (prepared) {
@@ -223,6 +224,7 @@ export default function WalletPage() {
       const prepared = await preparePayment(amount, selectedBusinessUnitId, {
         name: `${user.firstName} ${user.lastName}`.trim(),
         email: user.email || "",
+        userId: user.id,  // Include userId for verification without auth session
       });
 
       if (prepared) {

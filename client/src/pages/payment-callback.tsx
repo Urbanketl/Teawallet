@@ -31,7 +31,7 @@ export default function PaymentCallback() {
         }
         
         const paymentData = JSON.parse(storedData);
-        const { amount, businessUnitId, referenceId } = paymentData;
+        const { amount, businessUnitId, referenceId, userId } = paymentData;
         
         console.log('=== PROCESSING PAYMENT LINK CALLBACK ===');
         console.log('Payment ID:', razorpay_payment_id);
@@ -65,6 +65,7 @@ export default function PaymentCallback() {
           razorpay_signature,
           amount,
           businessUnitId,
+          userId,
         });
 
         console.log('Verify API response status:', verifyRes.status);

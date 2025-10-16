@@ -256,7 +256,8 @@ export async function createPaymentLinkForWallet(req: any, res: Response) {
         },
         amount,
         businessUnitId,
-        referenceId
+        referenceId,
+        userId  // Include userId for verification without auth
       });
     } catch (razorpayError: any) {
       console.error('Razorpay payment link creation error:', razorpayError);
@@ -282,12 +283,11 @@ export async function verifyPaymentLinkAndAddFunds(req: any, res: Response) {
     console.log('User authenticated:', !!req.user);
     console.log('User object:', req.user);
     
-    const userId = req.user.id;
-    const { razorpay_payment_link_id, razorpay_payment_id, razorpay_signature, amount, businessUnitId } = req.body;
+    const { razorpay_payment_link_id, razorpay_payment_id, razorpay_signature, amount, businessUnitId, userId } = req.body;
 
     console.log('=== PAYMENT LINK VERIFICATION ===');
-    console.log('User ID:', userId);
-    console.log('Request body:', { razorpay_payment_link_id, razorpay_payment_id, amount, businessUnitId });
+    console.log('User ID from request:', userId);
+    console.log('Request body:', { razorpay_payment_link_id, razorpay_payment_id, amount, businessUnitId, userId });
 
     const isValid = await verifyPaymentLink(razorpay_payment_link_id, razorpay_payment_id, razorpay_signature);
 

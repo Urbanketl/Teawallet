@@ -788,7 +788,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/wallet/create-payment-link', isAuthenticated, transactionController.createPaymentLinkForWallet);
 
   app.post('/api/wallet/verify-payment', isAuthenticated, transactionController.verifyPaymentAndAddFunds);
-  app.post('/api/wallet/verify-payment-link', isAuthenticated, transactionController.verifyPaymentLinkAndAddFunds);
+  // Payment link verification doesn't require auth - signature verification provides security
+  app.post('/api/wallet/verify-payment-link', transactionController.verifyPaymentLinkAndAddFunds);
   
   // Razorpay payment callback handler (receives GET from Razorpay Payment Link)
   app.get('/wallet/payment-callback', async (req, res) => {

@@ -137,13 +137,13 @@ export function useRazorpay() {
   };
 
   // Phase 1: Prepare payment (create payment link, cache it)
-  const preparePayment = async (amount: number, businessUnitId?: string, userDetails?: { name?: string; email?: string }) => {
+  const preparePayment = async (amount: number, businessUnitId?: string, userDetails?: { name?: string; email?: string; userId?: string }) => {
     if (preparing) return;
     
     try {
       setPreparing(true);
       console.log("=== PREPARING PAYMENT ===");
-      console.log("Amount:", amount, "Business Unit:", businessUnitId);
+      console.log("Amount:", amount, "Business Unit:", businessUnitId, "User ID:", userDetails?.userId);
       
       // Create payment link
       const linkData = { 
@@ -168,12 +168,13 @@ export function useRazorpay() {
         throw new Error(linkResponse.message || "Failed to create payment link");
       }
       
-      // Cache the prepared payment link
+      // Cache the prepared payment link with userId for verification
       const preparedData = {
         paymentLink: linkResponse.paymentLink,
         amount,
         businessUnitId,
         referenceId: linkResponse.referenceId,
+        userId: userDetails?.userId || linkResponse.userId,  // Include userId from auth or response
         userDetails,
         preparedAt: Date.now(),
         expiresAt: Date.now() + (10 * 60 * 1000), // 10 minutes
@@ -198,7 +199,7 @@ export function useRazorpay() {
   };
 
   // Legacy: Combines both phases (for backwards compatibility, but may be blocked)
-  const initiatePayment = async (amount: number, userDetails?: { name?: string; email?: string; businessUnitId?: string }) => {
+  const initiatePayment = async (amount: number, userDetails?: { name?: string; email?: string; businessUnitId?: string; userId?: string }) => {
     // Just call the two-phase approach
     await preparePayment(amount, userDetails?.businessUnitId, userDetails);
     // Note: executePayment must be called separately from a synchronous click handler

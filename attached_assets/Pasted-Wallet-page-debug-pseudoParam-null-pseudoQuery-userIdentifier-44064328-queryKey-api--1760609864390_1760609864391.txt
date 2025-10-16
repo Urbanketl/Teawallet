@@ -1,0 +1,105 @@
+Wallet page debug: {pseudoParam: null, pseudoQuery: '', userIdentifier: '44064328', queryKey: '/api/corporate/business-units', businessUnits: Array(6), …}
+index-DMmVRv1K.js:531 Wallet page debug: {pseudoParam: null, pseudoQuery: '', userIdentifier: '44064328', queryKey: '/api/corporate/business-units', businessUnits: Array(6), …}
+index-DMmVRv1K.js:531 Wallet page debug: {pseudoParam: null, pseudoQuery: '', userIdentifier: '44064328', queryKey: '/api/corporate/business-units', businessUnits: Array(6), …}
+index-DMmVRv1K.js:531 === PREPARING PAYMENT ===
+index-DMmVRv1K.js:531 Amount: 10 Business Unit: BU_mdiaars4_e4dawr8lvqq
+index-DMmVRv1K.js:531 Razorpay already available
+index-DMmVRv1K.js:531 Wallet page debug: {pseudoParam: null, pseudoQuery: '', userIdentifier: '44064328', queryKey: '/api/corporate/business-units', businessUnits: Array(6), …}
+index-DMmVRv1K.js:531 Payment prepared successfully: {order: {…}, keyId: 'rzp_live_ROfJAmNxRlw6u0', amount: 10, businessUnitId: 'BU_mdiaars4_e4dawr8lvqq', userDetails: {…}, …}
+index-DMmVRv1K.js:531 === EXECUTING PAYMENT (SYNCHRONOUS) ===
+index-DMmVRv1K.js:531 Razorpay options built: {key: 'rzp_live_ROfJAmNxRlw6u0', amount: 1000, order_id: 'order_RU6mlbtLsZWWkf', handler: 'function', ondismiss: 'function'}
+index-DMmVRv1K.js:531 Opening Razorpay modal...
+index-DMmVRv1K.js:531 Razorpay modal opened - waiting for user action
+index-DMmVRv1K.js:531 Wallet page debug: {pseudoParam: null, pseudoQuery: '', userIdentifier: '44064328', queryKey: '/api/corporate/business-units', businessUnits: Array(6), …}
+v2-entry.modern.js:1 Refused to get unsafe header "x-rtb-fingerprint-id"
+U.d.onreadystatechange @ v2-entry.modern.js:1
+(anonymous) @ instrument.js:269
+XMLHttpRequest.send
+(anonymous) @ trycatch.ts:180
+(anonymous) @ instrument.js:310
+(anonymous) @ v2-entry.modern.js:1
+U @ v2-entry.modern.js:1
+C @ v2-entry-app-5530762f.modern.js:1
+await in C
+t @ v2-entry-app-5530762f.modern.js:1
+(anonymous) @ v2-entry-app-5530762f.modern.js:1
+await in (anonymous)
+(anonymous) @ v2-entry-app-5530762f.modern.js:1
+await in (anonymous)
+(anonymous) @ v2-entry-app-5530762f.modern.js:1
+sentryWrapped @ helpers.ts:98
+setTimeout
+(anonymous) @ trycatch.ts:120
+(anonymous) @ v2-entry-app-5530762f.modern.js:1
+(anonymous) @ v2-entry.modern.js:1
+sentryWrapped @ helpers.ts:98
+setTimeout
+(anonymous) @ trycatch.ts:120
+c @ v2-entry.modern.js:1
+i @ v2-entry.modern.js:1
+g @ v2-entry-app-5530762f.modern.js:1
+(anonymous) @ v2-entry-BuyerProtectWrapper-2a165596.modern.js:1
+s @ v2-entry-4183ea99.modern.js:1
+(anonymous) @ v2-entry-4183ea99.modern.js:1
+Vt @ v2-entry-4183ea99.modern.js:1
+o @ v2-entry-4183ea99.modern.js:1
+(anonymous) @ v2-entry-4183ea99.modern.js:1
+Promise.then
+ln @ v2-entry-4183ea99.modern.js:1
+C @ v2-entry-app-5530762f.modern.js:1
+S @ v2-entry-app-5530762f.modern.js:1
+_n @ v2-entry-4183ea99.modern.js:1
+O @ v2-entry-app-5530762f.modern.js:1
+_ @ v2-entry-app-5530762f.modern.js:1
+_n @ v2-entry-4183ea99.modern.js:1
+h @ v2-entry-app-5530762f.modern.js:1
+oe @ v2-entry-app-5530762f.modern.js:1
+p @ v2-entry-app-5530762f.modern.js:1
+p @ v2-entry-app-5530762f.modern.js:1
+Kt @ v2-entry-4183ea99.modern.js:1
+Vt @ v2-entry-4183ea99.modern.js:1
+Promise.then
+Bt @ v2-entry-4183ea99.modern.js:1
+(anonymous) @ v2-entry-4183ea99.modern.js:1
+(anonymous) @ v2-entry-4183ea99.modern.js:1
+(anonymous) @ v2-entry-app-5530762f.modern.js:1
+(anonymous) @ v2-entry.modern.js:1
+r @ v2-entry.modern.js:1
+(anonymous) @ v2-entry-50a8d3b0.modern.js:1
+_ @ v2-entry-50a8d3b0.modern.js:1
+v @ v2-entry-50a8d3b0.modern.js:1
+await in v
+st @ v2-entry-app-5530762f.modern.js:1
+Vn @ v2-entry-app-5530762f.modern.js:1
+_n @ v2-entry-4183ea99.modern.js:1
+Hn @ v2-entry-app-5530762f.modern.js:1
+(anonymous) @ v2-entry-app-5530762f.modern.js:1
+Promise.then
+h @ v2-entry-app-5530762f.modern.js:1
+(anonymous) @ v2-entry.modern.js:1
+Promise.then
+p @ v2-entry.modern.js:1
+(anonymous) @ v2-entry.modern.js:1
+Promise.finally
+u @ v2-entry.modern.js:1
+(anonymous) @ v2-entry.modern.js:1
+n @ v2-entry.modern.js:1
+(anonymous) @ v2-entry.modern.js:1Understand this error
+index-DMmVRv1K.js:531 ⚠️ Modal timeout - no response in 5 seconds
+(anonymous) @ index-DMmVRv1K.js:531
+setTimeout
+executePayment @ index-DMmVRv1K.js:531
+T @ index-DMmVRv1K.js:531
+await in T
+c3 @ index-DMmVRv1K.js:37
+d3 @ index-DMmVRv1K.js:37
+f3 @ index-DMmVRv1K.js:37
+J1 @ index-DMmVRv1K.js:37
+aT @ index-DMmVRv1K.js:37
+(anonymous) @ index-DMmVRv1K.js:37
+sw @ index-DMmVRv1K.js:40
+AA @ index-DMmVRv1K.js:37
+nv @ index-DMmVRv1K.js:37
+$b @ index-DMmVRv1K.js:37
+A3 @ index-DMmVRv1K.js:37Understand this warning
+index-DMmVRv1K.js:531 Wallet page debug: {pseudoParam: null, pseudoQuery: '', userIdentifier: '44064328', queryKey: '/api/corporate/business-units', businessUnits: Array(6), …}

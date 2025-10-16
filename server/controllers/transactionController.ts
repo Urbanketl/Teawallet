@@ -278,6 +278,10 @@ export async function createPaymentLinkForWallet(req: any, res: Response) {
 
 export async function verifyPaymentLinkAndAddFunds(req: any, res: Response) {
   try {
+    console.log('=== PAYMENT LINK VERIFICATION REQUEST RECEIVED ===');
+    console.log('User authenticated:', !!req.user);
+    console.log('User object:', req.user);
+    
     const userId = req.user.id;
     const { razorpay_payment_link_id, razorpay_payment_id, razorpay_signature, amount, businessUnitId } = req.body;
 

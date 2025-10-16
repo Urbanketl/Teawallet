@@ -51,6 +51,14 @@ export default function PaymentCallback() {
         }
 
         // Verify payment link
+        console.log('Calling verify-payment-link API with:', {
+          razorpay_payment_link_id,
+          razorpay_payment_id,
+          razorpay_signature,
+          amount,
+          businessUnitId,
+        });
+        
         const verifyRes = await apiRequest("POST", "/api/wallet/verify-payment-link", {
           razorpay_payment_link_id,
           razorpay_payment_id,
@@ -58,6 +66,9 @@ export default function PaymentCallback() {
           amount,
           businessUnitId,
         });
+
+        console.log('Verify API response status:', verifyRes.status);
+        console.log('Verify API response ok:', verifyRes.ok);
 
         if (verifyRes.ok) {
           const result = await verifyRes.json();
@@ -89,7 +100,9 @@ export default function PaymentCallback() {
             setLocation('/wallet');
           }, 2000);
         } else {
-          throw new Error("Payment verification failed");
+          const errorText = await verifyRes.text();
+          console.error('Verify API failed. Status:', verifyRes.status, 'Response:', errorText);
+          throw new Error(`Payment verification failed: ${verifyRes.status} - ${errorText}`);
         }
       } catch (error: any) {
         console.error("Payment callback error:", error);

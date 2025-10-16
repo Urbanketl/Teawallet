@@ -37,6 +37,23 @@ app.get('/tea-machine-simulator', (req, res) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// CORS and Security Headers for Razorpay compatibility
+app.use((req, res, next) => {
+  // Allow Razorpay to access necessary headers
+  res.setHeader('Access-Control-Expose-Headers', 'x-rtb-fingerprint-id');
+  
+  // Allow credentials for session management
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  
+  // Set origin based on request
+  const origin = req.headers.origin;
+  if (origin && (origin.includes('ukteawallet.com') || origin.includes('replit.dev'))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  
+  next();
+});
+
 // Serve static files from client/public directory
 app.use(express.static(path.join(__dirname, '../client/public')));
 

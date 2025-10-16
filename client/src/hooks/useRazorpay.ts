@@ -244,7 +244,7 @@ export function useRazorpay() {
       form.method = 'POST';
       form.action = 'https://api.razorpay.com/v1/checkout/pay';
       
-      // Add form fields
+      // Add form fields for Razorpay Standard Checkout
       const fields = {
         key_id: keyId,
         amount: order.amount.toString(),
@@ -254,13 +254,10 @@ export function useRazorpay() {
         order_id: order.id,
         callback_url: `${window.location.origin}/api/wallet/payment-callback`,
         cancel_url: `${window.location.origin}/wallet`,
-        prefill: {
-          name: userDetails?.name || '',
-          email: userDetails?.email || '',
-        },
-        theme: {
-          color: '#F2A74A',
-        },
+        'prefill[name]': userDetails?.name || '',
+        'prefill[email]': userDetails?.email || '',
+        'prefill[contact]': userDetails?.phone || '',
+        'theme[color]': '#F2A74A',
       };
       
       // Add all fields to form

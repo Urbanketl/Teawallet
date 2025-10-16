@@ -26,11 +26,20 @@ export async function runMigrations() {
   console.log('Migrations path:', migrationsPath);
   
   try {
+    // Check if migrations folder exists
+    const fs = await import('fs');
+    if (!fs.existsSync(migrationsPath)) {
+      console.warn('⚠️ Migrations folder not found, skipping migrations');
+      await pool.end();
+      return;
+    }
+    
     await migrate(db, { migrationsFolder: migrationsPath });
     console.log('✅ Database migrations completed successfully');
   } catch (error) {
     console.error('❌ Migration failed:', error);
-    throw error;
+    console.warn('⚠️ Continuing server startup despite migration failure');
+    // Don't throw - let the server start even if migrations fail
   } finally {
     await pool.end();
   }

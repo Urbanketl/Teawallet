@@ -792,7 +792,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/wallet/verify-payment-link', transactionController.verifyPaymentLinkAndAddFunds);
   
   // Razorpay payment callback handler (receives GET from Razorpay Payment Link)
-  app.get('/wallet/payment-callback', async (req, res) => {
+  // Note: This route must be different from frontend route to avoid conflicts
+  app.get('/api/razorpay-callback', async (req, res) => {
     try {
       console.log('=== RAZORPAY PAYMENT LINK CALLBACK RECEIVED ===');
       console.log('Query params:', req.query);

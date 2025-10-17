@@ -216,12 +216,12 @@ export async function createPaymentLinkForWallet(req: any, res: Response) {
     }
 
     try {
-      // Build callback URL
+      // Build callback URL - use API route to avoid conflict with frontend route
       const baseUrl = process.env.REPLIT_DOMAINS 
         ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
         : `http://localhost:${process.env.PORT || 5000}`;
       
-      const callbackUrl = `${baseUrl}/wallet/payment-callback`;
+      const callbackUrl = `${baseUrl}/api/razorpay-callback`;
       
       // Get user details for prefill
       const user = await storage.getUser(userId);

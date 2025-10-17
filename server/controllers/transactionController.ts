@@ -136,9 +136,15 @@ export async function createPaymentOrder(req: any, res: Response) {
       console.log("Order belongs to:", order.id.startsWith('order_') ? 'Razorpay Order' : 'Unknown');
       
       // Build callback URLs for redirect flow
-      const baseUrl = process.env.REPLIT_DOMAINS 
-        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
-        : `http://localhost:${process.env.PORT || 5000}`;
+      // Prefer custom domain (ukteawallet.com) over default replit.app domain
+      let baseUrl = `http://localhost:${process.env.PORT || 5000}`;
+      
+      if (process.env.REPLIT_DOMAINS) {
+        const domains = process.env.REPLIT_DOMAINS.split(',').map(d => d.trim());
+        const customDomain = domains.find(d => d.includes('ukteawallet.com'));
+        const selectedDomain = customDomain || domains[0];
+        baseUrl = `https://${selectedDomain}`;
+      }
       
       const callbackUrl = `${baseUrl}/wallet/payment-callback`;
       const cancelUrl = `${baseUrl}/wallet`;
@@ -217,11 +223,22 @@ export async function createPaymentLinkForWallet(req: any, res: Response) {
 
     try {
       // Build callback URL - use API route to avoid conflict with frontend route
-      const baseUrl = process.env.REPLIT_DOMAINS 
-        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
-        : `http://localhost:${process.env.PORT || 5000}`;
+      // Prefer custom domain (ukteawallet.com) over default replit.app domain
+      let baseUrl = `http://localhost:${process.env.PORT || 5000}`;
+      
+      if (process.env.REPLIT_DOMAINS) {
+        const domains = process.env.REPLIT_DOMAINS.split(',').map(d => d.trim());
+        // Find custom domain first, otherwise use first domain
+        const customDomain = domains.find(d => d.includes('ukteawallet.com'));
+        const selectedDomain = customDomain || domains[0];
+        baseUrl = `https://${selectedDomain}`;
+      }
       
       const callbackUrl = `${baseUrl}/api/razorpay-callback`;
+      
+      console.log("=== CALLBACK URL CONSTRUCTION ===");
+      console.log("REPLIT_DOMAINS:", process.env.REPLIT_DOMAINS);
+      console.log("Selected callback URL:", callbackUrl);
       
       // Get user details for prefill
       const user = await storage.getUser(userId);

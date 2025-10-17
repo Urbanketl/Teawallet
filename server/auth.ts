@@ -124,10 +124,11 @@ export function validateBusinessUnitAccess(req: any, businessUnitId: string): bo
 
 export function setupAuth(app: Express) {
   const isProduction = process.env.NODE_ENV === "production";
-  const primaryDomain = process.env.REPLIT_DOMAINS?.split(',')[0] || '';
   
-  // Check if we're using the production domain (ukteawallet.com)
-  const isProductionDomain = primaryDomain.includes('ukteawallet.com');
+  // Scan full REPLIT_DOMAINS list for custom domain
+  const domains = process.env.REPLIT_DOMAINS?.split(',').map(d => d.trim()) || [];
+  const customDomain = domains.find(d => d.includes('ukteawallet.com'));
+  const isProductionDomain = !!customDomain;
   
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "urban-ketl-secret-key-dev",
@@ -143,6 +144,13 @@ export function setupAuth(app: Express) {
       ...(isProductionDomain ? { domain: '.ukteawallet.com' } : {}),
     },
   };
+  
+  // Log session configuration for debugging
+  console.log('=== SESSION CONFIGURATION ===');
+  console.log('Available domains:', domains);
+  console.log('Custom domain found:', customDomain || 'none');
+  console.log('Cookie domain:', isProductionDomain ? '.ukteawallet.com' : 'default (host-only)');
+  console.log('Secure cookies:', isProduction || isProductionDomain);
 
   app.set("trust proxy", 1);
   app.use(session(sessionSettings));

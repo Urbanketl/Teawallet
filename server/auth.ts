@@ -123,15 +123,24 @@ export function validateBusinessUnitAccess(req: any, businessUnitId: string): bo
 }
 
 export function setupAuth(app: Express) {
+  const isProduction = process.env.NODE_ENV === "production";
+  const primaryDomain = process.env.REPLIT_DOMAINS?.split(',')[0] || '';
+  
+  // Check if we're using the production domain (ukteawallet.com)
+  const isProductionDomain = primaryDomain.includes('ukteawallet.com');
+  
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "urban-ketl-secret-key-dev",
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      secure: isProduction || isProductionDomain, // Secure cookies for production domain even in dev mode
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: 'lax', // Allow redirects from Razorpay
+      // Set domain to work across www and apex for production domain
+      ...(isProductionDomain ? { domain: '.ukteawallet.com' } : {}),
     },
   };
 

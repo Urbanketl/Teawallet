@@ -315,6 +315,15 @@ export default function WalletPage() {
                   </p>
                 </div>
               )}
+              
+              {!testMode && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>Note:</strong> If you change your mind during payment, simply click your browser's back button to return to this page.
+                  </p>
+                </div>
+              )}
+              
               <div className="grid grid-cols-2 gap-3 mb-6">
                 {quickAmounts.map((amount) => (
                   <Button

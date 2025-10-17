@@ -28,6 +28,14 @@ export function initializeRazorpay() {
   }
 
   if (!razorpayInstance) {
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    const keyMode = keyId?.startsWith('rzp_test_') ? '🧪 TEST MODE' : keyId?.startsWith('rzp_live_') ? '⚡ LIVE MODE' : '❓ UNKNOWN MODE';
+    
+    console.log('=== RAZORPAY INITIALIZATION ===');
+    console.log('Key ID:', keyId);
+    console.log('Mode:', keyMode);
+    console.log('Key ID (first 20 chars):', keyId?.substring(0, 20));
+    
     razorpayInstance = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID,
       key_secret: process.env.RAZORPAY_KEY_SECRET,

@@ -145,7 +145,9 @@ export async function verifyPayment(
 
 export async function verifyPaymentLink(
   paymentLinkId: string,
-  paymentId: string,
+  paymentLinkReferenceId: string,
+  paymentLinkStatus: string,
+  razorpayPaymentId: string,
   signature: string
 ) {
   const razorpay = initializeRazorpay();
@@ -154,11 +156,18 @@ export async function verifyPaymentLink(
     throw new Error("Razorpay not initialized. Please check your credentials.");
   }
 
-  const body = paymentLinkId + "|" + paymentId;
+  // Razorpay payment link signature format: payment_link_id|payment_link_reference_id|payment_link_status|razorpay_payment_id
+  const body = `${paymentLinkId}|${paymentLinkReferenceId}|${paymentLinkStatus}|${razorpayPaymentId}`;
   const expectedSignature = crypto
     .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
     .update(body.toString())
     .digest("hex");
+
+  console.log('=== PAYMENT LINK SIGNATURE VERIFICATION ===');
+  console.log('Body string:', body);
+  console.log('Expected signature:', expectedSignature);
+  console.log('Received signature:', signature);
+  console.log('Match:', expectedSignature === signature);
 
   return expectedSignature === signature;
 }

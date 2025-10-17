@@ -53,6 +53,8 @@ export default function PaymentCallback() {
         // Verify payment link
         console.log('Calling verify-payment-link API with:', {
           razorpay_payment_link_id,
+          razorpay_payment_link_reference_id,
+          razorpay_payment_link_status,
           razorpay_payment_id,
           razorpay_signature,
           amount,
@@ -61,6 +63,8 @@ export default function PaymentCallback() {
         
         const verifyRes = await apiRequest("POST", "/api/wallet/verify-payment-link", {
           razorpay_payment_link_id,
+          razorpay_payment_link_reference_id,
+          razorpay_payment_link_status,
           razorpay_payment_id,
           razorpay_signature,
           amount,

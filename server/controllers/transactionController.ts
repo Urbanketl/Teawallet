@@ -283,13 +283,37 @@ export async function verifyPaymentLinkAndAddFunds(req: any, res: Response) {
     console.log('User authenticated:', !!req.user);
     console.log('User object:', req.user);
     
-    const { razorpay_payment_link_id, razorpay_payment_id, razorpay_signature, amount, businessUnitId, userId } = req.body;
+    const { 
+      razorpay_payment_link_id, 
+      razorpay_payment_link_reference_id,
+      razorpay_payment_link_status,
+      razorpay_payment_id, 
+      razorpay_signature, 
+      amount, 
+      businessUnitId, 
+      userId 
+    } = req.body;
 
     console.log('=== PAYMENT LINK VERIFICATION ===');
     console.log('User ID from request:', userId);
-    console.log('Request body:', { razorpay_payment_link_id, razorpay_payment_id, amount, businessUnitId, userId });
+    console.log('Request body:', { 
+      razorpay_payment_link_id, 
+      razorpay_payment_link_reference_id,
+      razorpay_payment_link_status,
+      razorpay_payment_id, 
+      razorpay_signature,
+      amount, 
+      businessUnitId, 
+      userId 
+    });
 
-    const isValid = await verifyPaymentLink(razorpay_payment_link_id, razorpay_payment_id, razorpay_signature);
+    const isValid = await verifyPaymentLink(
+      razorpay_payment_link_id, 
+      razorpay_payment_link_reference_id,
+      razorpay_payment_link_status,
+      razorpay_payment_id, 
+      razorpay_signature
+    );
 
     if (!isValid) {
       console.error('Payment link signature verification failed');

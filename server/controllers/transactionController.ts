@@ -300,20 +300,39 @@ export async function verifyPaymentLinkAndAddFunds(req: any, res: Response) {
 
     // Handle business unit wallet recharge
     if (businessUnitId) {
+      console.log(`[VERIFICATION STEP 1] Fetching business units for user ${userId}`);
+      
       // Verify user has access to this business unit
       const userBusinessUnits = await storage.getUserBusinessUnits(userId);
+      console.log(`[VERIFICATION STEP 2] User has access to ${userBusinessUnits.length} business units`);
+      
       const businessUnit = userBusinessUnits.find(bu => bu.id === businessUnitId);
       
       if (!businessUnit) {
+        console.error(`[VERIFICATION ERROR] User ${userId} does not have access to business unit ${businessUnitId}`);
         return res.status(403).json({ message: "Access denied to this business unit" });
       }
+      
+      console.log(`[VERIFICATION STEP 3] Business unit found:`, {
+        id: businessUnit.id,
+        name: businessUnit.name,
+        currentBalance: businessUnit.walletBalance
+      });
 
       const maxWalletBalanceStr = await storage.getSystemSetting('max_wallet_balance') || '5000.00';
       const maxWalletBalance = parseFloat(maxWalletBalanceStr);
       const currentBalance = parseFloat(businessUnit.walletBalance || '0');
       const newBalance = currentBalance + amount;
+      
+      console.log(`[VERIFICATION STEP 4] Balance calculation:`, {
+        currentBalance,
+        paymentAmount: amount,
+        newBalance,
+        maxAllowed: maxWalletBalance
+      });
 
       if (newBalance > maxWalletBalance) {
+        console.error(`[VERIFICATION ERROR] Balance would exceed maximum: ${newBalance} > ${maxWalletBalance}`);
         return res.status(400).json({ 
           message: `Cannot recharge ${businessUnit.name}. Maximum wallet balance is ₹${maxWalletBalance}. Current balance: ₹${currentBalance}`,
           maxBalance: maxWalletBalance,
@@ -321,8 +340,12 @@ export async function verifyPaymentLinkAndAddFunds(req: any, res: Response) {
         });
       }
 
+      console.log(`[VERIFICATION STEP 5] Updating wallet balance from ${currentBalance} to ${newBalance}`);
+      
       // Add funds to business unit wallet
       const updatedBusinessUnit = await storage.updateBusinessUnitWallet(businessUnitId, newBalance.toString());
+      
+      console.log(`[VERIFICATION STEP 6] Wallet updated successfully. Now creating transaction record...`);
       
       // Create transaction record for business unit
       try {
@@ -335,10 +358,10 @@ export async function verifyPaymentLinkAndAddFunds(req: any, res: Response) {
           status: 'completed',
           razorpayPaymentId: razorpay_payment_id,
         });
-        console.log('Transaction created successfully:', transaction);
+        console.log('[VERIFICATION STEP 7] Transaction created successfully:', transaction);
       } catch (txnError) {
-        console.error('ERROR creating transaction record:', txnError);
-        console.error('Transaction data that failed:', {
+        console.error('[VERIFICATION ERROR] ERROR creating transaction record:', txnError);
+        console.error('[VERIFICATION ERROR] Transaction data that failed:', {
           userId,
           businessUnitId,
           type: 'recharge',
@@ -350,7 +373,7 @@ export async function verifyPaymentLinkAndAddFunds(req: any, res: Response) {
         // Don't throw - wallet is already updated, just log the error
       }
 
-      console.log(`Payment successful: ₹${amount} added to ${businessUnit.name}`);
+      console.log(`[VERIFICATION COMPLETE] Payment successful: ₹${amount} added to ${businessUnit.name}`);
       
       res.json({ 
         message: `Payment verified and ₹${amount} added to ${businessUnit.name} wallet successfully`,

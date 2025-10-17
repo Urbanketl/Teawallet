@@ -1112,11 +1112,39 @@ export class DatabaseStorage implements IStorage {
 
   // Transaction operations
   async createTransaction(transaction: InsertTransaction): Promise<Transaction> {
-    const [txn] = await db
-      .insert(transactions)
-      .values(transaction)
-      .returning();
-    return txn;
+    console.log(`[DB INSERT] Creating transaction:`, {
+      userId: transaction.userId,
+      businessUnitId: transaction.businessUnitId,
+      type: transaction.type,
+      amount: transaction.amount,
+      description: transaction.description,
+      status: transaction.status,
+      method: transaction.method,
+      razorpayPaymentId: transaction.razorpayPaymentId,
+      rfidCardId: transaction.rfidCardId
+    });
+    
+    try {
+      const [txn] = await db
+        .insert(transactions)
+        .values(transaction)
+        .returning();
+      
+      console.log(`[DB INSERT SUCCESS] Transaction created:`, {
+        id: txn.id,
+        userId: txn.userId,
+        businessUnitId: txn.businessUnitId,
+        amount: txn.amount,
+        type: txn.type,
+        status: txn.status
+      });
+      
+      return txn;
+    } catch (error) {
+      console.error(`[DB INSERT ERROR] Failed to create transaction:`, error);
+      console.error(`[DB INSERT ERROR] Transaction data that failed:`, transaction);
+      throw error;
+    }
   }
 
   async getUserTransactions(userId: string, limit = 50): Promise<Transaction[]> {

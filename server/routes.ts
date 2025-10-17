@@ -799,9 +799,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const { razorpay_payment_id, razorpay_payment_link_id, razorpay_payment_link_reference_id, razorpay_payment_link_status, razorpay_signature } = req.query;
       
-      // Payment link sends these params in GET request
-      // Just serve the frontend page - it will handle verification
-      res.sendFile('index.html', { root: path.join(__dirname, 'public') });
+      // Redirect to frontend route with query params - Vite SPA will handle it
+      const queryString = new URLSearchParams(req.query as any).toString();
+      res.redirect(`/wallet/payment-callback?${queryString}`);
     } catch (error) {
       console.error('Payment callback error:', error);
       res.redirect('/wallet?payment_error=true');

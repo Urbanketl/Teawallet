@@ -1,4 +1,5 @@
 import Razorpay from "razorpay";
+import crypto from "crypto";
 
 let razorpayInstance: Razorpay | null = null;
 
@@ -133,7 +134,6 @@ export async function verifyPayment(
     throw new Error("Razorpay not initialized. Please check your credentials.");
   }
 
-  const crypto = require("crypto");
   const body = orderId + "|" + paymentId;
   const expectedSignature = crypto
     .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
@@ -154,7 +154,6 @@ export async function verifyPaymentLink(
     throw new Error("Razorpay not initialized. Please check your credentials.");
   }
 
-  const crypto = require("crypto");
   const body = paymentLinkId + "|" + paymentId;
   const expectedSignature = crypto
     .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)

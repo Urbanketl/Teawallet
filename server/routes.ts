@@ -19,9 +19,8 @@ import { requireAdmin as requireAdminAuth } from "./auth";
 import * as transactionController from "./controllers/transactionController";
 import { registerCorporateRoutes } from "./routes/corporateRoutes";
 import { registerRechargeRoutes } from "./routes/rechargeRoutes";
-import { machineSyncController } from "./controllers/machineSyncController";
+import { monitoringController } from "./controllers/monitoringController";
 import { ChallengeResponseController } from "./controllers/challengeResponseController";
-import { AutoSyncController } from "./controllers/autoSyncController";
 import { upiSyncController } from "./controllers/upiSyncController";
 import { notificationScheduler } from "./services/notificationScheduler";
 import { timeoutMiddleware, TIMEOUT_CONFIGS } from "./middleware/timeoutMiddleware";
@@ -2081,44 +2080,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // **Phase 2: Machine Sync Dashboard API Routes**
+  // **Monitoring API Routes**
   
-  // Get all machines sync status (Admin only)
-  app.get('/api/admin/sync/machines', isAuthenticated, requireAdminAuth, machineSyncController.getAllMachineStatus.bind(machineSyncController));
+  // Get RFID authentication logs (Admin only)
+  app.get('/api/admin/sync/auth-logs', isAuthenticated, requireAdminAuth, monitoringController.getAuthLogs.bind(monitoringController));
   
-  // Get specific machine sync status
-  app.get('/api/admin/sync/machines/:machineId', isAuthenticated, requireAdminAuth, machineSyncController.getMachineStatus.bind(machineSyncController));
-  
-  // Trigger manual sync for specific machine
-  app.post('/api/admin/sync/machines/:machineId', isAuthenticated, requireAdminAuth, machineSyncController.syncMachineCards.bind(machineSyncController));
-  
-  // Bulk sync all machines
-  app.post('/api/admin/sync/bulk', isAuthenticated, requireAdminAuth, machineSyncController.bulkSyncMachines.bind(machineSyncController));
-  
-  // Get sync logs
-  app.get('/api/admin/sync/logs', isAuthenticated, requireAdminAuth, machineSyncController.getSyncLogs.bind(machineSyncController));
-  
-  // Get RFID authentication logs
-  app.get('/api/admin/sync/auth-logs', isAuthenticated, requireAdminAuth, machineSyncController.getAuthLogs.bind(machineSyncController));
-  
-  // Machine heartbeat endpoint for sync monitoring (no auth required - used by machines)
-  app.post('/api/sync/heartbeat', machineSyncController.heartbeat.bind(machineSyncController));
-
-  // ========== PHASE 3: AUTO-SYNC SYSTEM ROUTES ==========
-  const autoSyncController = new AutoSyncController();
-  
-  // Auto-sync service management (Admin only)
-  app.post('/api/admin/auto-sync/start', isAuthenticated, requireAdminAuth, autoSyncController.startAutoSync.bind(autoSyncController));
-  app.post('/api/admin/auto-sync/stop', isAuthenticated, requireAdminAuth, autoSyncController.stopAutoSync.bind(autoSyncController));
-  app.get('/api/admin/auto-sync/status', isAuthenticated, requireAdminAuth, autoSyncController.getSyncStatus.bind(autoSyncController));
-  
-  // Manual sync triggers (Admin only)
-  app.post('/api/admin/auto-sync/trigger/:machineId', isAuthenticated, requireAdminAuth, autoSyncController.triggerMachineSync.bind(autoSyncController));
-  app.post('/api/admin/auto-sync/trigger-bulk', isAuthenticated, requireAdminAuth, autoSyncController.triggerBulkSync.bind(autoSyncController));
-  
-  // Sync logs and statistics (Admin only)
-  app.get('/api/admin/auto-sync/logs', isAuthenticated, requireAdminAuth, autoSyncController.getSyncLogs.bind(autoSyncController));
-  app.get('/api/admin/auto-sync/stats', isAuthenticated, requireAdminAuth, autoSyncController.getSyncStats.bind(autoSyncController));
+  // Machine heartbeat endpoint (no auth required - used by machines)
+  app.post('/api/sync/heartbeat', monitoringController.heartbeat.bind(monitoringController));
 
   // ========== PHASE 4: CHALLENGE-RESPONSE AUTHENTICATION ROUTES ==========
   const challengeResponseController = new ChallengeResponseController();

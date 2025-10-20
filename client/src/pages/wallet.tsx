@@ -57,7 +57,9 @@ export default function WalletPage() {
     queryKey: businessUnitsQueryKey,
     businessUnits,
     unitsLoading,
-    user
+    user,
+    testMode,
+    shouldShowInfoMessage: !testMode
   });
 
   // Auto-select first business unit if user has only one
@@ -317,7 +319,7 @@ export default function WalletPage() {
               )}
               
               {!testMode && (
-                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg" data-testid="info-payment-cancel">
                   <p className="text-sm text-blue-800">
                     <strong>Note:</strong> If you change your mind during payment, simply click your browser's back button to return to this page.
                   </p>

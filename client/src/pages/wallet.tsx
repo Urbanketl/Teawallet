@@ -10,9 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { Wallet, Plus, IndianRupee, Building2, FlaskConical } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Wallet, Plus, IndianRupee, Building2 } from "lucide-react";
 
 export default function WalletPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -20,8 +18,6 @@ export default function WalletPage() {
   const { preparePayment, executePayment, preparing, loading } = useRazorpay();
   const [customAmount, setCustomAmount] = useState("");
   const [selectedBusinessUnitId, setSelectedBusinessUnitId] = useState<string>("");
-  const [testMode, setTestMode] = useState(false);
-  const [testLoading, setTestLoading] = useState(false);
 
   // Get pseudo parameter for business units query
   const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
@@ -57,9 +53,7 @@ export default function WalletPage() {
     queryKey: businessUnitsQueryKey,
     businessUnits,
     unitsLoading,
-    user,
-    testMode,
-    shouldShowInfoMessage: !testMode
+    user
   });
 
   // Auto-select first business unit if user has only one
@@ -104,55 +98,15 @@ export default function WalletPage() {
       return;
     }
 
-    // Test mode: bypass Razorpay
-    if (testMode) {
-      try {
-        setTestLoading(true);
-        const res = await apiRequest("POST", "/api/wallet/test-payment", {
-          amount,
-          businessUnitId: selectedBusinessUnitId,
-        });
-        const result = await res.json();
-        
-        if (result.success) {
-          toast({
-            title: "Test Payment Successful! ✅",
-            description: result.message,
-          });
-          
-          // Refresh data
-          await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
-          await queryClient.refetchQueries({ 
-            predicate: (query) => {
-              const key = query.queryKey[0];
-              return typeof key === 'string' && key.startsWith('/api/corporate/business-units');
-            }
-          });
-        } else {
-          throw new Error(result.message || "Test payment failed");
-        }
-      } catch (error: any) {
-        toast({
-          title: "Test Payment Failed",
-          description: error.message || "Failed to process test payment",
-          variant: "destructive",
-        });
-      } finally {
-        setTestLoading(false);
-      }
-      return;
-    }
-
-    // Normal Razorpay flow - prepare and execute synchronously
+    // Razorpay payment flow
     try {
       const prepared = await preparePayment(amount, selectedBusinessUnitId, {
         name: `${user.firstName} ${user.lastName}`.trim(),
         email: user.email || "",
-        userId: user.id,  // Include userId for verification without auth session
+        userId: user.id,
       });
 
       if (prepared) {
-        // 🚀 Pass order directly to maintain user gesture chain
         executePayment(prepared);
       }
     } catch (err) {
@@ -180,57 +134,15 @@ export default function WalletPage() {
       return;
     }
     
-    // Test mode: bypass Razorpay
-    if (testMode) {
-      try {
-        setTestLoading(true);
-        const res = await apiRequest("POST", "/api/wallet/test-payment", {
-          amount,
-          businessUnitId: selectedBusinessUnitId,
-        });
-        const result = await res.json();
-        
-        if (result.success) {
-          toast({
-            title: "Test Payment Successful! ✅",
-            description: result.message,
-          });
-          
-          // Refresh data
-          await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
-          await queryClient.refetchQueries({ 
-            predicate: (query) => {
-              const key = query.queryKey[0];
-              return typeof key === 'string' && key.startsWith('/api/corporate/business-units');
-            }
-          });
-          
-          setCustomAmount("");
-        } else {
-          throw new Error(result.message || "Test payment failed");
-        }
-      } catch (error: any) {
-        toast({
-          title: "Test Payment Failed",
-          description: error.message || "Failed to process test payment",
-          variant: "destructive",
-        });
-      } finally {
-        setTestLoading(false);
-      }
-      return;
-    }
-    
-    // Normal Razorpay flow - prepare and execute synchronously
+    // Razorpay payment flow
     try {
       const prepared = await preparePayment(amount, selectedBusinessUnitId, {
         name: `${user.firstName} ${user.lastName}`.trim(),
         email: user.email || "",
-        userId: user.id,  // Include userId for verification without auth session
+        userId: user.id,
       });
 
       if (prepared) {
-        // 🚀 Pass order directly to maintain user gesture chain
         executePayment(prepared);
         setCustomAmount("");
       }
@@ -289,42 +201,17 @@ export default function WalletPage() {
           {/* Quick Recharge */}
           <Card className="shadow-material">
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Plus className="w-5 h-5 text-tea-green" />
-                  <span>Quick Recharge</span>
-                </div>
-                <div className="flex items-center space-x-2 text-sm font-normal text-gray-600">
-                  <FlaskConical className="w-4 h-4" />
-                  <span>Test Mode</span>
-                  <Switch
-                    checked={testMode}
-                    onCheckedChange={setTestMode}
-                    data-testid="switch-test-mode"
-                  />
-                </div>
+              <CardTitle className="flex items-center space-x-2">
+                <Plus className="w-5 h-5 text-tea-green" />
+                <span>Quick Recharge</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {testMode && (
-                <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <div className="flex items-center space-x-2 text-amber-800">
-                    <FlaskConical className="w-4 h-4" />
-                    <span className="text-sm font-medium">Development Mode Active</span>
-                  </div>
-                  <p className="text-xs text-amber-700 mt-1">
-                    Payments will be simulated without Razorpay for testing purposes
-                  </p>
-                </div>
-              )}
-              
-              {!testMode && (
-                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg" data-testid="info-payment-cancel">
-                  <p className="text-sm text-blue-800">
-                    <strong>Note:</strong> If you change your mind during payment, simply click your browser's back button to return to this page.
-                  </p>
-                </div>
-              )}
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg" data-testid="info-payment-cancel">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> If you change your mind during payment, simply click your browser's back button to return to this page.
+                </p>
+              </div>
               
               <div className="grid grid-cols-2 gap-3 mb-6">
                 {quickAmounts.map((amount) => (
@@ -333,7 +220,8 @@ export default function WalletPage() {
                     variant="outline"
                     className="h-12 text-lg hover:bg-tea-green hover:text-white hover:border-tea-green"
                     onClick={() => handleQuickRecharge(amount)}
-                    disabled={loading || testLoading || businessUnits.length === 0 || (businessUnits.length > 1 && !selectedBusinessUnitId)}
+                    disabled={loading || businessUnits.length === 0 || (businessUnits.length > 1 && !selectedBusinessUnitId)}
+                    data-testid={`button-recharge-${amount}`}
                   >
                     ₹{amount}
                   </Button>
@@ -407,11 +295,11 @@ export default function WalletPage() {
                 <Button
                   className="w-full bg-tea-green hover:bg-tea-dark"
                   onClick={handleCustomRecharge}
-                  disabled={preparing || loading || testLoading || !customAmount || businessUnits.length === 0 || (businessUnits.length > 1 && !selectedBusinessUnitId)}
+                  disabled={preparing || loading || !customAmount || businessUnits.length === 0 || (businessUnits.length > 1 && !selectedBusinessUnitId)}
                   data-testid="button-custom-recharge"
                 >
-                  {testLoading ? "Processing Test..." : preparing ? "Preparing..." : loading ? "Processing..." : selectedBusinessUnitId ? 
-                    `${testMode ? 'Test ' : ''}Recharge ${businessUnits.find((bu: any) => bu.id === selectedBusinessUnitId)?.name || 'Business Unit'}` : 
+                  {preparing ? "Preparing..." : loading ? "Processing..." : selectedBusinessUnitId ? 
+                    `Recharge ${businessUnits.find((bu: any) => bu.id === selectedBusinessUnitId)?.name || 'Business Unit'}` : 
                     "Recharge Wallet"
                   }
                 </Button>

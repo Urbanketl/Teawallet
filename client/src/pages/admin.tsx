@@ -62,7 +62,7 @@ import { format } from "date-fns";
 import Pagination from "@/components/Pagination";
 import { BusinessUnitsTab } from "@/components/BusinessUnitsTab";
 import { PseudoLogin } from "@/components/PseudoLogin";
-import MachineSyncDashboard from "./machine-sync-dashboard";
+import AuthUpiLogs from "./auth-upi-logs";
 import type { User } from "@shared/schema";
 
 function AdminReports() {
@@ -1771,7 +1771,7 @@ export default function AdminPage() {
                       : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                   }`}
                 >
-                  🔄 Machine Sync
+                  🔒 Auth & UPI Logs
                 </button>
                 <button 
                   onClick={() => setCurrentTab("reports")}
@@ -2567,7 +2567,7 @@ export default function AdminPage() {
           {currentTab === "faq" && <FaqManagement />}
 
           {currentTab === "machine-sync" && (
-            <MachineSyncDashboard />
+            <AuthUpiLogs />
           )}
         </div>
       </main>

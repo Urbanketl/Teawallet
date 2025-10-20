@@ -226,19 +226,6 @@ export const businessUnitTransfers = pgTable("business_unit_transfers", {
   assetsTransferred: jsonb("assets_transferred"), // snapshot of assets at transfer time
 });
 
-// Machine Sync Logs - Track all sync operations
-export const machineSyncLogs = pgTable("machine_sync_logs", {
-  id: serial("id").primaryKey(),
-  machineId: varchar("machine_id").notNull().references(() => teaMachines.id),
-  syncType: varchar("sync_type").notNull(), // 'initial', 'update', 'heartbeat', 'bulk'
-  dataPushed: jsonb("data_pushed"), // What data was sent
-  syncStatus: varchar("sync_status").notNull(), // 'success', 'failed', 'partial'
-  errorMessage: text("error_message"),
-  responseTime: integer("response_time"), // milliseconds
-  cardsUpdated: integer("cards_updated").default(0),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
 // UPI Sync Logs - Track all UPI transaction sync operations
 export const upiSyncLogs = pgTable("upi_sync_logs", {
   id: serial("id").primaryKey(),
@@ -310,13 +297,8 @@ export const rfidCardsRelations = relations(rfidCards, ({ one, many }) => ({
 export const teaMachinesRelations = relations(teaMachines, ({ one, many }) => ({
   businessUnit: one(businessUnits, { fields: [teaMachines.businessUnitId], references: [businessUnits.id] }),
   dispensingLogs: many(dispensingLogs),
-  syncLogs: many(machineSyncLogs),
   certificate: one(machineCertificates, { fields: [teaMachines.id], references: [machineCertificates.machineId] }),
   authLogs: many(rfidAuthLogs),
-}));
-
-export const machineSyncLogsRelations = relations(machineSyncLogs, ({ one }) => ({
-  machine: one(teaMachines, { fields: [machineSyncLogs.machineId], references: [teaMachines.id] }),
 }));
 
 export const machineCertificatesRelations = relations(machineCertificates, ({ one }) => ({
@@ -446,11 +428,6 @@ export const insertBusinessUnitTransferSchema = createInsertSchema(businessUnitT
   transferDate: true,
 });
 
-export const insertMachineSyncLogSchema = createInsertSchema(machineSyncLogs).omit({
-  id: true,
-  createdAt: true,
-});
-
 export const insertMachineCertificateSchema = createInsertSchema(machineCertificates).omit({
   createdAt: true,
 });
@@ -493,8 +470,6 @@ export type SystemSetting = typeof systemSettings.$inferSelect;
 export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
 export type BusinessUnitTransfer = typeof businessUnitTransfers.$inferSelect;
 export type InsertBusinessUnitTransfer = z.infer<typeof insertBusinessUnitTransferSchema>;
-export type MachineSyncLog = typeof machineSyncLogs.$inferSelect;
-export type InsertMachineSyncLog = z.infer<typeof insertMachineSyncLogSchema>;
 export type MachineCertificate = typeof machineCertificates.$inferSelect;
 export type InsertMachineCertificate = z.infer<typeof insertMachineCertificateSchema>;
 export type RfidAuthLog = typeof rfidAuthLogs.$inferSelect;

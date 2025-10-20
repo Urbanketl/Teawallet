@@ -2,7 +2,7 @@ import { db, pool } from "./db";
 import { 
   users, businessUnits, userBusinessUnits, rfidCards, transactions, dispensingLogs, teaMachines,
   referrals, supportTickets, supportMessages, ticketStatusHistory, faqArticles, systemSettings,
-  businessUnitTransfers, emailLogs, notificationPreferences, machineSyncLogs, machineCertificates, rfidAuthLogs,
+  businessUnitTransfers, emailLogs, notificationPreferences, machineCertificates, rfidAuthLogs,
   type User, type UpsertUser, type BusinessUnit, type InsertBusinessUnit,
   type UserBusinessUnit, type InsertUserBusinessUnit, type RfidCard, type InsertRfidCard,
   type Transaction, type InsertTransaction, type DispensingLog, type InsertDispensingLog,
@@ -12,7 +12,7 @@ import {
   type TicketStatusHistory, type InsertTicketStatusHistory, type SystemSetting,
   type BusinessUnitTransfer, type InsertBusinessUnitTransfer,
   type EmailLog, type InsertEmailLog, type NotificationPreference, type InsertNotificationPreference,
-  type MachineSyncLog, type InsertMachineSyncLog, type MachineCertificate, type InsertMachineCertificate,
+  type MachineCertificate, type InsertMachineCertificate,
   type RfidAuthLog, type InsertRfidAuthLog
 } from "@shared/schema";
 import { eq, and, desc, asc, sql, gte, lte, or, ilike, inArray, isNotNull, isNull } from "drizzle-orm";
@@ -75,16 +75,6 @@ export interface IStorage {
     hardwareUid: string;
     aesKeyEncrypted: string;
   }): Promise<RfidCard>;
-  getCardsForMachineSync(businessUnitId: string): Promise<{
-    businessUnit: string;
-    cards: {
-      cardNumber: string;
-      hardwareUid: string | null;
-      aesKeyEncrypted: string | null;
-      cardType: string | null;
-      isActive: boolean | null;
-    }[];
-  }>;
   
   // Machine operations
   getBusinessUnitMachines(businessUnitId: string): Promise<TeaMachine[]>;
@@ -96,38 +86,10 @@ export interface IStorage {
   updateMachinePing(machineId: string): Promise<void>;
   updateMachineStatus(machineId: string, isActive: boolean): Promise<void>;
   
-  // Machine sync operations
-  updateMachineSync(machineId: string, syncData: {
-    syncStatus: string;
-    cardsCount: number;
-    lastSync: Date;
-    ipAddress?: string;
-  }): Promise<void>;
-  getMachineStatus(machineId: string): Promise<{
-    machine: TeaMachine;
-    syncStatus: string;
-    lastSync: Date | null;
-    cardsCount: number;
-    lastPing: Date | null;
-  } | undefined>;
-  getAllMachineStatus(): Promise<Array<{
-    machine: TeaMachine;
-    businessUnitName: string | null;
-    syncStatus: string;
-    lastSync: Date | null;
-    cardsCount: number;
-    isOnline: boolean;
-  }>>;
-  
   // Machine certificate operations
   createMachineCertificate(cert: InsertMachineCertificate): Promise<MachineCertificate>;
   getMachineCertificate(machineId: string): Promise<MachineCertificate | undefined>;
   updateMachineAuthentication(machineId: string): Promise<void>;
-  
-  // Sync logging
-  createSyncLog(log: InsertMachineSyncLog): Promise<MachineSyncLog>;
-  getMachineSyncLogs(machineId: string, limit?: number): Promise<MachineSyncLog[]>;
-  getAllSyncLogs(limit?: number): Promise<Array<MachineSyncLog & { machineName: string }>>;
   
   // RFID authentication logging
   createRfidAuthLog(log: InsertRfidAuthLog): Promise<RfidAuthLog>;
@@ -3777,107 +3739,6 @@ export class DatabaseStorage implements IStorage {
     return card;
   }
 
-  async getCardsForMachineSync(businessUnitId: string): Promise<{
-    businessUnit: string;
-    cards: {
-      cardNumber: string;
-      hardwareUid: string | null;
-      aesKeyEncrypted: string | null;
-      cardType: string | null;
-      isActive: boolean | null;
-    }[];
-  }> {
-    const [businessUnit] = await db
-      .select({ name: businessUnits.name })
-      .from(businessUnits)
-      .where(eq(businessUnits.id, businessUnitId));
-
-    const cards = await db
-      .select({
-        cardNumber: rfidCards.cardNumber,
-        hardwareUid: rfidCards.hardwareUid,
-        aesKeyEncrypted: rfidCards.aesKeyEncrypted,
-        cardType: rfidCards.cardType,
-        isActive: rfidCards.isActive
-      })
-      .from(rfidCards)
-      .where(eq(rfidCards.businessUnitId, businessUnitId));
-
-    return {
-      businessUnit: businessUnit?.name || "Unknown",
-      cards
-    };
-  }
-
-  // Machine sync operations
-  async updateMachineSync(machineId: string, syncData: {
-    syncStatus: string;
-    cardsCount: number;
-    lastSync: Date;
-    ipAddress?: string;
-  }): Promise<void> {
-    await db
-      .update(teaMachines)
-      .set({
-        syncStatus: syncData.syncStatus,
-        cardsCount: syncData.cardsCount,
-        lastSync: syncData.lastSync,
-        ipAddress: syncData.ipAddress
-      })
-      .where(eq(teaMachines.id, machineId));
-  }
-
-  async getMachineStatus(machineId: string): Promise<{
-    machine: TeaMachine;
-    syncStatus: string;
-    lastSync: Date | null;
-    cardsCount: number;
-    lastPing: Date | null;
-  } | undefined> {
-    const [machine] = await db
-      .select()
-      .from(teaMachines)
-      .where(eq(teaMachines.id, machineId));
-
-    if (!machine) return undefined;
-
-    return {
-      machine,
-      syncStatus: machine.syncStatus || 'pending',
-      lastSync: machine.lastSync,
-      cardsCount: machine.cardsCount || 0,
-      lastPing: machine.lastPing
-    };
-  }
-
-  async getAllMachineStatus(): Promise<Array<{
-    machine: TeaMachine;
-    businessUnitName: string | null;
-    syncStatus: string;
-    lastSync: Date | null;
-    cardsCount: number;
-    isOnline: boolean;
-  }>> {
-    const machines = await db
-      .select({
-        machine: teaMachines,
-        businessUnitName: businessUnits.name
-      })
-      .from(teaMachines)
-      .leftJoin(businessUnits, eq(teaMachines.businessUnitId, businessUnits.id))
-      .orderBy(teaMachines.name);
-
-    return machines.map(row => ({
-      machine: row.machine,
-      businessUnitName: row.businessUnitName,
-      syncStatus: row.machine.syncStatus || 'pending',
-      lastSync: row.machine.lastSync,
-      cardsCount: row.machine.cardsCount || 0,
-      isOnline: !!(row.machine.lastPing && 
-        (new Date().getTime() - new Date(row.machine.lastPing).getTime()) < 300000) // 5 minutes
-    }));
-  }
-
   // Machine certificate operations
   async createMachineCertificate(cert: InsertMachineCertificate): Promise<MachineCertificate> {
     const [certificate] = await db
@@ -3900,41 +3761,6 @@ export class DatabaseStorage implements IStorage {
       .update(machineCertificates)
       .set({ lastAuthentication: new Date() })
       .where(eq(machineCertificates.machineId, machineId));
-  }
-
-  // Sync logging
-  async createSyncLog(log: InsertMachineSyncLog): Promise<MachineSyncLog> {
-    const [syncLog] = await db
-      .insert(machineSyncLogs)
-      .values(log)
-      .returning();
-    return syncLog;
-  }
-
-  async getMachineSyncLogs(machineId: string, limit: number = 50): Promise<MachineSyncLog[]> {
-    return await db
-      .select()
-      .from(machineSyncLogs)
-      .where(eq(machineSyncLogs.machineId, machineId))
-      .orderBy(desc(machineSyncLogs.createdAt))
-      .limit(limit);
-  }
-
-  async getAllSyncLogs(limit: number = 100): Promise<Array<MachineSyncLog & { machineName: string }>> {
-    const logs = await db
-      .select({
-        syncLog: machineSyncLogs,
-        machineName: teaMachines.name
-      })
-      .from(machineSyncLogs)
-      .innerJoin(teaMachines, eq(machineSyncLogs.machineId, teaMachines.id))
-      .orderBy(desc(machineSyncLogs.createdAt))
-      .limit(limit);
-
-    return logs.map(row => ({
-      ...row.syncLog,
-      machineName: row.machineName
-    }));
   }
 
   // RFID authentication logging

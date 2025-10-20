@@ -5,7 +5,6 @@ import { fileURLToPath } from "url";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeServices } from "./services";
-import { autoSyncService } from "./services/autoSyncService";
 import { challengeResponseService } from "./services/challengeResponseService";
 import { upiSyncService } from "./services/upiSyncService";
 import { runMigrations } from "./migrate";
@@ -103,18 +102,10 @@ app.use((req, res, next) => {
     // Initialize background services (email notifications, etc.)
     initializeServices();
     
-    // Initialize Phase 3 & 4 services
+    // Initialize background services
     console.log('Initializing UrbanKetl services...');
     
-    // Start Auto-Sync Service (Phase 3)
-    try {
-      await autoSyncService.startAutoSync();
-      console.log('✅ Auto-Sync Service started successfully');
-    } catch (error) {
-      console.error('❌ Failed to start Auto-Sync Service:', error);
-    }
-    
-    // Start UPI Sync Service (Phase 5)
+    // Start UPI Sync Service
     try {
       await upiSyncService.startDailySync();
       console.log('✅ UPI Sync Service started successfully (Daily sync at 8 PM IST)');
@@ -122,7 +113,7 @@ app.use((req, res, next) => {
       console.error('❌ Failed to start UPI Sync Service:', error);
     }
     
-    // Challenge-Response Service (Phase 4) is already initialized
+    // Challenge-Response Service is already initialized
     console.log('✅ Challenge-Response Service initialized');
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

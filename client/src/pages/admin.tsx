@@ -1065,8 +1065,6 @@ export default function AdminPage() {
   const [pseudoUserId, setPseudoUserId] = useState<string | null>(null);
   const [currentTab, setCurrentTab] = useState("overview");
   const [settings, setSettings] = useState({
-    maintenanceMode: false,
-    autoRecharge: true,
     maxWalletBalance: "5000.00",
     systemName: "UrbanKetl Tea System",
     criticalBalanceThreshold: "100.00",
@@ -1534,24 +1532,6 @@ export default function AdminPage() {
                             placeholder="500.00"
                           />
                           <p className="text-xs text-gray-500 mt-1">Units with balance below this amount (but above critical) will be marked as low balance</p>
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="maintenance">Maintenance Mode</Label>
-                          <Switch
-                            id="maintenance"
-                            checked={settings.maintenanceMode}
-                            onCheckedChange={(checked) => setSettings({...settings, maintenanceMode: checked})}
-                          />
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="autoRecharge">Auto Recharge</Label>
-                          <Switch
-                            id="autoRecharge" 
-                            checked={settings.autoRecharge}
-                            onCheckedChange={(checked) => setSettings({...settings, autoRecharge: checked})}
-                          />
                         </div>
                       </div>
                       

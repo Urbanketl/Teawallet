@@ -2156,28 +2156,22 @@ export class DatabaseStorage implements IStorage {
       .from(teaMachines)
       .where(eq(teaMachines.isActive, true));
 
-    // Daily dispensing - only successful transactions with valid business units
+    // Daily dispensing - sum of cups from all successful transactions (RFID + UPI)
     const [dispensingCount] = await db
-      .select({ count: sql<number>`COUNT(*)` })
+      .select({ count: sql<number>`COALESCE(SUM(${dispensingLogs.cups}), 0)` })
       .from(dispensingLogs)
       .where(
         and(
           eq(dispensingLogs.success, true),
-          isNotNull(dispensingLogs.businessUnitId),
           gte(dispensingLogs.createdAt, today)
         )
       );
 
-    // Total cumulative cups dispensed - all time successful transactions
+    // Total cumulative cups dispensed - sum of all successful transactions (RFID + UPI)
     const [totalCupsResult] = await db
-      .select({ count: sql<number>`COUNT(*)` })
+      .select({ count: sql<number>`COALESCE(SUM(${dispensingLogs.cups}), 0)` })
       .from(dispensingLogs)
-      .where(
-        and(
-          eq(dispensingLogs.success, true),
-          isNotNull(dispensingLogs.businessUnitId)
-        )
-      );
+      .where(eq(dispensingLogs.success, true));
 
     return {
       totalUsers: userCount.count || 0,

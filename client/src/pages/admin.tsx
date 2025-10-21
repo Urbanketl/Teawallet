@@ -1801,7 +1801,7 @@ export default function AdminPage() {
 
         {/* Cumulative Cups Banner - Only show on overview tab */}
         {currentTab === "overview" && (
-          <Card className="shadow-2xl border-0 overflow-hidden mb-8" style={{ background: 'linear-gradient(to right, #D89058, #C7804D)' }}>
+          <Card className="bg-gradient-to-r from-amber-600 via-yellow-700 to-amber-800 shadow-2xl border-0 overflow-hidden mb-8">
             <CardContent className="p-8">
               <div className="flex items-center space-x-6">
                 <div className="relative">

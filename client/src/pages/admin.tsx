@@ -318,7 +318,6 @@ function AdminReports() {
   // UPI Export handlers
   // Helper function to get transaction count for preview
   const getUpiTransactionCount = async (): Promise<number> => {
-    console.log('getUpiTransactionCount called');
     try {
       const params = new URLSearchParams({
         page: '1',
@@ -334,7 +333,6 @@ function AdminReports() {
       });
       
       if (!response.ok) {
-        console.log('API response not ok:', response.status, response.statusText);
         return 0;
       }
       
@@ -348,10 +346,8 @@ function AdminReports() {
 
   // Show export preview dialog
   const showUpiExportPreview = async (type: 'excel' | 'pdf') => {
-    console.log('showUpiExportPreview called with type:', type);
     try {
       const totalTransactions = await getUpiTransactionCount();
-      console.log('Got transaction count:', totalTransactions);
     
     // Build filter descriptions
     const filters: string[] = [];
@@ -378,10 +374,6 @@ function AdminReports() {
     });
     setPendingExportType(type);
     setShowExportConfirm(true);
-    console.log('Preview dialog should now be visible');
-    console.log('Export preview data set:', { totalTransactions, dateRange, filters });
-    console.log('Pending export type:', type);
-    console.log('Show export confirm:', true);
     } catch (error) {
       console.error('Error in showUpiExportPreview:', error);
     }
@@ -389,12 +381,10 @@ function AdminReports() {
 
   // Updated export handlers to show preview first
   const handleUpiExportExcel = () => {
-    console.log('Excel export button clicked');
     showUpiExportPreview('excel');
   };
 
   const handleUpiExportPdf = () => {
-    console.log('PDF export button clicked');
     showUpiExportPreview('pdf');
   };
 

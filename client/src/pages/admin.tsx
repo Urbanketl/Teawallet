@@ -1798,72 +1798,74 @@ export default function AdminPage() {
           </Card>
         </div>
 
-        {/* Admin Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Total Users */}
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 shadow-material">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
-                  <Users className="w-6 h-6 text-white" />
+        {/* Admin Stats Grid - Only show on overview tab */}
+        {currentTab === "overview" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {/* Total Users */}
+            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 shadow-material">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
+                    <Users className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="text-blue-600 text-sm font-medium">+12%</span>
                 </div>
-                <span className="text-blue-600 text-sm font-medium">+12%</span>
-              </div>
-              <div className="text-3xl font-bold text-gray-900 mb-1">
-                {statsLoading ? "..." : (adminStats as any)?.totalUsers || 0}
-              </div>
-              <div className="text-gray-600">Total Business Units</div>
-            </CardContent>
-          </Card>
+                <div className="text-3xl font-bold text-gray-900 mb-1">
+                  {statsLoading ? "..." : (adminStats as any)?.totalUsers || 0}
+                </div>
+                <div className="text-gray-600">Total Business Units</div>
+              </CardContent>
+            </Card>
 
-          {/* Total Revenue */}
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 shadow-material">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-                  <IndianRupee className="w-6 h-6 text-white" />
+            {/* Total Revenue */}
+            <Card className="bg-gradient-to-br from-green-50 to-green-100 shadow-material">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+                    <IndianRupee className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="text-green-600 text-sm font-medium">+8%</span>
                 </div>
-                <span className="text-green-600 text-sm font-medium">+8%</span>
-              </div>
-              <div className="text-3xl font-bold text-gray-900 mb-1">
-                ₹{statsLoading ? "..." : parseFloat((adminStats as any)?.totalRevenue || "0").toFixed(2)}
-              </div>
-              <div className="text-gray-600">Total Revenue</div>
-            </CardContent>
-          </Card>
+                <div className="text-3xl font-bold text-gray-900 mb-1">
+                  ₹{statsLoading ? "..." : parseFloat((adminStats as any)?.totalRevenue || "0").toFixed(2)}
+                </div>
+                <div className="text-gray-600">Total Revenue</div>
+              </CardContent>
+            </Card>
 
-          {/* Active Machines */}
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 shadow-material">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
-                  <Coffee className="w-6 h-6 text-white" />
+            {/* Active Machines */}
+            <Card className="bg-gradient-to-br from-purple-50 to-purple-100 shadow-material">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
+                    <Coffee className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="text-purple-600 text-sm font-medium">98%</span>
                 </div>
-                <span className="text-purple-600 text-sm font-medium">98%</span>
-              </div>
-              <div className="text-3xl font-bold text-gray-900 mb-1">
-                {statsLoading ? "..." : `${(adminStats as any)?.activeMachines || 0}/${(machines as any[])?.length || 0}`}
-              </div>
-              <div className="text-gray-600">Active Machines</div>
-            </CardContent>
-          </Card>
+                <div className="text-3xl font-bold text-gray-900 mb-1">
+                  {statsLoading ? "..." : `${(adminStats as any)?.activeMachines || 0}/${(machines as any[])?.length || 0}`}
+                </div>
+                <div className="text-gray-600">Active Machines</div>
+              </CardContent>
+            </Card>
 
-          {/* Daily Dispensing */}
-          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 shadow-material">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 text-white" />
+            {/* Daily Dispensing */}
+            <Card className="bg-gradient-to-br from-orange-50 to-orange-100 shadow-material">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
+                    <TrendingUp className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="text-orange-600 text-sm font-medium">+15%</span>
                 </div>
-                <span className="text-orange-600 text-sm font-medium">+15%</span>
-              </div>
-              <div className="text-3xl font-bold text-gray-900 mb-1">
-                {statsLoading ? "..." : (adminStats as any)?.dailyDispensing || 0}
-              </div>
-              <div className="text-gray-600">Cups Today</div>
-            </CardContent>
-          </Card>
-        </div>
+                <div className="text-3xl font-bold text-gray-900 mb-1">
+                  {statsLoading ? "..." : (adminStats as any)?.dailyDispensing || 0}
+                </div>
+                <div className="text-gray-600">Cups Today</div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
 
 

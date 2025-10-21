@@ -1888,6 +1888,7 @@ export default function AdminPage() {
                             src={cupSymbol} 
                             alt="UrbanKetl Cup" 
                             className="w-full h-full object-contain"
+                            style={{ mixBlendMode: 'multiply' }}
                           />
                         </div>
                         <div className="absolute inset-0 w-24 h-24 border-4 border-white/30 rounded-full animate-pulse"></div>

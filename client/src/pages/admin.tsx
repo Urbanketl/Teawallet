@@ -1000,82 +1000,69 @@ function AdminReports() {
       )}
 
       {/* UPI Export Confirmation Dialog */}
-      <Dialog 
-        open={showExportConfirm} 
-        onOpenChange={setShowExportConfirm}
-      >
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Export Preview</DialogTitle>
-            <DialogDescription>
-              Review the data that will be exported before proceeding
-            </DialogDescription>
-          </DialogHeader>
-          
-          {exportPreviewData ? (
-            <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-semibold text-blue-900 mb-2">Export Summary</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-blue-700">Export Type:</span>
-                    <span className="font-medium text-blue-900">{pendingExportType?.toUpperCase()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-blue-700">Total Transactions:</span>
-                    <span className="font-medium text-blue-900">{exportPreviewData.totalTransactions}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-blue-700">Date Range:</span>
-                    <span className="font-medium text-blue-900">{exportPreviewData.dateRange}</span>
-                  </div>
+      {activeReportTab === 'upi' && showExportConfirm && exportPreviewData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-lg">
+            <h3 className="text-lg font-semibold mb-4">Export Preview</h3>
+            
+            <div className="bg-blue-50 p-4 rounded-lg mb-4">
+              <p className="text-sm text-gray-700 mb-3 font-medium">Export Summary</p>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-blue-700">Export Type:</span>
+                  <span className="font-medium text-blue-900">{pendingExportType?.toUpperCase()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-blue-700">Total Transactions:</span>
+                  <span className="font-medium text-blue-900">{exportPreviewData.totalTransactions}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-blue-700">Date Range:</span>
+                  <span className="font-medium text-blue-900">{exportPreviewData.dateRange}</span>
                 </div>
               </div>
-              
-              {exportPreviewData.filters.length > 0 && (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-gray-900 mb-2">Applied Filters</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {exportPreviewData.filters.map((filter: string, index: number) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
-                        {filter}
-                      </Badge>
-                    ))}
-                  </div>
+            </div>
+            
+            {exportPreviewData.filters.length > 0 && (
+              <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                <p className="text-sm font-medium text-gray-900 mb-2">Applied Filters</p>
+                <div className="flex flex-wrap gap-2">
+                  {exportPreviewData.filters.map((filter: string, index: number) => (
+                    <Badge key={index} variant="secondary" className="text-xs">
+                      {filter}
+                    </Badge>
+                  ))}
                 </div>
-              )}
-              
-              {exportPreviewData.totalTransactions === 0 && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <div className="flex items-center">
-                    <AlertCircle className="w-5 h-5 text-yellow-600 mr-2" />
-                    <span className="text-yellow-800 text-sm">
-                      No transactions found with the current filters. The export file will be empty.
-                    </span>
-                  </div>
-                </div>
-              )}
-              
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button variant="outline" onClick={cancelExport} data-testid="button-cancel-export">
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={() => pendingExportType && executeUpiExport(pendingExportType)}
-                  disabled={!pendingExportType}
-                  data-testid="button-confirm-export"
-                >
-                  Export {exportPreviewData.totalTransactions} Transactions
-                </Button>
               </div>
+            )}
+            
+            {exportPreviewData.totalTransactions === 0 && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                <div className="flex items-center">
+                  <AlertCircle className="w-5 h-5 text-yellow-600 mr-2" />
+                  <span className="text-yellow-800 text-sm">
+                    No transactions found with the current filters. The export file will be empty.
+                  </span>
+                </div>
+              </div>
+            )}
+            
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={cancelExport} data-testid="button-cancel-export">
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => pendingExportType && executeUpiExport(pendingExportType)}
+                disabled={!pendingExportType}
+                className="bg-blue-600 hover:bg-blue-700"
+                data-testid="button-confirm-export"
+              >
+                Export {exportPreviewData.totalTransactions} Transactions
+              </Button>
             </div>
-          ) : (
-            <div className="p-4 text-center text-gray-500">
-              Loading preview data...
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

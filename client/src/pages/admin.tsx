@@ -379,6 +379,9 @@ function AdminReports() {
     setPendingExportType(type);
     setShowExportConfirm(true);
     console.log('Preview dialog should now be visible');
+    console.log('Export preview data set:', { totalTransactions, dateRange, filters });
+    console.log('Pending export type:', type);
+    console.log('Show export confirm:', true);
     } catch (error) {
       console.error('Error in showUpiExportPreview:', error);
     }
@@ -997,8 +1000,16 @@ function AdminReports() {
       )}
 
       {/* UPI Export Confirmation Dialog */}
-      <Dialog open={activeReportTab === 'upi' && showExportConfirm} onOpenChange={setShowExportConfirm}>
-        <DialogContent>
+      <Dialog 
+        open={activeReportTab === 'upi' && showExportConfirm} 
+        onOpenChange={(open) => {
+          console.log('Dialog onOpenChange called with:', open);
+          console.log('activeReportTab:', activeReportTab);
+          console.log('showExportConfirm:', showExportConfirm);
+          setShowExportConfirm(open);
+        }}
+      >
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Export Preview</DialogTitle>
             <DialogDescription>
@@ -1006,7 +1017,7 @@ function AdminReports() {
             </DialogDescription>
           </DialogHeader>
           
-          {exportPreviewData && (
+          {exportPreviewData ? (
             <div className="space-y-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h4 className="font-semibold text-blue-900 mb-2">Export Summary</h4>
@@ -1062,6 +1073,10 @@ function AdminReports() {
                   Export {exportPreviewData.totalTransactions} Transactions
                 </Button>
               </div>
+            </div>
+          ) : (
+            <div className="p-4 text-center text-gray-500">
+              Loading preview data...
             </div>
           )}
         </DialogContent>

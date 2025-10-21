@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/layout/Footer";
+import logoImage from "@assets/URBAN KETL Logo small_1750439431697.jpg";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1877,13 +1878,17 @@ export default function AdminPage() {
           {currentTab === "overview" && (
             <div className="space-y-6">
               {/* Cumulative Cups Banner */}
-              <Card className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 shadow-2xl border-0 overflow-hidden">
+              <Card className="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 shadow-2xl border-0 overflow-hidden">
                 <CardContent className="p-8">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-6">
                       <div className="relative">
-                        <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center animate-spin-slow">
-                          <Coffee className="w-12 h-12 text-white" />
+                        <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center animate-spin-slow overflow-hidden">
+                          <img 
+                            src={logoImage} 
+                            alt="UrbanKetl" 
+                            className="w-20 h-20 object-contain"
+                          />
                         </div>
                         <div className="absolute inset-0 w-24 h-24 border-4 border-white/30 rounded-full animate-pulse"></div>
                       </div>

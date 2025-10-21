@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/layout/Footer";
-import logoImage from "@assets/URBAN KETL Logo small_1750439431697.jpg";
+import cupSymbol from "@assets/Screenshot 2025-10-21 at 8.40.45 AM_1761016256823.png";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1883,12 +1883,11 @@ export default function AdminPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-6">
                       <div className="relative">
-                        <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center animate-spin-slow overflow-hidden">
+                        <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center animate-spin-slow overflow-hidden p-3">
                           <img 
-                            src={logoImage} 
+                            src={cupSymbol} 
                             alt="UrbanKetl Cup" 
-                            className="w-32 h-32 object-cover"
-                            style={{ objectPosition: '-10px center', transform: 'scale(1.8)' }}
+                            className="w-full h-full object-contain"
                           />
                         </div>
                         <div className="absolute inset-0 w-24 h-24 border-4 border-white/30 rounded-full animate-pulse"></div>

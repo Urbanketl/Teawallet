@@ -1883,11 +1883,11 @@ export default function AdminPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-6">
                       <div className="relative">
-                        <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center animate-spin-slow overflow-hidden p-2">
+                        <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center animate-spin-slow overflow-hidden p-4">
                           <img 
                             src={cupSymbol} 
                             alt="UrbanKetl Cup" 
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-contain"
                           />
                         </div>
                         <div className="absolute inset-0 w-24 h-24 border-4 border-white/30 rounded-full animate-pulse"></div>

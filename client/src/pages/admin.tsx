@@ -1000,14 +1000,9 @@ function AdminReports() {
       )}
 
       {/* UPI Export Confirmation Dialog */}
-      <Dialog 
-        open={activeReportTab === 'upi' && showExportConfirm} 
-        onOpenChange={(open) => {
-          console.log('Dialog onOpenChange called with:', open);
-          console.log('activeReportTab:', activeReportTab);
-          console.log('showExportConfirm:', showExportConfirm);
-          setShowExportConfirm(open);
-        }}
+      {activeReportTab === 'upi' && (<Dialog 
+        open={showExportConfirm} 
+        onOpenChange={setShowExportConfirm}
       >
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -1081,6 +1076,7 @@ function AdminReports() {
           )}
         </DialogContent>
       </Dialog>
+      )}
     </div>
   );
 }

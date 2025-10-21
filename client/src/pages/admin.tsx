@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/layout/Footer";
-import cupSymbol from "@assets/Screenshot 2025-10-21 at 8.40.45 AM_1761016256823.png";
+import cupSymbol from "@assets/Gemini_Generated_Image_kkgjdwkkgjdwkkgj_1761016686754.png";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1883,12 +1883,11 @@ export default function AdminPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-6">
                       <div className="relative">
-                        <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center animate-spin-slow overflow-hidden p-3">
+                        <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center animate-spin-slow overflow-hidden p-2">
                           <img 
                             src={cupSymbol} 
                             alt="UrbanKetl Cup" 
-                            className="w-full h-full object-contain"
-                            style={{ mixBlendMode: 'multiply' }}
+                            className="w-full h-full object-cover"
                           />
                         </div>
                         <div className="absolute inset-0 w-24 h-24 border-4 border-white/30 rounded-full animate-pulse"></div>

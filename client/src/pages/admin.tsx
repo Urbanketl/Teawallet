@@ -1000,7 +1000,7 @@ function AdminReports() {
       )}
 
       {/* UPI Export Confirmation Dialog */}
-      {activeReportTab === 'upi' && (<Dialog 
+      <Dialog 
         open={showExportConfirm} 
         onOpenChange={setShowExportConfirm}
       >
@@ -1076,7 +1076,6 @@ function AdminReports() {
           )}
         </DialogContent>
       </Dialog>
-      )}
     </div>
   );
 }

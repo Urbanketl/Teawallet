@@ -996,9 +996,8 @@ function AdminReports() {
         </div>
       )}
 
-      {/* UPI Export Confirmation Dialog - Only render when UPI tab is active */}
-      {activeReportTab === 'upi' && (
-        <Dialog open={showExportConfirm} onOpenChange={setShowExportConfirm}>
+      {/* UPI Export Confirmation Dialog */}
+      <Dialog open={activeReportTab === 'upi' && showExportConfirm} onOpenChange={setShowExportConfirm}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Export Preview</DialogTitle>
@@ -1066,8 +1065,7 @@ function AdminReports() {
             </div>
           )}
         </DialogContent>
-        </Dialog>
-      )}
+      </Dialog>
     </div>
   );
 }

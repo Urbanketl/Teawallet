@@ -170,7 +170,7 @@ export interface IStorage {
   getUsersPaginated(page: number, limit: number, search?: string): Promise<{ users: User[], total: number }>;
   updateUserAdminStatus(userId: string, isAdmin: boolean, updatedBy: string): Promise<User>;
   getTotalRevenue(): Promise<string>;
-  getDailyStats(): Promise<{ totalUsers: number; totalRevenue: string; activeMachines: number; dailyDispensing: number; totalCupsDispensed: number }>;
+  getDailyStats(): Promise<{ totalUsers: number; totalBusinessUnits: number; totalRevenue: string; activeMachines: number; dailyDispensing: number; totalCupsDispensed: number }>;
   
   // Admin-only user creation (replacing auto-registration)
   createUserAccount(userData: {
@@ -2130,7 +2130,7 @@ export class DatabaseStorage implements IStorage {
     return result.total || "0";
   }
 
-  async getDailyStats(): Promise<{ totalUsers: number; totalRevenue: string; activeMachines: number; dailyDispensing: number; totalCupsDispensed: number }> {
+  async getDailyStats(): Promise<{ totalUsers: number; totalBusinessUnits: number; totalRevenue: string; activeMachines: number; dailyDispensing: number; totalCupsDispensed: number }> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -2138,6 +2138,11 @@ export class DatabaseStorage implements IStorage {
     const [userCount] = await db
       .select({ count: sql<number>`COUNT(*)` })
       .from(users);
+
+    // Total business units
+    const [businessUnitCount] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(businessUnits);
 
     // Total revenue from tea sales (dispensing) - only successful transactions with valid business units
     const [revenueResult] = await db
@@ -2175,6 +2180,7 @@ export class DatabaseStorage implements IStorage {
 
     return {
       totalUsers: userCount.count || 0,
+      totalBusinessUnits: businessUnitCount.count || 0,
       totalRevenue: revenueResult.total || "0",
       activeMachines: machineCount.count || 0,
       dailyDispensing: dispensingCount.count || 0,

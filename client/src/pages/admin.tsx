@@ -1810,7 +1810,7 @@ export default function AdminPage() {
                   <span className="text-blue-600 text-sm font-medium">+12%</span>
                 </div>
                 <div className="text-3xl font-bold text-gray-900 mb-1">
-                  {statsLoading ? "..." : (adminStats as any)?.totalUsers || 0}
+                  {statsLoading ? "..." : (adminStats as any)?.totalBusinessUnits || 0}
                 </div>
                 <div className="text-gray-600">Total Business Units</div>
               </CardContent>

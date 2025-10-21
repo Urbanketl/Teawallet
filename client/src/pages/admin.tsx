@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import { Footer } from "@/components/layout/Footer";
-import cupSymbol from "@assets/Gemini_Generated_Image_kkgjdwkkgjdwkkgj_1761016686754.png";
+import cupSymbol from "@assets/Gemini_Generated_Image_kkgjdwkkgjdwkkgj_1761017186925.png";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1878,49 +1878,31 @@ export default function AdminPage() {
           {currentTab === "overview" && (
             <div className="space-y-6">
               {/* Cumulative Cups Banner */}
-              <Card className="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 shadow-2xl border-0 overflow-hidden">
+              <Card className="bg-gradient-to-r from-amber-600 via-yellow-700 to-amber-800 shadow-2xl border-0 overflow-hidden">
                 <CardContent className="p-8">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-6">
-                      <div className="relative">
-                        <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center animate-spin-slow overflow-hidden p-4">
-                          <img 
-                            src={cupSymbol} 
-                            alt="UrbanKetl Cup" 
-                            className="w-full h-full object-contain"
-                          />
-                        </div>
-                        <div className="absolute inset-0 w-24 h-24 border-4 border-white/30 rounded-full animate-pulse"></div>
+                  <div className="flex items-center space-x-6">
+                    <div className="relative">
+                      <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center animate-spin-slow overflow-hidden p-4">
+                        <img 
+                          src={cupSymbol} 
+                          alt="UrbanKetl Cup" 
+                          className="w-full h-full object-contain"
+                        />
                       </div>
-                      <div>
-                        <h2 className="text-white/90 text-lg font-medium mb-2">Total Cups Dispensed</h2>
-                        <div className="text-6xl font-bold text-white mb-2 tabular-nums">
-                          {statsLoading ? (
-                            <span className="animate-pulse">...</span>
-                          ) : (
-                            <span className="animate-count-up">
-                              {((adminStats as any)?.totalCupsDispensed || 0).toLocaleString()}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-white/80 text-sm">Cumulative cups served across all machines and business units</p>
-                      </div>
+                      <div className="absolute inset-0 w-24 h-24 border-4 border-white/30 rounded-full animate-pulse"></div>
                     </div>
-                    <div className="hidden lg:flex flex-col items-end space-y-4">
-                      <div className="flex items-center space-x-3 bg-white/10 px-6 py-3 rounded-lg backdrop-blur-sm">
-                        <TrendingUp className="w-6 h-6 text-white" />
-                        <div>
-                          <p className="text-white/70 text-xs">Today</p>
-                          <p className="text-white font-bold text-xl">{(adminStats as any)?.dailyDispensing || 0}</p>
-                        </div>
+                    <div>
+                      <h2 className="text-white/90 text-lg font-medium mb-2">Total Cups Dispensed</h2>
+                      <div className="text-6xl font-bold text-white mb-2 tabular-nums">
+                        {statsLoading ? (
+                          <span className="animate-pulse">...</span>
+                        ) : (
+                          <span className="animate-count-up">
+                            {((adminStats as any)?.totalCupsDispensed || 0).toLocaleString()}
+                          </span>
+                        )}
                       </div>
-                      <div className="flex items-center space-x-3 bg-white/10 px-6 py-3 rounded-lg backdrop-blur-sm">
-                        <IndianRupee className="w-6 h-6 text-white" />
-                        <div>
-                          <p className="text-white/70 text-xs">Total Revenue</p>
-                          <p className="text-white font-bold text-xl">₹{parseFloat((adminStats as any)?.totalRevenue || "0").toFixed(0)}</p>
-                        </div>
-                      </div>
+                      <p className="text-white/80 text-sm">Cumulative cups served across all machines and business units</p>
                     </div>
                   </div>
                 </CardContent>

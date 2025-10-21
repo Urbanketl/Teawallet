@@ -1886,8 +1886,9 @@ export default function AdminPage() {
                         <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center animate-spin-slow overflow-hidden">
                           <img 
                             src={logoImage} 
-                            alt="UrbanKetl" 
-                            className="w-20 h-20 object-contain"
+                            alt="UrbanKetl Cup" 
+                            className="w-32 h-32 object-cover"
+                            style={{ objectPosition: '-10px center', transform: 'scale(1.8)' }}
                           />
                         </div>
                         <div className="absolute inset-0 w-24 h-24 border-4 border-white/30 rounded-full animate-pulse"></div>

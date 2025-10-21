@@ -1799,6 +1799,39 @@ export default function AdminPage() {
           </Card>
         </div>
 
+        {/* Cumulative Cups Banner - Only show on overview tab */}
+        {currentTab === "overview" && (
+          <Card className="bg-gradient-to-r from-amber-600 via-yellow-700 to-amber-800 shadow-2xl border-0 overflow-hidden mb-8">
+            <CardContent className="p-8">
+              <div className="flex items-center space-x-6">
+                <div className="relative">
+                  <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center animate-spin-slow overflow-hidden p-4">
+                    <img 
+                      src={cupSymbol} 
+                      alt="UrbanKetl Cup" 
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <div className="absolute inset-0 w-24 h-24 border-4 border-white/30 rounded-full animate-pulse"></div>
+                </div>
+                <div>
+                  <h2 className="text-white/90 text-lg font-medium mb-2">Total Cups Dispensed</h2>
+                  <div className="text-6xl font-bold text-white mb-2 tabular-nums">
+                    {statsLoading ? (
+                      <span className="animate-pulse">...</span>
+                    ) : (
+                      <span className="animate-count-up">
+                        {((adminStats as any)?.totalCupsDispensed || 0).toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-white/80 text-sm">Cumulative cups served across all machines and business units</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Admin Stats Grid - Only show on overview tab */}
         {currentTab === "overview" && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -1877,37 +1910,6 @@ export default function AdminPage() {
 
           {currentTab === "overview" && (
             <div className="space-y-6">
-              {/* Cumulative Cups Banner */}
-              <Card className="bg-gradient-to-r from-amber-600 via-yellow-700 to-amber-800 shadow-2xl border-0 overflow-hidden">
-                <CardContent className="p-8">
-                  <div className="flex items-center space-x-6">
-                    <div className="relative">
-                      <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center animate-spin-slow overflow-hidden p-4">
-                        <img 
-                          src={cupSymbol} 
-                          alt="UrbanKetl Cup" 
-                          className="w-full h-full object-contain"
-                        />
-                      </div>
-                      <div className="absolute inset-0 w-24 h-24 border-4 border-white/30 rounded-full animate-pulse"></div>
-                    </div>
-                    <div>
-                      <h2 className="text-white/90 text-lg font-medium mb-2">Total Cups Dispensed</h2>
-                      <div className="text-6xl font-bold text-white mb-2 tabular-nums">
-                        {statsLoading ? (
-                          <span className="animate-pulse">...</span>
-                        ) : (
-                          <span className="animate-count-up">
-                            {((adminStats as any)?.totalCupsDispensed || 0).toLocaleString()}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-white/80 text-sm">Cumulative cups served across all machines and business units</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
               {/* Balance Overview Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">

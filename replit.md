@@ -3,6 +3,11 @@
 ## Overview
 UrbanKetl is a B2B corporate tea dispensing system that integrates RFID technology with a web application. Its primary purpose is to enable business unit administrators to manage multiple tea machines, issue generic RFID cards to employees, and monitor dispensing activity charged to a corporate wallet. The project aims to provide a comprehensive solution for corporate tea services, streamlining management, billing, and offering detailed analytics. The vision is to become the leading provider of smart beverage solutions for corporate environments, enhancing employee amenities and simplifying administrative overhead.
 
+## Recent Changes (October 23, 2025)
+- **Session Save on Login Fix** - Fixed critical bug where first payment after login would fail and log user out. The login endpoint was not explicitly saving the session for regular logins (only for password resets), causing the session to not persist before payment redirect. Now all logins call `req.session.save()` before responding, ensuring session is persisted to database before any redirects occur. This fixes the "payment successful but user logged out" issue on first payment after login.
+- **UPI Sync Job Extracted for Scheduled Deployment** - Created standalone UPI sync job at `server/jobs/upi-sync.ts` that can run independently as a Replit Scheduled Deployment. Main application now skips UPI sync scheduler in production (runs only in development for testing). This prepares the system for Autoscale Deployment where background cron jobs are not suitable. UPI sync runs daily at 8 PM IST as a separate scheduled job project.
+- **Business Unit Count Fix** - Fixed Overview dashboard bug where "Total Business Units" card was displaying user count (20) instead of actual business unit count (7). Updated backend `getDailyStats()` to query both totalUsers and totalBusinessUnits separately.
+
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 UI/UX preferences: Clean, simplified interfaces without unnecessary elements like export buttons or column headers in data tables. Pagination controls should be positioned at the top of listings.

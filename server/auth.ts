@@ -203,30 +203,30 @@ export function setupAuth(app: Express) {
           return res.status(500).json({ error: "Login error" });
         }
 
-        // Check if user needs to reset password
-        if (user.requiresPasswordReset) {
-          // Explicitly save the session before responding
-          req.session.save((err) => {
-            if (err) {
-              console.error("Session save error:", err);
-              return res.status(500).json({ error: "Session error" });
-            }
+        // Explicitly save the session before responding
+        req.session.save((err) => {
+          if (err) {
+            console.error("Session save error:", err);
+            return res.status(500).json({ error: "Session error" });
+          }
+
+          // Check if user needs to reset password
+          if (user.requiresPasswordReset) {
             return res.json({
               requiresPasswordReset: true,
               userId: user.id,
               message: "Password reset required",
             });
-          });
-          return;
-        }
+          }
 
-        res.json({
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          isAdmin: user.isAdmin,
-          isSuperAdmin: user.isSuperAdmin,
+          res.json({
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            isAdmin: user.isAdmin,
+            isSuperAdmin: user.isSuperAdmin,
+          });
         });
       });
     })(req, res, next);

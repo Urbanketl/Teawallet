@@ -105,12 +105,16 @@ app.use((req, res, next) => {
     // Initialize background services
     console.log('Initializing UrbanKetl services...');
     
-    // Start UPI Sync Service
-    try {
-      await upiSyncService.startDailySync();
-      console.log('✅ UPI Sync Service started successfully (Daily sync at 8 PM IST)');
-    } catch (error) {
-      console.error('❌ Failed to start UPI Sync Service:', error);
+    // Start UPI Sync Service (only in development - production uses Scheduled Deployment)
+    if (process.env.NODE_ENV === 'development') {
+      try {
+        await upiSyncService.startDailySync();
+        console.log('✅ UPI Sync Service started successfully (Daily sync at 8 PM IST)');
+      } catch (error) {
+        console.error('❌ Failed to start UPI Sync Service:', error);
+      }
+    } else {
+      console.log('ℹ️  UPI Sync Service: Using Scheduled Deployment (not started in main app)');
     }
     
     // Challenge-Response Service is already initialized

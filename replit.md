@@ -36,19 +36,14 @@ UrbanKetl is a B2B corporate tea dispensing system integrating RFID technology w
 - **Database Timeouts**: Connection (30s), Query execution (10s), Idle (10s)
 
 ## Previous Changes (August 17, 2025)
-- **Completed Phase 3: Machine Auto-Sync System** - Implemented automated synchronization scheduling with cron-based background service running every 30 minutes during business hours (6 AM - 10 PM IST)
 - **Completed Phase 4: Challenge-Response Authentication** - Full MIFARE DESFire EV1 cryptographic authentication system with AES challenge-response protocol
 - **Updated RFID Card System to DESFire EV1 Only** - Removed basic RFID card option, standardized on MIFARE DESFire EV1 cards with AES encryption for all new card creation
 - **System Stability Confirmed** - Current architecture stable and performant with no refactoring needs identified. 5,379-line admin interface working efficiently for single-developer workflow
 - **Removed Key Rotation Feature (October 14, 2025)** - Removed automatic key rotation as it's incompatible with physical MIFARE DESFire EV1 hardware cards. Keys are programmed once at card issuance and cannot be remotely changed.
-- Added comprehensive auto-sync service with retry mechanisms, manual triggers, bulk operations, and detailed performance statistics
 - Implemented secure challenge-response authentication for DESFire cards with 30-second challenge timeout and audit logging
 - Created new API endpoints for machine authentication (challenge generation, response validation, dispensing authorization)
-- Added admin controls for auto-sync management and authentication monitoring
 - Enhanced security with encrypted AES key storage and comprehensive audit trails
-- Integrated both systems with existing Machine Sync Dashboard for unified management interface
 - Enhanced RFID card creation UI with DESFire-specific fields (Hardware UID, AES key management)
-- Previous Phase 2 completion: Machine Sync Dashboard with real-time monitoring and security key management
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -67,16 +62,16 @@ UI/UX preferences: Clean, simplified interfaces without unnecessary elements lik
 - **Backend**: Node.js with Express.js, written in TypeScript, providing RESTful APIs.
 - **Authentication**: Custom email/password authentication system replacing Replit Auth, featuring admin-controlled user creation and secure session management with PostgreSQL persistence. Role-based access control with two user types: Platform Admin (full system access) and Business Unit Admin (analytics access).
 - **Session Management**: Server-side sessions persisted in PostgreSQL.
-- **RFID Integration**: Centralized RFID card management system using MIFARE DESFire EV3 cards (backward compatible with EV1/EV2) with AES encryption. Platform admins can batch create and assign cards to business units with automatic cryptographic key generation. Plain AES keys are shown once during creation and must be saved for physical card programming. Machine-facing API endpoints validate cards using challenge-response authentication and process transactions with automatic wallet deduction. Raspberry Pi tea machines support both ACR122U (USB/PC-SC) and MCRN2 (SPI/PN532) readers with automatic detection and proper DESFire APDU command handling.
+- **RFID Integration**: Centralized RFID card management system using MIFARE DESFire EV3 cards (backward compatible with EV1/EV2) with AES encryption. Platform admins can batch create and assign cards to business units with automatic cryptographic key generation. Plain AES keys are shown once during creation and must be saved for physical card programming. All RFID validation is server-side - Pi machines make API calls for every card tap, with no local card storage. Machine-facing API endpoints validate cards using challenge-response authentication and process transactions with automatic wallet deduction. Raspberry Pi tea machines support both ACR122U (USB/PC-SC) and MCRN2 (SPI/PN532) readers with automatic detection and proper DESFire APDU command handling.
 - **Payment Processing**: Razorpay integration for digital wallet recharges, supporting recharge, deduction, and refund operations. Includes payment verification and webhook handling.
 - **Tea Pricing**: Simplified to a single "Regular Tea" variety with machine-specific pricing configurable by admins.
 - **Reporting & Analytics**: Comprehensive administrative dashboards for user management, revenue tracking, usage patterns, and machine monitoring. Features include custom date range selection for reports, Excel/PDF export functionality, and graphical business insights for cross-business unit comparisons.
 - **Admin Features**: Admin-only user creation, secure business unit ownership transfer with audit logging, support ticket management, and FAQ system.
 - **Machine Management**: Platform admins can create, edit, assign, and control tea machines, enforcing mandatory business unit assignment for all machines and transactions.
 - **Wallet System**: Business unit-specific digital wallets with recharge capabilities, designed to handle multiple business units per user.
-- **Auto-Sync System (Phase 3)**: Automated RFID card synchronization across all tea machines with cron scheduling, retry mechanisms, manual triggers, and comprehensive monitoring.
-- **Challenge-Response Authentication (Phase 4)**: MIFARE DESFire EV1 cryptographic authentication with AES encryption and secure dispensing authorization. AES keys are programmed once at card issuance and stored encrypted in the database using a master key.
-- **Timeout Management (Phase 5)**: Multi-layered timeout strategy protecting against hung connections and slow operations. Route-specific timeouts (RFID 5s, Analytics 60s, Exports 120s), external API timeouts (WhatsApp, Email, Razorpay 30s), server-level timeouts (request 40s, socket 30s), and database query timeouts (10s execution). Includes comprehensive monitoring service tracking timeout events with admin dashboard.
+- **UPI Sync System**: Automated daily synchronization of UPI payment transactions from Kulhad API at 8 PM IST, with 2-hour overlap window to prevent data gaps.
+- **Challenge-Response Authentication**: Full MIFARE DESFire EV1 cryptographic authentication with AES encryption and secure dispensing authorization. AES keys are programmed once at card issuance and stored encrypted in the database using a master key.
+- **Timeout Management**: Multi-layered timeout strategy protecting against hung connections and slow operations. Route-specific timeouts (RFID 5s, Analytics 60s, Exports 120s), external API timeouts (WhatsApp, Email, Razorpay 30s), server-level timeouts (request 40s, socket 30s), and database query timeouts (10s execution). Includes comprehensive monitoring service tracking timeout events with admin dashboard.
 
 ### System Design Choices
 - **Data Model**: B2B corporate model where each user is a business unit administrator. Generic RFID cards are linked to business units, not individual employees, with all usage charged to the corporate wallet.

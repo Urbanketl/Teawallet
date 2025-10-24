@@ -93,6 +93,76 @@ export class ChallengeResponseController {
     }
   }
 
+  // Combined: Validate challenge response AND dispense in one call (faster)
+  async validateAndDispense(req: Request, res: Response) {
+    try {
+      const { 
+        challengeId, 
+        response, 
+        cardUid, 
+        machineId, 
+        amount, 
+        quantity = 1 
+      } = req.body;
+
+      // Validate required parameters
+      if (!challengeId || !response || !cardUid || !machineId || !amount) {
+        return res.status(400).json({ 
+          error: 'Challenge ID, response, card UID, machine ID, and amount are required' 
+        });
+      }
+
+      // Step 1: Validate challenge response
+      const authResult = await challengeResponseService.validateChallengeResponse(
+        challengeId,
+        response,
+        cardUid
+      );
+
+      if (!authResult.success) {
+        return res.status(401).json({
+          success: false,
+          authenticated: false,
+          error: authResult.errorMessage,
+          message: 'Authentication failed'
+        });
+      }
+
+      // Step 2: Immediately process dispensing
+      const result = await storage.processRfidTransactionForBusinessUnit({
+        businessUnitId: authResult.businessUnitId!,
+        cardNumber: authResult.cardNumber!,
+        machineId,
+        amount: parseFloat(amount),
+        quantity
+      });
+
+      if (result.success) {
+        res.json({
+          success: true,
+          authenticated: true,
+          transaction: result.transaction,
+          newBalance: result.newBalance,
+          dispensingLog: result.dispensingLog,
+          message: `Tea dispensed successfully. Remaining balance: ₹${result.newBalance}`
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: result.error,
+          message: result.error || 'Transaction failed'
+        });
+      }
+
+    } catch (error) {
+      console.error('Validate and dispense error:', error);
+      res.status(500).json({ 
+        error: 'Failed to validate and dispense',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+
   // Process tea dispensing after successful authentication
   async processDispensing(req: Request, res: Response) {
     try {

@@ -2096,6 +2096,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/machine/auth/validate', timeoutMiddleware(TIMEOUT_CONFIGS.MACHINE_AUTH), challengeResponseController.validateResponse.bind(challengeResponseController));
   app.post('/api/machine/auth/dispense', timeoutMiddleware(TIMEOUT_CONFIGS.MACHINE_AUTH), challengeResponseController.processDispensing.bind(challengeResponseController));
   
+  // Combined: validate AND dispense in one call (faster, saves one round-trip)
+  app.post('/api/machine/auth/validate-and-dispense', timeoutMiddleware(TIMEOUT_CONFIGS.MACHINE_AUTH), challengeResponseController.validateAndDispense.bind(challengeResponseController));
+  
   // Admin authentication management
   app.get('/api/admin/auth/logs', isAuthenticated, requireAdminAuth, challengeResponseController.getAuthLogs.bind(challengeResponseController));
   app.get('/api/admin/auth/service-status', isAuthenticated, requireAdminAuth, challengeResponseController.getServiceStatus.bind(challengeResponseController));

@@ -1080,55 +1080,148 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   /**
-   * Step 3: Verify Final Response
+   * Step 3: Verify Final Response + Balance Check + Dispense Tea
    * 
    * Pi sends the card's final response (Enc(Rot(RndA))).
-   * Backend verifies and returns authentication result + session key.
+   * Backend verifies authentication, checks balance, and dispenses tea if sufficient.
    * 
-   * Request: { sessionId: "abc123", cardResponse: "72A1C40D..." }
-   * Response: { authenticated: true, sessionKey: "...", cardId: "..." }
+   * Request: { sessionId: "abc123", cardResponse: "72A1C40D...", machineId: "machine-123" }
+   * Response: { authenticated: true, dispensed: true, remainingBalance: "95.00", ... }
    */
   app.post('/api/rfid/auth/verify', timeoutMiddleware(TIMEOUT_CONFIGS.RFID), async (req, res) => {
     try {
-      const { sessionId, cardResponse } = req.body;
+      const { sessionId, cardResponse, machineId } = req.body;
 
       if (!sessionId || !cardResponse) {
         return res.status(400).json({ 
           success: false, 
+          authenticated: false,
+          dispensed: false,
           error: "Missing sessionId or cardResponse" 
         });
       }
 
-      const result = await desfireAuth.verifyFinal({ sessionId, cardResponse });
+      // Step 1: Verify DESFire authentication
+      const authResult = await desfireAuth.verifyFinal({ sessionId, cardResponse });
 
-      if (!result.success) {
+      if (!authResult.success || !authResult.authenticated) {
+        console.warn(`[DESFire Auth] Card authentication failed: ${authResult.error}`);
         return res.status(400).json({ 
           success: false, 
           authenticated: false,
-          error: result.error 
+          dispensed: false,
+          error: authResult.error || "Authentication failed"
         });
       }
 
-      // Log successful authentication
-      if (result.authenticated) {
-        console.log(`[DESFire Auth] Card ${result.cardId} authenticated successfully`);
-      } else {
-        console.warn(`[DESFire Auth] Card authentication failed: ${result.error}`);
+      console.log(`[DESFire Auth] Card ${authResult.cardId} authenticated successfully`);
+
+      // If no machineId provided, just return authentication success
+      if (!machineId) {
+        return res.json({
+          success: true,
+          authenticated: true,
+          dispensed: false,
+          sessionKey: authResult.sessionKey,
+          cardId: authResult.cardId,
+          message: "Authentication successful (no dispensing - machineId not provided)"
+        });
       }
 
-      res.json({
-        success: true,
-        authenticated: result.authenticated,
-        sessionKey: result.sessionKey,
-        cardId: result.cardId,
-        error: result.error,
+      // Step 2: Get machine details
+      const machine = await storage.getTeaMachine(machineId);
+      if (!machine) {
+        return res.status(404).json({ 
+          success: false, 
+          authenticated: true,
+          dispensed: false,
+          error: "Machine not found" 
+        });
+      }
+
+      if (!machine.isActive) {
+        return res.status(400).json({ 
+          success: false, 
+          authenticated: true,
+          dispensed: false,
+          error: "Machine is disabled" 
+        });
+      }
+
+      const teaAmount = parseFloat(machine.price || "5.00");
+
+      // Step 3: Get card details
+      const card = await storage.getRfidCardByNumber(authResult.cardId);
+      if (!card) {
+        return res.status(404).json({ 
+          success: false, 
+          authenticated: true,
+          dispensed: false,
+          error: "Invalid RFID card" 
+        });
+      }
+
+      // Step 4: Validate business unit ownership
+      if (card.businessUnitId !== machine.businessUnitId) {
+        return res.status(400).json({ 
+          success: false, 
+          authenticated: true,
+          dispensed: false,
+          error: "Invalid card for this machine" 
+        });
+      }
+
+      // Step 5: Get business unit
+      const businessUnit = await storage.getBusinessUnit(card.businessUnitId);
+      if (!businessUnit) {
+        return res.status(404).json({ 
+          success: false, 
+          authenticated: true,
+          dispensed: false,
+          error: "Business unit not found" 
+        });
+      }
+
+      // Step 6: Process transaction (checks balance and dispenses tea)
+      const transactionResult = await storage.processRfidTransaction({
+        businessUnitId: businessUnit.id,
+        cardId: card.id,
+        machineId,
+        teaType: "Regular Tea",
+        amount: teaAmount.toString()
       });
 
+      if (transactionResult.success) {
+        console.log(`[DESFire Dispense] Tea dispensed successfully for card ${authResult.cardId}, remaining balance: ${transactionResult.remainingBalance}`);
+        
+        res.json({
+          success: true,
+          authenticated: true,
+          dispensed: true,
+          sessionKey: authResult.sessionKey,
+          cardId: authResult.cardId,
+          message: "Tea dispensed successfully",
+          remainingBalance: transactionResult.remainingBalance,
+          businessUnitName: businessUnit.name,
+          machineLocation: machine.location
+        });
+      } else {
+        // Transaction failed (likely insufficient balance)
+        res.status(400).json({
+          success: false,
+          authenticated: true,
+          dispensed: false,
+          error: transactionResult.message,
+          cardId: authResult.cardId
+        });
+      }
+
     } catch (error) {
-      console.error("Error verifying DESFire auth:", error);
+      console.error("Error in DESFire auth/verify:", error);
       res.status(500).json({ 
         success: false, 
         authenticated: false,
+        dispensed: false,
         error: "Internal server error" 
       });
     }

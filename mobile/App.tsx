@@ -13,7 +13,6 @@ import HomeScreen from './src/screens/HomeScreen';
 import WalletScreen from './src/screens/WalletScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
-import QRScannerScreen from './src/screens/QRScannerScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import SplashScreen from './src/screens/SplashScreen';
 
@@ -121,10 +120,7 @@ function AppNavigator() {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {user ? (
-          <>
-            <Stack.Screen name="MainTabs" component={MainTabs} />
-            <Stack.Screen name="QRScanner" component={QRScannerScreen} />
-          </>
+          <Stack.Screen name="MainTabs" component={MainTabs} />
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} />
         )}

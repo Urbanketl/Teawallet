@@ -46,27 +46,17 @@ export default function HomeScreen({ navigation }: any) {
     },
     {
       id: '2',
-      title: 'Scan QR',
-      icon: 'qr-code',
-      color: Colors.warning,
-      onPress: () => navigation.navigate('QRScanner'),
-    },
-    {
-      id: '3',
       title: 'View History',
       icon: 'time',
       color: Colors.primary,
       onPress: () => navigation.navigate('History'),
     },
     {
-      id: '4',
-      title: 'Find Machines',
-      icon: 'location',
-      color: Colors.error,
-      onPress: () => {
-        // Navigate to machine finder or show nearby machines
-        Alert.alert('Coming Soon', 'Machine finder feature will be available soon!');
-      },
+      id: '3',
+      title: 'Profile Settings',
+      icon: 'person',
+      color: Colors.warning,
+      onPress: () => navigation.navigate('Profile'),
     },
   ];
 

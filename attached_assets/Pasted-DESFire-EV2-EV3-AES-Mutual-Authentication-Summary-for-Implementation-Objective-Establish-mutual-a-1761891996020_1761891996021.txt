@@ -1,0 +1,87 @@
+DESFire EV2/EV3 AES Mutual Authentication – Summary for Implementation
+Objective
+
+Establish mutual authentication between server (host) and DESFire AES card using a shared 16-byte AES key, and derive a session key for secure messaging.
+
+Step 1 – Start Authentication
+
+Host → Card: Send Authenticate AES command.
+
+CLA = 0x90  
+INS = 0xAA  
+P1 = 0x00  
+P2 = 0x00  
+Data = KeyNumber (e.g., 0x00)  
+
+
+Expected Response: Card returns Enc(RndB) – a 16-byte random number encrypted with AES (same shared key).
+
+Step 2 – Card Generates RndB
+
+Card generates a 16-byte random number RndB.
+
+Encrypts it using AES (key = shared AES key, mode = AES-CBC, IV = 0x00).
+
+Sends Enc(RndB) to the host.
+
+Step 3 – Host (Server) Decrypts and Responds
+
+Host decrypts Enc(RndB) using the same AES key to get RndB.
+
+Host generates its own random 16-byte RndA.
+
+Rotate RndB left by one byte → Rot(RndB).
+
+Concatenate → RndA || Rot(RndB) (32 bytes).
+
+Encrypt the concatenated block using AES-CBC (IV=0).
+
+Send Enc(RndA || Rot(RndB)) to the card inside a Continue Authenticate command.
+
+Step 4 – Card Verifies and Responds
+
+Card decrypts Enc(RndA || Rot(RndB)).
+
+Validates that the rotated RndB matches its own random.
+
+Rotates RndA left by one byte → Rot(RndA).
+
+Encrypts it using AES-CBC (IV=0) → Enc(Rot(RndA)).
+
+Sends this 16-byte block to the host.
+
+Step 5 – Host Verifies
+
+Host decrypts the received Enc(Rot(RndA)).
+
+Verifies it matches its own RndA rotated left by one byte.
+
+If valid → authentication success ✅.
+
+Both sides now share RndA and RndB, which are used to derive a session key.
+
+Step 6 – Session Key Derivation
+
+Use the formula (from NXP documentation):
+
+SessionKey = RndA[0..3] || RndB[0..3] || RndA[12..15] || RndB[12..15]
+
+
+This 16-byte session key is then used for secure messaging (MAC or encryption of commands/responses).
+
+Implementation Notes
+
+AES mode: CBC, IV = all zeros for each new authentication.
+
+Key size: AES-128 (16 bytes).
+
+Ensure fresh random numbers every session.
+
+After authentication, enable CMAC/encryption for all future communication.
+
+Example Exchange (for testing)
+Step	Direction	Data (hex, sample)	Meaning
+1	Host → Card	90 AA 00 00 01 00 00	Start Authenticate
+2	Card → Host	87 34 5A 91 20 FE 11 3C ...	Enc(RndB)
+3	Host → Card	90 AF 00 00 20 11 F8 C7 A2 ... 00	Enc(RndA
+4	Card → Host	72 A1 C4 0D 5E 99 6F 83 ...	Enc(Rot(RndA))

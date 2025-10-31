@@ -8,9 +8,30 @@ The authentication process follows the NXP DESFire standard for AES mutual authe
 
 1. **Start Authentication** - Pi initiates auth, gets APDU command
 2. **Process Card Response** - Pi sends card's Enc(RndB), gets challenge APDU
-3. **Verify Final** - Pi sends final card response, gets authentication result
+3. **Verify Final** - Pi sends final card response, gets authentication result + dispenses tea
 
 All cryptographic operations (encryption, decryption, key derivation) are performed server-side for security.
+
+## Security Features
+
+### AES Key Encryption at Rest
+
+All RFID card AES keys are encrypted in the database using **AES-256-CBC** encryption:
+
+- **Storage Format**: IV (16 bytes) + Encrypted Key Data
+- **Encryption Key**: `MASTER_KEY` environment variable (SHA-256 hashed to 32 bytes)
+- **Algorithm**: AES-256-CBC with random IV per card
+- **Automatic Decryption**: Backend automatically decrypts keys during authentication
+- **Backward Compatible**: System supports both encrypted and legacy plain keys
+- **Migration**: Use `scripts/migrate-aes-keys.ts` to encrypt existing plain keys
+
+**Security Benefits:**
+- ✅ Database breach doesn't expose card cryptographic keys
+- ✅ Keys protected at rest with industry-standard encryption
+- ✅ Each key has unique IV (no pattern reuse)
+- ✅ Transparent to Raspberry Pi clients (decryption handled server-side)
+
+**Note:** The Pi machines never handle encrypted keys directly - they only provide the card UID, and the backend retrieves and decrypts the corresponding AES key from the database.
 
 ---
 

@@ -4,6 +4,12 @@
 UrbanKetl is a B2B corporate tea dispensing system that integrates RFID technology with a web application. Its primary purpose is to enable business unit administrators to manage multiple tea machines, issue generic RFID cards to employees, and monitor dispensing activity charged to a corporate wallet. The project aims to provide a comprehensive solution for corporate tea services, streamlining management, billing, and offering detailed analytics. The vision is to become the leading provider of smart beverage solutions for corporate environments, enhancing employee amenities and simplifying administrative overhead.
 
 ## Recent Changes (January 31, 2025)
+- **AES Key Encryption System** - Implemented secure encryption for RFID card AES keys using existing MASTER_KEY environment variable:
+  - Created shared crypto utility (`server/utils/aes-key-crypto.ts`) with AES-256-CBC encryption/decryption functions
+  - Card creation now encrypts AES keys before storing in database (IV + encrypted data format)
+  - DESFire authentication endpoints decrypt keys from database before use
+  - Backward compatibility for legacy plain hex keys with automatic fallback
+  - All card keys now stored encrypted, protecting against database breaches
 - **DESFire AES Mutual Authentication Implemented** - Built complete server-side DESFire EV2/EV3 AES mutual authentication system following NXP specifications. Implementation includes:
   - Crypto service with AES-128 encryption/decryption (CBC mode, IV=0), byte rotation, and session key derivation
   - Session manager with 30-second timeout and automatic cleanup

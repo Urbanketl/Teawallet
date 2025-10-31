@@ -1,0 +1,411 @@
+# DESFire AES Mutual Authentication API
+
+This document describes the API endpoints for DESFire EV2/EV3 AES mutual authentication between Raspberry Pi tea machines and the backend server.
+
+## Overview
+
+The authentication process follows the NXP DESFire standard for AES mutual authentication:
+
+1. **Start Authentication** - Pi initiates auth, gets APDU command
+2. **Process Card Response** - Pi sends card's Enc(RndB), gets challenge APDU
+3. **Verify Final** - Pi sends final card response, gets authentication result
+
+All cryptographic operations (encryption, decryption, key derivation) are performed server-side for security.
+
+---
+
+## Authentication Flow
+
+```
+┌─────────┐                ┌──────────┐                ┌──────┐
+│   Pi    │                │  Backend │                │ Card │
+└────┬────┘                └────┬─────┘                └───┬──┘
+     │                          │                          │
+     │  POST /api/rfid/auth/start                         │
+     │──────────────────────────>│                         │
+     │  { cardId, machineId }    │                         │
+     │                           │                         │
+     │  { sessionId, apduCommand }                        │
+     │<──────────────────────────│                         │
+     │                           │                         │
+     │                                                     │
+     │  Send APDU: 90 AA 00 00 01 00                      │
+     │─────────────────────────────────────────────────────>│
+     │                           │                         │
+     │  Response: Enc(RndB)                               │
+     │<─────────────────────────────────────────────────────│
+     │                           │                         │
+     │  POST /api/rfid/auth/step2                         │
+     │──────────────────────────>│                         │
+     │  { sessionId, cardResponse }                       │
+     │                           │                         │
+     │  { apduCommand }          │                         │
+     │<──────────────────────────│                         │
+     │                           │                         │
+     │  Send APDU: 90 AF 00 00 20 ...                     │
+     │─────────────────────────────────────────────────────>│
+     │                           │                         │
+     │  Response: Enc(Rot(RndA))                          │
+     │<─────────────────────────────────────────────────────│
+     │                           │                         │
+     │  POST /api/rfid/auth/verify                        │
+     │──────────────────────────>│                         │
+     │  { sessionId, cardResponse }                       │
+     │                           │                         │
+     │  { authenticated: true,   │                         │
+     │    sessionKey: "..." }    │                         │
+     │<──────────────────────────│                         │
+     │                           │                         │
+     │  ✅ Dispense Tea          │                         │
+     │                           │                         │
+```
+
+---
+
+## API Endpoints
+
+### 1. Start Authentication
+
+**Endpoint:** `POST /api/rfid/auth/start`
+
+**Description:** Initiates DESFire AES authentication. Returns the first APDU command to send to the card.
+
+**Request Body:**
+```json
+{
+  "cardId": "04:12:34:56:78:90:AB",
+  "keyNumber": 0,
+  "machineId": 123
+}
+```
+
+**Request Fields:**
+- `cardId` (string, required) - RFID card UID in hex format (with or without colons)
+- `keyNumber` (number, optional) - DESFire key number (default: 0)
+- `machineId` (number, optional) - Tea machine ID for logging
+
+**Success Response:** `200 OK`
+```json
+{
+  "success": true,
+  "sessionId": "a3f2c8e7b9d4f1a6c5e8b2d7f3a9c6e1",
+  "apduCommand": "90AA00000100"
+}
+```
+
+**Response Fields:**
+- `sessionId` - Unique session identifier (use in subsequent requests)
+- `apduCommand` - Hex string of APDU command to send to card
+
+**Error Responses:**
+
+`400 Bad Request` - Missing cardId
+```json
+{
+  "success": false,
+  "error": "Missing cardId parameter"
+}
+```
+
+`404 Not Found` - Card not found in database
+```json
+{
+  "success": false,
+  "error": "Card not found"
+}
+```
+
+`400 Bad Request` - Card has no AES key configured
+```json
+{
+  "success": false,
+  "error": "Card has no AES key configured"
+}
+```
+
+**APDU Command Format:**
+```
+CLA  INS  P1   P2   Lc   Data
+90   AA   00   00   01   00
+```
+- CLA: 0x90 (DESFire)
+- INS: 0xAA (Authenticate AES)
+- P1/P2: 0x00
+- Lc: 0x01 (1 byte data)
+- Data: Key number (0x00)
+
+---
+
+### 2. Process Card Response (Step 2)
+
+**Endpoint:** `POST /api/rfid/auth/step2`
+
+**Description:** Processes the card's Enc(RndB) response and returns the challenge APDU.
+
+**Request Body:**
+```json
+{
+  "sessionId": "a3f2c8e7b9d4f1a6c5e8b2d7f3a9c6e1",
+  "cardResponse": "8734FA9120FE113C8A45B29C7D6E3F81"
+}
+```
+
+**Request Fields:**
+- `sessionId` (string, required) - Session ID from step 1
+- `cardResponse` (string, required) - Card's response in hex (Enc(RndB), 16 bytes)
+
+**Success Response:** `200 OK`
+```json
+{
+  "success": true,
+  "apduCommand": "90AF0000201FE8C7A29B4D5E663F72A1D8E304B65C9F2E81B37A40C928D1E64F3A90"
+}
+```
+
+**Response Fields:**
+- `apduCommand` - Hex string of Continue Authenticate APDU (37 bytes)
+
+**Error Responses:**
+
+`400 Bad Request` - Missing parameters
+```json
+{
+  "success": false,
+  "error": "Missing sessionId or cardResponse"
+}
+```
+
+`400 Bad Request` - Session not found or expired
+```json
+{
+  "success": false,
+  "error": "Session not found or expired"
+}
+```
+
+`400 Bad Request` - Invalid card response length
+```json
+{
+  "success": false,
+  "error": "Invalid card response length: expected 16 bytes, got X"
+}
+```
+
+**APDU Command Format:**
+```
+CLA  INS  P1   P2   Lc   Data (32 bytes)
+90   AF   00   00   20   [Enc(RndA || Rot(RndB))]
+```
+
+---
+
+### 3. Verify Final Response
+
+**Endpoint:** `POST /api/rfid/auth/verify`
+
+**Description:** Verifies the card's final response and completes authentication.
+
+**Request Body:**
+```json
+{
+  "sessionId": "a3f2c8e7b9d4f1a6c5e8b2d7f3a9c6e1",
+  "cardResponse": "72A1C40D5E996F8392B3E145A7D20C8F"
+}
+```
+
+**Request Fields:**
+- `sessionId` (string, required) - Session ID from step 1
+- `cardResponse` (string, required) - Card's final response in hex (Enc(Rot(RndA)), 16 bytes)
+
+**Success Response (Authenticated):** `200 OK`
+```json
+{
+  "success": true,
+  "authenticated": true,
+  "sessionKey": "A3F2C8E7B9D4F1A6C5E8B2D7F3A9C6E1",
+  "cardId": "04:12:34:56:78:90:AB"
+}
+```
+
+**Success Response (Authentication Failed):** `200 OK`
+```json
+{
+  "success": true,
+  "authenticated": false,
+  "error": "Authentication failed: RndA mismatch"
+}
+```
+
+**Response Fields:**
+- `authenticated` (boolean) - Whether authentication succeeded
+- `sessionKey` (string, optional) - Derived session key in hex (16 bytes) - only if authenticated
+- `cardId` (string, optional) - Card ID - only if authenticated
+- `error` (string, optional) - Error message if authentication failed
+
+**Error Responses:**
+
+`400 Bad Request` - Missing parameters
+```json
+{
+  "success": false,
+  "authenticated": false,
+  "error": "Missing sessionId or cardResponse"
+}
+```
+
+`400 Bad Request` - Session not found
+```json
+{
+  "success": false,
+  "authenticated": false,
+  "error": "Session not found or expired"
+}
+```
+
+---
+
+## Session Management
+
+**Session Timeout:** 30 seconds
+
+Each authentication session is valid for 30 seconds from creation. After this time:
+- The session is automatically deleted
+- API calls with that sessionId will return "Session not found or expired"
+- You must start a new authentication from step 1
+
+**Session Cleanup:**
+- Expired sessions are cleaned up every 60 seconds
+- Successfully authenticated sessions are deleted 5 seconds after verification
+- Failed authentication attempts remain logged for debugging
+
+---
+
+## Integration Examples
+
+### Python Example (Raspberry Pi with pyscard)
+
+```python
+import requests
+from smartcard.System import readers
+from smartcard.util import toHexString, toBytes
+
+# Configuration
+API_BASE_URL = "https://your-backend-url.replit.app"
+CARD_UID = "04:12:34:56:78:90:AB"
+MACHINE_ID = 123
+
+# Connect to card reader (ACR122U)
+reader_list = readers()
+reader = reader_list[0]
+connection = reader.createConnection()
+connection.connect()
+
+# Step 1: Start authentication
+response = requests.post(f"{API_BASE_URL}/api/rfid/auth/start", json={
+    "cardId": CARD_UID,
+    "keyNumber": 0,
+    "machineId": MACHINE_ID
+})
+data = response.json()
+session_id = data["sessionId"]
+apdu_hex = data["apduCommand"]
+
+# Send first APDU to card
+apdu = toBytes(apdu_hex)
+card_response, sw1, sw2 = connection.transmit(apdu)
+
+# Step 2: Process card response
+enc_rndb = toHexString(card_response)
+response = requests.post(f"{API_BASE_URL}/api/rfid/auth/step2", json={
+    "sessionId": session_id,
+    "cardResponse": enc_rndb.replace(" ", "")
+})
+data = response.json()
+apdu_hex = data["apduCommand"]
+
+# Send challenge APDU to card
+apdu = toBytes(apdu_hex)
+card_response, sw1, sw2 = connection.transmit(apdu)
+
+# Step 3: Verify final response
+enc_rot_rnda = toHexString(card_response)
+response = requests.post(f"{API_BASE_URL}/api/rfid/auth/verify", json={
+    "sessionId": session_id,
+    "cardResponse": enc_rot_rnda.replace(" ", "")
+})
+data = response.json()
+
+if data["authenticated"]:
+    print(f"✅ Authentication successful!")
+    print(f"Session Key: {data['sessionKey']}")
+    # Proceed to dispense tea
+else:
+    print(f"❌ Authentication failed: {data.get('error')}")
+
+connection.disconnect()
+```
+
+---
+
+## Security Notes
+
+1. **Server-Side Crypto:** All encryption/decryption is performed server-side. The Pi never has access to AES keys.
+
+2. **Session Security:** 
+   - Sessions expire after 30 seconds
+   - Each session uses fresh random numbers (RndA)
+   - Sessions cannot be reused
+
+3. **Transport Security:** 
+   - Use HTTPS in production
+   - Card responses contain encrypted data only
+
+4. **Key Storage:** 
+   - AES keys are stored encrypted in the database
+   - Keys are never returned in API responses
+
+5. **Logging:**
+   - All authentication attempts are logged
+   - Failed attempts are logged with reasons
+   - Session statistics available for monitoring
+
+---
+
+## Troubleshooting
+
+### "Card not found"
+- Verify the cardId matches the format in your database
+- Check if card exists: `SELECT * FROM rfid_cards WHERE card_number = '04:12:34:56:78:90:AB'`
+
+### "Card has no AES key configured"
+- Card must have an AES key in the database
+- Check: `SELECT aes_key_encrypted FROM rfid_cards WHERE card_number = '...'`
+
+### "Session not found or expired"
+- Session timeout is 30 seconds
+- Complete all 3 steps within this timeframe
+- Start a new authentication if session expires
+
+### "Invalid card response length"
+- Verify card responses are exactly 16 bytes
+- Remove spaces and colons from hex strings
+- Check card reader communication
+
+### "Authentication failed: RndA mismatch"
+- Card authentication failed (wrong key or card issue)
+- Verify AES key matches the card's configured key
+- Check card is a genuine DESFire EV2/EV3 card
+
+---
+
+## Additional Resources
+
+- [NXP DESFire EV3 Datasheet](https://www.nxp.com/docs/en/data-sheet/MF3DX2_MF3DHX2_SDS.pdf)
+- [DESFire Authentication Guide](https://www.nxp.com/docs/en/application-note/AN12343.pdf)
+- ACR122U SDK Documentation
+
+---
+
+## Version History
+
+- **v1.0** (2025-01-31) - Initial implementation of DESFire AES mutual authentication

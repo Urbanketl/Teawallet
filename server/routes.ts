@@ -977,16 +977,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Get AES key for the card (should be stored in the database)
-      if (!card.aesKey) {
+      // Get AES key for the card (stored encrypted in database)
+      if (!card.aesKeyEncrypted) {
         return res.status(400).json({ 
           success: false, 
           error: "Card has no AES key configured" 
         });
       }
 
-      // Convert hex string AES key to Buffer
-      const aesKeyBuffer = Buffer.from(card.aesKey.replace(/:/g, ''), 'hex');
+      // TODO: Decrypt the AES key (currently stored encrypted)
+      // For now, assuming aesKeyEncrypted contains the hex key directly
+      // In production, implement proper decryption using a master key
+      const aesKeyBuffer = Buffer.from(card.aesKeyEncrypted.replace(/:/g, ''), 'hex');
       
       if (aesKeyBuffer.length !== 16) {
         return res.status(500).json({ 

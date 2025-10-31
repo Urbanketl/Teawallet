@@ -9,7 +9,6 @@ React Native mobile application for UrbanKetl tea machine management platform, b
 - 📊 **Transaction History** - Track all recharges and tea purchases
 - 🏢 **Business Units** - Manage multiple business unit wallets
 - 📱 **Push Notifications** - Get notified about wallet updates
-- 📷 **QR Scanner** - Scan QR codes for quick actions
 - 👤 **Profile Management** - Update preferences and settings
 
 ## Prerequisites
@@ -103,7 +102,6 @@ mobile/
 │   │   ├── HistoryScreen.tsx    # Transaction history
 │   │   ├── ProfileScreen.tsx    # User profile
 │   │   ├── LoginScreen.tsx      # Authentication
-│   │   ├── QRScannerScreen.tsx  # QR code scanner
 │   │   └── SplashScreen.tsx     # Loading screen
 │   └── services/
 │       ├── AuthService.tsx      # Authentication logic

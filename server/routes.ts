@@ -25,6 +25,7 @@ import { upiSyncController } from "./controllers/upiSyncController";
 import { notificationScheduler } from "./services/notificationScheduler";
 import { timeoutMiddleware, TIMEOUT_CONFIGS } from "./middleware/timeoutMiddleware";
 import * as desfireAuth from "./services/desfire-auth";
+import { decryptAESKey } from "./utils/aes-key-crypto";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize Razorpay
@@ -985,15 +986,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // TODO: Decrypt the AES key (currently stored encrypted)
-      // For now, assuming aesKeyEncrypted contains the hex key directly
-      // In production, implement proper decryption using a master key
-      const aesKeyBuffer = Buffer.from(card.aesKeyEncrypted.replace(/:/g, ''), 'hex');
+      // Decrypt the AES key using MASTER_KEY
+      let aesKeyHex: string;
+      try {
+        aesKeyHex = decryptAESKey(card.aesKeyEncrypted);
+      } catch (error) {
+        console.error("Failed to decrypt AES key:", error);
+        return res.status(500).json({ 
+          success: false, 
+          error: "Failed to decrypt card AES key" 
+        });
+      }
+      
+      // Convert decrypted hex key to buffer (remove any colons if present)
+      const aesKeyBuffer = Buffer.from(aesKeyHex.replace(/:/g, ''), 'hex');
       
       if (aesKeyBuffer.length !== 16) {
         return res.status(500).json({ 
           success: false, 
-          error: "Invalid AES key length" 
+          error: "Invalid AES key length after decryption" 
         });
       }
 

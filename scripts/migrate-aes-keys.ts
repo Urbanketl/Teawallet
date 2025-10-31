@@ -1,6 +1,6 @@
 import { db } from "../server/db";
 import { rfidCards } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { encryptAESKey, isEncrypted } from "../server/utils/aes-key-crypto";
 
 const BATCH_SIZE = 250;
@@ -111,17 +111,28 @@ async function migrateKeys(): Promise<void> {
       }
 
       try {
-        const encryptedKey = encryptAESKey(card.aesKeyEncrypted);
+        const plainKeySnapshot = card.aesKeyEncrypted;
+        const encryptedKey = encryptAESKey(plainKeySnapshot);
         
-        await db
+        const result = await db
           .update(rfidCards)
           .set({ aesKeyEncrypted: encryptedKey })
-          .where(eq(rfidCards.id, card.id));
+          .where(
+            and(
+              eq(rfidCards.id, card.id),
+              eq(rfidCards.aesKeyEncrypted, plainKeySnapshot)
+            )
+          )
+          .returning({ id: rfidCards.id });
 
-        migrated++;
-        
-        if (migrated % 50 === 0) {
-          console.log(`  ✓ Migrated ${migrated} cards...`);
+        if (result.length === 0) {
+          skipped++;
+          console.log(`  ⏭️  Card ${card.cardNumber} was modified concurrently, skipping...`);
+        } else {
+          migrated++;
+          if (migrated % 50 === 0) {
+            console.log(`  ✓ Migrated ${migrated} cards...`);
+          }
         }
       } catch (error) {
         errors++;

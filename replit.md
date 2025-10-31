@@ -4,18 +4,25 @@
 UrbanKetl is a B2B corporate tea dispensing system that integrates RFID technology with a web application. Its primary purpose is to enable business unit administrators to manage multiple tea machines, issue generic RFID cards to employees, and monitor dispensing activity charged to a corporate wallet. The project aims to provide a comprehensive solution for corporate tea services, streamlining management, billing, and offering detailed analytics. The vision is to become the leading provider of smart beverage solutions for corporate environments, enhancing employee amenities and simplifying administrative overhead.
 
 ## Recent Changes (January 31, 2025)
+- **Complete RFID Tea Dispensing Flow** - Integrated balance checking and tea dispensing into DESFire verify endpoint:
+  - `/api/rfid/auth/verify` now performs full flow: authenticate → validate machine → check balance → dispense tea
+  - Returns detailed response including remaining balance, business unit name, and machine location
+  - Validates card and machine belong to same business unit before dispensing
+  - Handles all error scenarios (insufficient balance, inactive machine, invalid card)
+  - Backward compatible: works without machineId for authentication-only mode
 - **AES Key Encryption System** - Implemented secure encryption for RFID card AES keys using existing MASTER_KEY environment variable:
   - Created shared crypto utility (`server/utils/aes-key-crypto.ts`) with AES-256-CBC encryption/decryption functions
   - Card creation now encrypts AES keys before storing in database (IV + encrypted data format)
   - DESFire authentication endpoints decrypt keys from database before use
+  - Production migration completed: All 4 existing cards successfully encrypted
   - Backward compatibility for legacy plain hex keys with automatic fallback
-  - All card keys now stored encrypted, protecting against database breaches
-- **DESFire AES Mutual Authentication Implemented** - Built complete server-side DESFire EV2/EV3 AES mutual authentication system following NXP specifications. Implementation includes:
+  - Migration script (`scripts/migrate-aes-keys.ts`) with dry-run mode and batch processing
+- **DESFire AES Mutual Authentication** - Built complete server-side DESFire EV2/EV3 AES mutual authentication system following NXP specifications:
   - Crypto service with AES-128 encryption/decryption (CBC mode, IV=0), byte rotation, and session key derivation
   - Session manager with 30-second timeout and automatic cleanup
   - Three-step authentication service (start, process, verify) matching NXP protocol
   - Three API endpoints for Raspberry Pi integration: `/api/rfid/auth/start`, `/api/rfid/auth/step2`, `/api/rfid/auth/verify`
-  - Comprehensive API documentation in `docs/DESFIRE_AUTH_API.md` with Python integration examples
+  - Comprehensive API documentation in `docs/DESFIRE_AUTH_API.md` with complete flow diagrams and Python integration examples
   - All cryptographic operations performed server-side for security
 
 ## Previous Changes (October 31, 2025)

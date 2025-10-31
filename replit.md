@@ -3,7 +3,16 @@
 ## Overview
 UrbanKetl is a B2B corporate tea dispensing system that integrates RFID technology with a web application. Its primary purpose is to enable business unit administrators to manage multiple tea machines, issue generic RFID cards to employees, and monitor dispensing activity charged to a corporate wallet. The project aims to provide a comprehensive solution for corporate tea services, streamlining management, billing, and offering detailed analytics. The vision is to become the leading provider of smart beverage solutions for corporate environments, enhancing employee amenities and simplifying administrative overhead.
 
-## Recent Changes (October 31, 2025)
+## Recent Changes (January 31, 2025)
+- **DESFire AES Mutual Authentication Implemented** - Built complete server-side DESFire EV2/EV3 AES mutual authentication system following NXP specifications. Implementation includes:
+  - Crypto service with AES-128 encryption/decryption (CBC mode, IV=0), byte rotation, and session key derivation
+  - Session manager with 30-second timeout and automatic cleanup
+  - Three-step authentication service (start, process, verify) matching NXP protocol
+  - Three API endpoints for Raspberry Pi integration: `/api/rfid/auth/start`, `/api/rfid/auth/step2`, `/api/rfid/auth/verify`
+  - Comprehensive API documentation in `docs/DESFIRE_AUTH_API.md` with Python integration examples
+  - All cryptographic operations performed server-side for security
+
+## Previous Changes (October 31, 2025)
 - **Mobile App Created** - Built complete React Native mobile app using Expo in `/mobile` directory. Features include session-based authentication, wallet management, transaction history, profile settings, and push notifications. Mobile app connects to the same Express backend and PostgreSQL database as the web app. Comprehensive setup documentation in `mobile/README.md` includes instructions for iOS/Android testing, session cookie handling, and production builds.
 - **QR Scanner Removed** - Removed QR scanner feature from mobile app as it was not needed for initial release. Can be re-added in future if specific QR code functionality is required.
 
@@ -27,7 +36,7 @@ UI/UX preferences: Clean, simplified interfaces without unnecessary elements lik
 ### Technical Implementations
 - **Backend**: Node.js with Express.js, written in TypeScript, providing RESTful APIs.
 - **Authentication**: Custom email/password authentication system with admin-controlled user creation and secure session management persisted in PostgreSQL. Role-based access control includes Platform Admin (full system access) and Business Unit Admin (analytics access).
-- **RFID Integration**: Centralized RFID card management using MIFARE DESFire EV3 cards (backward compatible with EV1/EV2) with AES encryption. Platform admins can batch create and assign cards with automatic cryptographic key generation. All RFID validation is server-side via API calls from Pi machines using challenge-response authentication. Raspberry Pi machines support both ACR122U (USB/PC-SC) and MCRN2 (SPI/PN532) readers with automatic detection and DESFire APDU command handling.
+- **RFID Integration**: Centralized RFID card management using MIFARE DESFire EV3 cards (backward compatible with EV1/EV2) with AES encryption. Platform admins can batch create and assign cards with automatic cryptographic key generation. All RFID validation is server-side via API calls from Pi machines using DESFire AES mutual authentication (NXP standard). Raspberry Pi machines support both ACR122U (USB/PC-SC) and MCRN2 (SPI/PN532) readers. Three-step authentication protocol: start authentication, process card response (Enc(RndB)), verify final response (Enc(Rot(RndA))) with server-side cryptographic operations and session key derivation.
 - **Payment Processing**: Razorpay integration for digital wallet recharges, including recharge, deduction, refund, payment verification, and webhook handling.
 - **Tea Pricing**: Simplified to a single "Regular Tea" variety with machine-specific pricing configurable by admins.
 - **Reporting & Analytics**: Comprehensive administrative dashboards for user management, revenue tracking, usage patterns, and machine monitoring. Features include custom date range selection, Excel/PDF export, and graphical business insights.

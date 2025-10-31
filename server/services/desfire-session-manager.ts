@@ -109,7 +109,7 @@ class DesfireSessionManager {
     const now = Date.now();
     const expiredSessions: string[] = [];
 
-    for (const [sessionId, session] of this.sessions.entries()) {
+    for (const [sessionId, session] of Array.from(this.sessions.entries())) {
       const age = now - session.timestamp.getTime();
       if (age > this.SESSION_TIMEOUT_MS) {
         expiredSessions.push(sessionId);
@@ -154,7 +154,7 @@ class DesfireSessionManager {
       byStep: {} as Record<string, number>,
     };
 
-    for (const session of this.sessions.values()) {
+    for (const session of Array.from(this.sessions.values())) {
       stats.byStep[session.step] = (stats.byStep[session.step] || 0) + 1;
     }
 

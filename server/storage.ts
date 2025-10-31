@@ -19,6 +19,7 @@ import { eq, and, desc, asc, sql, gte, lte, or, ilike, inArray, isNotNull, isNul
 import { alias } from "drizzle-orm/pg-core";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
+import { encryptAESKey } from "./utils/aes-key-crypto";
 
 export interface IStorage {
   // Session store for authentication
@@ -988,12 +989,12 @@ export class DatabaseStorage implements IStorage {
         // Add DESFire-specific fields (all cards are DESFire EV1)
         cardData.hardwareUid = hardwareUid || null;
         if (autoGenerateKey) {
-          // Generate AES key directly
+          // Generate AES key and encrypt it with MASTER_KEY
           const crypto = await import('crypto');
           const aesKey = crypto.randomBytes(16).toString('hex').toUpperCase();
-          cardData.aesKeyEncrypted = aesKey; // For now, store as plain (encrypt later)
+          cardData.aesKeyEncrypted = encryptAESKey(aesKey); // Encrypt before storing
           cardData.keyVersion = 1;
-          cardData.aesKeyPlain = aesKey; // Store plain key for display
+          cardData.aesKeyPlain = aesKey; // Store plain key for display (temporary)
         }
 
         const [newCard] = await db

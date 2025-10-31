@@ -24,6 +24,7 @@ import { ChallengeResponseController } from "./controllers/challengeResponseCont
 import { upiSyncController } from "./controllers/upiSyncController";
 import { notificationScheduler } from "./services/notificationScheduler";
 import { timeoutMiddleware, TIMEOUT_CONFIGS } from "./middleware/timeoutMiddleware";
+import * as desfireAuth from "./services/desfire-auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize Razorpay
@@ -942,6 +943,187 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // ==============================================================================
+  // DESFIRE AES MUTUAL AUTHENTICATION ENDPOINTS (for Raspberry Pi machines)
+  // ==============================================================================
+
+  /**
+   * Step 1: Start DESFire Authentication
+   * 
+   * Pi calls this to initiate authentication with a card.
+   * Returns the APDU command to send to the card.
+   * 
+   * Request: { cardId: "04:12:34:56:78:90:AB", keyNumber: 0, machineId: 123 }
+   * Response: { sessionId: "abc123", apduCommand: "90AA00000100" }
+   */
+  app.post('/api/rfid/auth/start', timeoutMiddleware(TIMEOUT_CONFIGS.RFID), async (req, res) => {
+    try {
+      const { cardId, keyNumber = 0, machineId } = req.body;
+
+      if (!cardId) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Missing cardId parameter" 
+        });
+      }
+
+      // Get RFID card from database
+      const card = await storage.getRfidCardByNumber(cardId);
+      if (!card) {
+        return res.status(404).json({ 
+          success: false, 
+          error: "Card not found" 
+        });
+      }
+
+      // Get AES key for the card (should be stored in the database)
+      if (!card.aesKey) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Card has no AES key configured" 
+        });
+      }
+
+      // Convert hex string AES key to Buffer
+      const aesKeyBuffer = Buffer.from(card.aesKey.replace(/:/g, ''), 'hex');
+      
+      if (aesKeyBuffer.length !== 16) {
+        return res.status(500).json({ 
+          success: false, 
+          error: "Invalid AES key length" 
+        });
+      }
+
+      // Start authentication
+      const result = await desfireAuth.startAuthentication(
+        { cardId, keyNumber, machineId },
+        aesKeyBuffer
+      );
+
+      if (!result.success) {
+        return res.status(500).json({ 
+          success: false, 
+          error: result.error 
+        });
+      }
+
+      res.json({
+        success: true,
+        sessionId: result.sessionId,
+        apduCommand: result.apduCommand,
+      });
+
+    } catch (error) {
+      console.error("Error starting DESFire auth:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: "Internal server error" 
+      });
+    }
+  });
+
+  /**
+   * Step 2: Process Card Response (Enc(RndB))
+   * 
+   * Pi sends the card's encrypted RndB response.
+   * Backend decrypts, generates challenge, returns next APDU command.
+   * 
+   * Request: { sessionId: "abc123", cardResponse: "8734...FE11" }
+   * Response: { apduCommand: "90AF000020..." }
+   */
+  app.post('/api/rfid/auth/step2', timeoutMiddleware(TIMEOUT_CONFIGS.RFID), async (req, res) => {
+    try {
+      const { sessionId, cardResponse } = req.body;
+
+      if (!sessionId || !cardResponse) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Missing sessionId or cardResponse" 
+        });
+      }
+
+      const result = await desfireAuth.processStep2({ sessionId, cardResponse });
+
+      if (!result.success) {
+        return res.status(400).json({ 
+          success: false, 
+          error: result.error 
+        });
+      }
+
+      res.json({
+        success: true,
+        apduCommand: result.apduCommand,
+      });
+
+    } catch (error) {
+      console.error("Error processing DESFire step 2:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: "Internal server error" 
+      });
+    }
+  });
+
+  /**
+   * Step 3: Verify Final Response
+   * 
+   * Pi sends the card's final response (Enc(Rot(RndA))).
+   * Backend verifies and returns authentication result + session key.
+   * 
+   * Request: { sessionId: "abc123", cardResponse: "72A1C40D..." }
+   * Response: { authenticated: true, sessionKey: "...", cardId: "..." }
+   */
+  app.post('/api/rfid/auth/verify', timeoutMiddleware(TIMEOUT_CONFIGS.RFID), async (req, res) => {
+    try {
+      const { sessionId, cardResponse } = req.body;
+
+      if (!sessionId || !cardResponse) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Missing sessionId or cardResponse" 
+        });
+      }
+
+      const result = await desfireAuth.verifyFinal({ sessionId, cardResponse });
+
+      if (!result.success) {
+        return res.status(400).json({ 
+          success: false, 
+          authenticated: false,
+          error: result.error 
+        });
+      }
+
+      // Log successful authentication
+      if (result.authenticated) {
+        console.log(`[DESFire Auth] Card ${result.cardId} authenticated successfully`);
+      } else {
+        console.warn(`[DESFire Auth] Card authentication failed: ${result.error}`);
+      }
+
+      res.json({
+        success: true,
+        authenticated: result.authenticated,
+        sessionKey: result.sessionKey,
+        cardId: result.cardId,
+        error: result.error,
+      });
+
+    } catch (error) {
+      console.error("Error verifying DESFire auth:", error);
+      res.status(500).json({ 
+        success: false, 
+        authenticated: false,
+        error: "Internal server error" 
+      });
+    }
+  });
+
+  // ==============================================================================
+  // LEGACY RFID ENDPOINTS (kept for backward compatibility)
+  // ==============================================================================
 
   // RFID validation endpoint for tea machines (VALIDATION ONLY - NO DISPENSING)
   app.post('/api/rfid/validate', timeoutMiddleware(TIMEOUT_CONFIGS.RFID), async (req, res) => {

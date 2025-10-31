@@ -50,10 +50,16 @@ All cryptographic operations (encryption, decryption, key derivation) are perfor
      │                           │                         │
      │  POST /api/rfid/auth/verify                        │
      │──────────────────────────>│                         │
-     │  { sessionId, cardResponse }                       │
+     │  { sessionId, cardResponse, machineId }            │
+     │                           │                         │
+     │                           ├─ Verify auth            │
+     │                           ├─ Check balance          │
+     │                           ├─ Deduct amount          │
+     │                           └─ Log transaction        │
      │                           │                         │
      │  { authenticated: true,   │                         │
-     │    sessionKey: "..." }    │                         │
+     │    dispensed: true,       │                         │
+     │    remainingBalance }     │                         │
      │<──────────────────────────│                         │
      │                           │                         │
      │  ✅ Dispense Tea          │                         │
@@ -199,48 +205,72 @@ CLA  INS  P1   P2   Lc   Data (32 bytes)
 
 ---
 
-### 3. Verify Final Response
+### 3. Verify Final Response + Balance Check + Dispense Tea
 
 **Endpoint:** `POST /api/rfid/auth/verify`
 
-**Description:** Verifies the card's final response and completes authentication.
+**Description:** Verifies the card's final response, completes authentication, checks business unit balance, and dispenses tea if sufficient balance available.
 
 **Request Body:**
 ```json
 {
   "sessionId": "a3f2c8e7b9d4f1a6c5e8b2d7f3a9c6e1",
-  "cardResponse": "72A1C40D5E996F8392B3E145A7D20C8F"
+  "cardResponse": "72A1C40D5E996F8392B3E145A7D20C8F",
+  "machineId": "machine-123"
 }
 ```
 
 **Request Fields:**
 - `sessionId` (string, required) - Session ID from step 1
 - `cardResponse` (string, required) - Card's final response in hex (Enc(Rot(RndA)), 16 bytes)
+- `machineId` (string, required) - Tea machine ID for balance check and dispensing
 
-**Success Response (Authenticated):** `200 OK`
+**Success Response (Authenticated & Dispensed):** `200 OK`
 ```json
 {
   "success": true,
   "authenticated": true,
+  "dispensed": true,
   "sessionKey": "A3F2C8E7B9D4F1A6C5E8B2D7F3A9C6E1",
+  "cardId": "04:12:34:56:78:90:AB",
+  "message": "Tea dispensed successfully",
+  "remainingBalance": "95.00",
+  "businessUnitName": "Engineering Dept",
+  "machineLocation": "Floor 2 - Cafeteria"
+}
+```
+
+**Success Response (Authenticated but Insufficient Balance):** `400 Bad Request`
+```json
+{
+  "success": false,
+  "authenticated": true,
+  "dispensed": false,
+  "error": "Insufficient balance",
   "cardId": "04:12:34:56:78:90:AB"
 }
 ```
 
-**Success Response (Authentication Failed):** `200 OK`
+**Success Response (Authentication Failed):** `400 Bad Request`
 ```json
 {
-  "success": true,
+  "success": false,
   "authenticated": false,
+  "dispensed": false,
   "error": "Authentication failed: RndA mismatch"
 }
 ```
 
 **Response Fields:**
-- `authenticated` (boolean) - Whether authentication succeeded
+- `authenticated` (boolean) - Whether DESFire authentication succeeded
+- `dispensed` (boolean) - Whether tea was dispensed
 - `sessionKey` (string, optional) - Derived session key in hex (16 bytes) - only if authenticated
 - `cardId` (string, optional) - Card ID - only if authenticated
-- `error` (string, optional) - Error message if authentication failed
+- `message` (string, optional) - Success message
+- `remainingBalance` (string, optional) - Remaining wallet balance after deduction
+- `businessUnitName` (string, optional) - Name of business unit
+- `machineLocation` (string, optional) - Location of tea machine
+- `error` (string, optional) - Error message if failed
 
 **Error Responses:**
 
@@ -249,16 +279,38 @@ CLA  INS  P1   P2   Lc   Data (32 bytes)
 {
   "success": false,
   "authenticated": false,
+  "dispensed": false,
   "error": "Missing sessionId or cardResponse"
 }
 ```
 
-`400 Bad Request` - Session not found
+`404 Not Found` - Machine not found
 ```json
 {
   "success": false,
-  "authenticated": false,
-  "error": "Session not found or expired"
+  "authenticated": true,
+  "dispensed": false,
+  "error": "Machine not found"
+}
+```
+
+`400 Bad Request` - Machine disabled
+```json
+{
+  "success": false,
+  "authenticated": true,
+  "dispensed": false,
+  "error": "Machine is disabled"
+}
+```
+
+`400 Bad Request` - Invalid card for machine
+```json
+{
+  "success": false,
+  "authenticated": true,
+  "dispensed": false,
+  "error": "Invalid card for this machine"
 }
 ```
 

@@ -1,5 +1,7 @@
 // API Configuration
-export const API_BASE_URL = __DEV__ 
+// In development, connect to the local Express server
+// In production, update this to your published backend URL
+export const API_BASE_URL = process.env.NODE_ENV === 'development'
   ? 'http://localhost:5000' 
   : 'https://your-production-url.com';
 

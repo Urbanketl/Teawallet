@@ -5,15 +5,12 @@ import { API_BASE_URL } from '../config/constants';
 export class NotificationService {
   static async registerPushToken(token: string) {
     try {
-      const authToken = await AsyncStorage.getItem('auth_token');
-      if (!authToken) return;
-
       await fetch(`${API_BASE_URL}/api/notifications/register`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ pushToken: token }),
       });
     } catch (error) {

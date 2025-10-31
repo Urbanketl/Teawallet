@@ -28,25 +28,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = async () => {
     try {
-      const token = await AsyncStorage.getItem('auth_token');
-      if (!token) {
-        setUser(null);
-        setIsLoading(false);
-        return;
-      }
-
       const response = await fetch(`${API_BASE_URL}/api/auth/user`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        credentials: 'include',
       });
 
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
       } else {
-        await AsyncStorage.removeItem('auth_token');
         setUser(null);
       }
     } catch (error) {
@@ -60,24 +49,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setIsLoading(true);
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      const response = await fetch(`${API_BASE_URL}/api/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
 
       if (response.ok) {
-        const { token, user } = await response.json();
-        await AsyncStorage.setItem('auth_token', token);
-        setUser(user);
-        return true;
+        const userData = await response.json();
+        
+        // Check if password reset is required
+        if (userData.requiresPasswordReset) {
+          // For now, just show that it's required
+          // In a full implementation, navigate to password reset screen
+          console.warn('Password reset required');
+          setUser(null);
+          return false;
+        }
+        
+        // Validate session by fetching user data via session cookie
+        // This ensures the session is properly established
+        const userResponse = await fetch(`${API_BASE_URL}/api/auth/user`, {
+          credentials: 'include',
+        });
+
+        if (userResponse.ok) {
+          const validatedUser = await userResponse.json();
+          setUser(validatedUser);
+          return true;
+        } else {
+          // Session not established properly
+          console.error('Session validation failed after login');
+          setUser(null);
+          return false;
+        }
       } else {
+        setUser(null);
         return false;
       }
     } catch (error) {
       console.error('Login error:', error);
+      setUser(null);
       return false;
     } finally {
       setIsLoading(false);
@@ -86,10 +101,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await AsyncStorage.removeItem('auth_token');
+      await fetch(`${API_BASE_URL}/api/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
       setUser(null);
     } catch (error) {
       console.error('Logout error:', error);
+      setUser(null);
     }
   };
 

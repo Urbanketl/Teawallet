@@ -89,13 +89,35 @@ All RFID card AES keys are encrypted in the database using **AES-256-CBC** encry
 
 ---
 
+## Security-First Validation Flow
+
+**CRITICAL:** Before any cryptographic operations begin, the system enforces business unit isolation:
+
+### Step-by-Step Validation (in order):
+
+1. ✅ **Validate Parameters** - cardId and machineId are required
+2. ✅ **Lookup Card** - Find card by `hardware_uid` in database
+3. ✅ **Check Card Active** - Card must be active
+4. ✅ **Lookup Machine** - Find machine by `id` in database  
+5. ✅ **Check Machine Active** - Machine must be active
+6. 🔒 **Validate Business Units Assigned** - Both must belong to a business unit
+7. 🔒 **CRITICAL: Validate Business Unit Match** - Card and machine MUST belong to same business unit
+8. ✅ **Check AES Key Exists** - Card must have encrypted AES key
+9. ✅ **Decrypt AES Key** - Decrypt using MASTER_KEY
+10. ✅ **Validate Key Length** - Must be 16 bytes
+11. ✅ **Start DESFire Authentication** - Only now does cryptographic handshake begin
+
+**Security Benefit:** Cross-business unit usage is blocked at step 7 - BEFORE any cryptographic operations or tea dispensing logic is executed.
+
+---
+
 ## API Endpoints
 
 ### 1. Start Authentication
 
 **Endpoint:** `POST /api/rfid/auth/start`
 
-**Description:** Initiates DESFire AES authentication. Validates card and machine belong to same business unit BEFORE starting authentication. Returns the first APDU command to send to the card.
+**Description:** Initiates DESFire AES authentication. **First validates** that card and machine belong to same business unit (business unit isolation), **then** starts the cryptographic authentication process. Returns the first APDU command to send to the card.
 
 **Request Body:**
 ```json
@@ -111,7 +133,14 @@ All RFID card AES keys are encrypted in the database using **AES-256-CBC** encry
 - `keyNumber` (number, optional) - DESFire key number (default: 0)
 - `machineId` (string, **required**) - Tea machine ID (maps to `id` column in `tea_machines` table, e.g., "UK_0007")
 
-**Important:** Both card and machine must belong to the **same business unit** for authentication to proceed.
+**Security Validation (performed in this order):**
+1. Card lookup by `hardware_uid`
+2. Card must be active
+3. Machine lookup by `id`
+4. Machine must be active
+5. **CRITICAL: Card and machine must belong to same business unit** (403 error if mismatch)
+6. Card must have AES key configured
+7. Only then: Start DESFire cryptographic authentication
 
 **Success Response:** `200 OK`
 ```json

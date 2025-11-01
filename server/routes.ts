@@ -962,6 +962,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { cardId, keyNumber = 0, machineId } = req.body;
 
+      // Validate required parameters
       if (!cardId) {
         return res.status(400).json({ 
           success: false, 
@@ -969,8 +970,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Get RFID card from database
-      const card = await storage.getRfidCardByNumber(cardId);
+      if (!machineId) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Missing machineId parameter - machineId is mandatory" 
+        });
+      }
+
+      // Step 1: Get RFID card from database using hardware_uid
+      const card = await storage.getRfidCardByHardwareUid(cardId);
       if (!card) {
         return res.status(404).json({ 
           success: false, 
@@ -978,7 +986,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Get AES key for the card (stored encrypted in database)
+      if (!card.isActive) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Card is inactive" 
+        });
+      }
+
+      // Step 2: Get machine from database using serial_number
+      const machine = await storage.getTeaMachineBySerialNumber(machineId);
+      if (!machine) {
+        return res.status(404).json({ 
+          success: false, 
+          error: "Machine not found" 
+        });
+      }
+
+      if (!machine.isActive) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Machine is inactive" 
+        });
+      }
+
+      // Step 3: CRITICAL - Validate business unit match BEFORE authentication
+      if (!card.businessUnitId || !machine.businessUnitId) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Card or machine not assigned to business unit" 
+        });
+      }
+
+      if (card.businessUnitId !== machine.businessUnitId) {
+        return res.status(403).json({ 
+          success: false, 
+          error: "Card does not belong to the same business unit as the machine" 
+        });
+      }
+
+      // Step 4: Get AES key for the card (stored encrypted in database)
       if (!card.aesKeyEncrypted) {
         return res.status(400).json({ 
           success: false, 
@@ -986,7 +1032,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Decrypt the AES key using MASTER_KEY
+      // Step 5: Decrypt the AES key using MASTER_KEY
       let aesKeyHex: string;
       try {
         aesKeyHex = decryptAESKey(card.aesKeyEncrypted);
@@ -1008,7 +1054,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Start authentication
+      // Step 6: Start DESFire mutual authentication
       const result = await desfireAuth.startAuthentication(
         { cardId, keyNumber, machineId },
         aesKeyBuffer
@@ -1020,6 +1066,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: result.error 
         });
       }
+
+      console.log(`[DESFire Auth Start] Card ${cardId} and Machine ${machineId} validated. Business Unit: ${card.businessUnitId}`);
 
       res.json({
         success: true,

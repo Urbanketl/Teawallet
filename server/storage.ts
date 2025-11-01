@@ -81,6 +81,7 @@ export interface IStorage {
   getBusinessUnitMachines(businessUnitId: string): Promise<TeaMachine[]>;
   getUnassignedMachines(): Promise<TeaMachine[]>;
   getTeaMachine(id: string): Promise<TeaMachine | undefined>;
+  getTeaMachineBySerialNumber(serialNumber: string): Promise<TeaMachine | undefined>;
   getAllTeaMachines(): Promise<TeaMachine[]>;
   generateNextMachineId(): Promise<string>;
   createTeaMachine(machine: InsertTeaMachine): Promise<TeaMachine>;
@@ -1863,6 +1864,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(teaMachines)
       .where(eq(teaMachines.id, id));
+    return machine;
+  }
+
+  async getTeaMachineBySerialNumber(serialNumber: string): Promise<TeaMachine | undefined> {
+    const [machine] = await db
+      .select()
+      .from(teaMachines)
+      .where(eq(teaMachines.serialNumber, serialNumber));
     return machine;
   }
 

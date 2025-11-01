@@ -95,21 +95,23 @@ All RFID card AES keys are encrypted in the database using **AES-256-CBC** encry
 
 **Endpoint:** `POST /api/rfid/auth/start`
 
-**Description:** Initiates DESFire AES authentication. Returns the first APDU command to send to the card.
+**Description:** Initiates DESFire AES authentication. Validates card and machine belong to same business unit BEFORE starting authentication. Returns the first APDU command to send to the card.
 
 **Request Body:**
 ```json
 {
-  "cardId": "04:12:34:56:78:90:AB",
+  "cardId": "045D8EFA6C6E80",
   "keyNumber": 0,
-  "machineId": 123
+  "machineId": "KULHAD_007"
 }
 ```
 
 **Request Fields:**
-- `cardId` (string, required) - RFID card UID in hex format (with or without colons)
+- `cardId` (string, required) - RFID card **hardware UID** in hex format (maps to `hardware_uid` column in database)
 - `keyNumber` (number, optional) - DESFire key number (default: 0)
-- `machineId` (number, optional) - Tea machine ID for logging
+- `machineId` (string, **required**) - Tea machine serial number (maps to `serial_number` column in database)
+
+**Important:** Both card and machine must belong to the **same business unit** for authentication to proceed.
 
 **Success Response:** `200 OK`
 ```json
@@ -134,11 +136,59 @@ All RFID card AES keys are encrypted in the database using **AES-256-CBC** encry
 }
 ```
 
-`404 Not Found` - Card not found in database
+`400 Bad Request` - Missing machineId
+```json
+{
+  "success": false,
+  "error": "Missing machineId parameter - machineId is mandatory"
+}
+```
+
+`404 Not Found` - Card not found in database (hardware_uid doesn't match)
 ```json
 {
   "success": false,
   "error": "Card not found"
+}
+```
+
+`400 Bad Request` - Card is inactive
+```json
+{
+  "success": false,
+  "error": "Card is inactive"
+}
+```
+
+`404 Not Found` - Machine not found in database (serial_number doesn't match)
+```json
+{
+  "success": false,
+  "error": "Machine not found"
+}
+```
+
+`400 Bad Request` - Machine is inactive
+```json
+{
+  "success": false,
+  "error": "Machine is inactive"
+}
+```
+
+`400 Bad Request` - Card or machine not assigned to business unit
+```json
+{
+  "success": false,
+  "error": "Card or machine not assigned to business unit"
+}
+```
+
+`403 Forbidden` - Business unit mismatch (CRITICAL SECURITY CHECK)
+```json
+{
+  "success": false,
+  "error": "Card does not belong to the same business unit as the machine"
 }
 ```
 

@@ -102,14 +102,14 @@ All RFID card AES keys are encrypted in the database using **AES-256-CBC** encry
 {
   "cardId": "045D8EFA6C6E80",
   "keyNumber": 0,
-  "machineId": "KULHAD_007"
+  "machineId": "UK_007"
 }
 ```
 
 **Request Fields:**
-- `cardId` (string, required) - RFID card **hardware UID** in hex format (maps to `hardware_uid` column in database)
+- `cardId` (string, required) - RFID card **hardware UID** in hex format (maps to `hardware_uid` column in `rfid_cards` table)
 - `keyNumber` (number, optional) - DESFire key number (default: 0)
-- `machineId` (string, **required**) - Tea machine serial number (maps to `serial_number` column in database)
+- `machineId` (string, **required**) - Tea machine ID (maps to `id` column in `tea_machines` table, e.g., "UK_007")
 
 **Important:** Both card and machine must belong to the **same business unit** for authentication to proceed.
 
@@ -160,7 +160,7 @@ All RFID card AES keys are encrypted in the database using **AES-256-CBC** encry
 }
 ```
 
-`404 Not Found` - Machine not found in database (serial_number doesn't match)
+`404 Not Found` - Machine not found in database (id doesn't match)
 ```json
 {
   "success": false,

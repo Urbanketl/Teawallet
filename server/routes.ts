@@ -993,8 +993,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Step 2: Get machine from database using serial_number
-      const machine = await storage.getTeaMachineBySerialNumber(machineId);
+      // Step 2: Get machine from database using id column
+      const machine = await storage.getTeaMachine(machineId);
       if (!machine) {
         return res.status(404).json({ 
           success: false, 

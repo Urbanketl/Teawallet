@@ -102,14 +102,14 @@ All RFID card AES keys are encrypted in the database using **AES-256-CBC** encry
 {
   "cardId": "045D8EFA6C6E80",
   "keyNumber": 0,
-  "machineId": "UK_007"
+  "machineId": "UK_0007"
 }
 ```
 
 **Request Fields:**
-- `cardId` (string, required) - RFID card **hardware UID** in hex format (maps to `hardware_uid` column in `rfid_cards` table)
+- `cardId` (string, required) - RFID card **hardware UID** in hex format **without colons** (maps to `hardware_uid` column in `rfid_cards` table). Example: `"045D8EFA6C6E80"` not `"04:5D:8E:FA:6C:6E:80"`
 - `keyNumber` (number, optional) - DESFire key number (default: 0)
-- `machineId` (string, **required**) - Tea machine ID (maps to `id` column in `tea_machines` table, e.g., "UK_007")
+- `machineId` (string, **required**) - Tea machine ID (maps to `id` column in `tea_machines` table, e.g., "UK_0007")
 
 **Important:** Both card and machine must belong to the **same business unit** for authentication to proceed.
 
@@ -303,7 +303,7 @@ CLA  INS  P1   P2   Lc   Data (32 bytes)
   "authenticated": true,
   "dispensed": true,
   "sessionKey": "A3F2C8E7B9D4F1A6C5E8B2D7F3A9C6E1",
-  "cardId": "04:12:34:56:78:90:AB",
+  "cardId": "045D8EFA6C6E80",
   "message": "Tea dispensed successfully",
   "remainingBalance": "95.00",
   "businessUnitName": "Engineering Dept",
@@ -318,7 +318,7 @@ CLA  INS  P1   P2   Lc   Data (32 bytes)
   "authenticated": true,
   "dispensed": false,
   "error": "Insufficient balance",
-  "cardId": "04:12:34:56:78:90:AB"
+  "cardId": "045D8EFA6C6E80"
 }
 ```
 
@@ -414,8 +414,8 @@ from smartcard.util import toHexString, toBytes
 
 # Configuration
 API_BASE_URL = "https://your-backend-url.replit.app"
-CARD_UID = "04:12:34:56:78:90:AB"
-MACHINE_ID = 123
+CARD_UID = "045D8EFA6C6E80"  # Hardware UID without colons
+MACHINE_ID = "UK_0007"  # Machine ID from tea_machines.id column
 
 # Connect to card reader (ACR122U)
 reader_list = readers()
@@ -497,8 +497,8 @@ connection.disconnect()
 ## Troubleshooting
 
 ### "Card not found"
-- Verify the cardId matches the format in your database
-- Check if card exists: `SELECT * FROM rfid_cards WHERE card_number = '04:12:34:56:78:90:AB'`
+- Verify the cardId matches the `hardware_uid` format in your database (no colons)
+- Check if card exists: `SELECT * FROM rfid_cards WHERE hardware_uid = '045D8EFA6C6E80'`
 
 ### "Card has no AES key configured"
 - Card must have an AES key in the database
